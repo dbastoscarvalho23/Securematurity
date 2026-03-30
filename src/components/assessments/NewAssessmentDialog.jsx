@@ -26,15 +26,15 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
     frameworks: [],
   });
 
-  const selectedCustomer = customers.find(c => c.id === form.customer_id);
-  const availableFrameworks = selectedCustomer?.allowed_frameworks?.length
-    ? FRAMEWORKS.filter(fw => selectedCustomer.allowed_frameworks.includes(fw.code))
-    : FRAMEWORKS;
-
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
     queryFn: () => base44.entities.Customer.list(),
   });
+
+  const selectedCustomer = customers.find(c => c.id === form.customer_id);
+  const availableFrameworks = selectedCustomer?.allowed_frameworks?.length
+    ? FRAMEWORKS.filter(fw => selectedCustomer.allowed_frameworks.includes(fw.code))
+    : FRAMEWORKS;
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
