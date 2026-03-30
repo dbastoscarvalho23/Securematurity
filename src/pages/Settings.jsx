@@ -5,11 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Settings as SettingsIcon, Shield, Loader2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
 export default function Settings() {
   const [isSeeding, setIsSeeding] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('user');
+  const [isInviting, setIsInviting] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: frameworks = [] } = useQuery({
@@ -21,6 +27,22 @@ export default function Settings() {
     queryKey: ['questions'],
     queryFn: () => base44.entities.Question.list('-created_date', 500),
   });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => base44.entities.User.list(),
+  });
+
+  const handleInvite = async (e) => {
+    e.preventDefault();
+    if (!inviteEmail) return;
+    setIsInviting(true);
+    await base44.users.inviteUser(inviteEmail, inviteRole);
+    setInviteEmail('');
+    setInviteRole('user');
+    setIsInviting(false);
+    toast.success(`Invitation sent to ${inviteEmail}`);
+  };
 
   const seedFrameworks = async () => {
     setIsSeeding(true);
@@ -90,12 +112,89 @@ export default function Settings() {
         <p className="text-muted-foreground text-sm mt-1">Platform configuration and framework management</p>
       </div>
 
-      <Tabs defaultValue="frameworks">
+      <Tabs defaultValue="users">
         <TabsList>
+          <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="frameworks">Frameworks</TabsTrigger>
-          <TabsTrigger value="seed">Seed Data</TabsTrigger>
         </TabsList>
 
+        {/* Users Tab */}
+        <TabsContent value="users" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <UserPlus className="w-4 h-4" />
+                Invite User
+              </CardTitle>
+              <CardDescription>Send an invitation to a new user to join the platform.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleInvite} className="flex gap-3 items-end">
+                <div className="flex-1 space-y-1.5">
+                  <label className="text-sm font-medium">Email</label>
+                  <Input
+                    type="email"
+                    placeholder="user@example.com"
+                    value={inviteEmail}
+                    onChange={e => setInviteEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="w-36 space-y-1.5">
+                  <label className="text-sm font-medium">Role</label>
+                  <Select value={inviteRole} onValueChange={setInviteRole}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="submit" disabled={isInviting} className="gap-2">
+                  {isInviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                  {isInviting ? 'Sending...' : 'Send Invite'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Current Users</CardTitle>
+              <CardDescription>{users.length} registered user{users.length !== 1 ? 's' : ''}</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Joined</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map(u => (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.full_name || '—'}</TableCell>
+                      <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
+                          {u.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {u.created_date ? new Date(u.created_date).toLocaleDateString() : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Frameworks Tab */}
         <TabsContent value="frameworks" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
@@ -107,9 +206,13 @@ export default function Settings() {
             </CardHeader>
             <CardContent>
               {frameworks.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  No frameworks configured. Go to "Seed Data" tab to initialize.
-                </p>
+                <div className="text-center py-8 space-y-3">
+                  <p className="text-sm text-muted-foreground">No frameworks configured yet.</p>
+                  <Button onClick={seedFrameworks} disabled={isSeeding} className="gap-2">
+                    {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <SettingsIcon className="w-4 h-4" />}
+                    {isSeeding ? 'Seeding...' : 'Initialize Frameworks & Questions'}
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {frameworks.map(fw => {
@@ -133,24 +236,6 @@ export default function Settings() {
                   })}
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="seed" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Initialize Platform Data</CardTitle>
-              <CardDescription>
-                Seed the platform with the 4 compliance frameworks and sample assessment questions.
-                Only use this once during initial setup.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={seedFrameworks} disabled={isSeeding} className="gap-2">
-                {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <SettingsIcon className="w-4 h-4" />}
-                {isSeeding ? 'Seeding...' : 'Seed Frameworks & Questions'}
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>
