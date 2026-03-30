@@ -12,7 +12,8 @@ import {
   Lightbulb,
   ScrollText,
   Shield,
-  BookOpen
+  BookOpen,
+  ListTodo
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +23,7 @@ const navItems = [
   { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
   { path: '/question-bank', label: 'Question Bank', icon: BookOpen },
   { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
+  { path: '/tasks', label: 'Tasks', icon: ListTodo },
   { path: '/reports', label: 'Reports', icon: BarChart3 },
   { path: '/admin', label: 'Admin', icon: ShieldCheck },
   { path: '/audit-log', label: 'Audit Log', icon: ScrollText },

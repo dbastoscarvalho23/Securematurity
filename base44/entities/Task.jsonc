@@ -1,0 +1,75 @@
+{
+  "name": "Task",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Task title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Task description"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "todo",
+        "in_progress",
+        "done"
+      ],
+      "default": "todo",
+      "description": "Task status"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ],
+      "default": "medium"
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "Email of the assigned user"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Due date for the task"
+    },
+    "assessment_id": {
+      "type": "string",
+      "description": "Reference to Assessment"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "recommendation_id": {
+      "type": "string",
+      "description": "Reference to source Recommendation (if converted)"
+    },
+    "framework_code": {
+      "type": "string",
+      "description": "Framework code"
+    },
+    "domain": {
+      "type": "string",
+      "description": "Domain/category"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or comments"
+    }
+  },
+  "required": [
+    "title",
+    "status"
+  ]
+}

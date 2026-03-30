@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Lightbulb, Filter } from 'lucide-react';
+import { Lightbulb, Filter, ListTodo } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import TaskFormDialog from '@/components/tasks/TaskFormDialog';
+import { toast } from 'sonner';
 
 const priorityColors = {
   critical: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -20,6 +22,8 @@ const statusOptions = ['pending', 'in_progress', 'completed', 'dismissed'];
 export default function Recommendations() {
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [taskDialog, setTaskDialog] = useState(false);
+  const [prefillTask, setPrefillTask] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: recommendations = [] } = useQuery({
@@ -31,6 +35,29 @@ export default function Recommendations() {
     mutationFn: ({ id, data }) => base44.entities.Recommendation.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendations'] }),
   });
+
+  const createTaskMutation = useMutation({
+    mutationFn: (taskData) => base44.entities.Task.create(taskData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Task created from recommendation');
+    },
+  });
+
+  const handleConvertToTask = (rec) => {
+    setPrefillTask({
+      title: rec.title,
+      description: rec.description,
+      priority: rec.priority,
+      framework_code: rec.framework_code,
+      domain: rec.domain,
+      recommendation_id: rec.id,
+      assessment_id: rec.assessment_id,
+      customer_id: rec.customer_id,
+      status: 'todo',
+    });
+    setTaskDialog(true);
+  };
 
   const filtered = recommendations.filter(r => {
     if (filterPriority !== 'all' && r.priority !== filterPriority) return false;
@@ -99,19 +126,30 @@ export default function Recommendations() {
                       <p className="text-sm font-medium">{rec.title}</p>
                       <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
                     </div>
-                    <Select
-                      value={rec.status}
-                      onValueChange={(v) => updateMutation.mutate({ id: rec.id, data: { status: v } })}
-                    >
-                      <SelectTrigger className="w-32 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map(s => (
-                          <SelectItem key={s} value={s} className="capitalize text-xs">{s.replace('_', ' ')}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 text-xs"
+                        onClick={() => handleConvertToTask(rec)}
+                      >
+                        <ListTodo className="w-3.5 h-3.5" />
+                        Create Task
+                      </Button>
+                      <Select
+                        value={rec.status}
+                        onValueChange={(v) => updateMutation.mutate({ id: rec.id, data: { status: v } })}
+                      >
+                        <SelectTrigger className="w-32 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map(s => (
+                            <SelectItem key={s} value={s} className="capitalize text-xs">{s.replace('_', ' ')}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -119,6 +157,13 @@ export default function Recommendations() {
           </div>
         </div>
       ))}
+
+      <TaskFormDialog
+        open={taskDialog}
+        onOpenChange={setTaskDialog}
+        task={prefillTask}
+        onSave={(form) => createTaskMutation.mutateAsync(form)}
+      />
 
       {filtered.length === 0 && (
         <Card>
