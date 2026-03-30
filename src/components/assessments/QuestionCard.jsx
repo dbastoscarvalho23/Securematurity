@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Check, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import EvidenceUploader from '@/components/assessments/EvidenceUploader';
 
 const MATURITY_LEVELS = [
   { level: 0, label: 'Non-existent', color: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20' },
@@ -21,13 +22,17 @@ export default function QuestionCard({ question, index, response, onSave, langua
   const selectedLevel = response?.maturity_level;
 
   const handleSelect = (level) => {
-    onSave({ maturity_level: level, evidence_notes: notes, target_level: response?.target_level || 4 });
+    onSave({ maturity_level: level, evidence_notes: notes, target_level: response?.target_level || 4, attachments: response?.attachments || [] });
   };
 
   const handleNotesBlur = () => {
     if (selectedLevel != null) {
-      onSave({ maturity_level: selectedLevel, evidence_notes: notes, target_level: response?.target_level || 4 });
+      onSave({ maturity_level: selectedLevel, evidence_notes: notes, target_level: response?.target_level || 4, attachments: response?.attachments || [] });
     }
+  };
+
+  const handleAttachmentsChange = (attachments) => {
+    onSave({ maturity_level: selectedLevel ?? 0, evidence_notes: notes, target_level: response?.target_level || 4, attachments });
   };
 
   return (
@@ -81,12 +86,14 @@ export default function QuestionCard({ question, index, response, onSave, langua
         </div>
 
         {/* Evidence Notes */}
-        <button
-          onClick={() => setShowNotes(!showNotes)}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {showNotes ? 'Hide notes' : '+ Add evidence / notes'}
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowNotes(!showNotes)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showNotes ? 'Hide notes' : '+ Add evidence / notes'}
+          </button>
+        </div>
         {showNotes && (
           <Textarea
             value={notes}
@@ -97,6 +104,12 @@ export default function QuestionCard({ question, index, response, onSave, langua
             rows={2}
           />
         )}
+
+        {/* File Attachments */}
+        <EvidenceUploader
+          attachments={response?.attachments || []}
+          onAttachmentsChange={handleAttachmentsChange}
+        />
       </CardContent>
     </Card>
   );

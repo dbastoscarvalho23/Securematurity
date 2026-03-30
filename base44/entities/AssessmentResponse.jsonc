@@ -37,6 +37,21 @@
     "target_level": {
       "type": "number",
       "description": "Target maturity level (0-5)"
+    },
+    "attachments": {
+      "type": "array",
+      "description": "Evidence file attachments",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "required": [

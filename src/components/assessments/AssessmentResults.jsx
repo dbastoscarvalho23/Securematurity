@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Download, Sparkles } from 'lucide-react';
+import { ArrowLeft, Download, Sparkles, FileText, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,19 @@ export default function AssessmentResults({ assessment, responses }) {
     queryKey: ['recommendations', assessment.id],
     queryFn: () => base44.entities.Recommendation.filter({ assessment_id: assessment.id }),
   });
+
+  const { data: questions = [] } = useQuery({
+    queryKey: ['questions'],
+    queryFn: () => base44.entities.Question.list('-order_index', 500),
+  });
+
+  // Build evidence list: only responses that have attachments
+  const evidenceItems = responses
+    .filter(r => r.attachments?.length > 0)
+    .map(r => {
+      const question = questions.find(q => q.id === r.question_id);
+      return { response: r, question };
+    });
 
   // Build radar data from all domain scores
   const radarData = [];
@@ -86,6 +99,54 @@ export default function AssessmentResults({ assessment, responses }) {
 
       {/* Radar Chart */}
       <MaturityRadar data={radarData} title="Domain Maturity Analysis" />
+
+      {/* Evidence Review */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Paperclip className="w-4 h-4 text-primary" />
+            Evidence Review
+            {evidenceItems.length > 0 && (
+              <Badge variant="secondary" className="ml-1">{evidenceItems.reduce((acc, e) => acc + e.response.attachments.length, 0)} files</Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {evidenceItems.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No evidence files attached to this assessment.</p>
+          ) : (
+            <div className="space-y-4">
+              {evidenceItems.map(({ response: r, question: q }) => (
+                <div key={r.id} className="border rounded-lg p-4">
+                  <div className="flex items-start gap-2 mb-3">
+                    <Badge variant="outline" className="text-xs font-mono flex-shrink-0">{r.control_id || r.framework_code}</Badge>
+                    <p className="text-sm font-medium leading-snug">
+                      {q?.question_text || r.domain}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {r.attachments.map((att, i) => (
+                      <a
+                        key={i}
+                        href={att.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-muted text-xs text-muted-foreground border hover:text-foreground hover:border-foreground/30 transition-colors"
+                      >
+                        <FileText className="w-3 h-3 flex-shrink-0" />
+                        <span className="max-w-[180px] truncate">{att.name}</span>
+                      </a>
+                    ))}
+                  </div>
+                  {r.evidence_notes && (
+                    <p className="text-xs text-muted-foreground mt-2 italic">"{r.evidence_notes}"</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* AI Recommendations */}
       {recommendations.length > 0 && (
