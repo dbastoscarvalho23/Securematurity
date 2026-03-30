@@ -2,8 +2,18 @@
 module.exports = {
     darkMode: ["class"],
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
+    safelist: [
+      'bg-chart-1/10', 'text-chart-1', 'border-chart-1/20',
+      'bg-chart-2/10', 'text-chart-2', 'border-chart-2/20',
+      'bg-chart-3/10', 'text-chart-3', 'border-chart-3/20',
+      'bg-chart-4/10', 'text-chart-4', 'border-chart-4/20',
+      'bg-chart-5/10', 'text-chart-5', 'border-chart-5/20',
+    ],
   theme: {
   	extend: {
+  		fontFamily: {
+  			sans: ['var(--font-sans)', 'sans-serif']
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',

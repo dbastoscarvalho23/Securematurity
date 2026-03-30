@@ -5,7 +5,16 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// Add page imports here
+import AppLayout from '@/components/layout/AppLayout';
+import Dashboard from '@/pages/Dashboard';
+import Customers from '@/pages/Customers';
+import Assessments from '@/pages/Assessments';
+import AssessmentDetail from '@/pages/AssessmentDetail';
+import Recommendations from '@/pages/Recommendations';
+import Reports from '@/pages/Reports';
+import Admin from '@/pages/Admin';
+import AuditLog from '@/pages/AuditLog';
+import Settings from '@/pages/Settings';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -33,7 +42,17 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/customers" element={<Customers />} />
+        <Route path="/assessments" element={<Assessments />} />
+        <Route path="/assessments/:id" element={<AssessmentDetail />} />
+        <Route path="/recommendations" element={<Recommendations />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/audit-log" element={<AuditLog />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

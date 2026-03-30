@@ -1,0 +1,46 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Tenant reference"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "User who performed the action"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "assessment_created",
+        "assessment_completed",
+        "assessment_deleted",
+        "customer_created",
+        "customer_updated",
+        "customer_deleted",
+        "recommendation_generated",
+        "report_exported",
+        "user_login",
+        "settings_changed"
+      ],
+      "description": "Action type"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Entity type affected"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of the affected entity"
+    },
+    "details": {
+      "type": "string",
+      "description": "Additional action details"
+    }
+  },
+  "required": [
+    "action",
+    "user_email"
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "name": "Recommendation",
+  "type": "object",
+  "properties": {
+    "assessment_id": {
+      "type": "string",
+      "description": "Reference to Assessment"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "framework_code": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "control_id": {
+      "type": "string"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ],
+      "default": "medium"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short recommendation title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed recommendation"
+    },
+    "current_level": {
+      "type": "number"
+    },
+    "target_level": {
+      "type": "number"
+    },
+    "effort": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "Estimated implementation effort"
+    },
+    "timeline": {
+      "type": "string",
+      "enum": [
+        "immediate",
+        "short_term",
+        "medium_term",
+        "long_term"
+      ],
+      "description": "Suggested implementation timeline"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed",
+        "dismissed"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "assessment_id",
+    "customer_id",
+    "title",
+    "description"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "name": "Question",
+  "type": "object",
+  "properties": {
+    "framework_code": {
+      "type": "string",
+      "description": "Framework this question belongs to"
+    },
+    "control_id": {
+      "type": "string",
+      "description": "Control ID this question maps to"
+    },
+    "domain": {
+      "type": "string",
+      "description": "Domain/category of the question"
+    },
+    "question_text": {
+      "type": "string",
+      "description": "The question text"
+    },
+    "guidance": {
+      "type": "string",
+      "description": "Guidance/help text for the assessor"
+    },
+    "answer_type": {
+      "type": "string",
+      "enum": [
+        "maturity_scale",
+        "yes_no",
+        "multiple_choice"
+      ],
+      "default": "maturity_scale",
+      "description": "Type of expected answer"
+    },
+    "weight": {
+      "type": "number",
+      "description": "Weight of this question in scoring (1-5)",
+      "default": 1
+    },
+    "order_index": {
+      "type": "number",
+      "description": "Display order within domain"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "framework_code",
+    "domain",
+    "question_text"
+  ]
+}

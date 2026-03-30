@@ -1,0 +1,89 @@
+{
+  "name": "Assessment",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name for display"
+    },
+    "title": {
+      "type": "string",
+      "description": "Assessment title (e.g. Q1 2025 Assessment)"
+    },
+    "period": {
+      "type": "string",
+      "description": "Assessment period identifier (e.g. 2025-Q1)"
+    },
+    "frameworks": {
+      "type": "array",
+      "description": "Frameworks included in this assessment",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "in_progress",
+        "completed",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "overall_score": {
+      "type": "number",
+      "description": "Overall maturity score (0-5)"
+    },
+    "framework_scores": {
+      "type": "array",
+      "description": "Scores per framework",
+      "items": {
+        "type": "object",
+        "properties": {
+          "framework_code": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "domain_scores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "domain": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "assessor_email": {
+      "type": "string",
+      "description": "Email of the user who conducted the assessment"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "title",
+    "period",
+    "frameworks"
+  ]
+}

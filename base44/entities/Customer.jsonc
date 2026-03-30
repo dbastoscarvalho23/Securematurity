@@ -1,0 +1,78 @@
+{
+  "name": "Customer",
+  "type": "object",
+  "properties": {
+    "nif": {
+      "type": "string",
+      "description": "Tax Identification Number (NIF)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Customer/Organization name"
+    },
+    "website": {
+      "type": "string",
+      "description": "Company website URL"
+    },
+    "sector": {
+      "type": "string",
+      "enum": [
+        "financial_services",
+        "healthcare",
+        "energy",
+        "telecommunications",
+        "public_administration",
+        "technology",
+        "manufacturing",
+        "retail",
+        "transportation",
+        "education",
+        "defense",
+        "other"
+      ],
+      "description": "Industry sector"
+    },
+    "contact_name": {
+      "type": "string",
+      "description": "Primary contact name"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Primary contact email"
+    },
+    "contact_phone": {
+      "type": "string",
+      "description": "Primary contact phone"
+    },
+    "num_employees": {
+      "type": "string",
+      "enum": [
+        "1-50",
+        "51-250",
+        "251-1000",
+        "1001-5000",
+        "5000+"
+      ],
+      "description": "Number of employees range"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "onboarding"
+      ],
+      "default": "onboarding",
+      "description": "Customer status"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "nif",
+    "name",
+    "sector"
+  ]
+}

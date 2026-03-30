@@ -1,0 +1,52 @@
+{
+  "name": "FrameworkControl",
+  "type": "object",
+  "properties": {
+    "framework_id": {
+      "type": "string",
+      "description": "Reference to Framework"
+    },
+    "framework_code": {
+      "type": "string",
+      "description": "Framework short code for quick filtering"
+    },
+    "control_id": {
+      "type": "string",
+      "description": "Control identifier (e.g. A.5.1, PR.AC-1)"
+    },
+    "domain": {
+      "type": "string",
+      "description": "Control domain/category (e.g. Access Control, Governance)"
+    },
+    "title": {
+      "type": "string",
+      "description": "Control title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Control description"
+    },
+    "maturity_levels": {
+      "type": "array",
+      "description": "Descriptions for each maturity level 1-5",
+      "items": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "framework_id",
+    "framework_code",
+    "control_id",
+    "domain",
+    "title"
+  ]
+}

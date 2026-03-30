@@ -1,0 +1,35 @@
+{
+  "name": "Framework",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Short code (e.g. NIS2, ISO27001, NIST_CSF, CIS_V8)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Full framework name"
+    },
+    "version": {
+      "type": "string",
+      "description": "Framework version"
+    },
+    "description": {
+      "type": "string",
+      "description": "Framework description"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "draft",
+        "deprecated"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "code",
+    "name"
+  ]
+}

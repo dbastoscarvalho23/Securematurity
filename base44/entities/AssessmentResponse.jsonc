@@ -1,0 +1,48 @@
+{
+  "name": "AssessmentResponse",
+  "type": "object",
+  "properties": {
+    "assessment_id": {
+      "type": "string",
+      "description": "Reference to Assessment"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer (for tenant isolation)"
+    },
+    "question_id": {
+      "type": "string",
+      "description": "Reference to Question"
+    },
+    "framework_code": {
+      "type": "string",
+      "description": "Framework code"
+    },
+    "control_id": {
+      "type": "string",
+      "description": "Control ID"
+    },
+    "domain": {
+      "type": "string",
+      "description": "Domain for aggregation"
+    },
+    "maturity_level": {
+      "type": "number",
+      "description": "Selected maturity level (0-5)"
+    },
+    "evidence_notes": {
+      "type": "string",
+      "description": "Evidence or notes supporting the answer"
+    },
+    "target_level": {
+      "type": "number",
+      "description": "Target maturity level (0-5)"
+    }
+  },
+  "required": [
+    "assessment_id",
+    "customer_id",
+    "question_id",
+    "framework_code"
+  ]
+}
