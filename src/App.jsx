@@ -15,6 +15,7 @@ import Reports from '@/pages/Reports';
 import Admin from '@/pages/Admin';
 import AuditLog from '@/pages/AuditLog';
 import Settings from '@/pages/Settings';
+import QuestionBank from '@/pages/QuestionBank';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -52,6 +53,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin" element={<Admin />} />
         <Route path="/audit-log" element={<AuditLog />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/question-bank" element={<QuestionBank />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
