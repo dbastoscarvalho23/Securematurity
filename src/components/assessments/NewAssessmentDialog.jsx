@@ -23,8 +23,13 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
     customer_id: '',
     title: '',
     period: '',
-    frameworks: ['NIS2', 'ISO27001', 'NIST_CSF', 'CIS_V8'],
+    frameworks: [],
   });
+
+  const selectedCustomer = customers.find(c => c.id === form.customer_id);
+  const availableFrameworks = selectedCustomer?.allowed_frameworks?.length
+    ? FRAMEWORKS.filter(fw => selectedCustomer.allowed_frameworks.includes(fw.code))
+    : FRAMEWORKS;
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -46,6 +51,15 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
       navigate(`/assessments/${newAssessment.id}`);
     },
   });
+
+  // When customer changes, pre-select their allowed frameworks
+  const handleCustomerChange = (customerId) => {
+    const customer = customers.find(c => c.id === customerId);
+    const frameworks = customer?.allowed_frameworks?.length
+      ? customer.allowed_frameworks
+      : FRAMEWORKS.map(f => f.code);
+    setForm(prev => ({ ...prev, customer_id: customerId, frameworks }));
+  };
 
   const toggleFramework = (code) => {
     setForm(prev => ({
@@ -70,7 +84,7 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label>Customer *</Label>
-            <Select value={form.customer_id} onValueChange={v => setForm(prev => ({ ...prev, customer_id: v }))}>
+            <Select value={form.customer_id} onValueChange={handleCustomerChange}>
               <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
               <SelectContent>
                 {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -100,8 +114,11 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
 
           <div className="space-y-2">
             <Label>Frameworks</Label>
+            {!form.customer_id && (
+              <p className="text-xs text-muted-foreground">Select a customer to see their allowed frameworks.</p>
+            )}
             <div className="space-y-2">
-              {FRAMEWORKS.map(fw => (
+              {availableFrameworks.map(fw => (
                 <div key={fw.code} className="flex items-center gap-2">
                   <Checkbox
                     checked={form.frameworks.includes(fw.code)}

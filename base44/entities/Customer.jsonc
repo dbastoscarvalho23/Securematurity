@@ -65,6 +65,13 @@
       "default": "onboarding",
       "description": "Customer status"
     },
+    "allowed_frameworks": {
+      "type": "array",
+      "description": "Frameworks allowed for this customer",
+      "items": {
+        "type": "string"
+      }
+    },
     "notes": {
       "type": "string",
       "description": "Additional notes"

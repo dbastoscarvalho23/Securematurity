@@ -5,6 +5,14 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+
+const FRAMEWORKS = [
+  { code: 'NIS2', name: 'NIS2 / DL 125/2025' },
+  { code: 'ISO27001', name: 'ISO/IEC 27001' },
+  { code: 'NIST_CSF', name: 'NIST Cybersecurity Framework' },
+  { code: 'CIS_V8', name: 'CIS Controls v8' },
+];
 
 const SECTORS = [
   { value: 'financial_services', label: 'Financial Services' },
@@ -34,8 +42,18 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
     contact_phone: customer?.contact_phone || '',
     num_employees: customer?.num_employees || '',
     status: customer?.status || 'onboarding',
+    allowed_frameworks: customer?.allowed_frameworks || ['NIS2', 'ISO27001', 'NIST_CSF', 'CIS_V8'],
     notes: customer?.notes || '',
   });
+
+  const toggleFramework = (code) => {
+    setForm(prev => ({
+      ...prev,
+      allowed_frameworks: prev.allowed_frameworks.includes(code)
+        ? prev.allowed_frameworks.filter(f => f !== code)
+        : [...prev.allowed_frameworks, code],
+    }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -99,6 +117,21 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
             <div className="space-y-1.5">
               <Label>Contact Phone</Label>
               <Input value={form.contact_phone} onChange={e => set('contact_phone', e.target.value)} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Allowed Frameworks</Label>
+            <div className="flex flex-wrap gap-4">
+              {FRAMEWORKS.map(fw => (
+                <div key={fw.code} className="flex items-center gap-2">
+                  <Checkbox
+                    checked={form.allowed_frameworks.includes(fw.code)}
+                    onCheckedChange={() => toggleFramework(fw.code)}
+                  />
+                  <span className="text-sm">{fw.name}</span>
+                </div>
+              ))}
             </div>
           </div>
 
