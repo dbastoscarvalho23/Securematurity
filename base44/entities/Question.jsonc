@@ -16,11 +16,19 @@
     },
     "question_text": {
       "type": "string",
-      "description": "The question text"
+      "description": "The question text (English)"
+    },
+    "question_text_pt": {
+      "type": "string",
+      "description": "The question text in Portuguese"
     },
     "guidance": {
       "type": "string",
-      "description": "Guidance/help text for the assessor"
+      "description": "Guidance/help text for the assessor (English)"
+    },
+    "guidance_pt": {
+      "type": "string",
+      "description": "Guidance/help text in Portuguese"
     },
     "answer_type": {
       "type": "string",

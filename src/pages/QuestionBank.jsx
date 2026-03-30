@@ -160,6 +160,7 @@ export default function QuestionBank() {
                   <TableHead className="w-40">Domain</TableHead>
                   <TableHead className="w-28">Control ID</TableHead>
                   <TableHead className="w-16">Weight</TableHead>
+                  <TableHead className="w-16">Lang</TableHead>
                   <TableHead className="w-20">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -169,8 +170,8 @@ export default function QuestionBank() {
                     <TableCell className="text-muted-foreground text-xs font-mono">{i + 1}</TableCell>
                     <TableCell>
                       <p className="text-sm line-clamp-2">{q.question_text}</p>
-                      {q.guidance && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{q.guidance}</p>
+                      {q.question_text_pt && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 italic">{q.question_text_pt}</p>
                       )}
                     </TableCell>
                     <TableCell>
@@ -181,6 +182,12 @@ export default function QuestionBank() {
                     <TableCell className="text-sm text-muted-foreground">{q.domain}</TableCell>
                     <TableCell className="text-xs font-mono text-muted-foreground">{q.control_id || '—'}</TableCell>
                     <TableCell className="text-sm text-center">{q.weight || 1}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <span className="text-xs font-medium text-muted-foreground">EN</span>
+                        {q.question_text_pt && <span className="text-xs font-medium text-accent">PT</span>}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(q)}>

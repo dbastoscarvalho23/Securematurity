@@ -15,7 +15,7 @@ const MATURITY_LEVELS = [
   { level: 5, label: 'Optimizing', color: 'bg-accent/10 text-accent border-accent/20 hover:bg-accent/20' },
 ];
 
-export default function QuestionCard({ question, index, response, onSave }) {
+export default function QuestionCard({ question, index, response, onSave, language = 'en' }) {
   const [notes, setNotes] = useState(response?.evidence_notes || '');
   const [showNotes, setShowNotes] = useState(!!response?.evidence_notes);
   const selectedLevel = response?.maturity_level;
@@ -38,7 +38,9 @@ export default function QuestionCard({ question, index, response, onSave }) {
             {index}.
           </span>
           <div className="flex-1">
-            <p className="text-sm font-medium leading-relaxed">{question.question_text}</p>
+            <p className="text-sm font-medium leading-relaxed">
+              {language === 'pt' && question.question_text_pt ? question.question_text_pt : question.question_text}
+            </p>
             {question.control_id && (
               <Badge variant="outline" className="text-xs mt-2 font-mono">{question.control_id}</Badge>
             )}
@@ -49,7 +51,9 @@ export default function QuestionCard({ question, index, response, onSave }) {
                 <TooltipTrigger>
                   <HelpCircle className="w-4 h-4 text-muted-foreground" />
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs text-xs">{question.guidance}</TooltipContent>
+                <TooltipContent className="max-w-xs text-xs">
+                  {language === 'pt' && question.guidance_pt ? question.guidance_pt : question.guidance}
+                </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}

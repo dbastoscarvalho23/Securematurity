@@ -20,7 +20,9 @@ const EMPTY_FORM = {
   domain: '',
   control_id: '',
   question_text: '',
+  question_text_pt: '',
   guidance: '',
+  guidance_pt: '',
   weight: 1,
   order_index: 0,
   is_active: true,
@@ -105,25 +107,47 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Question Text *</Label>
-            <Textarea
-              value={form.question_text}
-              onChange={e => set('question_text', e.target.value)}
-              placeholder="Enter the question..."
-              rows={3}
-              required
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Question Text (EN) *</Label>
+              <Textarea
+                value={form.question_text}
+                onChange={e => set('question_text', e.target.value)}
+                placeholder="Enter the question in English..."
+                rows={3}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Question Text (PT)</Label>
+              <Textarea
+                value={form.question_text_pt}
+                onChange={e => set('question_text_pt', e.target.value)}
+                placeholder="Insira a questão em Português..."
+                rows={3}
+              />
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Guidance / Help Text</Label>
-            <Textarea
-              value={form.guidance}
-              onChange={e => set('guidance', e.target.value)}
-              placeholder="Optional guidance shown to assessors..."
-              rows={2}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Guidance (EN)</Label>
+              <Textarea
+                value={form.guidance}
+                onChange={e => set('guidance', e.target.value)}
+                placeholder="Optional guidance in English..."
+                rows={2}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Guidance (PT)</Label>
+              <Textarea
+                value={form.guidance_pt}
+                onChange={e => set('guidance_pt', e.target.value)}
+                placeholder="Orientação opcional em Português..."
+                rows={2}
+              />
+            </div>
           </div>
 
           <div className="space-y-1.5">
