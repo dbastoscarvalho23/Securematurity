@@ -81,12 +81,14 @@ export default function Dashboard() {
           value={customers.filter(c => c.status === 'active').length}
           subtitle={`${customers.length} total`}
           icon={Building2}
+          href="/customers"
         />
         <StatCard
           title="Assessments"
           value={completedAssessments.length}
           subtitle={`${assessments.filter(a => a.status === 'in_progress').length} in progress`}
           icon={ClipboardCheck}
+          href="/assessments"
         />
         <StatCard
           title="Overall Maturity"
@@ -95,12 +97,14 @@ export default function Dashboard() {
           icon={TrendingUp}
           trend={completedAssessments.length > 1 ? "+0.3" : undefined}
           trendUp
+          href="/reports"
         />
         <StatCard
           title="Open Recommendations"
           value={openRecs}
           subtitle={`${recommendations.filter(r => r.priority === 'critical').length} critical`}
           icon={ShieldAlert}
+          href="/recommendations"
         />
       </div>
 

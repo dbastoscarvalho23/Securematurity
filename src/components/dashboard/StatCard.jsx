@@ -1,10 +1,13 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
-export default function StatCard({ title, value, subtitle, icon: Icon, trend, trendUp, className }) {
+export default function StatCard({ title, value, subtitle, icon: Icon, trend, trendUp, className, href }) {
+  const Wrapper = href ? Link : 'div';
   return (
-    <Card className={cn("p-6 relative overflow-hidden group hover:shadow-lg transition-shadow", className)}>
+    <Wrapper to={href} className={href ? "block" : undefined}>
+    <Card className={cn("p-6 relative overflow-hidden group hover:shadow-lg transition-shadow", href && "cursor-pointer", className)}>
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
@@ -29,5 +32,6 @@ export default function StatCard({ title, value, subtitle, icon: Icon, trend, tr
       )}
       <div className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full bg-primary/5 group-hover:bg-primary/10 transition-colors" />
     </Card>
+    </Wrapper>
   );
 }
