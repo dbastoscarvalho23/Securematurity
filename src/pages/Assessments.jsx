@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import NewAssessmentDialog from '@/components/assessments/NewAssessmentDialog';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/AuthContext';
 
 const statusStyles = {
   draft: 'bg-muted text-muted-foreground',
@@ -24,10 +25,14 @@ export default function Assessments() {
   const [showNew, setShowNew] = useState(false);
   const [search, setSearch] = useState('');
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   const { data: assessments = [], isLoading } = useQuery({
-    queryKey: ['assessments'],
-    queryFn: () => base44.entities.Assessment.list('-created_date'),
+    queryKey: ['assessments', user?.email],
+    queryFn: () => isAdmin
+      ? base44.entities.Assessment.list('-created_date')
+      : base44.entities.Assessment.filter({ assessor_email: user?.email }, '-created_date'),
   });
 
   const deleteMutation = useMutation({
@@ -44,12 +49,14 @@ export default function Assessments() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-sm">Maturity assessments across frameworks</p>
-        <Button onClick={() => setShowNew(true)} className="gap-2">
-          <Plus className="w-4 h-4" /> New Assessment
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => setShowNew(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> New Assessment
+          </Button>
+        )}
       </div>
 
-      <NewAssessmentDialog open={showNew} onOpenChange={setShowNew} />
+      {isAdmin && <NewAssessmentDialog open={showNew} onOpenChange={setShowNew} />}
 
       <Card>
         <CardContent className="p-0">
@@ -135,9 +142,11 @@ export default function Assessments() {
                             {a.status === 'completed' ? 'View Results' : 'Continue'}
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(a.id)}>
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
-                        </DropdownMenuItem>
+                        {isAdmin && (
+                          <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(a.id)}>
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

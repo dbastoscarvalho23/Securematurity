@@ -7,6 +7,7 @@ import MaturityRadar from '@/components/dashboard/MaturityRadar';
 import FrameworkScoreCard from '@/components/dashboard/FrameworkScoreCard';
 import TrendChart from '@/components/dashboard/TrendChart';
 import RecentActivity from '@/components/dashboard/RecentActivity';
+import { useAuth } from '@/lib/AuthContext';
 
 const FRAMEWORK_NAMES = {
   NIS2: 'NIS2 / DL 125/2025',
@@ -17,19 +18,28 @@ const FRAMEWORK_NAMES = {
 };
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
     queryFn: () => base44.entities.Customer.list(),
+    enabled: isAdmin,
   });
 
   const { data: assessments = [] } = useQuery({
-    queryKey: ['assessments'],
-    queryFn: () => base44.entities.Assessment.list('-created_date', 50),
+    queryKey: ['assessments', user?.email],
+    queryFn: () => isAdmin
+      ? base44.entities.Assessment.list('-created_date', 50)
+      : base44.entities.Assessment.filter({ assessor_email: user?.email }, '-created_date', 50),
   });
 
   const { data: recommendations = [] } = useQuery({
-    queryKey: ['recommendations'],
-    queryFn: () => base44.entities.Recommendation.list('-created_date', 50),
+    queryKey: ['recommendations', user?.email],
+    queryFn: () => isAdmin
+      ? base44.entities.Recommendation.list('-created_date', 50)
+      : base44.entities.Recommendation.filter({ assessment_id: { $in: assessments.map(a => a.id) } }, '-created_date', 50),
+    enabled: isAdmin || assessments.length >= 0,
   });
 
   const completedAssessments = assessments.filter(a => a.status === 'completed');
@@ -81,13 +91,15 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Active Customers"
-          value={customers.filter(c => c.status === 'active').length}
-          subtitle={`${customers.length} total`}
-          icon={Building2}
-          href="/customers"
-        />
+        {isAdmin && (
+          <StatCard
+            title="Active Customers"
+            value={customers.filter(c => c.status === 'active').length}
+            subtitle={`${customers.length} total`}
+            icon={Building2}
+            href="/customers"
+          />
+        )}
         <StatCard
           title="Assessments"
           value={completedAssessments.length}

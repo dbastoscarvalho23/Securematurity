@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/lib/AuthContext';
 
-const navGroups = [
+const adminNavGroups = [
   {
     label: 'Main',
     items: [
@@ -49,10 +49,30 @@ const navGroups = [
   }
 ];
 
+const userNavGroups = [
+  {
+    label: 'Main',
+    items: [
+      { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/assessments', label: 'My Assessments', icon: ClipboardCheck },
+      { path: '/action-plan', label: 'Action Plan', icon: Target },
+      { path: '/tasks', label: 'Tasks', icon: ListTodo },
+      { path: '/reports', label: 'Reports', icon: BarChart3 },
+    ]
+  },
+  {
+    label: 'System',
+    items: [
+      { path: '/settings', label: 'Settings', icon: Settings },
+    ]
+  }
+];
+
 export default function Sidebar({ collapsed, onToggle }) {
   const location = useLocation();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const navGroups = isAdmin ? adminNavGroups : userNavGroups;
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -75,7 +95,7 @@ export default function Sidebar({ collapsed, onToggle }) {
 
         {/* Navigation */}
         <nav className="flex-1 py-3 px-2 overflow-y-auto space-y-4">
-          {navGroups.filter(g => g.label !== 'Tools' || isAdmin).map((group) => (
+          {navGroups.map((group) => (
             <div key={group.label}>
               {!collapsed && (
                 <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30">
