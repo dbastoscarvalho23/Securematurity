@@ -16,6 +16,7 @@ const FRAMEWORKS = [
   { code: 'NIST_CSF', name: 'NIST CSF' },
   { code: 'CIS_V8', name: 'CIS Controls v8' },
   { code: 'QNRC', name: 'QNRC' },
+  { code: 'GDPR', name: 'GDPR' },
 ];
 
 const PRIORITY_COLORS = {

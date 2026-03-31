@@ -14,6 +14,7 @@ const FRAMEWORKS = [
   { code: 'ISO27001', name: 'ISO/IEC 27001' },
   { code: 'NIST_CSF', name: 'NIST Cybersecurity Framework' },
   { code: 'CIS_V8', name: 'CIS Controls v8' },
+  { code: 'GDPR', name: 'GDPR' },
 ];
 
 export default function NewAssessmentDialog({ open, onOpenChange }) {

@@ -12,6 +12,8 @@ const FRAMEWORKS = [
   { code: 'ISO27001', name: 'ISO/IEC 27001' },
   { code: 'NIST_CSF', name: 'NIST Cybersecurity Framework' },
   { code: 'CIS_V8', name: 'CIS Controls v8' },
+  { code: 'QNRC', name: 'QNRC' },
+  { code: 'GDPR', name: 'GDPR' },
 ];
 
 const SECTORS = [
@@ -42,7 +44,7 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
     contact_phone: customer?.contact_phone || '',
     num_employees: customer?.num_employees || '',
     status: customer?.status || 'onboarding',
-    allowed_frameworks: customer?.allowed_frameworks || ['NIS2', 'ISO27001', 'NIST_CSF', 'CIS_V8'],
+    allowed_frameworks: customer?.allowed_frameworks || ['NIS2', 'ISO27001', 'NIST_CSF', 'CIS_V8', 'QNRC', 'GDPR'],
     notes: customer?.notes || '',
   });
 

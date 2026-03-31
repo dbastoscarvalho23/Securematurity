@@ -15,6 +15,7 @@ const FRAMEWORK_NAMES = {
   NIST_CSF: 'NIST CSF',
   CIS_V8: 'CIS Controls v8',
   QNRC: 'QNRC',
+  GDPR: 'GDPR',
 };
 
 const MATURITY_LABELS = ['Not Implemented', 'Initial', 'Developing', 'Defined', 'Managed', 'Optimizing'];

@@ -16,6 +16,7 @@ const FRAMEWORK_NAMES = {
   ISO27001: 'ISO/IEC 27001',
   NIST_CSF: 'NIST CSF',
   CIS_V8: 'CIS Controls v8',
+  GDPR: 'GDPR',
 };
 
 export default function AssessmentResults({ assessment, responses }) {
