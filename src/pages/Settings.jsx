@@ -32,6 +32,19 @@ export default function Settings() {
     }
   });
 
+  const deleteInvitedUserMutation = useMutation({
+    mutationFn: async (invitedUserId) => {
+      await base44.entities.InvitedUser.delete(invitedUserId);
+    },
+    onSuccess: () => {
+      refetchInvited();
+      toast.success('Invitation deleted');
+    },
+    onError: (err) => {
+      toast.error(err?.message || 'Failed to delete invitation');
+    }
+  });
+
   const { data: frameworks = [] } = useQuery({
     queryKey: ['frameworks'],
     queryFn: () => base44.entities.Framework.list(),
@@ -335,6 +348,17 @@ export default function Settings() {
                         </TableCell>
                         <TableCell className="text-muted-foreground text-xs">
                           Invited {i.created_date ? new Date(i.created_date).toLocaleDateString() : ''}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => deleteInvitedUserMutation.mutate(i.id)}
+                            disabled={deleteInvitedUserMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
