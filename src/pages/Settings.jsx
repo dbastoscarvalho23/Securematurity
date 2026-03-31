@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
@@ -37,6 +38,41 @@ export default function Settings() {
     queryKey: ['invited-users'],
     queryFn: () => base44.entities.InvitedUser.list(),
   });
+
+  const { data: responses = [] } = useQuery({
+    queryKey: ['all-responses'],
+    queryFn: () => base44.entities.AssessmentResponse.list('-created_date', 2000),
+  });
+
+  // Compute weighted risk score per framework (0–5 scale)
+  // Score = sum(maturity_level * weight) / sum(weight) for all answered questions
+  const frameworkScores = {};
+  questions.forEach(q => {
+    const answered = responses.filter(r => r.question_id === q.id && r.maturity_level != null);
+    if (answered.length === 0) return;
+    const fw = q.framework_code;
+    if (!frameworkScores[fw]) frameworkScores[fw] = { weightedSum: 0, totalWeight: 0, answeredCount: 0 };
+    const w = q.weight || 1;
+    // Average maturity across all responses for this question
+    const avgLevel = answered.reduce((s, r) => s + r.maturity_level, 0) / answered.length;
+    frameworkScores[fw].weightedSum += avgLevel * w;
+    frameworkScores[fw].totalWeight += w;
+    frameworkScores[fw].answeredCount += answered.length;
+  });
+
+  const getRiskScore = (code) => {
+    const s = frameworkScores[code];
+    if (!s || s.totalWeight === 0) return null;
+    return s.weightedSum / s.totalWeight;
+  };
+
+  const getRiskLabel = (score) => {
+    if (score === null) return { label: 'No Data', color: 'text-muted-foreground' };
+    if (score >= 4) return { label: 'Low Risk', color: 'text-accent' };
+    if (score >= 3) return { label: 'Moderate', color: 'text-chart-3' };
+    if (score >= 2) return { label: 'Elevated', color: 'text-chart-4' };
+    return { label: 'High Risk', color: 'text-destructive' };
+  };
 
   const handleInvite = async (e) => {
     e.preventDefault();
@@ -307,6 +343,8 @@ export default function Settings() {
                   {frameworks.map(fw => {
                     const fwQuestions = questions.filter(q => q.framework_code === fw.code);
                     const domains = [...new Set(fwQuestions.map(q => q.domain))];
+                    const score = getRiskScore(fw.code);
+                    const { label: riskLabel, color: riskColor } = getRiskLabel(score);
                     return (
                       <div key={fw.id} className="p-4 rounded-lg border">
                         <div className="flex items-center justify-between mb-2">
@@ -320,6 +358,23 @@ export default function Settings() {
                         <p className="text-xs text-muted-foreground mt-2">
                           {fwQuestions.length} questions · {domains.length} domains · Version {fw.version}
                         </p>
+                        {/* Risk Score */}
+                        <div className="mt-3 pt-3 border-t">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-medium text-muted-foreground">Overall Risk Score</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-semibold ${riskColor}`}>{riskLabel}</span>
+                              {score !== null && (
+                                <span className="text-xs font-mono font-bold">{score.toFixed(2)} / 5.00</span>
+                              )}
+                            </div>
+                          </div>
+                          {score !== null ? (
+                            <Progress value={(score / 5) * 100} className="h-2" />
+                          ) : (
+                            <p className="text-xs text-muted-foreground italic">No assessment responses yet for this framework.</p>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
