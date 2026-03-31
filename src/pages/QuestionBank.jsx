@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Search, Pencil, Trash2, Filter, Sparkles, ShieldCheck, Loader2 } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Filter, Sparkles, ShieldCheck, Loader2, Languages } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,8 @@ export default function QuestionBank() {
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [isDeduplicating, setIsDeduplicating] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translateProgress, setTranslateProgress] = useState({ done: 0, total: 0 });
 
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ['questions'],
@@ -72,6 +74,65 @@ export default function QuestionBank() {
   const handleNew = () => {
     setEditingQuestion(null);
     setDialogOpen(true);
+  };
+
+  const handleTranslate = async () => {
+    const untranslated = questions.filter(q => !q.question_text_pt);
+    if (untranslated.length === 0) {
+      toast.success('All questions already have a Portuguese translation!');
+      return;
+    }
+    if (!confirm(`Translate ${untranslated.length} question${untranslated.length !== 1 ? 's' : ''} to European Portuguese?`)) return;
+
+    setIsTranslating(true);
+    setTranslateProgress({ done: 0, total: untranslated.length });
+
+    // Process in batches of 10 to avoid large prompts
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < untranslated.length; i += BATCH_SIZE) {
+      const batch = untranslated.slice(i, i + BATCH_SIZE);
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a professional translator specialising in European Portuguese (Portugal), not Brazilian Portuguese.
+Translate the following cybersecurity assessment questions and their guidance texts to European Portuguese (Portugal).
+Use formal register ("você"/"a organização"), European vocabulary and spelling (e.g. "implementação" not "implementação", avoid Brazilian colloquialisms).
+
+Questions to translate (JSON array):
+${JSON.stringify(batch.map(q => ({ id: q.id, question_text: q.question_text, guidance: q.guidance || '' })), null, 2)}
+
+Return only valid JSON with the translations.`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            translations: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  question_text_pt: { type: 'string' },
+                  guidance_pt: { type: 'string' },
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (result?.translations) {
+        await Promise.all(result.translations.map(t =>
+          base44.entities.Question.update(t.id, {
+            question_text_pt: t.question_text_pt,
+            ...(t.guidance_pt ? { guidance_pt: t.guidance_pt } : {}),
+          })
+        ));
+      }
+
+      setTranslateProgress({ done: Math.min(i + BATCH_SIZE, untranslated.length), total: untranslated.length });
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['questions'] });
+    setIsTranslating(false);
+    toast.success(`Translated ${untranslated.length} question${untranslated.length !== 1 ? 's' : ''} to European Portuguese.`);
   };
 
   const handleRemoveDuplicates = async () => {
@@ -118,6 +179,12 @@ export default function QuestionBank() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleTranslate} disabled={isTranslating} className="gap-2">
+            {isTranslating
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Translating {translateProgress.done}/{translateProgress.total}</>
+              : <><Languages className="w-4 h-4" /> Translate to PT</>
+            }
+          </Button>
           <Button variant="outline" onClick={handleRemoveDuplicates} disabled={isDeduplicating} className="gap-2">
             {isDeduplicating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
             Remove Duplicates
