@@ -76,11 +76,12 @@ export default function Tasks() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {counts.todo} to-do · {counts.in_progress} in progress · {counts.done} done
-          </p>
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <span><strong className="text-foreground">{counts.todo}</strong> to-do</span>
+          <span>·</span>
+          <span><strong className="text-chart-3">{counts.in_progress}</strong> in progress</span>
+          <span>·</span>
+          <span><strong className="text-accent">{counts.done}</strong> done</span>
         </div>
         <Button onClick={handleNew} className="gap-2">
           <Plus className="w-4 h-4" />

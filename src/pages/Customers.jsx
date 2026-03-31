@@ -71,12 +71,9 @@ export default function Customers() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage your tenant organizations</p>
-        </div>
-        <Button onClick={() => { setEditingCustomer(null); setShowForm(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Add Customer
+        <p className="text-muted-foreground text-sm">Manage your tenant organizations · <span className="text-foreground font-medium">{customers.length}</span> total</p>
+        <Button onClick={() => { setEditingCustomer(null); setShowForm(true); }} className="gap-2">
+          <Plus className="w-4 h-4" /> Add Customer
         </Button>
       </div>
 
@@ -125,15 +122,15 @@ export default function Customers() {
                   </TableCell>
                 </TableRow>
               ) : filtered.map(c => (
-                <TableRow key={c.id} className="group">
+                <TableRow key={c.id} className="group hover:bg-muted/30">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm font-bold flex-shrink-0">
                         {c.name?.[0]?.toUpperCase()}
                       </div>
                       <div>
                         <p className="font-medium text-sm">{c.name}</p>
-                        <p className="text-xs text-muted-foreground">{c.contact_email}</p>
+                        <p className="text-xs text-muted-foreground">{c.contact_email || c.nif}</p>
                       </div>
                     </div>
                   </TableCell>

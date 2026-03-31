@@ -74,9 +74,8 @@ export default function Recommendations() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Recommendations</h1>
-        <p className="text-muted-foreground text-sm mt-1">AI-generated improvement recommendations</p>
+      <div className="flex items-center justify-between">
+        <p className="text-muted-foreground text-sm">AI-generated improvement recommendations · <span className="text-foreground font-medium">{recommendations.length}</span> total</p>
       </div>
 
       {/* Filters */}

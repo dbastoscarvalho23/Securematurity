@@ -43,12 +43,9 @@ export default function Assessments() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Assessments</h1>
-          <p className="text-muted-foreground text-sm mt-1">Maturity assessments across frameworks</p>
-        </div>
-        <Button onClick={() => setShowNew(true)}>
-          <Plus className="w-4 h-4 mr-2" /> New Assessment
+        <p className="text-muted-foreground text-sm">Maturity assessments across frameworks</p>
+        <Button onClick={() => setShowNew(true)} className="gap-2">
+          <Plus className="w-4 h-4" /> New Assessment
         </Button>
       </div>
 
@@ -91,40 +88,43 @@ export default function Assessments() {
                   </TableCell>
                 </TableRow>
               ) : filtered.map(a => (
-                <TableRow key={a.id} className="group">
+                <TableRow key={a.id} className="group cursor-pointer hover:bg-muted/30">
                   <TableCell>
                     <Link to={`/assessments/${a.id}`} className="font-medium text-sm hover:text-primary transition-colors">
                       {a.title}
                     </Link>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {a.created_date ? format(new Date(a.created_date), 'MMM d, yyyy') : ''}
                     </p>
                   </TableCell>
-                  <TableCell className="text-sm">{a.customer_name}</TableCell>
-                  <TableCell className="text-sm font-mono">{a.period}</TableCell>
+                  <TableCell className="text-sm font-medium">{a.customer_name}</TableCell>
+                  <TableCell className="text-sm font-mono text-muted-foreground">{a.period}</TableCell>
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
                       {(a.frameworks || []).map(f => (
-                        <Badge key={f} variant="outline" className="text-xs">{f.replace('_', ' ')}</Badge>
+                        <Badge key={f} variant="outline" className="text-xs">{f.replace(/_/g, ' ')}</Badge>
                       ))}
                     </div>
                   </TableCell>
                   <TableCell>
                     {a.overall_score != null ? (
-                      <span className="font-semibold text-sm">{a.overall_score.toFixed(1)}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-sm">{a.overall_score.toFixed(1)}</span>
+                        <span className="text-xs text-muted-foreground">/5</span>
+                      </div>
                     ) : (
                       <span className="text-muted-foreground text-sm">—</span>
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={cn("text-xs border", statusStyles[a.status])}>
+                    <Badge variant="outline" className={cn("text-xs border capitalize", statusStyles[a.status])}>
                       {a.status?.replace('_', ' ')}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>

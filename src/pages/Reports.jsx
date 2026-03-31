@@ -14,6 +14,7 @@ const FRAMEWORK_NAMES = {
   ISO27001: 'ISO/IEC 27001',
   NIST_CSF: 'NIST CSF',
   CIS_V8: 'CIS Controls v8',
+  QNRC: 'QNRC',
 };
 
 export default function Reports() {
@@ -62,10 +63,7 @@ export default function Reports() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Reports & Analytics</h1>
-          <p className="text-muted-foreground text-sm mt-1">Historical comparison and maturity trends</p>
-        </div>
+        <p className="text-muted-foreground text-sm">Historical comparison and maturity trends</p>
         <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
           <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
           <SelectContent>

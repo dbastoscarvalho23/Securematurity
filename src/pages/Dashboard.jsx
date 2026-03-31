@@ -13,6 +13,7 @@ const FRAMEWORK_NAMES = {
   ISO27001: 'ISO/IEC 27001',
   NIST_CSF: 'NIST CSF',
   CIS_V8: 'CIS Controls v8',
+  QNRC: 'QNRC',
 };
 
 export default function Dashboard() {
@@ -67,11 +68,15 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Cybersecurity & Compliance Maturity Overview
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-muted-foreground text-sm">
+            Cybersecurity & Compliance Maturity Overview
+          </p>
+        </div>
+        <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+          {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        </div>
       </div>
 
       {/* Stats */}

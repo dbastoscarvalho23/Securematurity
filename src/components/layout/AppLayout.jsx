@@ -8,11 +8,11 @@ export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
-      <div className={cn("transition-all duration-300", collapsed ? "ml-16" : "ml-60")}>
+      <div className={cn("flex-1 flex flex-col transition-all duration-300 min-h-screen", collapsed ? "ml-16" : "ml-60")}>
         <TopBar />
-        <main className="p-6">
+        <main className="flex-1 p-6 overflow-auto">
           <Outlet />
         </main>
       </div>

@@ -174,12 +174,9 @@ Return only valid JSON with the translations.`,
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Question Bank</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Manage assessment questions across all frameworks
-          </p>
-        </div>
+        <p className="text-muted-foreground text-sm">
+          Manage assessment questions across all frameworks
+        </p>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleTranslate} disabled={isTranslating} className="gap-2">
             {isTranslating
