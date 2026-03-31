@@ -9,6 +9,8 @@ import MaturityRadar from '@/components/dashboard/MaturityRadar';
 import FrameworkScoreCard from '@/components/dashboard/FrameworkScoreCard';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { exportReportPdf } from '@/lib/exportReportPdf';
+import { useState } from 'react';
 
 const FRAMEWORK_NAMES = {
   NIS2: 'NIS2 / DL 125/2025',
@@ -18,6 +20,7 @@ const FRAMEWORK_NAMES = {
 };
 
 export default function AssessmentResults({ assessment, responses }) {
+  const [isExporting, setIsExporting] = useState(false);
   const { data: recommendations = [] } = useQuery({
     queryKey: ['recommendations', assessment.id],
     queryFn: () => base44.entities.Recommendation.filter({ assessment_id: assessment.id }),
@@ -67,6 +70,18 @@ export default function AssessmentResults({ assessment, responses }) {
             {assessment.customer_name} · {assessment.period} · Score: {assessment.overall_score?.toFixed(1)}/5.0
           </p>
         </div>
+        <Button
+          variant="outline"
+          className="gap-2"
+          disabled={isExporting}
+          onClick={async () => {
+            setIsExporting(true);
+            try { exportReportPdf(assessment, recommendations); } finally { setIsExporting(false); }
+          }}
+        >
+          <Download className="w-4 h-4" />
+          {isExporting ? 'Exporting...' : 'Export PDF'}
+        </Button>
       </div>
 
       {/* Overall Score */}
