@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,8 @@ export default function Settings() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
   const [isInviting, setIsInviting] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [invitedToDelete, setInvitedToDelete] = useState(null);
   const queryClient = useQueryClient();
 
   const deleteUserMutation = useMutation({
@@ -26,6 +29,7 @@ export default function Settings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('User deleted successfully');
+      setUserToDelete(null);
     },
     onError: (err) => {
       toast.error(err?.message || 'Failed to delete user');
@@ -39,6 +43,7 @@ export default function Settings() {
     onSuccess: () => {
       refetchInvited();
       toast.success('Invitation deleted');
+      setInvitedToDelete(null);
     },
     onError: (err) => {
       toast.error(err?.message || 'Failed to delete invitation');
@@ -236,6 +241,49 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
+      {/* Delete User Confirmation */}
+      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{userToDelete?.email}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteUserMutation.mutate(userToDelete?.id)}
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Invitation Confirmation */}
+      <AlertDialog open={!!invitedToDelete} onOpenChange={() => setInvitedToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Invitation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the invitation for <strong>{invitedToDelete?.email}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteInvitedUserMutation.mutate(invitedToDelete?.id)}
+              disabled={deleteInvitedUserMutation.isPending}
+            >
+              {deleteInvitedUserMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
       <div>
         <p className="text-muted-foreground text-sm">Platform configuration and framework management</p>
       </div>
@@ -324,7 +372,7 @@ export default function Settings() {
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => deleteUserMutation.mutate(u.id)}
+                          onClick={() => setUserToDelete(u)}
                           disabled={deleteUserMutation.isPending}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -354,7 +402,7 @@ export default function Settings() {
                             variant="ghost"
                             size="sm"
                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => deleteInvitedUserMutation.mutate(i.id)}
+                            onClick={() => setInvitedToDelete(i)}
                             disabled={deleteInvitedUserMutation.isPending}
                           >
                             <Trash2 className="w-4 h-4" />
