@@ -81,7 +81,7 @@ export default function Reports() {
             Current Framework Scores
             {previous && <span className="text-sm font-normal text-muted-foreground">vs {previous.period}</span>}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {(latest.framework_scores || []).map(fs => {
               const prevScore = previous?.framework_scores?.find(p => p.framework_code === fs.framework_code)?.score;
               return (
