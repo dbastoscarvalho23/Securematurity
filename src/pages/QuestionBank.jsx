@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Search, Pencil, Trash2, Filter, Sparkles } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Filter, Sparkles, ShieldCheck, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,7 @@ export default function QuestionBank() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [isDeduplicating, setIsDeduplicating] = useState(false);
 
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ['questions'],
@@ -72,6 +74,34 @@ export default function QuestionBank() {
     setDialogOpen(true);
   };
 
+  const handleRemoveDuplicates = async () => {
+    const normalize = (str) => str?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
+    const seen = new Set();
+    const toDelete = [];
+
+    for (const q of questions) {
+      const key = normalize(q.question_text);
+      if (seen.has(key)) {
+        toDelete.push(q.id);
+      } else {
+        seen.add(key);
+      }
+    }
+
+    if (toDelete.length === 0) {
+      toast.success('No duplicates found — your question bank is clean!');
+      return;
+    }
+
+    if (!confirm(`Found ${toDelete.length} duplicate question${toDelete.length !== 1 ? 's' : ''}. Delete them now?`)) return;
+
+    setIsDeduplicating(true);
+    await Promise.all(toDelete.map(id => base44.entities.Question.delete(id)));
+    queryClient.invalidateQueries({ queryKey: ['questions'] });
+    setIsDeduplicating(false);
+    toast.success(`Removed ${toDelete.length} duplicate question${toDelete.length !== 1 ? 's' : ''}.`);
+  };
+
   const handleDelete = (q) => {
     if (confirm(`Delete question "${q.question_text.substring(0, 60)}..."?`)) {
       deleteMutation.mutate(q.id);
@@ -88,6 +118,10 @@ export default function QuestionBank() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleRemoveDuplicates} disabled={isDeduplicating} className="gap-2">
+            {isDeduplicating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+            Remove Duplicates
+          </Button>
           <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="gap-2">
             <Sparkles className="w-4 h-4" /> AI Generate
           </Button>
