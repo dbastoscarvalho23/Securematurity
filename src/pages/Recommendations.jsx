@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Lightbulb, Filter, ListTodo } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Lightbulb, Filter, ListTodo, Sparkles } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import TaskFormDialog from '@/components/tasks/TaskFormDialog';
+import AIRecommendationDialog from '@/components/recommendations/AIRecommendationDialog';
 import { toast } from 'sonner';
 
 const priorityColors = {
@@ -24,11 +25,17 @@ export default function Recommendations() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [taskDialog, setTaskDialog] = useState(false);
   const [prefillTask, setPrefillTask] = useState(null);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: recommendations = [] } = useQuery({
     queryKey: ['recommendations'],
     queryFn: () => base44.entities.Recommendation.list('-created_date', 200),
+  });
+
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers'],
+    queryFn: () => base44.entities.Customer.list(),
   });
 
   const updateMutation = useMutation({
@@ -76,6 +83,10 @@ export default function Recommendations() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-sm">AI-generated improvement recommendations · <span className="text-foreground font-medium">{recommendations.length}</span> total</p>
+        <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
+          <Sparkles className="w-4 h-4" />
+          AI Generate
+        </Button>
       </div>
 
       {/* Filters */}
@@ -162,6 +173,17 @@ export default function Recommendations() {
         onOpenChange={setTaskDialog}
         task={prefillTask}
         onSave={(form) => createTaskMutation.mutateAsync(form)}
+      />
+
+      <AIRecommendationDialog
+        open={aiDialogOpen}
+        onOpenChange={setAiDialogOpen}
+        customers={customers}
+        onSave={async (recs) => {
+          await base44.entities.Recommendation.bulkCreate(recs);
+          queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+          toast.success(`${recs.length} recommendation${recs.length !== 1 ? 's' : ''} added`);
+        }}
       />
 
       {filtered.length === 0 && (
