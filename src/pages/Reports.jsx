@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import MaturityRadar from '@/components/dashboard/MaturityRadar';
 import TrendChart from '@/components/dashboard/TrendChart';
 import FrameworkScoreCard from '@/components/dashboard/FrameworkScoreCard';
-import { BarChart3, TrendingUp } from 'lucide-react';
+import { BarChart3, TrendingUp, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 
 const FRAMEWORK_NAMES = {
   NIS2: 'NIS2 / DL 125/2025',
@@ -17,8 +17,101 @@ const FRAMEWORK_NAMES = {
   QNRC: 'QNRC',
 };
 
+const MATURITY_LABELS = ['Not Implemented', 'Initial', 'Developing', 'Defined', 'Managed', 'Optimizing'];
+
+const MATURITY_COLORS = [
+  'bg-destructive/10 text-destructive',
+  'bg-chart-4/10 text-chart-4',
+  'bg-chart-3/10 text-chart-3',
+  'bg-chart-1/10 text-chart-1',
+  'bg-accent/10 text-accent',
+  'bg-accent/20 text-accent',
+];
+
+function AssessmentAnswersPanel({ assessmentId }) {
+  const { data: responses = [], isLoading } = useQuery({
+    queryKey: ['responses', assessmentId],
+    queryFn: () => base44.entities.AssessmentResponse.filter({ assessment_id: assessmentId }),
+  });
+
+  const { data: questions = [] } = useQuery({
+    queryKey: ['questions'],
+    queryFn: () => base44.entities.Question.list('-order_index', 500),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8 text-muted-foreground">
+        <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading answers...
+      </div>
+    );
+  }
+
+  if (responses.length === 0) {
+    return <p className="text-sm text-muted-foreground text-center py-6">No answers recorded for this assessment.</p>;
+  }
+
+  // Group by framework then domain
+  const grouped = {};
+  responses.forEach(r => {
+    const fw = r.framework_code || 'Other';
+    const domain = r.domain || 'General';
+    if (!grouped[fw]) grouped[fw] = {};
+    if (!grouped[fw][domain]) grouped[fw][domain] = [];
+    grouped[fw][domain].push(r);
+  });
+
+  return (
+    <div className="mt-4 space-y-5">
+      {Object.entries(grouped).map(([fw, domains]) => (
+        <div key={fw}>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            {FRAMEWORK_NAMES[fw] || fw}
+          </p>
+          <div className="space-y-4">
+            {Object.entries(domains).map(([domain, items]) => (
+              <div key={domain}>
+                <p className="text-xs font-medium text-foreground mb-1.5 pl-1 border-l-2 border-primary">{domain}</p>
+                <div className="space-y-2">
+                  {items.map(r => {
+                    const question = questions.find(q => q.id === r.question_id);
+                    const level = r.maturity_level ?? null;
+                    return (
+                      <div key={r.id} className="flex items-start gap-3 p-3 rounded-md bg-muted/40 border text-sm">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium leading-snug">
+                            {question?.question_text || r.control_id || 'Question'}
+                          </p>
+                          {r.evidence_notes && (
+                            <p className="text-xs text-muted-foreground mt-1 italic">"{r.evidence_notes}"</p>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0 flex flex-col items-end gap-1">
+                          {level !== null && (
+                            <Badge className={`text-xs ${MATURITY_COLORS[level] || ''}`}>
+                              {level} — {MATURITY_LABELS[level] || ''}
+                            </Badge>
+                          )}
+                          {r.control_id && (
+                            <span className="text-xs font-mono text-muted-foreground">{r.control_id}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Reports() {
   const [selectedCustomer, setSelectedCustomer] = useState('all');
+  const [expandedId, setExpandedId] = useState(null);
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -34,23 +127,18 @@ export default function Reports() {
     .filter(a => a.status === 'completed')
     .filter(a => selectedCustomer === 'all' || a.customer_id === selectedCustomer);
 
-  // Build historical comparison
   const trendData = completed
     .slice(0, 10)
     .reverse()
     .map(a => {
       const point = { period: a.period };
-      (a.framework_scores || []).forEach(fs => {
-        point[fs.framework_code] = fs.score;
-      });
+      (a.framework_scores || []).forEach(fs => { point[fs.framework_code] = fs.score; });
       return point;
     });
 
-  // Latest vs previous comparison
   const latest = completed[0];
   const previous = completed[1];
 
-  // Radar data from latest
   const radarData = [];
   if (latest?.framework_scores) {
     latest.framework_scores.forEach(fs => {
@@ -101,11 +189,7 @@ export default function Reports() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <MaturityRadar data={radarData} title="Domain Coverage Analysis" />
-        <TrendChart
-          data={trendData}
-          frameworks={Object.keys(FRAMEWORK_NAMES)}
-          title="Maturity Evolution"
-        />
+        <TrendChart data={trendData} frameworks={Object.keys(FRAMEWORK_NAMES)} title="Maturity Evolution" />
       </div>
 
       {/* Assessment History */}
@@ -120,25 +204,42 @@ export default function Reports() {
           {completed.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">No completed assessments to report on.</p>
           ) : (
-            <div className="space-y-3">
-              {completed.map(a => (
-                <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="text-sm font-medium">{a.title}</p>
-                    <p className="text-xs text-muted-foreground">{a.customer_name} · {a.period}</p>
+            <div className="space-y-2">
+              {completed.map(a => {
+                const isOpen = expandedId === a.id;
+                return (
+                  <div key={a.id} className="rounded-lg border overflow-hidden">
+                    <button
+                      className="w-full flex items-center justify-between p-3 hover:bg-muted/40 transition-colors text-left"
+                      onClick={() => setExpandedId(isOpen ? null : a.id)}
+                    >
+                      <div>
+                        <p className="text-sm font-medium">{a.title}</p>
+                        <p className="text-xs text-muted-foreground">{a.customer_name} · {a.period}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex gap-2 flex-wrap justify-end">
+                          {(a.framework_scores || []).map(fs => (
+                            <Badge key={fs.framework_code} variant="outline" className="text-xs font-mono">
+                              {fs.framework_code}: {fs.score.toFixed(1)}
+                            </Badge>
+                          ))}
+                        </div>
+                        <span className="text-lg font-bold">{a.overall_score?.toFixed(1)}</span>
+                        {isOpen
+                          ? <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          : <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        }
+                      </div>
+                    </button>
+                    {isOpen && (
+                      <div className="px-4 pb-4 border-t bg-muted/20">
+                        <AssessmentAnswersPanel assessmentId={a.id} />
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex gap-2">
-                      {(a.framework_scores || []).map(fs => (
-                        <Badge key={fs.framework_code} variant="outline" className="text-xs font-mono">
-                          {fs.framework_code}: {fs.score.toFixed(1)}
-                        </Badge>
-                      ))}
-                    </div>
-                    <span className="text-lg font-bold">{a.overall_score?.toFixed(1)}</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
