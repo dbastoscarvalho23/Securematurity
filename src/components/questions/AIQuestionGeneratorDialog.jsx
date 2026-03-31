@@ -14,6 +14,7 @@ const FRAMEWORKS = [
   { code: 'ISO27001', name: 'ISO 27001' },
   { code: 'NIST_CSF', name: 'NIST CSF' },
   { code: 'CIS_V8', name: 'CIS v8' },
+  { code: 'QNRC', name: 'QNRC' },
 ];
 
 const FRAMEWORK_COLORS = {
@@ -21,6 +22,7 @@ const FRAMEWORK_COLORS = {
   ISO27001: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
   NIST_CSF: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
   CIS_V8: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
+  QNRC: 'bg-chart-5/10 text-chart-5 border-chart-5/20',
 };
 
 export default function AIQuestionGeneratorDialog({ open, onOpenChange, existingQuestions, onSave }) {
