@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth } from '@/lib/AuthContext';
 
 const navGroups = [
   {
@@ -50,6 +51,8 @@ const navGroups = [
 
 export default function Sidebar({ collapsed, onToggle }) {
   const location = useLocation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -72,7 +75,7 @@ export default function Sidebar({ collapsed, onToggle }) {
 
         {/* Navigation */}
         <nav className="flex-1 py-3 px-2 overflow-y-auto space-y-4">
-          {navGroups.map((group) => (
+          {navGroups.filter(g => g.label !== 'Tools' || isAdmin).map((group) => (
             <div key={group.label}>
               {!collapsed && (
                 <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30">
