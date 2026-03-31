@@ -17,6 +17,7 @@ import AuditLog from '@/pages/AuditLog';
 import Settings from '@/pages/Settings';
 import QuestionBank from '@/pages/QuestionBank';
 import Tasks from '@/pages/Tasks';
+import ActionPlan from '@/pages/ActionPlan';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,6 +57,7 @@ const AuthenticatedApp = () => {
         <Route path="/settings" element={<Settings />} />
         <Route path="/question-bank" element={<QuestionBank />} />
         <Route path="/tasks" element={<Tasks />} />
+        <Route path="/action-plan" element={<ActionPlan />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

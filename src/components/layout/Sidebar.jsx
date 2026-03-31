@@ -13,7 +13,8 @@ import {
   ScrollText,
   Shield,
   BookOpen,
-  ListTodo
+  ListTodo,
+  Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -32,6 +33,7 @@ const navGroups = [
     items: [
       { path: '/question-bank', label: 'Question Bank', icon: BookOpen },
       { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
+      { path: '/action-plan', label: 'Action Plan', icon: Target },
       { path: '/tasks', label: 'Tasks', icon: ListTodo },
       { path: '/reports', label: 'Reports', icon: BarChart3 },
     ]
