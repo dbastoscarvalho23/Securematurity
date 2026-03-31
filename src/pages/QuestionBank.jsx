@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Search, Pencil, Trash2, Filter } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Filter, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import QuestionFormDialog from '@/components/questions/QuestionFormDialog';
+import AIQuestionGeneratorDialog from '@/components/questions/AIQuestionGeneratorDialog';
 
 const FRAMEWORKS = [
   { code: 'NIS2', name: 'NIS2' },
@@ -31,6 +32,7 @@ export default function QuestionBank() {
   const [filterDomain, setFilterDomain] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
 
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ['questions'],
@@ -85,9 +87,14 @@ export default function QuestionBank() {
             Manage assessment questions across all frameworks
           </p>
         </div>
-        <Button onClick={handleNew} className="gap-2">
-          <Plus className="w-4 h-4" /> New Question
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="gap-2">
+            <Sparkles className="w-4 h-4" /> AI Generate
+          </Button>
+          <Button onClick={handleNew} className="gap-2">
+            <Plus className="w-4 h-4" /> New Question
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -210,6 +217,16 @@ export default function QuestionBank() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         question={editingQuestion}
+      />
+
+      <AIQuestionGeneratorDialog
+        open={aiDialogOpen}
+        onOpenChange={setAiDialogOpen}
+        existingQuestions={questions}
+        onSave={async (newQuestions) => {
+          await base44.entities.Question.bulkCreate(newQuestions);
+          queryClient.invalidateQueries({ queryKey: ['questions'] });
+        }}
       />
     </div>
   );
