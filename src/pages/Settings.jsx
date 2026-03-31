@@ -37,11 +37,16 @@ export default function Settings() {
     e.preventDefault();
     if (!inviteEmail) return;
     setIsInviting(true);
-    await base44.users.inviteUser(inviteEmail, inviteRole);
-    setInviteEmail('');
-    setInviteRole('user');
-    setIsInviting(false);
-    toast.success(`Invitation sent to ${inviteEmail}`);
+    try {
+      await base44.users.inviteUser(inviteEmail, inviteRole);
+      toast.success(`Invitation sent to ${inviteEmail}`);
+      setInviteEmail('');
+      setInviteRole('user');
+    } catch (err) {
+      toast.error(err?.message || `Failed to send invitation to ${inviteEmail}`);
+    } finally {
+      setIsInviting(false);
+    }
   };
 
   const seedFrameworks = async () => {
