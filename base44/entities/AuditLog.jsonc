@@ -20,6 +20,7 @@
         "customer_updated",
         "customer_deleted",
         "recommendation_generated",
+        "question_generated",
         "report_exported",
         "user_login",
         "settings_changed"

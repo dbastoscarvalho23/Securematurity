@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Sparkles, Loader2, CheckSquare, Square } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
+import { writeAuditLog } from '@/lib/auditLog';
 
 const FRAMEWORKS = [
   { code: 'NIS2', name: 'NIS2' },
@@ -144,6 +145,11 @@ CRITICAL RULES:
     if (toSave.length === 0) return;
     setIsSaving(true);
     await onSave(toSave);
+    await writeAuditLog({
+      action: 'question_generated',
+      entity_type: 'Question',
+      details: `AI generated ${toSave.length} question${toSave.length !== 1 ? 's' : ''} for ${filterFramework === 'all' ? 'all frameworks' : filterFramework}`,
+    });
     setIsSaving(false);
     setSuggestions([]);
     setSelected({});

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Sparkles, Loader2, CheckSquare, Square } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
+import { writeAuditLog } from '@/lib/auditLog';
 
 const FRAMEWORKS = [
   { code: 'NIS2', name: 'NIS2 / DL 125/2025' },
@@ -98,6 +99,12 @@ Include clear titles, detailed descriptions, effort estimates, and suggested tim
     if (toSave.length === 0) return;
     setIsSaving(true);
     await onSave(toSave);
+    const fw = FRAMEWORKS.find(f => f.code === framework);
+    await writeAuditLog({
+      action: 'recommendation_generated',
+      entity_type: 'Recommendation',
+      details: `AI generated ${toSave.length} recommendation${toSave.length !== 1 ? 's' : ''} for ${fw?.name || framework}`,
+    });
     setIsSaving(false);
     setSuggestions([]);
     setSelected({});

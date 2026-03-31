@@ -15,6 +15,7 @@ const actionColors = {
   customer_updated: 'bg-chart-3/10 text-chart-3',
   customer_deleted: 'bg-destructive/10 text-destructive',
   recommendation_generated: 'bg-chart-5/10 text-chart-5',
+  question_generated: 'bg-chart-1/10 text-chart-1',
   report_exported: 'bg-muted text-muted-foreground',
   user_login: 'bg-muted text-muted-foreground',
   settings_changed: 'bg-chart-4/10 text-chart-4',
