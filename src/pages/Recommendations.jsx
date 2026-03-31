@@ -23,6 +23,7 @@ const statusOptions = ['pending', 'in_progress', 'completed', 'dismissed'];
 export default function Recommendations() {
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterFramework, setFilterFramework] = useState('all');
   const [taskDialog, setTaskDialog] = useState(false);
   const [prefillTask, setPrefillTask] = useState(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
@@ -66,9 +67,12 @@ export default function Recommendations() {
     setTaskDialog(true);
   };
 
+  const frameworks = [...new Set(recommendations.map(r => r.framework_code).filter(Boolean))].sort();
+
   const filtered = recommendations.filter(r => {
     if (filterPriority !== 'all' && r.priority !== filterPriority) return false;
     if (filterStatus !== 'all' && r.status !== filterStatus) return false;
+    if (filterFramework !== 'all' && r.framework_code !== filterFramework) return false;
     return true;
   });
 
@@ -108,6 +112,15 @@ export default function Recommendations() {
             <SelectItem value="all">All Statuses</SelectItem>
             {statusOptions.map(s => (
               <SelectItem key={s} value={s} className="capitalize">{s.replace('_', ' ')}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterFramework} onValueChange={setFilterFramework}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="All Frameworks" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Frameworks</SelectItem>
+            {frameworks.map(fw => (
+              <SelectItem key={fw} value={fw}>{fw.replace(/_/g, ' ')}</SelectItem>
             ))}
           </SelectContent>
         </Select>
