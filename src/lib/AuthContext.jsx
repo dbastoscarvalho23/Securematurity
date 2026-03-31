@@ -21,6 +21,8 @@ export const AuthProvider = ({ children }) => {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
+      // Log user login to audit trail
+      await base44.functions.invoke('logUserLogin', {}).catch(() => {});
     } catch (error) {
       setIsAuthenticated(false);
       setUser(null);
