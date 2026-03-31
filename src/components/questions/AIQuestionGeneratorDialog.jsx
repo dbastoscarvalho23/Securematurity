@@ -50,9 +50,23 @@ export default function AIQuestionGeneratorDialog({ open, onOpenChange, existing
       question: q.question_text,
     }));
 
-    const frameworkScope = filterFramework === 'all'
-      ? 'NIS2, ISO27001, NIST CSF, and CIS Controls v8'
-      : filterFramework;
+    const FRAMEWORK_DOMAINS = {
+      NIS2: ['Governance', 'Risk Management', 'Incident Response', 'Business Continuity', 'Supply Chain', 'Access Control', 'Cryptography', 'Physical Security', 'Vulnerability Management'],
+      ISO27001: ['Information Security Policies', 'Organization of Information Security', 'Human Resource Security', 'Asset Management', 'Access Control', 'Cryptography', 'Physical Security', 'Operations Security', 'Communications Security', 'System Acquisition', 'Supplier Relationships', 'Incident Management', 'Business Continuity', 'Compliance'],
+      NIST_CSF: ['Identify (ID)', 'Protect (PR)', 'Detect (DE)', 'Respond (RS)', 'Recover (RC)', 'Govern (GV)'],
+      CIS_V8: ['Inventory & Control', 'Data Protection', 'Secure Configuration', 'Account Management', 'Access Control', 'Vulnerability Management', 'Audit Log Management', 'Email & Web Browser', 'Malware Defenses', 'Network Infrastructure', 'Data Recovery', 'Network Monitoring', 'Security Awareness', 'Application Security', 'Incident Response'],
+      QNRC: ['Identificar — Gestão de Ativos (ID.GA)', 'Identificar — Ambiente de Negócio (ID.AO)', 'Identificar — Governação (ID.GV)', 'Identificar — Avaliação de Risco (ID.AR)', 'Identificar — Estratégia de Gestão de Risco (ID.GR)', 'Identificar — Gestão de Risco na Cadeia de Fornecimento (ID.GL)', 'Proteger — Gestão de Identidades e Acessos (PR.GA)', 'Proteger — Consciencialização e Formação (PR.FC)', 'Proteger — Segurança dos Dados (PR.SD)', 'Proteger — Processos e Procedimentos (PR.PI)', 'Proteger — Manutenção (PR.MA)', 'Proteger — Tecnologia de Proteção (PR.TP)', 'Detetar — Anomalias e Eventos (DE.AE)', 'Detetar — Monitorização Contínua (DE.MC)', 'Detetar — Processos de Deteção (DE.PD)', 'Responder — Planeamento de Resposta (RS.PR)', 'Responder — Comunicações (RS.CO)', 'Responder — Análise (RS.AN)', 'Responder — Mitigação (RS.MI)', 'Responder — Melhorias (RS.ME)', 'Recuperar — Planeamento de Recuperação (RC.PR)', 'Recuperar — Melhorias (RC.ME)', 'Recuperar — Comunicações (RC.CO)'],
+    };
+
+    const frameworksInScope = filterFramework === 'all'
+      ? FRAMEWORKS
+      : FRAMEWORKS.filter(fw => fw.code === filterFramework);
+
+    const frameworkContext = frameworksInScope.map(fw => ({
+      code: fw.code,
+      name: fw.name,
+      valid_domains: FRAMEWORK_DOMAINS[fw.code] || [],
+    }));
 
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `You are a cybersecurity compliance expert. Analyze the following existing assessment questions and identify coverage gaps.
@@ -60,10 +74,16 @@ export default function AIQuestionGeneratorDialog({ open, onOpenChange, existing
 Existing questions:
 ${JSON.stringify(summary, null, 2)}
 
-Based on the above, suggest new questions that fill gaps in coverage for ${frameworkScope}. 
-Focus on important areas not already covered or underrepresented domains.
-Generate 6-10 new, high-quality assessment questions with maturity-scale answer type.
-Each question should assess a specific control or practice not already covered.`,
+Target frameworks for gap analysis:
+${JSON.stringify(frameworkContext, null, 2)}
+
+Generate 6-10 new, high-quality assessment questions that fill coverage gaps.
+CRITICAL RULES:
+- Set "framework_code" to EXACTLY one of the codes listed above (e.g. "QNRC", "NIS2", "ISO27001", "NIST_CSF", "CIS_V8").
+- Set "domain" to EXACTLY one of the valid_domains listed for that framework_code. Do NOT invent new domain names.
+- For QNRC questions, use control_id format like "ID.GA-3", "PR.SD-3", "DE.MC-2", etc. matching the domain prefix.
+- For QNRC questions, provide both English (question_text) and European Portuguese (question_text_pt) translations.
+- Use maturity_scale answer type.`,
       response_json_schema: {
         type: 'object',
         properties: {
