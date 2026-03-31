@@ -33,15 +33,32 @@ export default function Settings() {
     queryFn: () => base44.entities.User.list(),
   });
 
+  const { data: invitedUsers = [], refetch: refetchInvited } = useQuery({
+    queryKey: ['invited-users'],
+    queryFn: () => base44.entities.InvitedUser.list(),
+  });
+
   const handleInvite = async (e) => {
     e.preventDefault();
     if (!inviteEmail) return;
     setIsInviting(true);
     try {
+      const me = await base44.auth.me();
       await base44.users.inviteUser(inviteEmail, inviteRole);
+      // Check if already tracked
+      const alreadyTracked = invitedUsers.find(u => u.email === inviteEmail);
+      if (!alreadyTracked) {
+        await base44.entities.InvitedUser.create({
+          email: inviteEmail,
+          role: inviteRole,
+          status: 'inactive',
+          invited_by: me?.email || '',
+        });
+      }
       toast.success(`Invitation sent to ${inviteEmail}`);
       setInviteEmail('');
       setInviteRole('user');
+      refetchInvited();
     } catch (err) {
       toast.error(err?.message || `Failed to send invitation to ${inviteEmail}`);
     } finally {
@@ -210,7 +227,7 @@ export default function Settings() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Current Users</CardTitle>
-              <CardDescription>{users.length} registered user{users.length !== 1 ? 's' : ''}</CardDescription>
+              <CardDescription>{users.length} registered · {invitedUsers.filter(i => !users.find(u => u.email === i.email)).length} pending invitation</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
@@ -219,6 +236,7 @@ export default function Settings() {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Joined</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -232,11 +250,33 @@ export default function Settings() {
                           {u.role}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        <Badge className="bg-accent/10 text-accent border-accent/20">Active</Badge>
+                      </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
                         {u.created_date ? new Date(u.created_date).toLocaleDateString() : '—'}
                       </TableCell>
                     </TableRow>
                   ))}
+                  {invitedUsers
+                    .filter(i => !users.find(u => u.email === i.email))
+                    .map(i => (
+                      <TableRow key={i.id} className="opacity-60">
+                        <TableCell className="font-medium text-muted-foreground">—</TableCell>
+                        <TableCell className="text-muted-foreground">{i.email}</TableCell>
+                        <TableCell>
+                          <Badge variant={i.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
+                            {i.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          Invited {i.created_date ? new Date(i.created_date).toLocaleDateString() : ''}
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
             </CardContent>

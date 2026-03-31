@@ -1,0 +1,36 @@
+{
+  "name": "InvitedUser",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "Invited user email"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "user",
+        "admin"
+      ],
+      "default": "user",
+      "description": "Assigned role"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "inactive",
+        "active"
+      ],
+      "default": "inactive",
+      "description": "inactive = invited but not yet signed in, active = registered"
+    },
+    "invited_by": {
+      "type": "string",
+      "description": "Email of the admin who sent the invite"
+    }
+  },
+  "required": [
+    "email",
+    "role"
+  ]
+}
