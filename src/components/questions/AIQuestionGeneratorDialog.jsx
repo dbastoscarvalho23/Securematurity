@@ -29,11 +29,13 @@ export default function AIQuestionGeneratorDialog({ open, onOpenChange, existing
   const [suggestions, setSuggestions] = useState([]);
   const [selected, setSelected] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [duplicatesRemoved, setDuplicatesRemoved] = useState(0);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
     setSuggestions([]);
     setSelected({});
+    setDuplicatesRemoved(0);
 
     const filtered = filterFramework === 'all'
       ? existingQuestions
@@ -85,8 +87,22 @@ Each question should assess a specific control or practice not already covered.`
       }
     });
 
-    const qs = result?.questions || [];
+    const rawQs = result?.questions || [];
+
+    // Deduplicate against existing questions using normalized text comparison
+    const normalize = (str) => str?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
+    const existingNormalized = new Set(existingQuestions.map(q => normalize(q.question_text)));
+
+    const qs = rawQs.filter(q => {
+      const norm = normalize(q.question_text);
+      // Also deduplicate within the generated batch itself
+      if (existingNormalized.has(norm)) return false;
+      existingNormalized.add(norm); // prevent duplicates within the batch
+      return true;
+    });
+
     setSuggestions(qs);
+    setDuplicatesRemoved(rawQs.length - qs.length);
     // Select all by default
     const sel = {};
     qs.forEach((_, i) => { sel[i] = true; });
@@ -160,6 +176,11 @@ Each question should assess a specific control or practice not already covered.`
           {/* Suggestions */}
           {suggestions.length > 0 && (
             <div className="space-y-3">
+              {duplicatesRemoved > 0 && (
+                <div className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+                  {duplicatesRemoved} duplicate{duplicatesRemoved !== 1 ? 's' : ''} removed — already exist in your question bank.
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">{suggestions.length} suggested questions</p>
                 <button
