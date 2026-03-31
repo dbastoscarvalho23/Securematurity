@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail } from 'lucide-react';
+import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,6 +18,19 @@ export default function Settings() {
   const [inviteRole, setInviteRole] = useState('user');
   const [isInviting, setIsInviting] = useState(false);
   const queryClient = useQueryClient();
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId) => {
+      await base44.asServiceRole.entities.User.delete(userId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('User deleted successfully');
+    },
+    onError: (err) => {
+      toast.error(err?.message || 'Failed to delete user');
+    }
+  });
 
   const { data: frameworks = [] } = useQuery({
     queryKey: ['frameworks'],
@@ -274,6 +287,7 @@ export default function Settings() {
                     <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Joined</TableHead>
+                    <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -291,6 +305,17 @@ export default function Settings() {
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
                         {u.created_date ? new Date(u.created_date).toLocaleDateString() : '—'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => deleteUserMutation.mutate(u.id)}
+                          disabled={deleteUserMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
