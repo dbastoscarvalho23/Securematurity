@@ -27,6 +27,9 @@ const navGroups = [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/customers', label: 'Customers', icon: Building2 },
       { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
+      { path: '/action-plan', label: 'Action Plan', icon: Target },
+      { path: '/tasks', label: 'Tasks', icon: ListTodo },
+      { path: '/reports', label: 'Reports', icon: BarChart3 },
     ]
   },
   {
@@ -34,9 +37,6 @@ const navGroups = [
     items: [
       { path: '/question-bank', label: 'Question Bank', icon: BookOpen },
       { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
-      { path: '/action-plan', label: 'Action Plan', icon: Target },
-      { path: '/tasks', label: 'Tasks', icon: ListTodo },
-      { path: '/reports', label: 'Reports', icon: BarChart3 },
     ]
   },
   {
