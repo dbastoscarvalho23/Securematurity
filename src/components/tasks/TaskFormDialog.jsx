@@ -6,6 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 
 const DEFAULT_TASK = {
   title: '',
@@ -20,6 +22,16 @@ const DEFAULT_TASK = {
 export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
   const [form, setForm] = useState(DEFAULT_TASK);
   const [saving, setSaving] = useState(false);
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => base44.entities.User.list(),
+  });
+
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers'],
+    queryFn: () => base44.entities.Customer.list(),
+  });
 
   useEffect(() => {
     setForm(task ? { ...DEFAULT_TASK, ...task } : DEFAULT_TASK);
@@ -75,10 +87,34 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
               </Select>
             </div>
           </div>
+          <div className="space-y-1.5">
+            <Label>Customer</Label>
+            <Select value={form.customer_id || ''} onValueChange={v => {
+              const c = customers.find(c => c.id === v);
+              set('customer_id', v);
+              set('customer_name', c?.name || '');
+            }}>
+              <SelectTrigger><SelectValue placeholder="Select customer..." /></SelectTrigger>
+              <SelectContent>
+                {customers.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Assigned To</Label>
-              <Input value={form.assigned_to} onChange={e => set('assigned_to', e.target.value)} placeholder="user@example.com" type="email" />
+              <Select value={form.assigned_to || ''} onValueChange={v => set('assigned_to', v)}>
+                <SelectTrigger><SelectValue placeholder="Select user..." /></SelectTrigger>
+                <SelectContent>
+                  {users.map(u => (
+                    <SelectItem key={u.id} value={u.email}>
+                      {u.display_name || u.full_name || u.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Due Date</Label>
