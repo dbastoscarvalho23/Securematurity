@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Lightbulb, Filter, ListTodo, Sparkles } from 'lucide-react';
+import { Lightbulb, Filter, ListTodo, Sparkles, ShieldCheck, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ export default function Recommendations() {
   const [taskDialog, setTaskDialog] = useState(false);
   const [prefillTask, setPrefillTask] = useState(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -75,6 +76,30 @@ export default function Recommendations() {
     setTaskDialog(true);
   };
 
+  const handleCheckDuplicates = async () => {
+    setIsCheckingDuplicates(true);
+    const normalize = (str) => str?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
+    const seen = new Set();
+    const duplicates = [];
+
+    recommendations.forEach(rec => {
+      const key = normalize(rec.title);
+      if (seen.has(key)) {
+        duplicates.push(rec.id);
+      } else {
+        seen.add(key);
+      }
+    });
+
+    setIsCheckingDuplicates(false);
+
+    if (duplicates.length === 0) {
+      toast.success('No duplicates found — your recommendations are clean!');
+    } else {
+      toast.info(`Found ${duplicates.length} potential duplicate${duplicates.length !== 1 ? 's' : ''}`);
+    }
+  };
+
   const frameworks = [...new Set(recommendations.map(r => r.framework_code).filter(Boolean))].sort();
 
   const filtered = recommendations.filter(r => {
@@ -95,10 +120,16 @@ export default function Recommendations() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-sm">AI-generated improvement recommendations · <span className="text-foreground font-medium">{recommendations.length}</span> total</p>
-        <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
-          <Sparkles className="w-4 h-4" />
-          AI Generate
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleCheckDuplicates} variant="outline" disabled={isCheckingDuplicates} className="gap-2">
+            {isCheckingDuplicates ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+            Check Duplicates
+          </Button>
+          <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
+            <Sparkles className="w-4 h-4" />
+            AI Generate
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
