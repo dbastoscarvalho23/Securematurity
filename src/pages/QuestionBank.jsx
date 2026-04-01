@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Search, Pencil, Trash2, Filter, Sparkles, ShieldCheck, Loader2, Languages } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Sparkles, ShieldCheck, Loader2, Languages } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,9 @@ export default function QuestionBank() {
   const [search, setSearch] = useState('');
   const [filterFramework, setFilterFramework] = useState('all');
   const [filterDomain, setFilterDomain] = useState('all');
+  const [filterControlId, setFilterControlId] = useState('');
+  const [filterWeight, setFilterWeight] = useState('all');
+  const [filterLang, setFilterLang] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
@@ -61,12 +64,15 @@ export default function QuestionBank() {
     return questions.filter(q => {
       const matchFw = filterFramework === 'all' || q.framework_code === filterFramework;
       const matchDomain = filterDomain === 'all' || q.domain === filterDomain;
+      const matchControlId = !filterControlId || q.control_id?.toLowerCase().includes(filterControlId.toLowerCase());
+      const matchWeight = filterWeight === 'all' || String(q.weight || 1) === filterWeight;
+      const matchLang = filterLang === 'all' || (filterLang === 'PT' ? !!q.question_text_pt : !q.question_text_pt);
       const matchSearch = !search || q.question_text?.toLowerCase().includes(search.toLowerCase())
         || q.control_id?.toLowerCase().includes(search.toLowerCase())
         || q.domain?.toLowerCase().includes(search.toLowerCase());
-      return matchFw && matchDomain && matchSearch;
+      return matchFw && matchDomain && matchControlId && matchWeight && matchLang && matchSearch;
     });
-  }, [questions, filterFramework, filterDomain, search]);
+  }, [questions, filterFramework, filterDomain, filterControlId, filterWeight, filterLang, search]);
 
   const handleEdit = (q) => {
     setEditingQuestion(q);
@@ -197,41 +203,16 @@ Return only valid JSON with the translations.`,
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-3">
-            <div className="relative flex-1 min-w-48">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search questions..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={filterFramework} onValueChange={v => { setFilterFramework(v); setFilterDomain('all'); }}>
-              <SelectTrigger className="w-44">
-                <Filter className="w-3 h-3 mr-1" />
-                <SelectValue placeholder="All Frameworks" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Frameworks</SelectItem>
-                {FRAMEWORKS.map(fw => <SelectItem key={fw.code} value={fw.code}>{fw.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={filterDomain} onValueChange={setFilterDomain}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="All Domains" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Domains</SelectItem>
-                {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search questions..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
 
       {/* Stats */}
       <div className="flex gap-4 text-sm text-muted-foreground">
@@ -263,11 +244,74 @@ Return only valid JSON with the translations.`,
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
                   <TableHead>Question</TableHead>
-                  <TableHead className="w-32">Framework</TableHead>
-                  <TableHead className="w-40">Domain</TableHead>
-                  <TableHead className="w-28">Control ID</TableHead>
-                  <TableHead className="w-16">Weight</TableHead>
-                  <TableHead className="w-16">Lang</TableHead>
+                  <TableHead className="w-36">
+                    <div className="space-y-1">
+                      <span>Framework</span>
+                      <Select value={filterFramework} onValueChange={v => { setFilterFramework(v); setFilterDomain('all'); }}>
+                        <SelectTrigger className="h-7 text-xs w-full">
+                          <SelectValue placeholder="All" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          {FRAMEWORKS.map(fw => <SelectItem key={fw.code} value={fw.code}>{fw.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-44">
+                    <div className="space-y-1">
+                      <span>Domain</span>
+                      <Select value={filterDomain} onValueChange={setFilterDomain}>
+                        <SelectTrigger className="h-7 text-xs w-full">
+                          <SelectValue placeholder="All" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-32">
+                    <div className="space-y-1">
+                      <span>Control ID</span>
+                      <Input
+                        value={filterControlId}
+                        onChange={e => setFilterControlId(e.target.value)}
+                        placeholder="Filter..."
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-20">
+                    <div className="space-y-1">
+                      <span>Weight</span>
+                      <Select value={filterWeight} onValueChange={setFilterWeight}>
+                        <SelectTrigger className="h-7 text-xs w-full">
+                          <SelectValue placeholder="All" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          {[1, 2, 3, 4, 5].map(w => <SelectItem key={w} value={String(w)}>{w}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-20">
+                    <div className="space-y-1">
+                      <span>Language</span>
+                      <Select value={filterLang} onValueChange={setFilterLang}>
+                        <SelectTrigger className="h-7 text-xs w-full">
+                          <SelectValue placeholder="All" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="PT">PT ✓</SelectItem>
+                          <SelectItem value="EN">EN only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </TableHead>
                   <TableHead className="w-20">Actions</TableHead>
                 </TableRow>
               </TableHeader>
