@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -131,15 +132,24 @@ export default function ActionPlan() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [prefillTask, setPrefillTask] = useState(null);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const customerId = user?.customer_id;
 
   const { data: recommendations = [] } = useQuery({
-    queryKey: ['recommendations'],
-    queryFn: () => base44.entities.Recommendation.list('-created_date', 200),
+    queryKey: ['recommendations', customerId],
+    queryFn: () => isAdmin
+      ? base44.entities.Recommendation.list('-created_date', 200)
+      : base44.entities.Recommendation.filter({ customer_id: customerId }, '-created_date', 200),
+    enabled: isAdmin || !!customerId,
   });
 
   const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list('-created_date', 200),
+    queryKey: ['tasks', customerId],
+    queryFn: () => isAdmin
+      ? base44.entities.Task.list('-created_date', 200)
+      : base44.entities.Task.filter({ customer_id: customerId }, '-created_date', 200),
+    enabled: isAdmin || !!customerId,
   });
 
   const saveMutation = useMutation({

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Lightbulb, Filter, ListTodo, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,15 +29,22 @@ export default function Recommendations() {
   const [prefillTask, setPrefillTask] = useState(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const customerId = user?.customer_id;
 
   const { data: recommendations = [] } = useQuery({
-    queryKey: ['recommendations'],
-    queryFn: () => base44.entities.Recommendation.list('-created_date', 200),
+    queryKey: ['recommendations', customerId],
+    queryFn: () => isAdmin
+      ? base44.entities.Recommendation.list('-created_date', 200)
+      : base44.entities.Recommendation.filter({ customer_id: customerId }, '-created_date', 200),
+    enabled: isAdmin || !!customerId,
   });
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
     queryFn: () => base44.entities.Customer.list(),
+    enabled: isAdmin,
   });
 
   const updateMutation = useMutation({

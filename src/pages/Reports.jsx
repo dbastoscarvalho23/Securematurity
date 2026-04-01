@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -111,22 +112,30 @@ function AssessmentAnswersPanel({ assessmentId }) {
 }
 
 export default function Reports() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const customerId = user?.customer_id;
+
   const [selectedCustomer, setSelectedCustomer] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
     queryFn: () => base44.entities.Customer.list(),
+    enabled: isAdmin,
   });
 
   const { data: assessments = [] } = useQuery({
-    queryKey: ['assessments'],
-    queryFn: () => base44.entities.Assessment.list('-created_date', 100),
+    queryKey: ['assessments', customerId],
+    queryFn: () => isAdmin
+      ? base44.entities.Assessment.list('-created_date', 100)
+      : base44.entities.Assessment.filter({ customer_id: customerId }, '-created_date', 100),
+    enabled: isAdmin || !!customerId,
   });
 
   const completed = assessments
     .filter(a => a.status === 'completed')
-    .filter(a => selectedCustomer === 'all' || a.customer_id === selectedCustomer);
+    .filter(a => !isAdmin || selectedCustomer === 'all' || a.customer_id === selectedCustomer);
 
   const trendData = completed
     .slice(0, 10)
@@ -153,13 +162,15 @@ export default function Reports() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-sm">Historical comparison and maturity trends</p>
-        <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-          <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Customers</SelectItem>
-            {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        {isAdmin && (
+          <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
+            <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Customers</SelectItem>
+              {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Current vs Previous */}

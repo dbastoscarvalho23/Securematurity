@@ -27,12 +27,14 @@ export default function Assessments() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const customerId = user?.customer_id;
 
   const { data: assessments = [], isLoading } = useQuery({
-    queryKey: ['assessments', user?.email],
+    queryKey: ['assessments', user?.email, customerId],
     queryFn: () => isAdmin
       ? base44.entities.Assessment.list('-created_date')
-      : base44.entities.Assessment.filter({ assessor_email: user?.email }, '-created_date'),
+      : base44.entities.Assessment.filter({ customer_id: customerId }, '-created_date'),
+    enabled: isAdmin || !!customerId,
   });
 
   const deleteMutation = useMutation({

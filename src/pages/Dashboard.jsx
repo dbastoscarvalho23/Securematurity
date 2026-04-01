@@ -20,6 +20,7 @@ const FRAMEWORK_NAMES = {
 export default function Dashboard() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const customerId = user?.customer_id;
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -28,18 +29,19 @@ export default function Dashboard() {
   });
 
   const { data: assessments = [] } = useQuery({
-    queryKey: ['assessments', user?.email],
+    queryKey: ['assessments', user?.email, customerId],
     queryFn: () => isAdmin
       ? base44.entities.Assessment.list('-created_date', 50)
-      : base44.entities.Assessment.filter({ assessor_email: user?.email }, '-created_date', 50),
+      : base44.entities.Assessment.filter({ customer_id: customerId }, '-created_date', 50),
+    enabled: isAdmin || !!customerId,
   });
 
   const { data: recommendations = [] } = useQuery({
-    queryKey: ['recommendations', user?.email],
+    queryKey: ['recommendations', user?.email, customerId],
     queryFn: () => isAdmin
       ? base44.entities.Recommendation.list('-created_date', 50)
-      : base44.entities.Recommendation.filter({ assessment_id: { $in: assessments.map(a => a.id) } }, '-created_date', 50),
-    enabled: isAdmin || assessments.length >= 0,
+      : base44.entities.Recommendation.filter({ customer_id: customerId }, '-created_date', 50),
+    enabled: isAdmin || !!customerId,
   });
 
   const completedAssessments = assessments.filter(a => a.status === 'completed');
