@@ -12,20 +12,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import QuestionFormDialog from '@/components/questions/QuestionFormDialog';
 import AIQuestionGeneratorDialog from '@/components/questions/AIQuestionGeneratorDialog';
 
-const FRAMEWORKS = [
-  { code: 'NIS2', name: 'NIS2' },
-  { code: 'ISO27001', name: 'ISO 27001' },
-  { code: 'NIST_CSF', name: 'NIST CSF' },
-  { code: 'CIS_V8', name: 'CIS v8' },
-  { code: 'QNRC', name: 'QNRC' },
-];
-
 const FRAMEWORK_COLORS = {
   NIS2: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
   ISO27001: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
   NIST_CSF: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
   CIS_V8: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
   QNRC: 'bg-chart-5/10 text-chart-5 border-chart-5/20',
+  GDPR: 'bg-blue-100/10 text-blue-600 border-blue-600/20',
 };
 
 export default function QuestionBank() {
@@ -46,6 +39,11 @@ export default function QuestionBank() {
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ['questions'],
     queryFn: () => base44.entities.Question.list('order_index', 500),
+  });
+
+  const { data: allFrameworks = [] } = useQuery({
+    queryKey: ['frameworks'],
+    queryFn: () => base44.entities.Framework.list(),
   });
 
   const deleteMutation = useMutation({
@@ -215,13 +213,13 @@ Return only valid JSON with the translations.`,
       </div>
 
       {/* Stats */}
-      <div className="flex gap-4 text-sm text-muted-foreground">
+      <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
         <span>Showing <strong className="text-foreground">{filtered.length}</strong> of {questions.length} questions</span>
-        {FRAMEWORKS.map(fw => {
+        {allFrameworks.map(fw => {
           const count = questions.filter(q => q.framework_code === fw.code).length;
           return count > 0 ? (
             <span key={fw.code}>
-              <Badge variant="outline" className={`text-xs ${FRAMEWORK_COLORS[fw.code]}`}>{fw.name}</Badge>
+              <Badge variant="outline" className={`text-xs ${FRAMEWORK_COLORS[fw.code] || 'bg-muted/10 text-muted-foreground border-muted'}`}>{fw.name}</Badge>
               {' '}{count}
             </span>
           ) : null;
@@ -253,7 +251,7 @@ Return only valid JSON with the translations.`,
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All</SelectItem>
-                          {FRAMEWORKS.map(fw => <SelectItem key={fw.code} value={fw.code}>{fw.name}</SelectItem>)}
+                          {allFrameworks.map(fw => <SelectItem key={fw.code} value={fw.code}>{fw.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
