@@ -35,7 +35,7 @@ const adminNavGroups = [
     label: 'Tools',
     items: [
       { path: '/action-plan', label: 'Action Plan', icon: Target },
-      { path: '/question-bank', label: 'Question Bank', icon: BookOpen },
+      { path: '/question-bank', label: 'Question DB', icon: BookOpen },
       { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
     ]
   },

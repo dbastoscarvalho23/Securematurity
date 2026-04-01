@@ -27,7 +27,7 @@ const PAGE_TITLES = {
   '/': 'Dashboard',
   '/customers': 'Customers',
   '/assessments': 'Assessments',
-  '/question-bank': 'Question Bank',
+  '/question-bank': 'Question DB',
   '/recommendations': 'Recommendations',
   '/tasks': 'Tasks',
   '/action-plan': 'Action Plan',
