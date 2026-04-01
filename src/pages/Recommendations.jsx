@@ -162,11 +162,7 @@ export default function Recommendations() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-sm">AI-generated improvement recommendations · <span className="text-foreground font-medium">{recommendations.length}</span> total</p>
-        <div className="flex gap-2">
-          <Button onClick={() => setNewRecDialog(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            New Recommendation
-          </Button>
+        <div className="flex gap-2 items-center">
           <Button onClick={handleCheckDuplicates} variant="outline" disabled={isCheckingDuplicates} className="gap-2">
             {isCheckingDuplicates ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
             Check Duplicates
@@ -174,6 +170,10 @@ export default function Recommendations() {
           <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
             <Sparkles className="w-4 h-4" />
             AI Generate
+          </Button>
+          <Button onClick={() => setNewRecDialog(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            New Recommendation
           </Button>
         </div>
       </div>
