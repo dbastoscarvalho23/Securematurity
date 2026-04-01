@@ -48,7 +48,7 @@ export default function TopBar() {
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
   )?.[1] || 'CyberMaturity';
 
-  const displayName = user?.display_name || user?.full_name || user?.email || 'User';
+  const displayName = user?.full_name || user?.email || 'User';
   const initials = displayName
     ? displayName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : 'U';
