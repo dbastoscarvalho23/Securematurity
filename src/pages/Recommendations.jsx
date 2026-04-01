@@ -2,10 +2,14 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Lightbulb, Filter, ListTodo, Sparkles, ShieldCheck, Loader2 } from 'lucide-react';
+import { Lightbulb, Filter, ListTodo, Sparkles, ShieldCheck, Loader2, Plus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import TaskFormDialog from '@/components/tasks/TaskFormDialog';
@@ -29,6 +33,19 @@ export default function Recommendations() {
   const [prefillTask, setPrefillTask] = useState(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+  const [newRecDialog, setNewRecDialog] = useState(false);
+  const [newRecForm, setNewRecForm] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+    framework_code: '',
+    domain: '',
+    control_id: '',
+    effort: 'medium',
+    timeline: 'short_term',
+    current_level: 0,
+    target_level: 4,
+  });
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -58,6 +75,31 @@ export default function Recommendations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task created from recommendation');
+    },
+  });
+
+  const createRecMutation = useMutation({
+    mutationFn: (data) => base44.entities.Recommendation.create({
+      ...data,
+      customer_id: customerId || data.customer_id,
+      status: 'pending',
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+      setNewRecDialog(false);
+      setNewRecForm({
+        title: '',
+        description: '',
+        priority: 'medium',
+        framework_code: '',
+        domain: '',
+        control_id: '',
+        effort: 'medium',
+        timeline: 'short_term',
+        current_level: 0,
+        target_level: 4,
+      });
+      toast.success('Recommendation created');
     },
   });
 
@@ -121,6 +163,10 @@ export default function Recommendations() {
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-sm">AI-generated improvement recommendations · <span className="text-foreground font-medium">{recommendations.length}</span> total</p>
         <div className="flex gap-2">
+          <Button onClick={() => setNewRecDialog(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            New Recommendation
+          </Button>
           <Button onClick={handleCheckDuplicates} variant="outline" disabled={isCheckingDuplicates} className="gap-2">
             {isCheckingDuplicates ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
             Check Duplicates
@@ -237,6 +283,125 @@ export default function Recommendations() {
           toast.success(`${recs.length} recommendation${recs.length !== 1 ? 's' : ''} added`);
         }}
       />
+
+      <Dialog open={newRecDialog} onOpenChange={setNewRecDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New Recommendation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Title *</Label>
+              <Input
+                value={newRecForm.title}
+                onChange={e => setNewRecForm(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Recommendation title"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Description *</Label>
+              <Textarea
+                value={newRecForm.description}
+                onChange={e => setNewRecForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Detailed description"
+                rows={3}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Priority</Label>
+                <Select value={newRecForm.priority} onValueChange={v => setNewRecForm(prev => ({ ...prev, priority: v }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="critical">Critical</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Framework</Label>
+                <Select value={newRecForm.framework_code} onValueChange={v => setNewRecForm(prev => ({ ...prev, framework_code: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {frameworks.map(fw => (
+                      <SelectItem key={fw} value={fw}>{fw}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Effort</Label>
+                <Select value={newRecForm.effort} onValueChange={v => setNewRecForm(prev => ({ ...prev, effort: v }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Timeline</Label>
+                <Select value={newRecForm.timeline} onValueChange={v => setNewRecForm(prev => ({ ...prev, timeline: v }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="immediate">Immediate</SelectItem>
+                    <SelectItem value="short_term">Short Term</SelectItem>
+                    <SelectItem value="medium_term">Medium Term</SelectItem>
+                    <SelectItem value="long_term">Long Term</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Domain</Label>
+                <Input
+                  value={newRecForm.domain}
+                  onChange={e => setNewRecForm(prev => ({ ...prev, domain: e.target.value }))}
+                  placeholder="e.g. Access Control"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Control ID</Label>
+                <Input
+                  value={newRecForm.control_id}
+                  onChange={e => setNewRecForm(prev => ({ ...prev, control_id: e.target.value }))}
+                  placeholder="e.g. A.5.1"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewRecDialog(false)}>Cancel</Button>
+            <Button onClick={() => createRecMutation.mutate(newRecForm)} disabled={createRecMutation.isPending || !newRecForm.title || !newRecForm.description}>
+              {createRecMutation.isPending ? 'Creating...' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {filtered.length === 0 && (
         <Card>
