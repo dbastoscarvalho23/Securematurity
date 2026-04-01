@@ -219,7 +219,7 @@ Return only valid JSON with the translations.`,
           const count = questions.filter(q => q.framework_code === fw.code).length;
           return count > 0 ? (
             <span key={fw.code}>
-              <Badge variant="outline" className={`text-xs ${FRAMEWORK_COLORS[fw.code] || 'bg-muted/10 text-muted-foreground border-muted'}`}>{fw.name}</Badge>
+              <Badge variant="outline" className={`text-xs ${FRAMEWORK_COLORS[fw.code] || 'bg-muted/10 text-muted-foreground border-muted'}`}>{fw.code}</Badge>
               {' '}{count}
             </span>
           ) : null;
@@ -251,7 +251,7 @@ Return only valid JSON with the translations.`,
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All</SelectItem>
-                          {allFrameworks.map(fw => <SelectItem key={fw.code} value={fw.code}>{fw.name}</SelectItem>)}
+                          {allFrameworks.map(fw => <SelectItem key={fw.code} value={fw.code}>{fw.code}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
