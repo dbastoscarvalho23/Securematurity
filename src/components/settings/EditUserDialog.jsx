@@ -26,6 +26,7 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
     });
   };
 
+
   const isAdmin = currentUserRole === 'admin';
   const targetIsAdmin = user?.role === 'admin';
 
