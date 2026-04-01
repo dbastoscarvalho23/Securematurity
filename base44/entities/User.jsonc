@@ -6,24 +6,15 @@
       "type": "string",
       "enum": [
         "admin",
-        "customer_admin",
-        "user"
+        "user",
+        "customer_admin"
       ],
       "default": "user",
-      "description": "User role: admin = platform admin, customer_admin = customer administrator, user = regular user"
+      "description": "User role"
     },
     "customer_id": {
       "type": "string",
-      "description": "Associated customer ID"
-    },
-    "customer_name": {
-      "type": "string",
-      "description": "Associated customer name (denormalized)"
-    },
-    "display_name": {
-      "type": "string",
-      "description": "Admin-editable display name override"
+      "description": "Reference to Customer (required for user and customer_admin roles)"
     }
-  },
-  "required": []
+  }
 }
