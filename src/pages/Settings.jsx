@@ -98,14 +98,13 @@ export default function Settings() {
     queryFn: () => base44.entities.User.list(),
   });
 
-  // Pre-populate profile fields from the current user record
+  // Pre-populate profile fields directly from the auth context user
   useEffect(() => {
-    const me = users.find(u => u.email === currentUser?.email);
-    if (me) {
-      setProfileName(me.full_name || '');
-      setProfileCustomerId(me.customer_id || '');
+    if (currentUser) {
+      setProfileName(currentUser.full_name || '');
+      setProfileCustomerId(currentUser.customer_id || '');
     }
-  }, [users, currentUser?.email]);
+  }, [currentUser?.email, currentUser?.full_name, currentUser?.customer_id]);
 
   const { data: invitedUsers = [], refetch: refetchInvited } = useQuery({
     queryKey: ['invited-users'],
@@ -396,18 +395,30 @@ export default function Settings() {
                   {currentUser?.role !== 'admin' && (
                     <div className="space-y-1.5">
                       <Label>Associated Customer</Label>
-                      <Select value={profileCustomerId} onValueChange={setProfileCustomerId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a customer..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={null}>— None —</SelectItem>
-                          {customers.map(c => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">Non-admin users must be linked to a customer.</p>
+                      {currentUser?.role === 'customer_admin' ? (
+                        <>
+                          <Select value={profileCustomerId} onValueChange={setProfileCustomerId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a customer..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {customers.map(c => (
+                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">Select the customer you are associated with.</p>
+                        </>
+                      ) : (
+                        <>
+                          <Input
+                            value={currentUser?.customer_name || '—'}
+                            disabled
+                            className="bg-muted/50 text-muted-foreground"
+                          />
+                          <p className="text-xs text-muted-foreground">Contact an admin to change your customer assignment.</p>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
