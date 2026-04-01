@@ -101,10 +101,10 @@ export default function Settings() {
   // Pre-populate profile fields directly from the auth context user
   useEffect(() => {
     if (currentUser) {
-      setProfileName(currentUser.full_name || '');
+      setProfileName(currentUser.display_name || currentUser.full_name || '');
       setProfileCustomerId(currentUser.customer_id || '');
     }
-  }, [currentUser?.email, currentUser?.full_name, currentUser?.customer_id]);
+  }, [currentUser?.email, currentUser?.display_name, currentUser?.full_name, currentUser?.customer_id]);
 
   const { data: invitedUsers = [], refetch: refetchInvited } = useQuery({
     queryKey: ['invited-users'],
@@ -155,7 +155,7 @@ export default function Settings() {
     try {
       const selectedCustomer = customers.find(c => c.id === profileCustomerId);
       await base44.auth.updateMe({
-        full_name: profileName,
+        display_name: profileName,
         customer_id: profileCustomerId || null,
         customer_name: selectedCustomer?.name || null,
       });

@@ -48,7 +48,7 @@ export default function TopBar() {
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
   )?.[1] || 'CyberMaturity';
 
-  const displayName = user?.full_name || user?.email || 'User';
+  const displayName = user?.display_name || user?.full_name || user?.email || 'User';
   const initials = displayName
     ? displayName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : 'U';
@@ -58,7 +58,7 @@ export default function TopBar() {
   const customerName = user?.customer_name;
 
   const openProfile = () => {
-    setName(user?.display_name || user?.full_name || '');
+    setName(user?.display_name || user?.full_name || user?.email || '');
     setProfileOpen(true);
   };
 
@@ -66,7 +66,7 @@ export default function TopBar() {
     e.preventDefault();
     setSaving(true);
     try {
-      await base44.auth.updateMe({ full_name: name });
+      await base44.auth.updateMe({ display_name: name });
       await refreshUser();
       toast.success('Profile updated');
       setProfileOpen(false);
