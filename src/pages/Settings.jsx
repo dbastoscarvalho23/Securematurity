@@ -457,6 +457,7 @@ export default function Settings() {
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="customer_admin">Customer Admin</SelectItem>
                           <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>
                       </Select>
@@ -493,7 +494,7 @@ export default function Settings() {
                           <TableCell className="font-medium">{u.full_name || '—'}</TableCell>
                           <TableCell className="text-muted-foreground text-sm">{u.email}</TableCell>
                           <TableCell className="text-sm">
-                            {u.role === 'admin'
+                            {u.role === 'admin' || u.role === 'customer_admin'
                               ? <span className="text-muted-foreground italic text-xs">N/A (admin)</span>
                               : u.customer_name
                                 ? <Badge variant="outline" className="text-xs">{u.customer_name}</Badge>
@@ -502,7 +503,7 @@ export default function Settings() {
                           </TableCell>
                           <TableCell>
                             <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                              {u.role}
+                              {u.role === 'customer_admin' ? 'Customer Admin' : u.role}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -542,7 +543,7 @@ export default function Settings() {
                             <TableCell className="text-muted-foreground text-xs">—</TableCell>
                             <TableCell>
                               <Badge variant={i.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                                {i.role}
+                                {i.role === 'customer_admin' ? 'Customer Admin' : i.role}
                               </Badge>
                             </TableCell>
                             <TableCell>

@@ -4,22 +4,21 @@
   "properties": {
     "role": {
       "type": "string",
-      "description": "The role of the user in the app",
       "enum": [
         "admin",
+        "customer_admin",
         "user"
-      ]
+      ],
+      "default": "user",
+      "description": "User role: admin = platform admin, customer_admin = customer administrator, user = regular user"
     },
     "customer_id": {
       "type": "string",
-      "description": "Reference to the Customer this user belongs to (required for non-admin users)"
+      "description": "Associated customer ID"
     },
     "customer_name": {
       "type": "string",
-      "description": "Denormalized customer name for display"
+      "description": "Associated customer name (denormalized)"
     }
-  },
-  "required": [
-    "role"
-  ]
+  }
 }
