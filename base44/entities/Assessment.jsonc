@@ -25,15 +25,6 @@
         "type": "string"
       }
     },
-    "language": {
-      "type": "string",
-      "enum": [
-        "en",
-        "pt"
-      ],
-      "default": "en",
-      "description": "Assessment language (English or Portuguese)"
-    },
     "status": {
       "type": "string",
       "enum": [
