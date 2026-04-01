@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -7,19 +7,32 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2 } from 'lucide-react';
+import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
+import EditUserDialog from '@/components/settings/EditUserDialog';
 
 export default function Settings() {
+  const { user: currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
+
   const [isSeeding, setIsSeeding] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
   const [isInviting, setIsInviting] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [invitedToDelete, setInvitedToDelete] = useState(null);
+  const [userToEdit, setUserToEdit] = useState(null);
+
+  // Profile edit state (for current user's own profile)
+  const [profileName, setProfileName] = useState('');
+  const [profileCustomerId, setProfileCustomerId] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
   const queryClient = useQueryClient();
 
   const deleteUserMutation = useMutation({
@@ -50,6 +63,25 @@ export default function Settings() {
     }
   });
 
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ userId, data }) => {
+      await base44.asServiceRole.entities.User.update(userId, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('User updated successfully');
+      setUserToEdit(null);
+    },
+    onError: (err) => {
+      toast.error(err?.message || 'Failed to update user');
+    }
+  });
+
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers'],
+    queryFn: () => base44.entities.Customer.list(),
+  });
+
   const { data: frameworks = [] } = useQuery({
     queryKey: ['frameworks'],
     queryFn: () => base44.entities.Framework.list(),
@@ -64,6 +96,15 @@ export default function Settings() {
     queryKey: ['users'],
     queryFn: () => base44.entities.User.list(),
   });
+
+  // Pre-populate profile fields from the current user record
+  useEffect(() => {
+    const me = users.find(u => u.email === currentUser?.email);
+    if (me) {
+      setProfileName(me.full_name || '');
+      setProfileCustomerId(me.customer_id || '');
+    }
+  }, [users, currentUser?.email]);
 
   const { data: invitedUsers = [], refetch: refetchInvited } = useQuery({
     queryKey: ['invited-users'],
@@ -103,6 +144,28 @@ export default function Settings() {
     if (score >= 3) return { label: 'Moderate', color: 'text-chart-3' };
     if (score >= 2) return { label: 'Elevated', color: 'text-chart-4' };
     return { label: 'High Risk', color: 'text-destructive' };
+  };
+
+  // Derive current user's record from the users list
+  const myRecord = users.find(u => u.email === currentUser?.email);
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setIsSavingProfile(true);
+    try {
+      const selectedCustomer = customers.find(c => c.id === profileCustomerId);
+      await base44.auth.updateMe({
+        full_name: profileName,
+        customer_id: profileCustomerId || null,
+        customer_name: selectedCustomer?.name || null,
+      });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Profile updated successfully');
+    } catch (err) {
+      toast.error(err?.message || 'Failed to update profile');
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleInvite = async (e) => {
@@ -284,6 +347,17 @@ export default function Settings() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit User Dialog (admin only) */}
+      <EditUserDialog
+        open={!!userToEdit}
+        onOpenChange={(open) => !open && setUserToEdit(null)}
+        user={userToEdit}
+        customers={customers}
+        currentUserRole={currentUser?.role}
+        isSaving={updateUserMutation.isPending}
+        onSave={(userId, data) => updateUserMutation.mutate({ userId, data })}
+      />
       <div>
         <p className="text-muted-foreground text-sm">Platform configuration and framework management</p>
       </div>
@@ -296,124 +370,206 @@ export default function Settings() {
 
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-4 mt-4">
+
+          {/* My Profile — visible to all users */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <UserPlus className="w-4 h-4" />
-                Invite User
+                <User className="w-4 h-4" />
+                My Profile
               </CardTitle>
-              <CardDescription>Send an invitation to a new user to join the platform.</CardDescription>
+              <CardDescription>Update your display name and linked customer.</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleInvite} className="flex gap-3 items-end">
-                <div className="flex-1 space-y-1.5">
-                  <label className="text-sm font-medium">Email</label>
-                  <Input
-                    type="email"
-                    placeholder="user@example.com"
-                    value={inviteEmail}
-                    onChange={e => setInviteEmail(e.target.value)}
-                    required
-                  />
+              <form onSubmit={handleSaveProfile} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Full Name</Label>
+                    <Input
+                      value={profileName}
+                      onChange={e => setProfileName(e.target.value)}
+                      placeholder="Your full name"
+                    />
+                  </div>
+                  {currentUser?.role !== 'admin' && (
+                    <div className="space-y-1.5">
+                      <Label>Associated Customer</Label>
+                      <Select value={profileCustomerId} onValueChange={setProfileCustomerId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a customer..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={null}>— None —</SelectItem>
+                          {customers.map(c => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">Non-admin users must be linked to a customer.</p>
+                    </div>
+                  )}
                 </div>
-                <div className="w-36 space-y-1.5">
-                  <label className="text-sm font-medium">Role</label>
-                  <Select value={inviteRole} onValueChange={setInviteRole}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex items-center justify-between pt-2 border-t gap-4">
+                  <Button type="submit" disabled={isSavingProfile} size="sm" className="gap-2">
+                    {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                    Save Profile
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => myRecord && setUserToDelete(myRecord)}
+                  >
+                    <Trash2 className="w-4 h-4" /> Delete My Account
+                  </Button>
                 </div>
-                <Button type="submit" disabled={isInviting} className="gap-2">
-                  {isInviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                  {isInviting ? 'Sending...' : 'Send Invite'}
-                </Button>
               </form>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Current Users</CardTitle>
-              <CardDescription>{users.length} registered · {invitedUsers.filter(i => !users.find(u => u.email === i.email)).length} pending invitation</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead className="w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map(u => (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.full_name || '—'}</TableCell>
-                      <TableCell className="text-muted-foreground">{u.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                          {u.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className="bg-accent/10 text-accent border-accent/20">Active</Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-xs">
-                        {u.created_date ? new Date(u.created_date).toLocaleDateString() : '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => setUserToDelete(u)}
-                          disabled={deleteUserMutation.isPending}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {invitedUsers
-                    .filter(i => !users.find(u => u.email === i.email))
-                    .map(i => (
-                      <TableRow key={i.id} className="opacity-60">
-                        <TableCell className="font-medium text-muted-foreground">—</TableCell>
-                        <TableCell className="text-muted-foreground">{i.email}</TableCell>
-                        <TableCell>
-                          <Badge variant={i.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                            {i.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">
-                          Invited {i.created_date ? new Date(i.created_date).toLocaleDateString() : ''}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => setInvitedToDelete(i)}
-                            disabled={deleteInvitedUserMutation.isPending}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
+          {/* Admin-only section */}
+          {isAdmin && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    Invite User
+                  </CardTitle>
+                  <CardDescription>Send an invitation to a new user to join the platform.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleInvite} className="flex gap-3 items-end flex-wrap">
+                    <div className="flex-1 min-w-48 space-y-1.5">
+                      <label className="text-sm font-medium">Email</label>
+                      <Input
+                        type="email"
+                        placeholder="user@example.com"
+                        value={inviteEmail}
+                        onChange={e => setInviteEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="w-36 space-y-1.5">
+                      <label className="text-sm font-medium">Role</label>
+                      <Select value={inviteRole} onValueChange={setInviteRole}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button type="submit" disabled={isInviting} className="gap-2">
+                      {isInviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                      {isInviting ? 'Sending...' : 'Send Invite'}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">All Users</CardTitle>
+                  <CardDescription>{users.length} registered · {invitedUsers.filter(i => !users.find(u => u.email === i.email)).length} pending invitation</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Joined</TableHead>
+                        <TableHead className="w-20"></TableHead>
                       </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map(u => (
+                        <TableRow key={u.id}>
+                          <TableCell className="font-medium">{u.full_name || '—'}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{u.email}</TableCell>
+                          <TableCell className="text-sm">
+                            {u.role === 'admin'
+                              ? <span className="text-muted-foreground italic text-xs">N/A (admin)</span>
+                              : u.customer_name
+                                ? <Badge variant="outline" className="text-xs">{u.customer_name}</Badge>
+                                : <span className="text-destructive text-xs font-medium">Not assigned</span>
+                            }
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
+                              {u.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className="bg-accent/10 text-accent border-accent/20">Active</Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-xs">
+                            {u.created_date ? new Date(u.created_date).toLocaleDateString() : '—'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-1 justify-end">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setUserToEdit(u)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setUserToDelete(u)}
+                                disabled={deleteUserMutation.isPending}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {invitedUsers
+                        .filter(i => !users.find(u => u.email === i.email))
+                        .map(i => (
+                          <TableRow key={i.id} className="opacity-60">
+                            <TableCell className="font-medium text-muted-foreground">—</TableCell>
+                            <TableCell className="text-muted-foreground text-sm">{i.email}</TableCell>
+                            <TableCell className="text-muted-foreground text-xs">—</TableCell>
+                            <TableCell>
+                              <Badge variant={i.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
+                                {i.role}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-xs">
+                              Invited {i.created_date ? new Date(i.created_date).toLocaleDateString() : ''}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setInvitedToDelete(i)}
+                                disabled={deleteInvitedUserMutation.isPending}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
 
         {/* Frameworks Tab */}

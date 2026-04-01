@@ -1,0 +1,25 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "The role of the user in the app",
+      "enum": [
+        "admin",
+        "user"
+      ]
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to the Customer this user belongs to (required for non-admin users)"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name for display"
+    }
+  },
+  "required": [
+    "role"
+  ]
+}
