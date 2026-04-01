@@ -1,0 +1,33 @@
+{
+  "name": "Comment",
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "Reference to Task"
+    },
+    "content": {
+      "type": "string",
+      "description": "Comment text"
+    },
+    "attachments": {
+      "type": "array",
+      "description": "Attached file URLs",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "task_id",
+    "content"
+  ]
+}

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import TaskComments from './TaskComments';
 
 const DEFAULT_TASK = {
   title: '',
@@ -133,7 +134,7 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
             <Label>Notes</Label>
             <Textarea value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Additional notes..." rows={2} />
           </div>
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
@@ -141,6 +142,7 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
             </Button>
           </div>
         </form>
+        {task?.id && <TaskComments taskId={task.id} />}
       </DialogContent>
     </Dialog>
   );
