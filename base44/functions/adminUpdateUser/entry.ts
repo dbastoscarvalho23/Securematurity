@@ -21,6 +21,10 @@ Deno.serve(async (req) => {
       updateData.display_name = updateData.full_name;
       delete updateData.full_name;
     }
+    // role is a top-level field on the User entity
+    if (updateData.role !== undefined) {
+      updateData.role = updateData.role;
+    }
 
     await base44.asServiceRole.entities.User.update(userId, updateData);
 

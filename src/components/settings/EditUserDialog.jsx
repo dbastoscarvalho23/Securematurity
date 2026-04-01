@@ -9,11 +9,13 @@ import { Loader2 } from 'lucide-react';
 export default function EditUserDialog({ open, onOpenChange, user, customers, onSave, isSaving, currentUserRole }) {
   const [fullName, setFullName] = useState('');
   const [customerId, setCustomerId] = useState('');
+  const [role, setRole] = useState('user');
 
   useEffect(() => {
     if (user) {
       setFullName(user.display_name || user.full_name || '');
       setCustomerId(user.customer_id || '');
+      setRole(user.role || 'user');
     }
   }, [user]);
 
@@ -21,6 +23,7 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
     const selectedCustomer = customers.find(c => c.id === customerId);
     onSave(user.id, {
       full_name: fullName,
+      role,
       customer_id: customerId || null,
       customer_name: selectedCustomer?.name || null,
     });
@@ -77,6 +80,21 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">Link your account to a customer organization.</p>
+            </div>
+          )}
+          {currentUserRole === 'admin' && (
+            <div className="space-y-1.5">
+              <Label>Role</Label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="customer_admin">Customer Admin</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
           <div className="text-sm text-muted-foreground border rounded p-2 bg-muted/30">
