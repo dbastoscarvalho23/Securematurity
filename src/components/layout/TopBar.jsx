@@ -34,9 +34,12 @@ export default function TopBar() {
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
   )?.[1] || 'CyberMaturity';
 
-  const initials = user?.full_name
-    ? user.full_name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
-    : user?.email?.[0]?.toUpperCase() || 'U';
+  const displayName = user?.display_name || user?.full_name || user?.email || 'User';
+  const initials = displayName
+    ? displayName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
+    : 'U';
+
+  const roleLabel = { admin: 'Admin', customer_admin: 'Customer Admin', user: 'User' }[user?.role] || 'User';
 
   return (
     <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0">
@@ -51,14 +54,15 @@ export default function TopBar() {
               <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
                 {initials}
               </div>
-              <span className="hidden md:inline text-sm">{user?.full_name || user?.email || 'User'}</span>
+              <span className="hidden md:inline text-sm">{displayName}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-0.5">
-                <p className="text-sm font-medium">{user?.full_name || 'User'}</p>
+                <p className="text-sm font-medium">{displayName}</p>
                 <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                <p className="text-xs text-primary font-medium">{roleLabel}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

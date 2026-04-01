@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollText } from 'lucide-react';
 import { format } from 'date-fns';
+import { useAuth } from '@/lib/AuthContext';
 
 const actionColors = {
   assessment_created: 'bg-chart-1/10 text-chart-1',
@@ -22,10 +23,20 @@ const actionColors = {
 };
 
 export default function AuditLog() {
+  const { user } = useAuth();
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['auditLogs'],
     queryFn: () => base44.entities.AuditLog.list('-created_date', 200),
   });
+
+  if (user?.role !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-center space-y-2">
+        <ScrollText className="w-10 h-10 text-muted-foreground opacity-40" />
+        <p className="text-muted-foreground">You don't have permission to view this page.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

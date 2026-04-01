@@ -8,10 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ShieldCheck, Building2, BarChart3, Users } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
+import { useAuth } from '@/lib/AuthContext';
 
 const COLORS = ['hsl(217,91%,60%)', 'hsl(173,58%,39%)', 'hsl(43,74%,66%)', 'hsl(27,87%,67%)', 'hsl(262,52%,56%)'];
 
 export default function Admin() {
+  const { user } = useAuth();
   const [filterSector, setFilterSector] = useState('all');
 
   const { data: customers = [] } = useQuery({
@@ -28,6 +30,15 @@ export default function Admin() {
     queryKey: ['users'],
     queryFn: () => base44.entities.User.list(),
   });
+
+  if (user?.role !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-center space-y-2">
+        <ShieldCheck className="w-10 h-10 text-muted-foreground opacity-40" />
+        <p className="text-muted-foreground">You don't have permission to view this page.</p>
+      </div>
+    );
+  }
 
   const completed = assessments.filter(a => a.status === 'completed');
   const filteredCustomers = filterSector === 'all'

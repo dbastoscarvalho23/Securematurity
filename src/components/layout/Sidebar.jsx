@@ -49,6 +49,31 @@ const adminNavGroups = [
   }
 ];
 
+const customerAdminNavGroups = [
+  {
+    label: 'Main',
+    items: [
+      { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
+      { path: '/action-plan', label: 'Action Plan', icon: Target },
+      { path: '/tasks', label: 'Tasks', icon: ListTodo },
+      { path: '/reports', label: 'Reports', icon: BarChart3 },
+    ]
+  },
+  {
+    label: 'Tools',
+    items: [
+      { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
+    ]
+  },
+  {
+    label: 'System',
+    items: [
+      { path: '/settings', label: 'Settings', icon: Settings },
+    ]
+  }
+];
+
 const userNavGroups = [
   {
     label: 'Main',
@@ -71,8 +96,11 @@ const userNavGroups = [
 export default function Sidebar({ collapsed, onToggle }) {
   const location = useLocation();
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
-  const navGroups = isAdmin ? adminNavGroups : userNavGroups;
+  const role = user?.role;
+  const navGroups =
+    role === 'admin' ? adminNavGroups :
+    role === 'customer_admin' ? customerAdminNavGroups :
+    userNavGroups;
 
   return (
     <TooltipProvider delayDuration={0}>
