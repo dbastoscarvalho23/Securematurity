@@ -14,7 +14,8 @@ import {
   Shield,
   BookOpen,
   ListTodo,
-  Target
+  Target,
+  TrendingUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -35,6 +36,7 @@ const adminNavGroups = [
     label: 'Tools',
     items: [
       { path: '/action-plan', label: 'Action Plan', icon: Target },
+      { path: '/task-analytics', label: 'Task Analytics', icon: TrendingUp },
       { path: '/question-bank', label: 'Question DB', icon: BookOpen },
       { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
     ]

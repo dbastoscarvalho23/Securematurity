@@ -30,6 +30,7 @@ const PAGE_TITLES = {
   '/question-bank': 'Question DB',
   '/recommendations': 'Recommendations',
   '/tasks': 'Tasks',
+  '/task-analytics': 'Task Analytics',
   '/action-plan': 'Action Plan',
   '/reports': 'Reports & Analytics',
   '/admin': 'Admin Dashboard',
