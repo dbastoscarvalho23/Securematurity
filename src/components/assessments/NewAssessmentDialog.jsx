@@ -37,11 +37,24 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
   const createMutation = useMutation({
     mutationFn: async (data) => {
       const customer = customers.find(c => c.id === data.customer_id);
-      return base44.entities.Assessment.create({
+      const newAssessment = await base44.entities.Assessment.create({
         ...data,
         customer_name: customer?.name || '',
         status: 'draft',
       });
+      
+      // Log audit event
+      const user = await base44.auth.me();
+      await base44.entities.AuditLog.create({
+        customer_id: data.customer_id,
+        user_email: user?.email,
+        action: 'assessment_created',
+        entity_type: 'Assessment',
+        entity_id: newAssessment.id,
+        details: `Created assessment "${data.title}" for period ${data.period} with frameworks: ${data.frameworks.join(', ')}`,
+      });
+      
+      return newAssessment;
     },
     onSuccess: (newAssessment) => {
       queryClient.invalidateQueries({ queryKey: ['assessments'] });
