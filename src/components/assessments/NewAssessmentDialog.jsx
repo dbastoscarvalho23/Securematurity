@@ -17,6 +17,7 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
     title: '',
     period: '',
     frameworks: [],
+    language: 'en',
   });
 
   const { data: customers = [] } = useQuery({
@@ -108,6 +109,17 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
               placeholder="e.g. 2025-Q1"
               required
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Language *</Label>
+            <Select value={form.language} onValueChange={(value) => setForm(prev => ({ ...prev, language: value }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="pt">Portuguese</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

@@ -18,7 +18,6 @@ export default function AssessmentDetail() {
   const [activeFramework, setActiveFramework] = useState(null);
   const [activeDomain, setActiveDomain] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [language, setLanguage] = useState('en');
 
   const { data: assessment } = useQuery({
     queryKey: ['assessment', assessmentId],
@@ -205,12 +204,14 @@ Return 5-8 prioritized recommendations.`,
         <div className="flex items-center gap-3">
           <div className="flex rounded-md border border-border overflow-hidden text-sm">
             <button
-              onClick={() => setLanguage('en')}
-              className={cn("px-3 py-1.5 font-medium transition-colors", language === 'en' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}
+              onClick={() => {} }
+              className={cn("px-3 py-1.5 font-medium transition-colors", assessment?.language === 'en' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}
+              disabled
             >EN</button>
             <button
-              onClick={() => setLanguage('pt')}
-              className={cn("px-3 py-1.5 font-medium transition-colors", language === 'pt' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}
+              onClick={() => {} }
+              className={cn("px-3 py-1.5 font-medium transition-colors", assessment?.language === 'pt' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}
+              disabled
             >PT</button>
           </div>
           <div className="text-right mr-2">
@@ -274,7 +275,7 @@ Return 5-8 prioritized recommendations.`,
               key={q.id}
               question={q}
               index={i + 1}
-              language={language}
+              language={assessment?.language || 'en'}
               response={responseMap[q.id]}
               onSave={(data) => saveMutation.mutate({
                 questionId: q.id,
