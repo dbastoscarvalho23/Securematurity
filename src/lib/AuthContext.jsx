@@ -31,10 +31,17 @@ export const AuthProvider = ({ children }) => {
       } else if (error?.status === 401 || error?.status === 403) {
         setAuthError({ type: 'auth_required', message: 'Authentication required' });
       }
-      // For any other error (e.g. network), just treat as unauthenticated
     } finally {
       setIsLoadingAuth(false);
     }
+  };
+
+  // Silently refresh user data without triggering loading state or audit log
+  const refreshUser = async () => {
+    try {
+      const currentUser = await base44.auth.me();
+      setUser(currentUser);
+    } catch (_) {}
   };
 
   const logout = () => {
@@ -57,7 +64,8 @@ export const AuthProvider = ({ children }) => {
       appPublicSettings: null,
       logout,
       navigateToLogin,
-      checkAppState: checkUserAuth
+      checkAppState: checkUserAuth,
+      refreshUser
     }}>
       {children}
     </AuthContext.Provider>

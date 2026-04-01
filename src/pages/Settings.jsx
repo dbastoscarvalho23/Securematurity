@@ -17,7 +17,7 @@ import { useAuth } from '@/lib/AuthContext';
 import EditUserDialog from '@/components/settings/EditUserDialog';
 
 export default function Settings() {
-  const { user: currentUser, checkAppState } = useAuth();
+  const { user: currentUser, checkAppState, refreshUser } = useAuth();
   const isAdmin = currentUser?.role === 'admin';
 
   const [isSeeding, setIsSeeding] = useState(false);
@@ -159,7 +159,7 @@ export default function Settings() {
         customer_id: profileCustomerId || null,
         customer_name: selectedCustomer?.name || null,
       });
-      await checkAppState();
+      await refreshUser();
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Profile updated successfully');
     } catch (err) {
