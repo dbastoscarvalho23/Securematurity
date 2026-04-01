@@ -91,8 +91,7 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
             <Label>Customer</Label>
             <Select value={form.customer_id || ''} onValueChange={v => {
               const c = customers.find(c => c.id === v);
-              set('customer_id', v);
-              set('customer_name', c?.name || '');
+              setForm(f => ({ ...f, customer_id: v, customer_name: c?.name || '', assigned_to: '' }));
             }}>
               <SelectTrigger><SelectValue placeholder="Select customer..." /></SelectTrigger>
               <SelectContent>
@@ -105,14 +104,23 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Assigned To</Label>
-              <Select value={form.assigned_to || ''} onValueChange={v => set('assigned_to', v)}>
-                <SelectTrigger><SelectValue placeholder="Select user..." /></SelectTrigger>
+              <Select
+                value={form.assigned_to || ''}
+                onValueChange={v => set('assigned_to', v)}
+                disabled={!form.customer_id}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={form.customer_id ? "Select user..." : "Select a customer first"} />
+                </SelectTrigger>
                 <SelectContent>
-                  {users.map(u => (
-                    <SelectItem key={u.id} value={u.email}>
-                      {u.display_name || u.full_name || u.email}
-                    </SelectItem>
-                  ))}
+                  {users
+                    .filter(u => u.role === 'admin' || u.customer_id === form.customer_id)
+                    .map(u => (
+                      <SelectItem key={u.id} value={u.email}>
+                        {u.display_name || u.full_name || u.email}
+                        {u.role === 'admin' && <span className="text-muted-foreground ml-1">(admin)</span>}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
