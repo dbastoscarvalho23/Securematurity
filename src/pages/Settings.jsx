@@ -65,7 +65,7 @@ export default function Settings() {
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ userId, data }) => {
-      await base44.entities.User.update(userId, data);
+      await base44.asServiceRole.entities.User.update(userId, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
