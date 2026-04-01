@@ -27,7 +27,6 @@ const adminNavGroups = [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/customers', label: 'Customers', icon: Building2 },
       { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
-      { path: '/action-plan', label: 'Action Plan', icon: Target },
       { path: '/tasks', label: 'Tasks', icon: ListTodo },
       { path: '/reports', label: 'Reports', icon: BarChart3 },
     ]
@@ -35,6 +34,7 @@ const adminNavGroups = [
   {
     label: 'Tools',
     items: [
+      { path: '/action-plan', label: 'Action Plan', icon: Target },
       { path: '/question-bank', label: 'Question Bank', icon: BookOpen },
       { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
     ]
@@ -55,7 +55,6 @@ const customerAdminNavGroups = [
     items: [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
-      { path: '/action-plan', label: 'Action Plan', icon: Target },
       { path: '/tasks', label: 'Tasks', icon: ListTodo },
       { path: '/reports', label: 'Reports', icon: BarChart3 },
     ]
@@ -80,7 +79,6 @@ const userNavGroups = [
     items: [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/assessments', label: 'My Assessments', icon: ClipboardCheck },
-      { path: '/action-plan', label: 'Action Plan', icon: Target },
       { path: '/tasks', label: 'Tasks', icon: ListTodo },
       { path: '/reports', label: 'Reports', icon: BarChart3 },
     ]
