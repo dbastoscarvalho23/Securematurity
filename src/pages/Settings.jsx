@@ -493,7 +493,7 @@ export default function Settings() {
                     <TableBody>
                       {users.map(u => (
                         <TableRow key={u.id}>
-                          <TableCell className="font-medium">{u.full_name || '—'}</TableCell>
+                          <TableCell className="font-medium">{u.display_name || u.full_name || '—'}</TableCell>
                           <TableCell className="text-muted-foreground text-sm">{u.email}</TableCell>
                           <TableCell className="text-sm">
                             {u.role === 'admin' || u.role === 'customer_admin'

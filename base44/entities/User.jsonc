@@ -19,6 +19,11 @@
     "customer_name": {
       "type": "string",
       "description": "Associated customer name (denormalized)"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Admin-editable display name override"
     }
-  }
+  },
+  "required": []
 }

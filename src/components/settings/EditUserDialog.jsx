@@ -12,7 +12,7 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
 
   useEffect(() => {
     if (user) {
-      setFullName(user.full_name || '');
+      setFullName(user.display_name || user.full_name || '');
       setCustomerId(user.customer_id || '');
     }
   }, [user]);

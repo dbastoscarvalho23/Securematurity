@@ -15,7 +15,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'userId is required' }, { status: 400 });
     }
 
-    await base44.asServiceRole.entities.User.update(userId, data);
+    // Map full_name -> display_name (custom field, actually persists)
+    const updateData = { ...data };
+    if (updateData.full_name !== undefined) {
+      updateData.display_name = updateData.full_name;
+      delete updateData.full_name;
+    }
+
+    await base44.asServiceRole.entities.User.update(userId, updateData);
 
     return Response.json({ success: true });
   } catch (error) {
