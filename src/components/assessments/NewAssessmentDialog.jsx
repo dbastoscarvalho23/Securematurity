@@ -9,14 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 
-const FRAMEWORKS = [
-  { code: 'NIS2', name: 'NIS2 / DL 125/2025' },
-  { code: 'ISO27001', name: 'ISO/IEC 27001' },
-  { code: 'NIST_CSF', name: 'NIST Cybersecurity Framework' },
-  { code: 'CIS_V8', name: 'CIS Controls v8' },
-  { code: 'GDPR', name: 'GDPR' },
-];
-
 export default function NewAssessmentDialog({ open, onOpenChange }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -32,10 +24,15 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
     queryFn: () => base44.entities.Customer.list(),
   });
 
+  const { data: allFrameworks = [] } = useQuery({
+    queryKey: ['frameworks'],
+    queryFn: () => base44.entities.Framework.filter({ status: 'active' }),
+  });
+
   const selectedCustomer = customers.find(c => c.id === form.customer_id);
   const availableFrameworks = selectedCustomer?.allowed_frameworks?.length
-    ? FRAMEWORKS.filter(fw => selectedCustomer.allowed_frameworks.includes(fw.code))
-    : FRAMEWORKS;
+    ? allFrameworks.filter(fw => selectedCustomer.allowed_frameworks.includes(fw.code))
+    : allFrameworks;
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -58,7 +55,7 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
     const customer = customers.find(c => c.id === customerId);
     const frameworks = customer?.allowed_frameworks?.length
       ? customer.allowed_frameworks
-      : FRAMEWORKS.map(f => f.code);
+      : allFrameworks.map(f => f.code);
     setForm(prev => ({ ...prev, customer_id: customerId, frameworks }));
   };
 
