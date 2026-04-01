@@ -2,9 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, Check, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Check, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import QuestionCard from '@/components/assessments/QuestionCard';
@@ -243,28 +244,45 @@ Return 5-8 prioritized recommendations.`,
       {/* Domain sidebar + Questions */}
       <div className="grid grid-cols-12 gap-6">
         {/* Domain list */}
-        <div className="col-span-3 space-y-1">
-          {domainKeys.map(d => {
-            const domainQs = domains[d] || [];
-            const answered = domainQs.filter(q => responseMap[q.id]).length;
-            return (
-              <button
-                key={d}
-                onClick={() => setActiveDomain(d)}
-                className={cn(
-                  "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-between",
-                  d === currentDomain
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                )}
-              >
-                <span className="truncate">{d}</span>
-                <span className="text-xs flex-shrink-0 ml-2">
-                  {answered}/{domainQs.length}
-                </span>
-              </button>
-            );
-          })}
+        <div className="col-span-3">
+          <Card className="p-4 sticky top-20">
+            <h3 className="font-semibold text-sm mb-3 text-foreground">Domains</h3>
+            <div className="space-y-1.5">
+              {domainKeys.map(d => {
+                const domainQs = domains[d] || [];
+                const answered = domainQs.filter(q => responseMap[q.id]).length;
+                const isComplete = answered === domainQs.length && domainQs.length > 0;
+                return (
+                  <button
+                    key={d}
+                    onClick={() => setActiveDomain(d)}
+                    className={cn(
+                      "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between border",
+                      d === currentDomain
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : isComplete
+                        ? "border-accent/20 bg-accent/5 text-foreground hover:border-accent/40"
+                        : "border-muted text-muted-foreground hover:text-foreground hover:border-muted-foreground/40 hover:bg-muted/30"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {isComplete && <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-accent" />}
+                      <span className="truncate">{d}</span>
+                    </div>
+                    <Badge 
+                      variant={d === currentDomain ? "secondary" : "outline"}
+                      className={cn(
+                        "text-xs flex-shrink-0 ml-2",
+                        d === currentDomain && "bg-primary-foreground text-primary"
+                      )}
+                    >
+                      {answered}/{domainQs.length}
+                    </Badge>
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
         </div>
 
         {/* Questions */}
