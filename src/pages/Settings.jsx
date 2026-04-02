@@ -507,7 +507,7 @@ export default function Settings() {
                           <TableCell className="font-medium">{u.display_name || u.full_name || '—'}</TableCell>
                           <TableCell className="text-muted-foreground text-sm">{u.email}</TableCell>
                           <TableCell className="text-sm">
-                            {u.role === 'admin' || u.role === 'customer_admin'
+                            {u.role === 'admin'
                               ? <span className="text-muted-foreground italic text-xs">N/A (admin)</span>
                               : u.customer_name
                                 ? <Badge variant="outline" className="text-xs">{u.customer_name}</Badge>
