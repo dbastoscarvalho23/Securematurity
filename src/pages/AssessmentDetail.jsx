@@ -28,8 +28,17 @@ export default function AssessmentDetail() {
   });
 
   const { data: questions = [] } = useQuery({
-    queryKey: ['questions'],
-    queryFn: () => base44.entities.Question.list('-order_index', 500),
+    queryKey: ['questions', assessmentId],
+    queryFn: async () => {
+      const [global, specific] = await Promise.all([
+        base44.entities.Question.filter({ is_active: true }, 'order_index', 500),
+        base44.entities.Question.filter({ assessment_id: assessmentId }, 'order_index', 500),
+      ]);
+      // Merge: global questions (no assessment_id) + this assessment's specific questions
+      const globalFiltered = global.filter(q => !q.assessment_id);
+      return [...globalFiltered, ...specific];
+    },
+    enabled: !!assessmentId,
   });
 
   const { data: responses = [] } = useQuery({

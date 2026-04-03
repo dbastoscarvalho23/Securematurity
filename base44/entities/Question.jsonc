@@ -52,6 +52,10 @@
     "is_active": {
       "type": "boolean",
       "default": true
+    },
+    "assessment_id": {
+      "type": "string",
+      "description": "If set, this question belongs exclusively to this assessment (not global)"
     }
   },
   "required": [
