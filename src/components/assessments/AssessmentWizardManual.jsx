@@ -86,7 +86,7 @@ export default function AssessmentWizardManual({ meta, selectedCustomer, onBack,
       ...newQForm,
       answer_type: 'maturity_scale',
       order_index: newQuestions.length + 1,
-      _isNew: true,
+      _isNew: true,        // flag: needs to be saved to global Question DB
       _tempId: `new_${Date.now()}`,
     };
     setNewQuestions(prev => [...prev, entry]);

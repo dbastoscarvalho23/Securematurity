@@ -7,7 +7,7 @@ import { Sparkles, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import AssessmentWizardMeta from './AssessmentWizardMeta';
-import AssessmentWizardAI from './AssessmentWizardAI';
+import AssessmentWizardAI from './AssessmentWizardAI.jsx';
 import AssessmentWizardManual from './AssessmentWizardManual';
 
 const STEPS = ['mode', 'meta', 'build'];
@@ -63,13 +63,30 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
     setIsSaving(true);
     const customer = customers.find(c => c.id === meta.customer_id);
 
-    // Separate new (AI/custom written) questions from existing DB questions
+    // Separate brand-new questions (written manually) from existing DB questions
     const newQuestions = questions.filter(q => q._isNew);
     const existingQuestions = questions.filter(q => !q._isNew);
-    const question_ids = existingQuestions.map(q => q.id).filter(Boolean);
 
-    // Create the assessment — store IDs of existing questions selected
-    const assessment = await base44.entities.Assessment.create({
+    // Save new questions to the global Question DB first (no assessment_id — they are reusable)
+    let newlySavedIds = [];
+    if (newQuestions.length > 0) {
+      const saved = await base44.entities.Question.bulkCreate(
+        newQuestions.map(({ _isNew, _tempId, ...q }) => ({
+          ...q,
+          is_active: true,
+        }))
+      );
+      newlySavedIds = (saved || []).map(q => q.id).filter(Boolean);
+    }
+
+    // All question IDs for this assessment
+    const question_ids = [
+      ...existingQuestions.map(q => q.id).filter(Boolean),
+      ...newlySavedIds,
+    ];
+
+    // Create the assessment
+    await base44.entities.Assessment.create({
       customer_id: meta.customer_id,
       customer_name: customer?.name || '',
       title: meta.title,
@@ -79,18 +96,9 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
       status: 'draft',
     });
 
-    // Save new (AI-generated or custom written) questions linked to this assessment
-    if (newQuestions.length > 0) {
-      await base44.entities.Question.bulkCreate(
-        newQuestions.map(({ _isNew, _tempId, ...q }) => ({
-          ...q,
-          assessment_id: assessment.id,
-          is_active: true,
-        }))
-      );
-    }
-
     queryClient.invalidateQueries({ queryKey: ['assessments'] });
+    queryClient.invalidateQueries({ queryKey: ['questions'] });
+    queryClient.invalidateQueries({ queryKey: ['questions-global'] });
     toast.success('Assessment created successfully');
     setIsSaving(false);
     handleClose();
