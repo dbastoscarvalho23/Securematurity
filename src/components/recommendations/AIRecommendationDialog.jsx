@@ -15,6 +15,7 @@ const FRAMEWORKS = [
   { code: 'ISO27001', name: 'ISO/IEC 27001' },
   { code: 'NIST_CSF', name: 'NIST CSF' },
   { code: 'CIS_V8', name: 'CIS Controls v8' },
+  { code: 'ENISA', name: 'ENISA Cybersecurity Framework' },
   { code: 'QNRC', name: 'QNRC' },
   { code: 'GDPR', name: 'GDPR' },
 ];
