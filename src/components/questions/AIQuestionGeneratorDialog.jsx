@@ -17,6 +17,7 @@ const FRAMEWORKS = [
   { code: 'CIS_V8', name: 'CIS v8' },
   { code: 'QNRC', name: 'QNRC' },
   { code: 'GDPR', name: 'GDPR' },
+  { code: 'ENISA', name: 'ENISA' },
 ];
 
 const FRAMEWORK_COLORS = {
@@ -25,6 +26,7 @@ const FRAMEWORK_COLORS = {
   NIST_CSF: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
   CIS_V8: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
   QNRC: 'bg-chart-5/10 text-chart-5 border-chart-5/20',
+  ENISA: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
 };
 
 export default function AIQuestionGeneratorDialog({ open, onOpenChange, existingQuestions, onSave }) {
@@ -58,6 +60,7 @@ export default function AIQuestionGeneratorDialog({ open, onOpenChange, existing
       NIST_CSF: ['Identify (ID)', 'Protect (PR)', 'Detect (DE)', 'Respond (RS)', 'Recover (RC)', 'Govern (GV)'],
       CIS_V8: ['Inventory & Control', 'Data Protection', 'Secure Configuration', 'Account Management', 'Access Control', 'Vulnerability Management', 'Audit Log Management', 'Email & Web Browser', 'Malware Defenses', 'Network Infrastructure', 'Data Recovery', 'Network Monitoring', 'Security Awareness', 'Application Security', 'Incident Response'],
       GDPR: ['Lawfulness & Transparency', 'Data Subject Rights', 'Consent Management', 'Data Minimisation', 'Purpose Limitation', 'Storage Limitation', 'Accuracy', 'Security of Processing', 'Data Breach Notification', 'Data Protection by Design', 'Data Protection Officer', 'International Transfers', 'Records of Processing', 'Data Processor Management'],
+      ENISA: ['Governance & Risk Management', 'Incident Handling', 'Business Continuity & Crisis Management', 'Supply Chain Security', 'Network & System Security', 'Cyber Hygiene & Training', 'Cryptography & Encryption', 'Access Control & HR Security', 'Authentication & Secure Communications', 'Monitoring & Detection'],
       QNRC: ['Identificar — Gestão de Ativos (ID.GA)', 'Identificar — Ambiente de Negócio (ID.AO)', 'Identificar — Governação (ID.GV)', 'Identificar — Avaliação de Risco (ID.AR)', 'Identificar — Estratégia de Gestão de Risco (ID.GR)', 'Identificar — Gestão de Risco na Cadeia de Fornecimento (ID.GL)', 'Proteger — Gestão de Identidades e Acessos (PR.GA)', 'Proteger — Consciencialização e Formação (PR.FC)', 'Proteger — Segurança dos Dados (PR.SD)', 'Proteger — Processos e Procedimentos (PR.PI)', 'Proteger — Manutenção (PR.MA)', 'Proteger — Tecnologia de Proteção (PR.TP)', 'Detetar — Anomalias e Eventos (DE.AE)', 'Detetar — Monitorização Contínua (DE.MC)', 'Detetar — Processos de Deteção (DE.PD)', 'Responder — Planeamento de Resposta (RS.PR)', 'Responder — Comunicações (RS.CO)', 'Responder — Análise (RS.AN)', 'Responder — Mitigação (RS.MI)', 'Responder — Melhorias (RS.ME)', 'Recuperar — Planeamento de Recuperação (RC.PR)', 'Recuperar — Melhorias (RC.ME)', 'Recuperar — Comunicações (RC.CO)'],
     };
 
@@ -82,7 +85,7 @@ ${JSON.stringify(frameworkContext, null, 2)}
 
 Generate 6-10 new, high-quality assessment questions that fill coverage gaps.
 CRITICAL RULES:
-- Set "framework_code" to EXACTLY one of the codes listed above (e.g. "QNRC", "NIS2", "ISO27001", "NIST_CSF", "CIS_V8").
+- Set "framework_code" to EXACTLY one of the codes listed above (e.g. "QNRC", "NIS2", "ISO27001", "NIST_CSF", "CIS_V8", "ENISA").
 - Set "domain" to EXACTLY one of the valid_domains listed for that framework_code. Do NOT invent new domain names.
 - For QNRC questions, use control_id format like "ID.GA-3", "PR.SD-3", "DE.MC-2", etc. matching the domain prefix.
 - For QNRC questions, provide both English (question_text) and European Portuguese (question_text_pt) translations.

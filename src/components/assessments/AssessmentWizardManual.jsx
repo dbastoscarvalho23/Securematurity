@@ -18,6 +18,7 @@ const FRAMEWORK_COLORS = {
   NIST_CSF: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
   CIS_V8: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
   QNRC: 'bg-chart-5/10 text-chart-5 border-chart-5/20',
+  ENISA: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
 };
 
 export default function AssessmentWizardManual({ meta, selectedCustomer, onBack, onFinish, isSaving }) {
