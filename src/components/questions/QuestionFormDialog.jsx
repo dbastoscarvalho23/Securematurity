@@ -86,15 +86,17 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
             </div>
             <div className="space-y-1.5">
               <Label>Domain *</Label>
-              {domainOptions.length > 0 ? (
-                <Select value={form.domain} onValueChange={v => set('domain', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select domain" /></SelectTrigger>
-                  <SelectContent>
-                    {domainOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input value={form.domain} onChange={e => set('domain', e.target.value)} placeholder="Domain name" required />
+              <Input
+                list={`domains-${form.framework_code}`}
+                value={form.domain}
+                onChange={e => set('domain', e.target.value)}
+                placeholder="Type or select a domain..."
+                required
+              />
+              {domainOptions.length > 0 && (
+                <datalist id={`domains-${form.framework_code}`}>
+                  {domainOptions.map(d => <option key={d} value={d} />)}
+                </datalist>
               )}
             </div>
           </div>
