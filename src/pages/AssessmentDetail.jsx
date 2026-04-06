@@ -30,15 +30,25 @@ export default function AssessmentDetail() {
   const { data: questions = [] } = useQuery({
     queryKey: ['questions', assessmentId],
     queryFn: async () => {
-      const [global, specific] = await Promise.all([
-        base44.entities.Question.filter({ is_active: true }, 'order_index', 500),
-        base44.entities.Question.filter({ assessment_id: assessmentId }, 'order_index', 500),
-      ]);
-      // Merge: global questions (no assessment_id) + this assessment's specific questions
-      const globalFiltered = global.filter(q => !q.assessment_id);
-      return [...globalFiltered, ...specific];
+      // Load assessment-specific questions (AI-generated or custom written)
+      const specific = await base44.entities.Question.filter({ assessment_id: assessmentId }, 'order_index', 500);
+
+      if (specific.length > 0) {
+        // AI mode: all questions were created specifically for this assessment
+        return specific;
+      }
+
+      // Manual mode: load the specific existing questions by their saved IDs
+      if (assessment?.question_ids?.length > 0) {
+        const allGlobal = await base44.entities.Question.filter({ is_active: true }, 'order_index', 500);
+        const idSet = new Set(assessment.question_ids);
+        return allGlobal.filter(q => idSet.has(q.id));
+      }
+
+      // Fallback: no questions defined (shouldn't happen after this fix)
+      return [];
     },
-    enabled: !!assessmentId,
+    enabled: !!assessmentId && !!assessment,
   });
 
   const { data: responses = [] } = useQuery({

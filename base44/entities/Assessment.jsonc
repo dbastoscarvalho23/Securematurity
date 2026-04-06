@@ -25,6 +25,13 @@
         "type": "string"
       }
     },
+    "question_ids": {
+      "type": "array",
+      "description": "IDs of existing (global) questions selected for this assessment",
+      "items": {
+        "type": "string"
+      }
+    },
     "status": {
       "type": "string",
       "enum": [

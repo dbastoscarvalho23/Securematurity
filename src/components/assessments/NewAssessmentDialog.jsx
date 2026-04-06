@@ -63,18 +63,23 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
     setIsSaving(true);
     const customer = customers.find(c => c.id === meta.customer_id);
 
-    // Create the assessment
+    // Separate new (AI/custom written) questions from existing DB questions
+    const newQuestions = questions.filter(q => q._isNew);
+    const existingQuestions = questions.filter(q => !q._isNew);
+    const question_ids = existingQuestions.map(q => q.id).filter(Boolean);
+
+    // Create the assessment — store IDs of existing questions selected
     const assessment = await base44.entities.Assessment.create({
       customer_id: meta.customer_id,
       customer_name: customer?.name || '',
       title: meta.title,
       period: meta.period,
       frameworks: meta.frameworks,
+      question_ids: question_ids.length > 0 ? question_ids : undefined,
       status: 'draft',
     });
 
-    // Save questions that are new (not already in DB)
-    const newQuestions = questions.filter(q => q._isNew);
+    // Save new (AI-generated or custom written) questions linked to this assessment
     if (newQuestions.length > 0) {
       await base44.entities.Question.bulkCreate(
         newQuestions.map(({ _isNew, _tempId, ...q }) => ({
