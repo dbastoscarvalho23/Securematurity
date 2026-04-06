@@ -19,6 +19,7 @@ import EditUserDialog from '@/components/settings/EditUserDialog';
 export default function Settings() {
   const { user: currentUser, checkAppState, refreshUser } = useAuth();
   const isAdmin = currentUser?.role === 'admin';
+  const isCustomerAdmin = currentUser?.role === 'customer_admin';
 
   const [isSeeding, setIsSeeding] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -175,13 +176,14 @@ export default function Settings() {
     setIsInviting(true);
     try {
       const me = await base44.auth.me();
-      await base44.users.inviteUser(inviteEmail, inviteRole);
-      // Check if already tracked
+      // customer_admin can only invite 'user' role, auto-assigned to their own customer
+      const effectiveRole = isCustomerAdmin ? 'user' : inviteRole;
+      await base44.users.inviteUser(inviteEmail, effectiveRole);
       const alreadyTracked = invitedUsers.find(u => u.email === inviteEmail);
       if (!alreadyTracked) {
         await base44.entities.InvitedUser.create({
           email: inviteEmail,
-          role: inviteRole,
+          role: effectiveRole,
           status: 'inactive',
           invited_by: me?.email || '',
         });
@@ -395,30 +397,12 @@ export default function Settings() {
                   {currentUser?.role !== 'admin' && (
                     <div className="space-y-1.5">
                       <Label>Associated Customer</Label>
-                      {currentUser?.role === 'customer_admin' ? (
-                        <>
-                          <Select value={profileCustomerId} onValueChange={setProfileCustomerId}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a customer..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {customers.map(c => (
-                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <p className="text-xs text-muted-foreground">Select the customer you are associated with.</p>
-                        </>
-                      ) : (
-                        <>
-                          <Input
-                            value={currentUser?.customer_name || '—'}
-                            disabled
-                            className="bg-muted/50 text-muted-foreground"
-                          />
-                          <p className="text-xs text-muted-foreground">Contact an admin to change your customer assignment.</p>
-                        </>
-                      )}
+                      <Input
+                        value={currentUser?.customer_name || '—'}
+                        disabled
+                        className="bg-muted/50 text-muted-foreground"
+                      />
+                      <p className="text-xs text-muted-foreground">Contact a platform admin to change your customer assignment.</p>
                     </div>
                   )}
                 </div>
@@ -441,8 +425,8 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* Admin-only section */}
-          {isAdmin && (
+          {/* Invite User — available to admin and customer_admin */}
+          {(isAdmin || isCustomerAdmin) && (
             <>
               <Card>
                 <CardHeader>
@@ -450,7 +434,11 @@ export default function Settings() {
                     <UserPlus className="w-4 h-4" />
                     Invite User
                   </CardTitle>
-                  <CardDescription>Send an invitation to a new user to join the platform.</CardDescription>
+                  <CardDescription>
+                    {isCustomerAdmin
+                      ? 'Invite users to join your customer organization.'
+                      : 'Send an invitation to a new user to join the platform.'}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleInvite} className="flex gap-3 items-end flex-wrap">
@@ -464,17 +452,19 @@ export default function Settings() {
                         required
                       />
                     </div>
-                    <div className="w-36 space-y-1.5">
-                      <label className="text-sm font-medium">Role</label>
-                      <Select value={inviteRole} onValueChange={setInviteRole}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="customer_admin">Customer Admin</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {isAdmin && (
+                      <div className="w-36 space-y-1.5">
+                        <label className="text-sm font-medium">Role</label>
+                        <Select value={inviteRole} onValueChange={setInviteRole}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="customer_admin">Customer Admin</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <Button type="submit" disabled={isInviting} className="gap-2">
                       {isInviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
                       {isInviting ? 'Sending...' : 'Send Invite'}
@@ -483,6 +473,12 @@ export default function Settings() {
                 </CardContent>
               </Card>
 
+            </>
+          )}
+
+          {/* All Users table — admin only */}
+          {isAdmin && (
+            <>
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">All Users</CardTitle>
@@ -585,6 +581,7 @@ export default function Settings() {
             </>
           )}
         </TabsContent>
+
 
         {/* Frameworks Tab */}
         <TabsContent value="frameworks" className="space-y-4 mt-4">

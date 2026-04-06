@@ -19,19 +19,21 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
     }
   }, [user]);
 
+  const isPlatformAdmin = currentUserRole === 'admin';
+  const targetIsAdmin = user?.role === 'admin';
+
   const handleSave = () => {
     const selectedCustomer = customers.find(c => c.id === customerId);
     onSave(user.id, {
       full_name: fullName,
-      role,
-      customer_id: customerId || null,
-      customer_name: selectedCustomer?.name || null,
+      // Only platform admin can change role and customer
+      ...(isPlatformAdmin && { role }),
+      ...(isPlatformAdmin && !targetIsAdmin && {
+        customer_id: customerId || null,
+        customer_name: selectedCustomer?.name || null,
+      }),
     });
   };
-
-
-  const isAdmin = currentUserRole === 'admin';
-  const targetIsAdmin = user?.role === 'admin';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -40,6 +42,7 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
           <DialogTitle>Edit User</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
+          {/* Name — editable by all */}
           <div className="space-y-1.5">
             <Label>Full Name</Label>
             <Input
@@ -48,7 +51,9 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
               placeholder="Full name"
             />
           </div>
-          {isAdmin && !targetIsAdmin && (
+
+          {/* Customer — only platform admin can change, and only for non-admin targets */}
+          {isPlatformAdmin && !targetIsAdmin ? (
             <div className="space-y-1.5">
               <Label>Associated Customer</Label>
               <Select value={customerId} onValueChange={setCustomerId}>
@@ -64,25 +69,20 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
               </Select>
               <p className="text-xs text-muted-foreground">Non-admin users must be linked to a customer.</p>
             </div>
-          )}
-          {!isAdmin && !targetIsAdmin && (
+          ) : !targetIsAdmin && (
             <div className="space-y-1.5">
               <Label>Associated Customer</Label>
-              <Select value={customerId} onValueChange={setCustomerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a customer..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={null}>— None —</SelectItem>
-                  {customers.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">Link your account to a customer organization.</p>
+              <Input
+                value={user?.customer_name || '—'}
+                disabled
+                className="bg-muted/50 text-muted-foreground"
+              />
+              <p className="text-xs text-muted-foreground">Only a platform admin can change customer assignment.</p>
             </div>
           )}
-          {currentUserRole === 'admin' && (
+
+          {/* Role — only platform admin can change */}
+          {isPlatformAdmin ? (
             <div className="space-y-1.5">
               <Label>Role</Label>
               <Select value={role} onValueChange={setRole}>
@@ -96,7 +96,18 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
                 </SelectContent>
               </Select>
             </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label>Role</Label>
+              <Input
+                value={user?.role === 'customer_admin' ? 'Customer Admin' : user?.role || '—'}
+                disabled
+                className="bg-muted/50 text-muted-foreground capitalize"
+              />
+              <p className="text-xs text-muted-foreground">Only a platform admin can change roles.</p>
+            </div>
           )}
+
           <div className="text-sm text-muted-foreground border rounded p-2 bg-muted/30">
             <span className="font-medium">Email:</span> {user?.email}
           </div>
