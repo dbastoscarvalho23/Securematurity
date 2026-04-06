@@ -28,7 +28,7 @@ export default function AssessmentDetail() {
   });
 
   const { data: questions = [] } = useQuery({
-    queryKey: ['questions', assessmentId],
+    queryKey: ['questions', assessmentId, assessment?.question_ids],
     queryFn: async () => {
       // Load assessment-specific questions (AI-generated or custom written)
       const specific = await base44.entities.Question.filter({ assessment_id: assessmentId }, 'order_index', 500);
@@ -39,13 +39,13 @@ export default function AssessmentDetail() {
       }
 
       // Manual mode: load the specific existing questions by their saved IDs
-      if (assessment?.question_ids?.length > 0) {
+      const questionIds = assessment?.question_ids;
+      if (questionIds?.length > 0) {
         const allGlobal = await base44.entities.Question.filter({ is_active: true }, 'order_index', 500);
-        const idSet = new Set(assessment.question_ids);
+        const idSet = new Set(questionIds);
         return allGlobal.filter(q => idSet.has(q.id));
       }
 
-      // Fallback: no questions defined (shouldn't happen after this fix)
       return [];
     },
     enabled: !!assessmentId && !!assessment,
@@ -199,6 +199,7 @@ Return 5-8 prioritized recommendations.`,
   const domains = frameworkQuestions[currentFw] || {};
   const domainKeys = Object.keys(domains);
   const currentDomain = activeDomain && domains[activeDomain] ? activeDomain : domainKeys[0];
+  const hasPtTranslations = questions.some(q => q.question_text_pt);
 
   // Calculate progress
   const totalQuestions = questions.filter(q => assessment.frameworks?.includes(q.framework_code)).length;
@@ -223,14 +224,21 @@ Return 5-8 prioritized recommendations.`,
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex rounded-md border border-border overflow-hidden text-sm">
+          <div className="flex rounded-md border border-border overflow-hidden text-sm" title={!hasPtTranslations ? "Portuguese translations not available for these questions" : undefined}>
             <button
+              type="button"
               onClick={() => setLanguage('en')}
               className={cn("px-3 py-1.5 font-medium transition-colors", language === 'en' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}
             >EN</button>
             <button
-              onClick={() => setLanguage('pt')}
-              className={cn("px-3 py-1.5 font-medium transition-colors", language === 'pt' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}
+              type="button"
+              onClick={() => !hasPtTranslations ? null : setLanguage('pt')}
+              disabled={!hasPtTranslations}
+              className={cn(
+                "px-3 py-1.5 font-medium transition-colors",
+                !hasPtTranslations ? "opacity-40 cursor-not-allowed text-muted-foreground" :
+                language === 'pt' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+              )}
             >PT</button>
           </div>
           <div className="text-right mr-2">
