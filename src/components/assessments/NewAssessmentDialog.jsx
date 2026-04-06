@@ -7,7 +7,7 @@ import { Sparkles, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import AssessmentWizardMeta from './AssessmentWizardMeta';
-import AssessmentWizardAI from './AssessmentWizardAI.jsx';
+import AssessmentWizardAI from './AssessmentWizardAI';
 import AssessmentWizardManual from './AssessmentWizardManual';
 
 const STEPS = ['mode', 'meta', 'build'];
