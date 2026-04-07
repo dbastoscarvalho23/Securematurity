@@ -215,7 +215,10 @@ export default function Recommendations() {
       {/* Recommendations by Framework */}
       {Object.entries(groupedByFramework).map(([fw, recs]) => (
         <div key={fw}>
-          <h2 className="text-lg font-semibold mb-3">{fw.replace('_', ' ')}</h2>
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-lg font-semibold">{fw.replace('_', ' ')}</h2>
+            <Badge variant="secondary" className="text-xs">{recs.length}</Badge>
+          </div>
           <div className="space-y-3">
             {recs.map(rec => (
               <Card key={rec.id} className="hover:shadow-sm transition-shadow">
