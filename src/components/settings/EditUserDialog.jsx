@@ -21,14 +21,14 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
 
   const isPlatformAdmin = currentUserRole === 'admin';
   const targetIsAdmin = user?.role === 'admin';
+  const needsCustomer = role === 'customer_admin' || role === 'user';
 
   const handleSave = () => {
     const selectedCustomer = customers.find(c => c.id === customerId);
     onSave(user.id, {
       full_name: fullName,
-      // Only platform admin can change role and customer
       ...(isPlatformAdmin && { role }),
-      ...(isPlatformAdmin && !targetIsAdmin && {
+      ...(isPlatformAdmin && needsCustomer && {
         customer_id: customerId || null,
         customer_name: selectedCustomer?.name || null,
       }),
@@ -52,33 +52,37 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
             />
           </div>
 
-          {/* Customer — only platform admin can change, and only for non-admin targets */}
-          {isPlatformAdmin && !targetIsAdmin ? (
-            <div className="space-y-1.5">
-              <Label>Associated Customer</Label>
-              <Select value={customerId} onValueChange={setCustomerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a customer..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={null}>— None —</SelectItem>
-                  {customers.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">Non-admin users must be linked to a customer.</p>
-            </div>
-          ) : !targetIsAdmin && (
-            <div className="space-y-1.5">
-              <Label>Associated Customer</Label>
-              <Input
-                value={user?.customer_name || '—'}
-                disabled
-                className="bg-muted/50 text-muted-foreground"
-              />
-              <p className="text-xs text-muted-foreground">Only a platform admin can change customer assignment.</p>
-            </div>
+          {/* Customer — shown whenever role is customer_admin or user */}
+          {needsCustomer && (
+            isPlatformAdmin ? (
+              <div className="space-y-1.5">
+                <Label>Associated Customer {role === 'customer_admin' && <span className="text-destructive">*</span>}</Label>
+                <Select value={customerId} onValueChange={setCustomerId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a customer..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>— None —</SelectItem>
+                    {customers.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {role === 'customer_admin' && (
+                  <p className="text-xs text-muted-foreground">Customer Admin must be linked to a customer.</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Associated Customer</Label>
+                <Input
+                  value={user?.customer_name || '—'}
+                  disabled
+                  className="bg-muted/50 text-muted-foreground"
+                />
+                <p className="text-xs text-muted-foreground">Only a platform admin can change customer assignment.</p>
+              </div>
+            )
           )}
 
           {/* Role — only platform admin can change */}
