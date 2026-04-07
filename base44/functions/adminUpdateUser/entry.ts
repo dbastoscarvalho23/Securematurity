@@ -28,13 +28,14 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.User.update(userId, profileUpdate);
     }
 
-    // Step 2: update role separately (may fail for app owner — handle gracefully)
+    // Step 2: update role separately — wrapped in its own try/catch
+    // The platform blocks role changes for the app owner, so we handle gracefully
     let roleError = null;
     if (role !== undefined) {
       try {
         await base44.asServiceRole.entities.User.update(userId, { role });
       } catch (err) {
-        roleError = err.message || 'Could not update role (platform restriction)';
+        roleError = err?.message || 'Could not update role';
       }
     }
 
