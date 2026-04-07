@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Lightbulb, Filter, ListTodo, Sparkles, ShieldCheck, Loader2, Plus } from 'lucide-react';
+import { Lightbulb, Filter, ListTodo, Sparkles, ShieldCheck, Loader2, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -143,6 +143,8 @@ export default function Recommendations() {
   };
 
   const frameworks = [...new Set(recommendations.map(r => r.framework_code).filter(Boolean))].sort();
+  const [collapsedFrameworks, setCollapsedFrameworks] = useState({});
+  const toggleFramework = (fw) => setCollapsedFrameworks(prev => ({ ...prev, [fw]: !prev[fw] }));
 
   const filtered = recommendations.filter(r => {
     if (filterPriority !== 'all' && r.priority !== filterPriority) return false;
@@ -215,11 +217,15 @@ export default function Recommendations() {
       {/* Recommendations by Framework */}
       {Object.entries(groupedByFramework).map(([fw, recs]) => (
         <div key={fw}>
-          <div className="flex items-center gap-2 mb-3">
+          <button
+            onClick={() => toggleFramework(fw)}
+            className="flex items-center gap-2 mb-3 hover:opacity-70 transition-opacity w-full text-left"
+          >
+            {collapsedFrameworks[fw] ? <ChevronRight className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
             <h2 className="text-lg font-semibold">{fw.replace('_', ' ')}</h2>
             <Badge variant="secondary" className="text-xs">{recs.length}</Badge>
-          </div>
-          <div className="space-y-3">
+          </button>
+          {!collapsedFrameworks[fw] && <div className="space-y-3">
             {recs.map(rec => (
               <Card key={rec.id} className="hover:shadow-sm transition-shadow">
                 <CardContent className="p-4">
@@ -265,7 +271,7 @@ export default function Recommendations() {
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </div>}
         </div>
       ))}
 
