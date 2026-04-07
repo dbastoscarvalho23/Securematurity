@@ -68,10 +68,15 @@ export default function Settings() {
     mutationFn: async ({ userId, data }) => {
       const res = await base44.functions.invoke('adminUpdateUser', { userId, data });
       if (res.data?.error) throw new Error(res.data.error);
+      return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('User updated successfully');
+      if (result?.roleError) {
+        toast.warning(`Profile updated, but role could not be changed: ${result.roleError}`);
+      } else {
+        toast.success('User updated successfully');
+      }
       setUserToEdit(null);
     },
     onError: (err) => {

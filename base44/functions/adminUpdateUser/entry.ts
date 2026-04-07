@@ -15,20 +15,30 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'userId is required' }, { status: 400 });
     }
 
-    // Map full_name -> display_name (custom field, actually persists)
-    const updateData = { ...data };
-    if (updateData.full_name !== undefined) {
-      updateData.display_name = updateData.full_name;
-      delete updateData.full_name;
-    }
-    // role is a top-level field on the User entity
-    if (updateData.role !== undefined) {
-      updateData.role = updateData.role;
+    const { role, full_name, ...restData } = data;
+
+    // Build non-role update (display_name, customer_id, customer_name, etc.)
+    const profileUpdate = { ...restData };
+    if (full_name !== undefined) {
+      profileUpdate.display_name = full_name;
     }
 
-    await base44.asServiceRole.entities.User.update(userId, updateData);
+    // Step 1: update profile fields (always safe)
+    if (Object.keys(profileUpdate).length > 0) {
+      await base44.asServiceRole.entities.User.update(userId, profileUpdate);
+    }
 
-    return Response.json({ success: true });
+    // Step 2: update role separately (may fail for app owner — handle gracefully)
+    let roleError = null;
+    if (role !== undefined) {
+      try {
+        await base44.asServiceRole.entities.User.update(userId, { role });
+      } catch (err) {
+        roleError = err.message || 'Could not update role (platform restriction)';
+      }
+    }
+
+    return Response.json({ success: true, roleError });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
