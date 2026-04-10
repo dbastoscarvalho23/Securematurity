@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, CheckCircle2 } from 'lucide-react';
+import { Shield, CheckCircle2, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 
@@ -71,6 +71,10 @@ export default function Landing() {
               Access is restricted to invited users only.<br />
               Contact your administrator to request access.
             </p>
+            <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground/70 pt-2 border-t">
+              <Globe className="w-3.5 h-3.5" />
+              <span>Detected timezone: <span className="font-medium text-muted-foreground">{Intl.DateTimeFormat().resolvedOptions().timeZone}</span></span>
+            </div>
           </div>
         </div>
       </div>
