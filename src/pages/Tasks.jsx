@@ -10,6 +10,7 @@ import TaskBoard from '@/components/tasks/TaskBoard';
 import TaskFormDialog from '@/components/tasks/TaskFormDialog';
 import TaskListView from '@/components/tasks/TaskListView';
 import { toast } from 'sonner';
+import { writeAuditLog } from '@/lib/auditLog';
 
 export default function Tasks() {
   const [search, setSearch] = useState('');
@@ -34,9 +35,13 @@ export default function Tasks() {
   const saveMutation = useMutation({
     mutationFn: async (form) => {
       if (form.id) {
-        return base44.entities.Task.update(form.id, form);
+        const result = await base44.entities.Task.update(form.id, form);
+        await writeAuditLog({ action: 'task_updated', entity_type: 'Task', entity_id: form.id, details: `Updated task: ${form.title}` });
+        return result;
       }
-      return base44.entities.Task.create(form);
+      const result = await base44.entities.Task.create(form);
+      await writeAuditLog({ action: 'task_created', entity_type: 'Task', entity_id: result?.id, details: `Created task: ${form.title}` });
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -45,12 +50,18 @@ export default function Tasks() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.Task.update(id, { status }),
+    mutationFn: async ({ id, status, title }) => {
+      await base44.entities.Task.update(id, { status });
+      await writeAuditLog({ action: 'task_status_changed', entity_type: 'Task', entity_id: id, details: `Task status changed to "${status}"${title ? `: ${title}` : ''}` });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Task.delete(id),
+    mutationFn: async (task) => {
+      await base44.entities.Task.delete(task.id || task);
+      await writeAuditLog({ action: 'task_deleted', entity_type: 'Task', entity_id: task.id || task, details: `Deleted task${task.title ? `: ${task.title}` : ''}` });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task deleted');
@@ -145,16 +156,16 @@ export default function Tasks() {
       {view === 'board' ? (
         <TaskBoard
           tasks={filteredTasks}
-          onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
+          onStatusChange={(id, status, title) => statusMutation.mutate({ id, status, title })}
           onEdit={handleEdit}
-          onDelete={(id) => deleteMutation.mutate(id)}
+          onDelete={(task) => deleteMutation.mutate(task)}
         />
       ) : (
         <TaskListView
           tasks={filteredTasks}
-          onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
+          onStatusChange={(id, status, title) => statusMutation.mutate({ id, status, title })}
           onEdit={handleEdit}
-          onDelete={(id) => deleteMutation.mutate(id)}
+          onDelete={(task) => deleteMutation.mutate(task)}
         />
       )}
 

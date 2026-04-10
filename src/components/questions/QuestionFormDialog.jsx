@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { writeAuditLog } from '@/lib/auditLog';
 
 const FRAMEWORKS = [
   { code: 'NIS2', name: 'NIS2 / DL 125/2025', domains: ['Governance', 'Risk Management', 'Incident Response', 'Business Continuity', 'Supply Chain', 'Access Control', 'Cryptography', 'Physical Security', 'Vulnerability Management'] },
@@ -51,9 +52,13 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       if (question?.id) {
-        return base44.entities.Question.update(question.id, data);
+        const result = await base44.entities.Question.update(question.id, data);
+        await writeAuditLog({ action: 'question_updated', entity_type: 'Question', entity_id: question.id, details: `Updated question [${data.framework_code}]: ${data.question_text?.substring(0, 80)}` });
+        return result;
       } else {
-        return base44.entities.Question.create(data);
+        const result = await base44.entities.Question.create(data);
+        await writeAuditLog({ action: 'question_created', entity_type: 'Question', entity_id: result?.id, details: `Created question [${data.framework_code}]: ${data.question_text?.substring(0, 80)}` });
+        return result;
       }
     },
     onSuccess: () => {

@@ -36,7 +36,7 @@ export default function TaskCard({ task, onStatusChange, onEdit, onDelete }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onStatusChange(task.id, transition.next)}>
+              <DropdownMenuItem onClick={() => onStatusChange(task.id, transition.next, task.title)}>
                 <ArrowRight className="w-4 h-4 mr-2" />
                 {transition.label}
               </DropdownMenuItem>
@@ -45,7 +45,7 @@ export default function TaskCard({ task, onStatusChange, onEdit, onDelete }) {
                 <Pencil className="w-4 h-4 mr-2" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDelete(task.id)} className="text-destructive">
+              <DropdownMenuItem onClick={() => onDelete(task)} className="text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete
               </DropdownMenuItem>

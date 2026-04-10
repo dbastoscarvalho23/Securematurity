@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import QuestionFormDialog from '@/components/questions/QuestionFormDialog';
 import AIQuestionGeneratorDialog from '@/components/questions/AIQuestionGeneratorDialog';
+import { writeAuditLog } from '@/lib/auditLog';
 
 const FRAMEWORK_COLORS = {
   NIS2: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
@@ -49,7 +50,10 @@ export default function QuestionBank() {
   const activeFrameworkCodes = new Set(allFrameworks.filter(fw => fw.status === 'active').map(fw => fw.code));
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Question.delete(id),
+    mutationFn: async (q) => {
+      await base44.entities.Question.delete(q.id);
+      await writeAuditLog({ action: 'question_deleted', entity_type: 'Question', entity_id: q.id, details: `Deleted question [${q.framework_code}]: ${q.question_text?.substring(0, 80)}` });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['questions'] }),
   });
 
@@ -142,6 +146,7 @@ Return only valid JSON with the translations.`,
 
     queryClient.invalidateQueries({ queryKey: ['questions'] });
     setIsTranslating(false);
+    await writeAuditLog({ action: 'questions_translated', entity_type: 'Question', details: `AI translated ${untranslated.length} question${untranslated.length !== 1 ? 's' : ''} to European Portuguese` });
     toast.success(`Translated ${untranslated.length} question${untranslated.length !== 1 ? 's' : ''} to European Portuguese.`);
   };
 
@@ -170,12 +175,13 @@ Return only valid JSON with the translations.`,
     await Promise.all(toDelete.map(id => base44.entities.Question.delete(id)));
     queryClient.invalidateQueries({ queryKey: ['questions'] });
     setIsDeduplicating(false);
+    await writeAuditLog({ action: 'questions_deduplicated', entity_type: 'Question', details: `Removed ${toDelete.length} duplicate question${toDelete.length !== 1 ? 's' : ''}` });
     toast.success(`Removed ${toDelete.length} duplicate question${toDelete.length !== 1 ? 's' : ''}.`);
   };
 
   const handleDelete = (q) => {
     if (confirm(`Delete question "${q.question_text.substring(0, 60)}..."?`)) {
-      deleteMutation.mutate(q.id);
+      deleteMutation.mutate(q);
     }
   };
 

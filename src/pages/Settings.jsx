@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { writeAuditLog } from '@/lib/auditLog';
 import { useAuth } from '@/lib/AuthContext';
 import EditUserDialog from '@/components/settings/EditUserDialog';
 
@@ -92,7 +93,8 @@ export default function Settings() {
   const handleCreateFramework = async () => {
     if (!newFwForm.code || !newFwForm.name) return;
     setIsSavingFw(true);
-    await base44.entities.Framework.create({ ...newFwForm, status: 'active' });
+    const result = await base44.entities.Framework.create({ ...newFwForm, status: 'active' });
+    await writeAuditLog({ action: 'framework_created', entity_type: 'Framework', entity_id: result?.id, details: `Created framework: ${newFwForm.name} (${newFwForm.code})` });
     queryClient.invalidateQueries({ queryKey: ['frameworks'] });
     setIsSavingFw(false);
     setNewFwDialog(false);
@@ -103,6 +105,7 @@ export default function Settings() {
   const handleToggleFrameworkStatus = async (fw) => {
     const newStatus = fw.status === 'active' ? 'inactive' : 'active';
     await base44.entities.Framework.update(fw.id, { status: newStatus });
+    await writeAuditLog({ action: 'framework_status_changed', entity_type: 'Framework', entity_id: fw.id, details: `Framework ${fw.code} (${fw.name}) set to ${newStatus}` });
     queryClient.invalidateQueries({ queryKey: ['frameworks'] });
     toast.success(`Framework ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
   };

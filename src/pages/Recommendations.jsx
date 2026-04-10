@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import TaskFormDialog from '@/components/tasks/TaskFormDialog';
 import AIRecommendationDialog from '@/components/recommendations/AIRecommendationDialog';
 import { toast } from 'sonner';
+import { writeAuditLog } from '@/lib/auditLog';
 
 const priorityColors = {
   critical: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -73,12 +74,19 @@ export default function Recommendations() {
   const activeFrameworkCodes = new Set(activeFrameworks.map(fw => fw.code));
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Recommendation.update(id, data),
+    mutationFn: async ({ id, data, title }) => {
+      await base44.entities.Recommendation.update(id, data);
+      await writeAuditLog({ action: 'recommendation_updated', entity_type: 'Recommendation', entity_id: id, details: `Updated recommendation${title ? `: ${title}` : ''}${data.status ? ` → status: ${data.status}` : ''}` });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendations'] }),
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: (taskData) => base44.entities.Task.create(taskData),
+    mutationFn: async (taskData) => {
+      const result = await base44.entities.Task.create(taskData);
+      await writeAuditLog({ action: 'task_created', entity_type: 'Task', entity_id: result?.id, details: `Task created from recommendation: ${taskData.title}` });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task created from recommendation');
@@ -86,11 +94,15 @@ export default function Recommendations() {
   });
 
   const createRecMutation = useMutation({
-    mutationFn: (data) => base44.entities.Recommendation.create({
-      ...data,
-      customer_id: customerId || data.customer_id,
-      status: 'pending',
-    }),
+    mutationFn: async (data) => {
+      const result = await base44.entities.Recommendation.create({
+        ...data,
+        customer_id: customerId || data.customer_id,
+        status: 'pending',
+      });
+      await writeAuditLog({ action: 'recommendation_created', entity_type: 'Recommendation', entity_id: result?.id, details: `Created recommendation: ${data.title}` });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recommendations'] });
       setNewRecDialog(false);
