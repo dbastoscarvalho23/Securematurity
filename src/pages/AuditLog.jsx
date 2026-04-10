@@ -8,8 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollText, X } from 'lucide-react';
-import { format } from 'date-fns';
 import { useAuth } from '@/lib/AuthContext';
+
+const formatLocalTimestamp = (dateStr) => {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleString([], {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+};
 
 const actionColors = {
   assessment_created: 'bg-chart-1/10 text-chart-1',
@@ -150,7 +157,7 @@ export default function AuditLog() {
               ) : filtered.map(log => (
                 <TableRow key={log.id}>
                   <TableCell className="text-xs font-mono text-muted-foreground">
-                    {log.created_date ? format(new Date(log.created_date), 'MMM d, yyyy HH:mm') : ''}
+                    {formatLocalTimestamp(log.created_date)}
                   </TableCell>
                   <TableCell>
                     <Badge className={actionColors[log.action] || 'bg-muted text-muted-foreground'}>
