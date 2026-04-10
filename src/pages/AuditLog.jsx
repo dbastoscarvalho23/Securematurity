@@ -30,7 +30,6 @@ export default function AuditLog() {
   const [filterAction, setFilterAction] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
   const [filterEntity, setFilterEntity] = useState('all');
-  const [filterTimezone, setFilterTimezone] = useState('all');
   const [filterSearch, setFilterSearch] = useState('');
 
   const { data: logs = [], isLoading } = useQuery({
@@ -41,26 +40,23 @@ export default function AuditLog() {
   const uniqueActions = useMemo(() => [...new Set(logs.map(l => l.action).filter(Boolean))].sort(), [logs]);
   const uniqueUsers = useMemo(() => [...new Set(logs.map(l => l.user_email).filter(Boolean))].sort(), [logs]);
   const uniqueEntities = useMemo(() => [...new Set(logs.map(l => l.entity_type).filter(Boolean))].sort(), [logs]);
-  const uniqueTimezones = useMemo(() => [...new Set(logs.map(l => l.timezone).filter(Boolean))].sort(), [logs]);
 
   const filtered = useMemo(() => logs.filter(log => {
     if (filterAction !== 'all' && log.action !== filterAction) return false;
     if (filterUser !== 'all' && log.user_email !== filterUser) return false;
     if (filterEntity !== 'all' && log.entity_type !== filterEntity) return false;
-    if (filterTimezone !== 'all' && log.timezone !== filterTimezone) return false;
     if (filterSearch && !log.details?.toLowerCase().includes(filterSearch.toLowerCase()) &&
         !log.user_email?.toLowerCase().includes(filterSearch.toLowerCase()) &&
         !log.action?.toLowerCase().includes(filterSearch.toLowerCase())) return false;
     return true;
-  }), [logs, filterAction, filterUser, filterEntity, filterTimezone, filterSearch]);
+  }), [logs, filterAction, filterUser, filterEntity, filterSearch]);
 
-  const hasFilters = filterAction !== 'all' || filterUser !== 'all' || filterEntity !== 'all' || filterTimezone !== 'all' || filterSearch;
+  const hasFilters = filterAction !== 'all' || filterUser !== 'all' || filterEntity !== 'all' || filterSearch;
 
   const clearFilters = () => {
     setFilterAction('all');
     setFilterUser('all');
     setFilterEntity('all');
-    setFilterTimezone('all');
     setFilterSearch('');
   };
 
@@ -119,17 +115,6 @@ export default function AuditLog() {
             ))}
           </SelectContent>
         </Select>
-        {uniqueTimezones.length > 0 && (
-          <Select value={filterTimezone} onValueChange={setFilterTimezone}>
-            <SelectTrigger className="w-48"><SelectValue placeholder="All Timezones" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Timezones</SelectItem>
-              {uniqueTimezones.map(tz => (
-                <SelectItem key={tz} value={tz}>{tz}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
       </div>
 
       <Card>
@@ -140,7 +125,6 @@ export default function AuditLog() {
                 <TableHead>Timestamp</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>User</TableHead>
-                <TableHead>Timezone</TableHead>
                 <TableHead>Entity</TableHead>
                 <TableHead>Details</TableHead>
               </TableRow>
@@ -148,7 +132,7 @@ export default function AuditLog() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : logs.length === 0 ? (
                 <TableRow>
@@ -159,7 +143,7 @@ export default function AuditLog() {
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
                     No entries match your filters.
                   </TableCell>
                 </TableRow>
@@ -174,7 +158,6 @@ export default function AuditLog() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">{log.user_email}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{log.timezone || '—'}</TableCell>
                   <TableCell className="text-sm">{log.entity_type}</TableCell>
                   <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{log.details}</TableCell>
                 </TableRow>
