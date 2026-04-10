@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User } from 'lucide-react';
+import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,6 +30,9 @@ export default function Settings() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [invitedToDelete, setInvitedToDelete] = useState(null);
   const [userToEdit, setUserToEdit] = useState(null);
+  const [newFwDialog, setNewFwDialog] = useState(false);
+  const [newFwForm, setNewFwForm] = useState({ code: '', name: '', version: '', description: '' });
+  const [isSavingFw, setIsSavingFw] = useState(false);
 
   // Profile edit state (for current user's own profile)
   const [profileName, setProfileName] = useState('');
@@ -83,6 +88,24 @@ export default function Settings() {
       toast.error(err?.message || 'Failed to update user');
     }
   });
+
+  const handleCreateFramework = async () => {
+    if (!newFwForm.code || !newFwForm.name) return;
+    setIsSavingFw(true);
+    await base44.entities.Framework.create({ ...newFwForm, status: 'active' });
+    queryClient.invalidateQueries({ queryKey: ['frameworks'] });
+    setIsSavingFw(false);
+    setNewFwDialog(false);
+    setNewFwForm({ code: '', name: '', version: '', description: '' });
+    toast.success('Framework created successfully');
+  };
+
+  const handleToggleFrameworkStatus = async (fw) => {
+    const newStatus = fw.status === 'active' ? 'inactive' : 'active';
+    await base44.entities.Framework.update(fw.id, { status: newStatus });
+    queryClient.invalidateQueries({ queryKey: ['frameworks'] });
+    toast.success(`Framework ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
+  };
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -648,20 +671,31 @@ export default function Settings() {
         <TabsContent value="frameworks" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Shield className="w-4 h-4" />
-                Active Frameworks
-              </CardTitle>
-              <CardDescription>Compliance frameworks configured in the platform</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Compliance Frameworks
+                  </CardTitle>
+                  <CardDescription>Compliance frameworks configured in the platform</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  {frameworks.length === 0 && (
+                    <Button onClick={seedFrameworks} disabled={isSeeding} variant="outline" className="gap-2">
+                      {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <SettingsIcon className="w-4 h-4" />}
+                      {isSeeding ? 'Seeding...' : 'Initialize Defaults'}
+                    </Button>
+                  )}
+                  <Button onClick={() => setNewFwDialog(true)} className="gap-2">
+                    <Plus className="w-4 h-4" /> New Framework
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {frameworks.length === 0 ? (
                 <div className="text-center py-8 space-y-3">
-                  <p className="text-sm text-muted-foreground">No frameworks configured yet.</p>
-                  <Button onClick={seedFrameworks} disabled={isSeeding} className="gap-2">
-                    {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <SettingsIcon className="w-4 h-4" />}
-                    {isSeeding ? 'Seeding...' : 'Initialize Frameworks & Questions'}
-                  </Button>
+                  <p className="text-sm text-muted-foreground">No frameworks configured yet. Use the buttons above to get started.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -670,36 +704,55 @@ export default function Settings() {
                     const domains = [...new Set(fwQuestions.map(q => q.domain))];
                     const score = getRiskScore(fw.code);
                     const { label: riskLabel, color: riskColor } = getRiskLabel(score);
+                    const isActive = fw.status === 'active';
                     return (
-                      <div key={fw.id} className="p-4 rounded-lg border">
+                      <div key={fw.id} className={`p-4 rounded-lg border transition-opacity ${isActive ? '' : 'opacity-60'}`}>
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <p className="font-medium">{fw.name}</p>
                             <Badge variant="outline" className="text-xs font-mono">{fw.code}</Badge>
+                            {fw.version && <span className="text-xs text-muted-foreground">v{fw.version}</span>}
                           </div>
-                          <Badge className="bg-accent/10 text-accent">{fw.status}</Badge>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleToggleFrameworkStatus(fw)}
+                              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                                isActive
+                                  ? 'bg-accent/10 text-accent border-accent/20 hover:bg-accent/20'
+                                  : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                              }`}
+                              title={isActive ? 'Click to deactivate' : 'Click to activate'}
+                            >
+                              {isActive
+                                ? <><ToggleRight className="w-3.5 h-3.5" /> Active</>
+                                : <><ToggleLeft className="w-3.5 h-3.5" /> Inactive</>
+                              }
+                            </button>
+                          </div>
                         </div>
                         <p className="text-sm text-muted-foreground">{fw.description}</p>
                         <p className="text-xs text-muted-foreground mt-2">
-                          {fwQuestions.length} questions · {domains.length} domains · Version {fw.version}
+                          {fwQuestions.length} questions · {domains.length} domains
                         </p>
                         {/* Risk Score */}
-                        <div className="mt-3 pt-3 border-t">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-medium text-muted-foreground">Overall Risk Score</span>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-xs font-semibold ${riskColor}`}>{riskLabel}</span>
-                              {score !== null && (
-                                <span className="text-xs font-mono font-bold">{score.toFixed(2)} / 5.00</span>
-                              )}
+                        {isActive && (
+                          <div className="mt-3 pt-3 border-t">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-xs font-medium text-muted-foreground">Overall Risk Score</span>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs font-semibold ${riskColor}`}>{riskLabel}</span>
+                                {score !== null && (
+                                  <span className="text-xs font-mono font-bold">{score.toFixed(2)} / 5.00</span>
+                                )}
+                              </div>
                             </div>
+                            {score !== null ? (
+                              <Progress value={(score / 5) * 100} className="h-2" />
+                            ) : (
+                              <p className="text-xs text-muted-foreground italic">No assessment responses yet for this framework.</p>
+                            )}
                           </div>
-                          {score !== null ? (
-                            <Progress value={(score / 5) * 100} className="h-2" />
-                          ) : (
-                            <p className="text-xs text-muted-foreground italic">No assessment responses yet for this framework.</p>
-                          )}
-                        </div>
+                        )}
                       </div>
                     );
                   })}
@@ -707,6 +760,59 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+
+          {/* New Framework Dialog */}
+          <Dialog open={newFwDialog} onOpenChange={setNewFwDialog}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>New Framework</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Code *</Label>
+                    <Input
+                      value={newFwForm.code}
+                      onChange={e => setNewFwForm(p => ({ ...p, code: e.target.value.toUpperCase() }))}
+                      placeholder="e.g. ISO27001"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Version</Label>
+                    <Input
+                      value={newFwForm.version}
+                      onChange={e => setNewFwForm(p => ({ ...p, version: e.target.value }))}
+                      placeholder="e.g. 2022"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Name *</Label>
+                  <Input
+                    value={newFwForm.name}
+                    onChange={e => setNewFwForm(p => ({ ...p, name: e.target.value }))}
+                    placeholder="e.g. ISO/IEC 27001:2022"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Description</Label>
+                  <Textarea
+                    value={newFwForm.description}
+                    onChange={e => setNewFwForm(p => ({ ...p, description: e.target.value }))}
+                    placeholder="Brief description of the framework"
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setNewFwDialog(false)}>Cancel</Button>
+                <Button onClick={handleCreateFramework} disabled={isSavingFw || !newFwForm.code || !newFwForm.name}>
+                  {isSavingFw ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Create Framework
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
       </Tabs>
     </div>

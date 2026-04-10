@@ -9,9 +9,10 @@ export default function AssessmentWizardMeta({ customers, allFrameworks, initial
   const [form, setForm] = useState(initialMeta);
 
   const selectedCustomer = customers.find(c => c.id === form.customer_id);
+  const activeFrameworks = allFrameworks.filter(fw => fw.status === 'active');
   const availableFrameworks = selectedCustomer?.allowed_frameworks?.length
-    ? allFrameworks.filter(fw => selectedCustomer.allowed_frameworks.includes(fw.code))
-    : allFrameworks;
+    ? activeFrameworks.filter(fw => selectedCustomer.allowed_frameworks.includes(fw.code))
+    : activeFrameworks;
 
   const handleCustomerChange = (customerId) => {
     const customer = customers.find(c => c.id === customerId);

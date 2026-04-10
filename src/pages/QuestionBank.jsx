@@ -46,6 +46,8 @@ export default function QuestionBank() {
     queryFn: () => base44.entities.Framework.list(),
   });
 
+  const activeFrameworkCodes = new Set(allFrameworks.filter(fw => fw.status === 'active').map(fw => fw.code));
+
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Question.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['questions'] }),
@@ -60,6 +62,8 @@ export default function QuestionBank() {
 
   const filtered = useMemo(() => {
     return questions.filter(q => {
+      // Filter out questions for inactive frameworks
+      if (q.framework_code && allFrameworks.length > 0 && !activeFrameworkCodes.has(q.framework_code)) return false;
       const matchFw = filterFramework === 'all' || q.framework_code === filterFramework;
       const matchDomain = filterDomain === 'all' || q.domain === filterDomain;
       const matchControlId = !filterControlId || q.control_id?.toLowerCase().includes(filterControlId.toLowerCase());
@@ -70,7 +74,7 @@ export default function QuestionBank() {
         || q.domain?.toLowerCase().includes(search.toLowerCase());
       return matchFw && matchDomain && matchControlId && matchWeight && matchLang && matchSearch;
     });
-  }, [questions, filterFramework, filterDomain, filterControlId, filterWeight, filterLang, search]);
+  }, [questions, filterFramework, filterDomain, filterControlId, filterWeight, filterLang, search, activeFrameworkCodes]);
 
   const handleEdit = (q) => {
     setEditingQuestion(q);

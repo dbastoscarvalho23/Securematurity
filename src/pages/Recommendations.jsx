@@ -65,6 +65,13 @@ export default function Recommendations() {
     enabled: isAdmin,
   });
 
+  const { data: activeFrameworks = [] } = useQuery({
+    queryKey: ['frameworks-active'],
+    queryFn: () => base44.entities.Framework.filter({ status: 'active' }),
+  });
+
+  const activeFrameworkCodes = new Set(activeFrameworks.map(fw => fw.code));
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Recommendation.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendations'] }),
@@ -150,6 +157,8 @@ export default function Recommendations() {
     if (filterPriority !== 'all' && r.priority !== filterPriority) return false;
     if (filterStatus !== 'all' && r.status !== filterStatus) return false;
     if (filterFramework !== 'all' && r.framework_code !== filterFramework) return false;
+    // Hide recommendations for inactive frameworks (unless no framework_code set)
+    if (r.framework_code && activeFrameworks.length > 0 && !activeFrameworkCodes.has(r.framework_code)) return false;
     return true;
   });
 
