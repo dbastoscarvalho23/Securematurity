@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollText } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ScrollText, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -24,10 +27,38 @@ const actionColors = {
 
 export default function AuditLog() {
   const { user } = useAuth();
+  const [filterAction, setFilterAction] = useState('all');
+  const [filterUser, setFilterUser] = useState('all');
+  const [filterEntity, setFilterEntity] = useState('all');
+  const [filterSearch, setFilterSearch] = useState('');
+
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['auditLogs'],
-    queryFn: () => base44.entities.AuditLog.list('-created_date', 200),
+    queryFn: () => base44.entities.AuditLog.list('-created_date', 500),
   });
+
+  const uniqueActions = useMemo(() => [...new Set(logs.map(l => l.action).filter(Boolean))].sort(), [logs]);
+  const uniqueUsers = useMemo(() => [...new Set(logs.map(l => l.user_email).filter(Boolean))].sort(), [logs]);
+  const uniqueEntities = useMemo(() => [...new Set(logs.map(l => l.entity_type).filter(Boolean))].sort(), [logs]);
+
+  const filtered = useMemo(() => logs.filter(log => {
+    if (filterAction !== 'all' && log.action !== filterAction) return false;
+    if (filterUser !== 'all' && log.user_email !== filterUser) return false;
+    if (filterEntity !== 'all' && log.entity_type !== filterEntity) return false;
+    if (filterSearch && !log.details?.toLowerCase().includes(filterSearch.toLowerCase()) &&
+        !log.user_email?.toLowerCase().includes(filterSearch.toLowerCase()) &&
+        !log.action?.toLowerCase().includes(filterSearch.toLowerCase())) return false;
+    return true;
+  }), [logs, filterAction, filterUser, filterEntity, filterSearch]);
+
+  const hasFilters = filterAction !== 'all' || filterUser !== 'all' || filterEntity !== 'all' || filterSearch;
+
+  const clearFilters = () => {
+    setFilterAction('all');
+    setFilterUser('all');
+    setFilterEntity('all');
+    setFilterSearch('');
+  };
 
   if (user?.role !== 'admin') {
     return (
@@ -41,7 +72,49 @@ export default function AuditLog() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">Track all platform activity and changes · <span className="text-foreground font-medium">{logs.length}</span> entries</p>
+        <p className="text-muted-foreground text-sm">Track all platform activity and changes · <span className="text-foreground font-medium">{filtered.length}</span> of {logs.length} entries</p>
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5 text-muted-foreground">
+            <X className="w-3.5 h-3.5" /> Clear filters
+          </Button>
+        )}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3">
+        <Input
+          placeholder="Search details, user, action..."
+          value={filterSearch}
+          onChange={e => setFilterSearch(e.target.value)}
+          className="w-56"
+        />
+        <Select value={filterAction} onValueChange={setFilterAction}>
+          <SelectTrigger className="w-48"><SelectValue placeholder="All Actions" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Actions</SelectItem>
+            {uniqueActions.map(a => (
+              <SelectItem key={a} value={a}>{a.replace(/_/g, ' ')}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterUser} onValueChange={setFilterUser}>
+          <SelectTrigger className="w-48"><SelectValue placeholder="All Users" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Users</SelectItem>
+            {uniqueUsers.map(u => (
+              <SelectItem key={u} value={u}>{u}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterEntity} onValueChange={setFilterEntity}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="All Entities" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Entities</SelectItem>
+            {uniqueEntities.map(e => (
+              <SelectItem key={e} value={e}>{e}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
@@ -68,7 +141,13 @@ export default function AuditLog() {
                     No audit entries yet.
                   </TableCell>
                 </TableRow>
-              ) : logs.map(log => (
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                    No entries match your filters.
+                  </TableCell>
+                </TableRow>
+              ) : filtered.map(log => (
                 <TableRow key={log.id}>
                   <TableCell className="text-xs font-mono text-muted-foreground">
                     {log.created_date ? format(new Date(log.created_date), 'MMM d, yyyy HH:mm') : ''}
