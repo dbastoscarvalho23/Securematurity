@@ -149,7 +149,9 @@ export default function Recommendations() {
     }
   };
 
-  const frameworks = [...new Set(recommendations.map(r => r.framework_code).filter(Boolean))].sort();
+  const frameworks = [...new Set(recommendations.map(r => r.framework_code).filter(Boolean))]
+    .filter(fw => activeFrameworkCodes.has(fw))
+    .sort();
   const [collapsedFrameworks, setCollapsedFrameworks] = useState({});
   const toggleFramework = (fw) => setCollapsedFrameworks(prev => ({ ...prev, [fw]: !prev[fw] }));
 

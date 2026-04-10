@@ -219,7 +219,7 @@ Return only valid JSON with the translations.`,
       {/* Stats */}
       <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
         <span>Showing <strong className="text-foreground">{filtered.length}</strong> of {questions.length} questions</span>
-        {allFrameworks.map(fw => {
+        {allFrameworks.filter(fw => fw.status === 'active').map(fw => {
           const count = questions.filter(q => q.framework_code === fw.code).length;
           return count > 0 ? (
             <span key={fw.code}>
@@ -255,7 +255,7 @@ Return only valid JSON with the translations.`,
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All</SelectItem>
-                          {allFrameworks.map(fw => <SelectItem key={fw.code} value={fw.code}>{fw.code}</SelectItem>)}
+                          {allFrameworks.filter(fw => fw.status === 'active').map(fw => <SelectItem key={fw.code} value={fw.code}>{fw.code}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
