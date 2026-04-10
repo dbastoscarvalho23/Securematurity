@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, LogOut, Settings, Building2, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, LogOut, Settings, Building2, Loader2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -54,6 +54,13 @@ export default function TopBar() {
     ? displayName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : 'U';
 
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const isAdmin = user?.role === 'admin';
   const roleLabel = { admin: 'Platform Admin', customer_admin: 'Customer Admin', user: 'User' }[user?.role] || 'User';
   const customerName = user?.customer_name;
@@ -106,6 +113,12 @@ export default function TopBar() {
                   <p className="text-sm font-semibold">{displayName}</p>
                   <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                   <p className="text-xs text-primary font-medium">{roleLabel}</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Clock className="w-3 h-3 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground font-mono">
+                      {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </p>
+                  </div>
                   {!isAdmin && customerName && (
                     <div className="flex items-center gap-1 mt-0.5">
                       <Building2 className="w-3 h-3 text-muted-foreground" />
@@ -163,6 +176,15 @@ export default function TopBar() {
             <div className="space-y-1.5">
               <Label>Role</Label>
               <Input value={roleLabel} disabled className="bg-muted/50 text-muted-foreground" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Local Time</Label>
+              <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-muted/50">
+                <Clock className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-mono text-muted-foreground">
+                  {currentTime.toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+              </div>
             </div>
             {!isAdmin && customerName && (
               <div className="space-y-1.5">
