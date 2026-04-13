@@ -36,6 +36,7 @@ const PAGE_TITLES = {
   '/admin': 'Admin Dashboard',
   '/audit-log': 'Audit Log',
   '/settings': 'Settings',
+  '/security-documents': 'Security Documents',
 };
 
 export default function TopBar() {

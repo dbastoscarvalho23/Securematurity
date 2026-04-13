@@ -15,7 +15,8 @@ import {
   BookOpen,
   ListTodo,
   Target,
-  TrendingUp
+  TrendingUp,
+  FolderLock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -39,6 +40,7 @@ const adminNavGroups = [
       { path: '/task-analytics', label: 'Task Analytics', icon: TrendingUp },
       { path: '/question-bank', label: 'Question DB', icon: BookOpen },
       { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
+      { path: '/security-documents', label: 'Documents', icon: FolderLock },
     ]
   },
   {
@@ -65,6 +67,7 @@ const customerAdminNavGroups = [
     label: 'Tools',
     items: [
       { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
+      { path: '/security-documents', label: 'Documents', icon: FolderLock },
     ]
   },
   {
@@ -83,6 +86,12 @@ const userNavGroups = [
       { path: '/assessments', label: 'My Assessments', icon: ClipboardCheck },
       { path: '/tasks', label: 'Tasks', icon: ListTodo },
       { path: '/reports', label: 'Reports', icon: BarChart3 },
+    ]
+  },
+  {
+    label: 'Tools',
+    items: [
+      { path: '/security-documents', label: 'Documents', icon: FolderLock },
     ]
   },
   {

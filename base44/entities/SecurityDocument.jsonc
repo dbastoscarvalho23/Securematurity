@@ -1,0 +1,88 @@
+{
+  "name": "SecurityDocument",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Document title"
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "policy",
+        "standard",
+        "procedure",
+        "playbook"
+      ],
+      "description": "Document level: policy (L1), standard (L2), procedure (L3), playbook (L4)"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer (if customer-specific)"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the document"
+    },
+    "version": {
+      "type": "string",
+      "description": "Document version (e.g. 1.0, 2.1)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "under_review",
+        "approved",
+        "deprecated"
+      ],
+      "default": "draft",
+      "description": "Document lifecycle status"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Name or role of the approver"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of approval"
+    },
+    "review_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Next scheduled review date"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL of the uploaded document file"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original file name"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for categorization (e.g. GDPR, NIS2, ISO27001)"
+    },
+    "framework_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Related compliance framework codes"
+    }
+  },
+  "required": [
+    "title",
+    "level",
+    "status"
+  ]
+}
