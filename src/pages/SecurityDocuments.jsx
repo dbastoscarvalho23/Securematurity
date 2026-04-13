@@ -5,8 +5,9 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Search, FileText, Shield, BookOpen, Workflow, Zap, Upload, ExternalLink, Pencil, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Search, FileText, Shield, BookOpen, Workflow, Zap, ExternalLink, Pencil, Trash2, ChevronDown, ChevronRight, CheckCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import SecurityDocumentDialog from '@/components/documents/SecurityDocumentDialog';
@@ -20,7 +21,7 @@ const LEVELS = [
     color: 'text-chart-1',
     bg: 'bg-chart-1/10',
     border: 'border-chart-1/20',
-    examples: ['General Information Security Policy (GISP)', 'Privacy and Minor Data Protection Policy', 'Acceptable Use Policy for Technologies (AUP)'],
+    examples: ['General Information Security Policy (GISP)', 'Privacy and Minor Data Protection Policy', 'Acceptable Use Policy (AUP)'],
   },
   {
     id: 'standard',
@@ -60,24 +61,23 @@ const STATUS_STYLES = {
   approved: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
   deprecated: 'bg-destructive/10 text-destructive border-destructive/20',
 };
-
-const STATUS_LABELS = {
-  draft: 'Draft',
-  under_review: 'Under Review',
-  approved: 'Approved',
-  deprecated: 'Deprecated',
-};
+const STATUS_LABELS = { draft: 'Draft', under_review: 'Under Review', approved: 'Approved', deprecated: 'Deprecated' };
 
 export default function SecurityDocuments() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === 'admin';
+  const isCustomerAdmin = user?.role === 'customer_admin';
+  const isUser = !isAdmin && !isCustomerAdmin;
+  const customerId = user?.customer_id;
+
   const [search, setSearch] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState(null);
   const [collapsed, setCollapsed] = useState({});
 
-  const { data: docs = [], isLoading } = useQuery({
+  const { data: allDocs = [] } = useQuery({
     queryKey: ['securityDocuments'],
     queryFn: () => base44.entities.SecurityDocument.list('-created_date', 500),
   });
@@ -88,20 +88,91 @@ export default function SecurityDocuments() {
     enabled: isAdmin,
   });
 
+  // Determine the effective customer filter
+  const effectiveCustomerId = isAdmin ? selectedCustomerId : customerId;
+
+  // Filter docs by customer + search
+  const docs = useMemo(() => {
+    let filtered = allDocs;
+    if (effectiveCustomerId) {
+      filtered = filtered.filter(d => d.customer_id === effectiveCustomerId);
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(d =>
+        d.title?.toLowerCase().includes(q) ||
+        d.description?.toLowerCase().includes(q) ||
+        d.tags?.some(t => t.toLowerCase().includes(q)) ||
+        d.framework_codes?.some(f => f.toLowerCase().includes(q))
+      );
+    }
+    return filtered;
+  }, [allDocs, effectiveCustomerId, search]);
+
+  // Permissions
+  const canCreate = isAdmin || isCustomerAdmin || isUser; // all can add
+  const canApprove = isAdmin || isCustomerAdmin;
+
+  const canEditDoc = (doc) => {
+    if (isAdmin) return true;
+    if (isCustomerAdmin) return doc.customer_id === customerId;
+    // user: only own docs
+    return doc.owner_email === user?.email;
+  };
+
+  const canDeleteDoc = (doc) => {
+    if (isAdmin) return true;
+    if (isCustomerAdmin) return doc.customer_id === customerId;
+    return false;
+  };
+
   const saveMutation = useMutation({
     mutationFn: async (form) => {
       if (form.id) {
-        const result = await base44.entities.SecurityDocument.update(form.id, form);
+        // If a regular user edits, set back to under_review
+        const updatedForm = isUser ? { ...form, status: 'under_review' } : form;
+        const result = await base44.entities.SecurityDocument.update(form.id, updatedForm);
         await writeAuditLog({ action: 'settings_changed', entity_type: 'SecurityDocument', entity_id: form.id, details: `Updated document: ${form.title}` });
         return result;
       }
-      const result = await base44.entities.SecurityDocument.create(form);
+      // New doc: admin/customer_admin -> draft, user -> under_review
+      const newForm = {
+        ...form,
+        owner_email: user?.email,
+        status: isUser ? 'under_review' : (form.status || 'draft'),
+        customer_id: isUser || isCustomerAdmin ? customerId : form.customer_id,
+        customer_name: isUser || isCustomerAdmin
+          ? (user?.customer_name || form.customer_name)
+          : form.customer_name,
+      };
+      const result = await base44.entities.SecurityDocument.create(newForm);
       await writeAuditLog({ action: 'settings_changed', entity_type: 'SecurityDocument', entity_id: result?.id, details: `Created document: ${form.title}` });
+      return result;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['securityDocuments'] });
+      const isEdit = !!variables.id;
+      if (isUser) {
+        toast.success(isEdit ? 'Document submitted for re-approval' : 'Document submitted for approval by Customer Admin');
+      } else {
+        toast.success(isEdit ? 'Document updated' : 'Document created');
+      }
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (doc) => {
+      const result = await base44.entities.SecurityDocument.update(doc.id, {
+        status: 'approved',
+        approved_by: user?.display_name || user?.full_name || user?.email,
+        approved_date: new Date().toISOString().split('T')[0],
+      });
+      await writeAuditLog({ action: 'settings_changed', entity_type: 'SecurityDocument', entity_id: doc.id, details: `Approved document: ${doc.title}` });
       return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['securityDocuments'] });
-      toast.success(editingDoc ? 'Document updated' : 'Document created');
+      toast.success('Document approved');
     },
   });
 
@@ -116,17 +187,6 @@ export default function SecurityDocuments() {
     },
   });
 
-  const filteredDocs = useMemo(() => {
-    if (!search) return docs;
-    const q = search.toLowerCase();
-    return docs.filter(d =>
-      d.title?.toLowerCase().includes(q) ||
-      d.description?.toLowerCase().includes(q) ||
-      d.tags?.some(t => t.toLowerCase().includes(q)) ||
-      d.framework_codes?.some(f => f.toLowerCase().includes(q))
-    );
-  }, [docs, search]);
-
   const toggleCollapse = (id) => setCollapsed(c => ({ ...c, [id]: !c[id] }));
 
   const handleNew = (level) => {
@@ -139,19 +199,55 @@ export default function SecurityDocuments() {
     setDialogOpen(true);
   };
 
+  // Customer info display
+  const currentCustomer = isAdmin
+    ? customers.find(c => c.id === selectedCustomerId)
+    : { name: user?.customer_name };
+
+  const pendingApprovals = docs.filter(d => d.status === 'under_review').length;
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search documents..." className="pl-9" />
+      <div className="flex flex-wrap items-center gap-3 justify-between">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Platform admin: customer selector */}
+          {isAdmin && (
+            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+              <SelectTrigger className="w-52">
+                <SelectValue placeholder="All Customers" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={null}>All Customers</SelectItem>
+                {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+          {/* Non-admin: show customer badge */}
+          {!isAdmin && user?.customer_name && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium">
+              <Shield className="w-3.5 h-3.5" />
+              {user.customer_name}
+            </div>
+          )}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search documents..." className="pl-9 w-56" />
+          </div>
         </div>
-        {isAdmin && (
-          <Button onClick={() => { setEditingDoc(null); setDialogOpen(true); }} className="gap-2">
-            <Plus className="w-4 h-4" /> New Document
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {pendingApprovals > 0 && canApprove && (
+            <div className="flex items-center gap-1.5 text-sm text-chart-3 bg-chart-3/10 px-3 py-1.5 rounded-lg">
+              <Clock className="w-3.5 h-3.5" />
+              {pendingApprovals} pending approval{pendingApprovals > 1 ? 's' : ''}
+            </div>
+          )}
+          {canCreate && (
+            <Button onClick={() => { setEditingDoc(null); setDialogOpen(true); }} className="gap-2">
+              <Plus className="w-4 h-4" /> New Document
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Stats */}
@@ -167,7 +263,7 @@ export default function SecurityDocuments() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{count}</p>
-                  <p className="text-xs text-muted-foreground">{level.id.charAt(0).toUpperCase() + level.id.slice(1)}s</p>
+                  <p className="text-xs text-muted-foreground capitalize">{level.id}s</p>
                 </div>
               </CardContent>
             </Card>
@@ -177,13 +273,12 @@ export default function SecurityDocuments() {
 
       {/* Level sections */}
       {LEVELS.map(level => {
-        const levelDocs = filteredDocs.filter(d => d.level === level.id);
+        const levelDocs = docs.filter(d => d.level === level.id);
         const Icon = level.icon;
         const isCollapsed = collapsed[level.id];
 
         return (
           <div key={level.id} className={`rounded-xl border ${level.border} overflow-hidden`}>
-            {/* Section header */}
             <div
               className={`${level.bg} px-5 py-4 flex items-center justify-between cursor-pointer`}
               onClick={() => toggleCollapse(level.id)}
@@ -197,13 +292,9 @@ export default function SecurityDocuments() {
                 <Badge variant="secondary" className="ml-2">{levelDocs.length}</Badge>
               </div>
               <div className="flex items-center gap-2">
-                {isAdmin && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5 text-xs h-7"
-                    onClick={e => { e.stopPropagation(); handleNew(level.id); }}
-                  >
+                {canCreate && (
+                  <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7"
+                    onClick={e => { e.stopPropagation(); handleNew(level.id); }}>
                     <Plus className="w-3 h-3" /> Add
                   </Button>
                 )}
@@ -211,7 +302,6 @@ export default function SecurityDocuments() {
               </div>
             </div>
 
-            {/* Documents list */}
             {!isCollapsed && (
               <div className="bg-card">
                 {levelDocs.length === 0 ? (
@@ -219,7 +309,7 @@ export default function SecurityDocuments() {
                     <FileText className="w-8 h-8 mx-auto text-muted-foreground opacity-30" />
                     <p className="text-sm text-muted-foreground">No documents yet</p>
                     <p className="text-xs text-muted-foreground">Examples: {level.examples.join(' · ')}</p>
-                    {isAdmin && (
+                    {canCreate && (
                       <Button size="sm" variant="outline" className="mt-2 gap-1.5" onClick={() => handleNew(level.id)}>
                         <Plus className="w-3 h-3" /> Add first document
                       </Button>
@@ -237,6 +327,12 @@ export default function SecurityDocuments() {
                             <Badge variant="outline" className={`text-xs ${STATUS_STYLES[doc.status]}`}>
                               {STATUS_LABELS[doc.status]}
                             </Badge>
+                            {doc.status === 'under_review' && canApprove && (
+                              <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-chart-2 border-chart-2/30 hover:bg-chart-2/10"
+                                onClick={() => approveMutation.mutate(doc)}>
+                                <CheckCircle className="w-3 h-3" /> Approve
+                              </Button>
+                            )}
                           </div>
                           {doc.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{doc.description}</p>}
                           <div className="flex flex-wrap gap-1 mt-1">
@@ -250,7 +346,8 @@ export default function SecurityDocuments() {
                           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                             {doc.approved_by && <span>Approved by: {doc.approved_by}</span>}
                             {doc.approved_date && <span>{new Date(doc.approved_date).toLocaleDateString()}</span>}
-                            {doc.customer_name && <span>· {doc.customer_name}</span>}
+                            {isAdmin && doc.customer_name && <span>· {doc.customer_name}</span>}
+                            {doc.owner_email && isCustomerAdmin && <span>· by {doc.owner_email}</span>}
                           </div>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
@@ -261,15 +358,16 @@ export default function SecurityDocuments() {
                               </a>
                             </Button>
                           )}
-                          {isAdmin && (
-                            <>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(doc)}>
-                                <Pencil className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteMutation.mutate(doc)}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </>
+                          {canEditDoc(doc) && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(doc)}>
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          {canDeleteDoc(doc) && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={() => deleteMutation.mutate(doc)}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
                           )}
                         </div>
                       </div>
@@ -288,6 +386,7 @@ export default function SecurityDocuments() {
         doc={editingDoc}
         customers={customers}
         isAdmin={isAdmin}
+        isUser={isUser}
         onSave={async (form) => { await saveMutation.mutateAsync(form); setDialogOpen(false); }}
       />
     </div>

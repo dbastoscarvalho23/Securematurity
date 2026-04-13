@@ -16,7 +16,7 @@ const DEFAULT = {
   customer_id: '', customer_name: '',
 };
 
-export default function SecurityDocumentDialog({ open, onOpenChange, doc, customers, isAdmin, onSave }) {
+export default function SecurityDocumentDialog({ open, onOpenChange, doc, customers, isAdmin, isUser, onSave }) {
   const [form, setForm] = useState(DEFAULT);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -66,7 +66,10 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{doc?.id ? 'Edit Document' : 'New Document'}</DialogTitle>
+          <DialogTitle>
+            {doc?.id ? 'Edit Document' : 'New Document'}
+            {isUser && <span className="text-xs font-normal text-muted-foreground ml-2">(will be submitted for approval)</span>}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
@@ -87,18 +90,20 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={v => set('status', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="under_review">Under Review</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="deprecated">Deprecated</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {!isUser && (
+              <div className="space-y-1.5">
+                <Label>Status</Label>
+                <Select value={form.status} onValueChange={v => set('status', v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="under_review">Under Review</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="deprecated">Deprecated</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -132,7 +137,7 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
             <div className="space-y-1.5">
               <Label>Customer (optional)</Label>
               <Select value={form.customer_id || ''} onValueChange={handleCustomerChange}>
-                <SelectTrigger><SelectValue placeholder="All customers / global" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Global (all customers)" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={null}>Global (all customers)</SelectItem>
                   {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}

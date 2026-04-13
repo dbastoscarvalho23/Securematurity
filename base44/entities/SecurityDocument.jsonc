@@ -18,7 +18,7 @@
     },
     "customer_id": {
       "type": "string",
-      "description": "Reference to Customer (if customer-specific)"
+      "description": "Reference to Customer"
     },
     "customer_name": {
       "type": "string",
@@ -42,6 +42,10 @@
       ],
       "default": "draft",
       "description": "Document lifecycle status"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email of the user who created/owns this document"
     },
     "approved_by": {
       "type": "string",
@@ -70,7 +74,7 @@
       "items": {
         "type": "string"
       },
-      "description": "Tags for categorization (e.g. GDPR, NIS2, ISO27001)"
+      "description": "Tags for categorization"
     },
     "framework_codes": {
       "type": "array",

@@ -30,6 +30,7 @@ const adminNavGroups = [
       { path: '/customers', label: 'Customers', icon: Building2 },
       { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
       { path: '/tasks', label: 'Tasks', icon: ListTodo },
+      { path: '/security-documents', label: 'Documents', icon: FolderLock },
       { path: '/reports', label: 'Reports', icon: BarChart3 },
     ]
   },
@@ -40,7 +41,6 @@ const adminNavGroups = [
       { path: '/task-analytics', label: 'Task Analytics', icon: TrendingUp },
       { path: '/question-bank', label: 'Question DB', icon: BookOpen },
       { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
-      { path: '/security-documents', label: 'Documents', icon: FolderLock },
     ]
   },
   {
@@ -60,6 +60,7 @@ const customerAdminNavGroups = [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
       { path: '/tasks', label: 'Tasks', icon: ListTodo },
+      { path: '/security-documents', label: 'Documents', icon: FolderLock },
       { path: '/reports', label: 'Reports', icon: BarChart3 },
     ]
   },
@@ -67,7 +68,6 @@ const customerAdminNavGroups = [
     label: 'Tools',
     items: [
       { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
-      { path: '/security-documents', label: 'Documents', icon: FolderLock },
     ]
   },
   {
@@ -85,13 +85,8 @@ const userNavGroups = [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/assessments', label: 'My Assessments', icon: ClipboardCheck },
       { path: '/tasks', label: 'Tasks', icon: ListTodo },
-      { path: '/reports', label: 'Reports', icon: BarChart3 },
-    ]
-  },
-  {
-    label: 'Tools',
-    items: [
       { path: '/security-documents', label: 'Documents', icon: FolderLock },
+      { path: '/reports', label: 'Reports', icon: BarChart3 },
     ]
   },
   {
