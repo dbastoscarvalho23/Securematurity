@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import SecurityDocumentDialog from '@/components/documents/SecurityDocumentDialog';
 import VersionHistoryDialog from '@/components/documents/VersionHistoryDialog';
+import PendingReviewsPanel from '@/components/documents/PendingReviewsPanel';
 
 const LEVELS = [
   {
@@ -324,6 +325,9 @@ export default function SecurityDocuments() {
           )}
         </div>
       )}
+
+      {/* Pending Reviews Panel */}
+      <PendingReviewsPanel docs={docs} onEdit={canApprove || isUser ? handleEdit : null} />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
