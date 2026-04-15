@@ -37,6 +37,7 @@ const PAGE_TITLES = {
   '/audit-log': 'Audit Log',
   '/settings': 'Settings',
   '/security-documents': 'Security Documents',
+  '/document-audit-trail': 'Document Audit Trail',
 };
 
 export default function TopBar() {
