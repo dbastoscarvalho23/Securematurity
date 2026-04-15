@@ -13,6 +13,7 @@ import { writeAuditLog } from '@/lib/auditLog';
 import SecurityDocumentDialog from '@/components/documents/SecurityDocumentDialog';
 import VersionHistoryDialog from '@/components/documents/VersionHistoryDialog';
 import PendingReviewsPanel from '@/components/documents/PendingReviewsPanel';
+import ApprovalDialog from '@/components/documents/ApprovalDialog';
 
 const LEVELS = [
   {
@@ -83,6 +84,8 @@ export default function SecurityDocuments() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [searching, setSearching] = useState(false);
+  const [approvalDoc, setApprovalDoc] = useState(null);
+  const [approvalOpen, setApprovalOpen] = useState(false);
 
   const { data: allDocs = [] } = useQuery({
     queryKey: ['securityDocuments'],
@@ -168,20 +171,55 @@ export default function SecurityDocuments() {
   });
 
   const approveMutation = useMutation({
-    mutationFn: async (doc) => {
-      const result = await base44.entities.SecurityDocument.update(doc.id, {
-        status: 'approved',
-        approved_by: user?.display_name || user?.full_name || user?.email,
-        approved_date: new Date().toISOString().split('T')[0],
+    mutationFn: async ({ doc, comments, signature }) => {
+      const approverName = user?.display_name || user?.full_name || user?.email;
+      const approvedDate = new Date().toISOString().split('T')[0];
+
+      // Snapshot current state as a version before approving
+      await base44.entities.DocumentVersion.create({
+        document_id: doc.id,
+        version_label: doc.version,
+        title: doc.title,
+        description: doc.description,
+        level: doc.level,
+        status: doc.status,
+        file_url: doc.file_url,
+        file_name: doc.file_name,
+        approved_by: doc.approved_by,
+        approved_date: doc.approved_date,
+        review_date: doc.review_date,
+        tags: doc.tags,
+        framework_codes: doc.framework_codes,
+        changed_by: user?.email,
+        change_note: `Pre-approval snapshot. Approved by ${approverName}${comments ? ` — ${comments}` : ''}`,
       });
-      await writeAuditLog({ action: 'settings_changed', entity_type: 'SecurityDocument', entity_id: doc.id, details: `Approved document: ${doc.title}` });
-      return result;
+
+      await base44.entities.SecurityDocument.update(doc.id, {
+        status: 'approved',
+        approved_by: approverName,
+        approved_date: approvedDate,
+      });
+
+      await writeAuditLog({
+        action: 'settings_changed',
+        entity_type: 'SecurityDocument',
+        entity_id: doc.id,
+        details: `Document formally approved by ${approverName} (signed as: "${signature}")${comments ? ` — ${comments}` : ''}: ${doc.title}`,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['securityDocuments'] });
-      toast.success('Document approved');
+      queryClient.invalidateQueries({ queryKey: ['documentVersionsAll'] });
+      setApprovalOpen(false);
+      setApprovalDoc(null);
+      toast.success('Document approved and signed off');
     },
   });
+
+  const handleApproveClick = (doc) => {
+    setApprovalDoc(doc);
+    setApprovalOpen(true);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (doc) => {
@@ -408,7 +446,7 @@ export default function SecurityDocuments() {
                             </Badge>
                             {doc.status === 'under_review' && canApprove && (
                               <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-chart-2 border-chart-2/30 hover:bg-chart-2/10"
-                                onClick={() => approveMutation.mutate(doc)}>
+                                onClick={() => handleApproveClick(doc)}>
                                 <CheckCircle className="w-3 h-3" /> Approve
                               </Button>
                             )}
@@ -462,6 +500,15 @@ export default function SecurityDocuments() {
           </div>
         );
       })}
+
+      <ApprovalDialog
+        open={approvalOpen}
+        onOpenChange={setApprovalOpen}
+        doc={approvalDoc}
+        approverName={user?.display_name || user?.full_name}
+        approverEmail={user?.email}
+        onConfirm={({ comments, signature }) => approveMutation.mutateAsync({ doc: approvalDoc, comments, signature })}
+      />
 
       <VersionHistoryDialog
         open={historyOpen}
