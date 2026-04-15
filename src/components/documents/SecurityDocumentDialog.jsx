@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Upload } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 const DEFAULT = {
   title: '', level: 'policy', status: 'draft', description: '',
@@ -17,11 +18,13 @@ const DEFAULT = {
 };
 
 export default function SecurityDocumentDialog({ open, onOpenChange, doc, customers, isAdmin, isUser, onSave }) {
+  const { user } = useAuth();
   const [form, setForm] = useState(DEFAULT);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [tagsInput, setTagsInput] = useState('');
   const [frameworksInput, setFrameworksInput] = useState('');
+  const [changeNote, setChangeNote] = useState('');
 
   useEffect(() => {
     if (doc) {
@@ -33,6 +36,7 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
       setTagsInput('');
       setFrameworksInput('');
     }
+    setChangeNote('');
   }, [doc, open]);
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
@@ -53,6 +57,26 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
     setSaving(true);
     const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
     const framework_codes = frameworksInput.split(',').map(f => f.trim()).filter(Boolean);
+    // If editing an existing doc, snapshot the current state as a version before saving
+    if (doc?.id) {
+      await base44.entities.DocumentVersion.create({
+        document_id: doc.id,
+        version_label: doc.version,
+        title: doc.title,
+        description: doc.description,
+        level: doc.level,
+        status: doc.status,
+        file_url: doc.file_url,
+        file_name: doc.file_name,
+        approved_by: doc.approved_by,
+        approved_date: doc.approved_date,
+        review_date: doc.review_date,
+        tags: doc.tags,
+        framework_codes: doc.framework_codes,
+        changed_by: user?.email,
+        change_note: changeNote || 'Document updated',
+      });
+    }
     await onSave({ ...form, tags, framework_codes });
     setSaving(false);
   };
@@ -178,6 +202,13 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
               )}
             </div>
           </div>
+
+          {doc?.id && (
+            <div className="space-y-1.5">
+              <Label>Change Note <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Input value={changeNote} onChange={e => setChangeNote(e.target.value)} placeholder="Briefly describe what changed..." />
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>

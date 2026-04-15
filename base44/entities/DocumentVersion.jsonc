@@ -1,0 +1,65 @@
+{
+  "name": "DocumentVersion",
+  "type": "object",
+  "properties": {
+    "document_id": {
+      "type": "string",
+      "description": "Reference to SecurityDocument"
+    },
+    "version_label": {
+      "type": "string",
+      "description": "Version label at the time of this snapshot (e.g. 1.0, 2.1)"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "level": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "approved_date": {
+      "type": "string"
+    },
+    "review_date": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "framework_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "changed_by": {
+      "type": "string",
+      "description": "Email of user who saved this version"
+    },
+    "change_note": {
+      "type": "string",
+      "description": "Optional note about what changed"
+    }
+  },
+  "required": [
+    "document_id",
+    "changed_by"
+  ]
+}

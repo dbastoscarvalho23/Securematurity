@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, FileText, Shield, BookOpen, Workflow, Zap, ExternalLink, Pencil, Trash2, ChevronDown, ChevronRight, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Search, FileText, Shield, BookOpen, Workflow, Zap, ExternalLink, Pencil, Trash2, ChevronDown, ChevronRight, CheckCircle, Clock, History, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import SecurityDocumentDialog from '@/components/documents/SecurityDocumentDialog';
+import VersionHistoryDialog from '@/components/documents/VersionHistoryDialog';
 
 const LEVELS = [
   {
@@ -76,6 +77,11 @@ export default function SecurityDocuments() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState(null);
   const [collapsed, setCollapsed] = useState({});
+  const [historyDoc, setHistoryDoc] = useState(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [searching, setSearching] = useState(false);
 
   const { data: allDocs = [] } = useQuery({
     queryKey: ['securityDocuments'],
@@ -189,6 +195,17 @@ export default function SecurityDocuments() {
 
   const toggleCollapse = (id) => setCollapsed(c => ({ ...c, [id]: !c[id] }));
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) { setSearchResults(null); return; }
+    setSearching(true);
+    const res = await base44.functions.invoke('searchDocuments', {
+      query: searchQuery,
+      customer_id: effectiveCustomerId || undefined,
+    });
+    setSearchResults(res.data?.results || []);
+    setSearching(false);
+  };
+
   const handleNew = (level) => {
     setEditingDoc({ level });
     setDialogOpen(true);
@@ -249,6 +266,64 @@ export default function SecurityDocuments() {
           )}
         </div>
       </div>
+
+      {/* Full-text search bar */}
+      <div className="flex gap-2 items-center p-4 bg-muted/30 rounded-xl border">
+        <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <Input
+          value={searchQuery}
+          onChange={e => { setSearchQuery(e.target.value); if (!e.target.value) setSearchResults(null); }}
+          onKeyDown={e => e.key === 'Enter' && handleSearch()}
+          placeholder="Full-text search across all documents..."
+          className="border-0 bg-transparent shadow-none focus-visible:ring-0 flex-1 pl-0"
+        />
+        <Button size="sm" onClick={handleSearch} disabled={searching} className="gap-1.5">
+          {searching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+          Search
+        </Button>
+        {searchResults !== null && (
+          <Button size="sm" variant="ghost" onClick={() => { setSearchResults(null); setSearchQuery(''); }}>
+            Clear
+          </Button>
+        )}
+      </div>
+
+      {/* Search results */}
+      {searchResults !== null && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground">{searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"</p>
+          {searchResults.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No matching documents found.</p>
+          ) : (
+            <div className="divide-y border rounded-xl bg-card overflow-hidden">
+              {searchResults.map(doc => (
+                <div key={doc.id} className="px-5 py-3 flex items-start gap-4">
+                  <FileText className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium">{doc.title}</p>
+                      <Badge variant="secondary" className="text-xs capitalize">{doc.level}</Badge>
+                      <Badge variant="outline" className={`text-xs ${STATUS_STYLES[doc.status]}`}>{STATUS_LABELS[doc.status]}</Badge>
+                      <span className="text-xs text-primary font-medium">{doc.relevance_score}% match</span>
+                    </div>
+                    {doc.match_reason && <p className="text-xs text-muted-foreground mt-0.5">{doc.match_reason}</p>}
+                  </div>
+                  <div className="flex gap-1">
+                    {doc.file_url && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                        <a href={doc.file_url} target="_blank" rel="noreferrer"><ExternalLink className="w-3.5 h-3.5" /></a>
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setHistoryDoc(doc); setHistoryOpen(true); }}>
+                      <History className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -358,6 +433,10 @@ export default function SecurityDocuments() {
                               </a>
                             </Button>
                           )}
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title="Version history"
+                            onClick={() => { setHistoryDoc(doc); setHistoryOpen(true); }}>
+                            <History className="w-3.5 h-3.5" />
+                          </Button>
                           {canEditDoc(doc) && (
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(doc)}>
                               <Pencil className="w-3.5 h-3.5" />
@@ -379,6 +458,13 @@ export default function SecurityDocuments() {
           </div>
         );
       })}
+
+      <VersionHistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        doc={historyDoc}
+        canRevert={historyDoc ? (isAdmin || isCustomerAdmin || historyDoc?.owner_email === user?.email) : false}
+      />
 
       <SecurityDocumentDialog
         open={dialogOpen}
