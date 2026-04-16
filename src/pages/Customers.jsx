@@ -13,6 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import CustomerForm from '@/components/customers/CustomerForm';
+import CustomerDetailDialog from '@/components/customers/CustomerDetailDialog';
 import { cn } from '@/lib/utils';
 
 const statusStyles = {
@@ -24,6 +25,7 @@ const statusStyles = {
 export default function Customers() {
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
+  const [detailCustomer, setDetailCustomer] = useState(null);
   const [search, setSearch] = useState('');
   const queryClient = useQueryClient();
 
@@ -122,7 +124,7 @@ export default function Customers() {
                   </TableCell>
                 </TableRow>
               ) : filtered.map(c => (
-                <TableRow key={c.id} className="group hover:bg-muted/30">
+                <TableRow key={c.id} className="group hover:bg-muted/30 cursor-pointer" onClick={() => setDetailCustomer(c)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm font-bold flex-shrink-0">
@@ -142,7 +144,7 @@ export default function Customers() {
                       {c.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -173,6 +175,12 @@ export default function Customers() {
           </Table>
         </CardContent>
       </Card>
+      <CustomerDetailDialog
+        open={!!detailCustomer}
+        onOpenChange={(open) => { if (!open) setDetailCustomer(null); }}
+        customer={detailCustomer}
+        onEdit={(c) => { setEditingCustomer(c); setShowForm(true); }}
+      />
     </div>
   );
 }
