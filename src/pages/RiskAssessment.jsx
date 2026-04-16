@@ -11,6 +11,7 @@ import { Plus, Search, Pencil, Trash2, AlertTriangle, ShieldAlert, FileText, Tre
 import { toast } from 'sonner';
 import RiskFormDialog from '@/components/risks/RiskFormDialog';
 import RiskMatrix from '@/components/risks/RiskMatrix';
+import { writeAuditLog } from '@/lib/auditLog';
 
 const STATUS_STYLES = {
   open: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -68,19 +69,30 @@ export default function RiskAssessment() {
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
-      if (data.id) return base44.entities.RiskItem.update(data.id, data);
-      return base44.entities.RiskItem.create({ ...data, owner_email: data.owner_email || user?.email });
+      const isEdit = !!data.id;
+      let result;
+      if (isEdit) {
+        result = await base44.entities.RiskItem.update(data.id, data);
+        await writeAuditLog({ action: 'risk_updated', entity_type: 'RiskItem', entity_id: data.id, details: `Updated risk: ${data.title}` });
+      } else {
+        result = await base44.entities.RiskItem.create({ ...data, owner_email: data.owner_email || user?.email });
+        await writeAuditLog({ action: 'risk_created', entity_type: 'RiskItem', entity_id: result?.id, details: `Created risk: ${data.title} (score: ${(data.impact || 0) * (data.likelihood || 0)})` });
+      }
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['riskItems'] });
       setDialogOpen(false);
       setEditingRisk(null);
-      toast.success(editingRisk?.id ? 'Risk updated' : 'Risk created');
+      toast.success(variables?.id ? 'Risk updated' : 'Risk created');
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.RiskItem.delete(id),
+    mutationFn: async (risk) => {
+      await base44.entities.RiskItem.delete(risk.id);
+      await writeAuditLog({ action: 'risk_deleted', entity_type: 'RiskItem', entity_id: risk.id, details: `Deleted risk: ${risk.title}` });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['riskItems'] });
       toast.success('Risk deleted');
@@ -274,7 +286,7 @@ export default function RiskAssessment() {
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => deleteMutation.mutate(risk.id)}>
+                          onClick={() => deleteMutation.mutate(risk)}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { ExternalLink, RotateCcw, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { writeAuditLog } from '@/lib/auditLog';
 
 const STATUS_STYLES = {
   draft: 'bg-muted text-muted-foreground',
@@ -68,6 +69,12 @@ export default function VersionHistoryDialog({ open, onOpenChange, doc, canRever
         tags: version.tags,
         framework_codes: version.framework_codes,
         version: version.version_label,
+      });
+      await writeAuditLog({
+        action: 'document_version_reverted',
+        entity_type: 'SecurityDocument',
+        entity_id: doc.id,
+        details: `Reverted "${doc.title}" to version ${version.version_label || version.id}`,
       });
     },
     onSuccess: () => {

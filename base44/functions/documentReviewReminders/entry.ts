@@ -65,6 +65,12 @@ Deno.serve(async (req) => {
           subject: `[Action Required] ${docs.length} security document${docs.length > 1 ? 's' : ''} due for review`,
           body,
         });
+        await base44.asServiceRole.entities.AuditLog.create({
+          action: 'email_sent',
+          user_email: 'system',
+          entity_type: 'SecurityDocument',
+          details: `Review reminder sent to ${ownerEmail} for ${docs.length} document${docs.length > 1 ? 's' : ''}: ${docs.map(d => d.title).join(', ')}`,
+        });
         sent++;
       } catch (e) {
         errors.push({ owner: ownerEmail, error: e.message });

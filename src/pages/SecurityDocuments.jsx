@@ -142,7 +142,7 @@ export default function SecurityDocuments() {
         // If a regular user edits, set back to under_review
         const updatedForm = isUser ? { ...form, status: 'under_review' } : form;
         const result = await base44.entities.SecurityDocument.update(form.id, updatedForm);
-        await writeAuditLog({ action: 'settings_changed', entity_type: 'SecurityDocument', entity_id: form.id, details: `Updated document: ${form.title}` });
+        await writeAuditLog({ action: 'document_updated', entity_type: 'SecurityDocument', entity_id: form.id, details: `Updated document: ${form.title}` });
         return result;
       }
       // New doc: admin/customer_admin -> draft, user -> under_review
@@ -156,7 +156,7 @@ export default function SecurityDocuments() {
           : form.customer_name,
       };
       const result = await base44.entities.SecurityDocument.create(newForm);
-      await writeAuditLog({ action: 'settings_changed', entity_type: 'SecurityDocument', entity_id: result?.id, details: `Created document: ${form.title}` });
+      await writeAuditLog({ action: 'document_created', entity_type: 'SecurityDocument', entity_id: result?.id, details: `Created document: ${form.title}` });
       return result;
     },
     onSuccess: (_, variables) => {
@@ -201,7 +201,7 @@ export default function SecurityDocuments() {
       });
 
       await writeAuditLog({
-        action: 'settings_changed',
+        action: 'document_approved',
         entity_type: 'SecurityDocument',
         entity_id: doc.id,
         details: `Document formally approved by ${approverName} (signed as: "${signature}")${comments ? ` — ${comments}` : ''}: ${doc.title}`,
@@ -224,7 +224,7 @@ export default function SecurityDocuments() {
   const deleteMutation = useMutation({
     mutationFn: async (doc) => {
       await base44.entities.SecurityDocument.delete(doc.id);
-      await writeAuditLog({ action: 'settings_changed', entity_type: 'SecurityDocument', entity_id: doc.id, details: `Deleted document: ${doc.title}` });
+      await writeAuditLog({ action: 'document_deleted', entity_type: 'SecurityDocument', entity_id: doc.id, details: `Deleted document: ${doc.title}` });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['securityDocuments'] });

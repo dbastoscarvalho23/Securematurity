@@ -19,14 +19,45 @@ const formatLocalTimestamp = (dateStr) => {
 };
 
 const actionColors = {
+  // Assessments
   assessment_created: 'bg-chart-1/10 text-chart-1',
   assessment_completed: 'bg-accent/10 text-accent',
   assessment_deleted: 'bg-destructive/10 text-destructive',
+  // Customers
   customer_created: 'bg-chart-2/10 text-chart-2',
   customer_updated: 'bg-chart-3/10 text-chart-3',
   customer_deleted: 'bg-destructive/10 text-destructive',
+  // Recommendations
   recommendation_generated: 'bg-chart-5/10 text-chart-5',
+  recommendation_created: 'bg-chart-5/10 text-chart-5',
+  recommendation_updated: 'bg-chart-3/10 text-chart-3',
+  recommendation_deleted: 'bg-destructive/10 text-destructive',
+  // Questions
   question_generated: 'bg-chart-1/10 text-chart-1',
+  question_created: 'bg-chart-1/10 text-chart-1',
+  question_updated: 'bg-chart-3/10 text-chart-3',
+  question_deleted: 'bg-destructive/10 text-destructive',
+  questions_translated: 'bg-chart-5/10 text-chart-5',
+  questions_deduplicated: 'bg-chart-4/10 text-chart-4',
+  // Tasks
+  task_created: 'bg-primary/10 text-primary',
+  task_updated: 'bg-chart-3/10 text-chart-3',
+  task_deleted: 'bg-destructive/10 text-destructive',
+  task_status_changed: 'bg-chart-4/10 text-chart-4',
+  // Documents
+  document_created: 'bg-chart-2/10 text-chart-2',
+  document_updated: 'bg-chart-3/10 text-chart-3',
+  document_deleted: 'bg-destructive/10 text-destructive',
+  document_approved: 'bg-accent/10 text-accent',
+  document_version_reverted: 'bg-chart-4/10 text-chart-4',
+  // Risks
+  risk_created: 'bg-destructive/10 text-destructive',
+  risk_updated: 'bg-chart-4/10 text-chart-4',
+  risk_deleted: 'bg-destructive/10 text-destructive',
+  // System
+  email_sent: 'bg-chart-5/10 text-chart-5',
+  framework_created: 'bg-chart-1/10 text-chart-1',
+  framework_status_changed: 'bg-chart-3/10 text-chart-3',
   report_exported: 'bg-muted text-muted-foreground',
   user_login: 'bg-muted text-muted-foreground',
   settings_changed: 'bg-chart-4/10 text-chart-4',
