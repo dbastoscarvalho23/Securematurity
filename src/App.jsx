@@ -22,6 +22,7 @@ import ActionPlan from '@/pages/ActionPlan';
 import TaskAnalytics from '@/pages/TaskAnalytics';
 import SecurityDocuments from '@/pages/SecurityDocuments';
 import DocumentAuditTrail from '@/pages/DocumentAuditTrail';
+import RiskAssessment from '@/pages/RiskAssessment';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -65,6 +66,7 @@ const AuthenticatedApp = () => {
         <Route path="/question-bank" element={<QuestionBank />} />
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/task-analytics" element={<TaskAnalytics />} />
+        <Route path="/risk-assessment" element={<RiskAssessment />} />
         <Route path="/security-documents" element={<SecurityDocuments />} />
         <Route path="/document-audit-trail" element={<DocumentAuditTrail />} />
         <Route path="/action-plan" element={<ActionPlan />} />

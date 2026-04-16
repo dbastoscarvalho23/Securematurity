@@ -36,6 +36,7 @@ const PAGE_TITLES = {
   '/admin': 'Admin Dashboard',
   '/audit-log': 'Audit Log',
   '/settings': 'Settings',
+  '/risk-assessment': 'Risk Assessment',
   '/security-documents': 'Security Documents',
   '/document-audit-trail': 'Document Audit Trail',
 };

@@ -17,7 +17,8 @@ import {
   Target,
   TrendingUp,
   FolderLock,
-  Activity
+  Activity,
+  TriangleAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -31,6 +32,7 @@ const adminNavGroups = [
       { path: '/customers', label: 'Customers', icon: Building2 },
       { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
       { path: '/tasks', label: 'Tasks', icon: ListTodo },
+      { path: '/risk-assessment', label: 'Risk Assessment', icon: TriangleAlert },
       { path: '/security-documents', label: 'Documents', icon: FolderLock },
       { path: '/document-audit-trail', label: 'Doc Audit Trail', icon: Activity },
       { path: '/reports', label: 'Reports', icon: BarChart3 },
@@ -62,6 +64,7 @@ const customerAdminNavGroups = [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
       { path: '/tasks', label: 'Tasks', icon: ListTodo },
+      { path: '/risk-assessment', label: 'Risk Assessment', icon: TriangleAlert },
       { path: '/security-documents', label: 'Documents', icon: FolderLock },
       { path: '/document-audit-trail', label: 'Doc Audit Trail', icon: Activity },
       { path: '/reports', label: 'Reports', icon: BarChart3 },
@@ -88,6 +91,7 @@ const userNavGroups = [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/assessments', label: 'My Assessments', icon: ClipboardCheck },
       { path: '/tasks', label: 'Tasks', icon: ListTodo },
+      { path: '/risk-assessment', label: 'Risk Assessment', icon: TriangleAlert },
       { path: '/security-documents', label: 'Documents', icon: FolderLock },
       { path: '/document-audit-trail', label: 'Doc Audit Trail', icon: Activity },
       { path: '/reports', label: 'Reports', icon: BarChart3 },

@@ -1,0 +1,80 @@
+{
+  "name": "RiskItem",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Short risk title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed risk description"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "access_control",
+        "data_protection",
+        "network_security",
+        "physical_security",
+        "third_party",
+        "compliance",
+        "operational",
+        "other"
+      ],
+      "description": "Risk category"
+    },
+    "impact": {
+      "type": "number",
+      "description": "Impact score 1\u20135"
+    },
+    "likelihood": {
+      "type": "number",
+      "description": "Likelihood score 1\u20135"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "in_treatment",
+        "accepted",
+        "closed"
+      ],
+      "default": "open",
+      "description": "Risk treatment status"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Risk owner email"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "linked_document_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs of linked SecurityDocuments"
+    },
+    "treatment_notes": {
+      "type": "string",
+      "description": "Notes on how this risk is being treated"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Target date for treatment completion"
+    }
+  },
+  "required": [
+    "title",
+    "impact",
+    "likelihood"
+  ]
+}
