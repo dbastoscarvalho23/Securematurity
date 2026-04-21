@@ -12,7 +12,7 @@ import { writeAuditLog } from '@/lib/auditLog';
 
 const FRAMEWORKS = [
   { code: 'NIS2', name: 'NIS2 / DL 125/2025' },
-  { code: 'ISO27001', name: 'ISO/IEC 27001' },
+  { code: 'ISO27001', name: 'ISO/IEC 27001:2022' },
   { code: 'NIST_CSF', name: 'NIST CSF' },
   { code: 'CIS_V8', name: 'CIS Controls v8' },
   { code: 'ENISA', name: 'ENISA Cybersecurity Framework' },
@@ -47,7 +47,7 @@ export default function AIRecommendationDialog({ open, onOpenChange, customers, 
       prompt: `You are a cybersecurity compliance expert. Generate actionable improvement recommendations for the ${fw?.name || framework} framework.
 ${customer ? `Organization context: ${customer.name}, sector: ${customer.sector?.replace(/_/g, ' ')}, size: ${customer.num_employees} employees.` : ''}
 
-Generate 6-8 high-quality, specific, and actionable recommendations covering different domains of the ${framework} framework.
+Generate 6-8 high-quality, specific, and actionable recommendations covering different domains of the ${fw?.name || framework} framework.${framework === 'ISO27001' ? ' Use exclusively the ISO/IEC 27001:2022 Annex A control structure (Organizational, People, Physical, Technological Controls) — do NOT reference the 2013 version.' : ''}
 Each recommendation should be practical and address common compliance gaps.
 Vary the priorities (include critical, high, medium, and low).
 Include clear titles, detailed descriptions, effort estimates, and suggested timelines.`,

@@ -121,11 +121,12 @@ export default function AssessmentDetail() {
 
       const aiResult = await base44.integrations.Core.InvokeLLM({
         prompt: `You are a cybersecurity compliance expert. Analyze these assessment responses and generate actionable recommendations.
-        
+
 Assessment data: ${JSON.stringify(responseSummary)}
 
 For each significant gap (current level < target level), provide a recommendation. Focus on the most impactful improvements.
-Return 5-8 prioritized recommendations.`,
+Return 5-8 prioritized recommendations.
+IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 Annex A structure (Organizational Controls, People Controls, Physical Controls, Technological Controls). Do NOT use the 2013 version's domain structure.`,
         response_json_schema: {
           type: "object",
           properties: {

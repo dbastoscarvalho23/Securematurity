@@ -15,6 +15,7 @@ Assessment data: ${JSON.stringify(responseSummary)}
 
 For each significant gap (current level < target level), provide a recommendation. Focus on the most impactful improvements.
 Return 5-8 prioritized recommendations.
+IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 Annex A structure (Organizational Controls, People Controls, Physical Controls, Technological Controls). Do NOT use the 2013 version's domain structure.
 ```
 
 **Response schema fields:** `framework_code`, `domain`, `control_id`, `priority` (critical/high/medium/low), `title`, `description`, `current_level`, `target_level`, `effort` (low/medium/high), `timeline` (immediate/short_term/medium_term/long_term)

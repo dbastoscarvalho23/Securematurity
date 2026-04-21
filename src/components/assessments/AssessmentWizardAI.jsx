@@ -26,6 +26,7 @@ const SECTOR_LABELS = {
 
 const FRAMEWORK_COLORS = {
   NIS2: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
+  'ISO27001:2022': 'bg-chart-2/10 text-chart-2 border-chart-2/20',
   ISO27001: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
   NIST_CSF: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
   CIS_V8: 'bg-chart-4/10 text-chart-4 border-chart-4/20',

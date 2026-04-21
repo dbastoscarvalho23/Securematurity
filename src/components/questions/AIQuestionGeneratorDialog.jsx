@@ -12,7 +12,7 @@ import { writeAuditLog } from '@/lib/auditLog';
 
 const FRAMEWORKS = [
   { code: 'NIS2', name: 'NIS2' },
-  { code: 'ISO27001', name: 'ISO 27001' },
+  { code: 'ISO27001', name: 'ISO/IEC 27001:2022' },
   { code: 'NIST_CSF', name: 'NIST CSF' },
   { code: 'CIS_V8', name: 'CIS v8' },
   { code: 'QNRC', name: 'QNRC' },
@@ -56,7 +56,7 @@ export default function AIQuestionGeneratorDialog({ open, onOpenChange, existing
 
     const FRAMEWORK_DOMAINS = {
       NIS2: ['Governance', 'Risk Management', 'Incident Response', 'Business Continuity', 'Supply Chain', 'Access Control', 'Cryptography', 'Physical Security', 'Vulnerability Management'],
-      ISO27001: ['Information Security Policies', 'Organization of Information Security', 'Human Resource Security', 'Asset Management', 'Access Control', 'Cryptography', 'Physical Security', 'Operations Security', 'Communications Security', 'System Acquisition', 'Supplier Relationships', 'Incident Management', 'Business Continuity', 'Compliance'],
+      ISO27001: ['Organizational Controls', 'People Controls', 'Physical Controls', 'Technological Controls'],
       NIST_CSF: ['Identify (ID)', 'Protect (PR)', 'Detect (DE)', 'Respond (RS)', 'Recover (RC)', 'Govern (GV)'],
       CIS_V8: ['Inventory & Control', 'Data Protection', 'Secure Configuration', 'Account Management', 'Access Control', 'Vulnerability Management', 'Audit Log Management', 'Email & Web Browser', 'Malware Defenses', 'Network Infrastructure', 'Data Recovery', 'Network Monitoring', 'Security Awareness', 'Application Security', 'Incident Response'],
       GDPR: ['Lawfulness & Transparency', 'Data Subject Rights', 'Consent Management', 'Data Minimisation', 'Purpose Limitation', 'Storage Limitation', 'Accuracy', 'Security of Processing', 'Data Breach Notification', 'Data Protection by Design', 'Data Protection Officer', 'International Transfers', 'Records of Processing', 'Data Processor Management'],
@@ -87,6 +87,7 @@ Generate 6-10 new, high-quality assessment questions that fill coverage gaps.
 CRITICAL RULES:
 - Set "framework_code" to EXACTLY one of the codes listed above (e.g. "QNRC", "NIS2", "ISO27001", "NIST_CSF", "CIS_V8", "ENISA").
 - Set "domain" to EXACTLY one of the valid_domains listed for that framework_code. Do NOT invent new domain names.
+- For ISO27001 questions, strictly follow the ISO/IEC 27001:2022 structure (Annex A: Clause 5 Organizational Controls, Clause 6 People Controls, Clause 7 Physical Controls, Clause 8 Technological Controls). Do NOT use the old 2013 domain structure.
 - For QNRC questions, use control_id format like "ID.GA-3", "PR.SD-3", "DE.MC-2", etc. matching the domain prefix.
 - For QNRC questions, provide both English (question_text) and European Portuguese (question_text_pt) translations.
 - Use maturity_scale answer type.`,
