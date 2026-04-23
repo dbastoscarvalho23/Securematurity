@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Building2, Mail, Phone, Globe, Users, Briefcase, Hash, Pencil, ExternalLink } from 'lucide-react';
+import { Building2, Mail, Phone, Globe, Users, Briefcase, Hash, Pencil, ExternalLink, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const statusStyles = {
@@ -53,6 +53,7 @@ export default function CustomerDetailDialog({ open, onOpenChange, customer, onE
 
         <div className="space-y-0 mt-2">
           <InfoRow icon={Hash} label="NIF" value={customer.nif} />
+          <InfoRow icon={ShieldCheck} label="Cybersecurity Manager" value={customer.cybersecurity_manager} />
           <InfoRow icon={Users} label="Contact Name" value={customer.contact_name} />
           <InfoRow icon={Mail} label="Contact Email" value={customer.contact_email} />
           <InfoRow icon={Phone} label="Contact Phone" value={customer.contact_phone} />

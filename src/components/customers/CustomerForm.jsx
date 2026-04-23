@@ -42,6 +42,7 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
     contact_name: customer?.contact_name || '',
     contact_email: customer?.contact_email || '',
     contact_phone: customer?.contact_phone || '',
+    cybersecurity_manager: customer?.cybersecurity_manager || '',
     num_employees: customer?.num_employees || '',
     status: customer?.status || 'onboarding',
     allowed_frameworks: customer?.allowed_frameworks || ['NIS2', 'ISO27001', 'NIST_CSF', 'CIS_V8', 'QNRC', 'GDPR'],
@@ -119,6 +120,13 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
             <div className="space-y-1.5">
               <Label>Contact Phone</Label>
               <Input value={form.contact_phone} onChange={e => set('contact_phone', e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1.5 md:col-span-1">
+              <Label>Cybersecurity Manager</Label>
+              <Input value={form.cybersecurity_manager} onChange={e => set('cybersecurity_manager', e.target.value)} placeholder="Full name" />
             </div>
           </div>
 

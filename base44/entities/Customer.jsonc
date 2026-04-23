@@ -44,6 +44,10 @@
       "type": "string",
       "description": "Primary contact phone"
     },
+    "cybersecurity_manager": {
+      "type": "string",
+      "description": "Name of the Cybersecurity Manager responsible for this customer"
+    },
     "num_employees": {
       "type": "string",
       "enum": [
