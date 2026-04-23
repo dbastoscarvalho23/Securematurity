@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Check, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import EvidenceUploader from '@/components/assessments/EvidenceUploader';
+import CrossMappingSuggestions from '@/components/assessments/CrossMappingSuggestions';
 
 const MATURITY_LEVELS = [
   { level: 0, label: 'Non-existent', color: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20' },
@@ -16,7 +17,7 @@ const MATURITY_LEVELS = [
   { level: 5, label: 'Optimizing', color: 'bg-accent/10 text-accent border-accent/20 hover:bg-accent/20' },
 ];
 
-export default function QuestionCard({ question, index, response, onSave, language = 'en' }) {
+export default function QuestionCard({ question, index, response, onSave, language = 'en', currentFramework, allQuestions = [], responseMap = {} }) {
   const [notes, setNotes] = useState(response?.evidence_notes || '');
   const [showNotes, setShowNotes] = useState(!!response?.evidence_notes);
   const selectedLevel = response?.maturity_level;
@@ -109,6 +110,19 @@ export default function QuestionCard({ question, index, response, onSave, langua
         <EvidenceUploader
           attachments={response?.attachments || []}
           onAttachmentsChange={handleAttachmentsChange}
+        />
+
+        {/* Cross-framework mapping suggestions */}
+        <CrossMappingSuggestions
+          question={question}
+          currentFramework={currentFramework}
+          allQuestions={allQuestions}
+          responseMap={responseMap}
+          onApplySuggestion={(level, notes, attachments) => {
+            setNotes(notes);
+            setShowNotes(!!notes);
+            onSave({ maturity_level: level, evidence_notes: notes, target_level: response?.target_level || 4, attachments });
+          }}
         />
       </CardContent>
     </Card>

@@ -327,6 +327,9 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
                 data: { ...data, framework_code: currentFw, domain: currentDomain, control_id: q.control_id },
               })}
               isSaving={saveMutation.isPending}
+              currentFramework={currentFw}
+              allQuestions={questions}
+              responseMap={responseMap}
             />
           ))}
           {(!domains[currentDomain] || domains[currentDomain].length === 0) && (
