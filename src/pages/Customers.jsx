@@ -107,6 +107,8 @@ export default function Customers() {
                 <TableHead>Organization</TableHead>
                 <TableHead>NIF</TableHead>
                 <TableHead>Sector</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Cybersecurity Manager</TableHead>
                 <TableHead>Employees</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-12"></TableHead>
@@ -115,11 +117,11 @@ export default function Customers() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     {search ? 'No customers match your search.' : 'No customers yet. Add your first customer.'}
                   </TableCell>
                 </TableRow>
@@ -138,6 +140,11 @@ export default function Customers() {
                   </TableCell>
                   <TableCell className="text-sm font-mono">{c.nif}</TableCell>
                   <TableCell className="text-sm capitalize">{c.sector?.replace(/_/g, ' ')}</TableCell>
+                  <TableCell>
+                    <div className="text-sm">{c.contact_email && <p className="truncate max-w-[180px]">{c.contact_email}</p>}
+                    {c.contact_phone && <p className="text-xs text-muted-foreground">{c.contact_phone}</p>}</div>
+                  </TableCell>
+                  <TableCell className="text-sm">{c.cybersecurity_manager || <span className="text-muted-foreground">—</span>}</TableCell>
                   <TableCell className="text-sm">{c.num_employees}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={cn("text-xs border", statusStyles[c.status])}>
