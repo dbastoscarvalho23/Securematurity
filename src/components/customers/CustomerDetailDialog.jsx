@@ -54,6 +54,8 @@ export default function CustomerDetailDialog({ open, onOpenChange, customer, onE
         <div className="space-y-0 mt-2">
           <InfoRow icon={Hash} label="NIF" value={customer.nif} />
           <InfoRow icon={ShieldCheck} label="Cybersecurity Manager" value={customer.cybersecurity_manager} />
+          <InfoRow icon={Mail} label="Manager Email" value={customer.cybersecurity_manager_email} />
+          <InfoRow icon={Phone} label="Manager Phone" value={customer.cybersecurity_manager_phone} />
           <InfoRow icon={Users} label="Contact Name" value={customer.contact_name} />
           <InfoRow icon={Mail} label="Contact Email" value={customer.contact_email} />
           <InfoRow icon={Phone} label="Contact Phone" value={customer.contact_phone} />

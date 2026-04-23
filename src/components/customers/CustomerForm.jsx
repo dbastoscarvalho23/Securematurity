@@ -43,6 +43,8 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
     contact_email: customer?.contact_email || '',
     contact_phone: customer?.contact_phone || '',
     cybersecurity_manager: customer?.cybersecurity_manager || '',
+    cybersecurity_manager_email: customer?.cybersecurity_manager_email || '',
+    cybersecurity_manager_phone: customer?.cybersecurity_manager_phone || '',
     num_employees: customer?.num_employees || '',
     status: customer?.status || 'onboarding',
     allowed_frameworks: customer?.allowed_frameworks || ['NIS2', 'ISO27001', 'NIST_CSF', 'CIS_V8', 'QNRC', 'GDPR'],
@@ -124,9 +126,17 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1.5 md:col-span-1">
+            <div className="space-y-1.5">
               <Label>Cybersecurity Manager</Label>
               <Input value={form.cybersecurity_manager} onChange={e => set('cybersecurity_manager', e.target.value)} placeholder="Full name" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Manager Email</Label>
+              <Input type="email" value={form.cybersecurity_manager_email} onChange={e => set('cybersecurity_manager_email', e.target.value)} placeholder="manager@company.com" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Manager Phone</Label>
+              <Input value={form.cybersecurity_manager_phone} onChange={e => set('cybersecurity_manager_phone', e.target.value)} placeholder="+351 900 000 000" />
             </div>
           </div>
 

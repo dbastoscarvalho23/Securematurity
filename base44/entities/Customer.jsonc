@@ -48,6 +48,14 @@
       "type": "string",
       "description": "Name of the Cybersecurity Manager responsible for this customer"
     },
+    "cybersecurity_manager_email": {
+      "type": "string",
+      "description": "Email of the Cybersecurity Manager"
+    },
+    "cybersecurity_manager_phone": {
+      "type": "string",
+      "description": "Phone of the Cybersecurity Manager"
+    },
     "num_employees": {
       "type": "string",
       "enum": [
