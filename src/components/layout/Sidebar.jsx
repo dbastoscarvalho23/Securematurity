@@ -9,7 +9,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Lightbulb,
   ScrollText,
   Shield,
   BookOpen,
@@ -46,7 +45,6 @@ const adminNavGroups = [
       { path: '/task-analytics', label: 'Task Analytics', icon: TrendingUp },
       { path: '/evidence', label: 'Evidence', icon: Paperclip },
       { path: '/question-bank', label: 'Question DB', icon: BookOpen },
-      { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
     ]
   },
   {
