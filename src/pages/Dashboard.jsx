@@ -10,6 +10,7 @@ import CustomersOverview from '@/components/dashboard/CustomersOverview';
 import AssessmentsOverview from '@/components/dashboard/AssessmentsOverview';
 import MaturityOverview from '@/components/dashboard/MaturityOverview';
 import TasksOverview from '@/components/dashboard/TasksOverview';
+import RiskMatrixWidget from '@/components/dashboard/RiskMatrixWidget';
 import { useAuth } from '@/lib/AuthContext';
 
 const FRAMEWORK_NAMES = {
@@ -153,6 +154,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <MaturityRadar data={radarData} />
         <TrendChart data={trendData} frameworks={Object.keys(FRAMEWORK_NAMES)} />
+      </div>
+
+      {/* Risk Matrix */}
+      <div className="grid grid-cols-1">
+        <RiskMatrixWidget />
       </div>
     </div>
   );
