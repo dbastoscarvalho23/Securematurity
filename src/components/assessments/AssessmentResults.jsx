@@ -26,6 +26,12 @@ export default function AssessmentResults({ assessment, responses }) {
     queryFn: () => base44.entities.Recommendation.filter({ assessment_id: assessment.id }),
   });
 
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['tasks-for-export', assessment.customer_id],
+    queryFn: () => base44.entities.Task.filter({ customer_id: assessment.customer_id }, '-created_date', 200),
+    enabled: !!assessment.customer_id,
+  });
+
   const { data: questions = [] } = useQuery({
     queryKey: ['questions'],
     queryFn: () => base44.entities.Question.list('-order_index', 500),
@@ -76,7 +82,7 @@ export default function AssessmentResults({ assessment, responses }) {
           disabled={isExporting}
           onClick={async () => {
             setIsExporting(true);
-            try { exportReportPdf(assessment, recommendations); } finally { setIsExporting(false); }
+            try { exportReportPdf(assessment, recommendations, tasks); } finally { setIsExporting(false); }
           }}
         >
           <Download className="w-4 h-4" />

@@ -54,7 +54,7 @@ function scoreLabel(score) {
   return 'Initial';
 }
 
-export function exportReportPdf(assessment, recommendations) {
+export function exportReportPdf(assessment, recommendations, tasks = []) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();  // 210
   const H = doc.internal.pageSize.getHeight(); // 297
@@ -324,6 +324,145 @@ export function exportReportPdf(assessment, recommendations) {
       }
 
       y += cardH + 4;
+    });
+  }
+
+  // ─── TASK ROADMAP ────────────────────────────────────────────────────────────
+  if (tasks && tasks.length > 0) {
+    addPage(doc);
+    y = 30;
+
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    setColor(doc, BRAND_DARK);
+    doc.text('Implementation Roadmap', 20, y);
+    y += 6;
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    setColor(doc, MID_GRAY);
+    doc.text('Prioritized tasks for improving cybersecurity posture', 20, y);
+    y += 10;
+
+    // Summary stats
+    const taskDone = tasks.filter(t => t.status === 'done').length;
+    const taskInProgress = tasks.filter(t => t.status === 'in_progress').length;
+    const taskTodo = tasks.filter(t => t.status === 'todo').length;
+    const taskPct = tasks.length > 0 ? Math.round((taskDone / tasks.length) * 100) : 0;
+
+    // Stats row
+    const statBoxes = [
+      { label: 'Total', value: String(tasks.length), color: BRAND_BLUE },
+      { label: 'Completed', value: String(taskDone), color: BRAND_TEAL },
+      { label: 'In Progress', value: String(taskInProgress), color: [234, 179, 8] },
+      { label: 'To Do', value: String(taskTodo), color: MID_GRAY },
+    ];
+    let sx = 20;
+    statBoxes.forEach(({ label, value, color }) => {
+      setColor(doc, LIGHT_GRAY, 'fill');
+      setColor(doc, BORDER_GRAY, 'draw');
+      doc.setLineWidth(0.3);
+      doc.roundedRect(sx, y, 38, 18, 2, 2, 'FD');
+      setColor(doc, color);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text(value, sx + 19, y + 10, { align: 'center' });
+      setColor(doc, MID_GRAY);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.text(label, sx + 19, y + 16, { align: 'center' });
+      sx += 42;
+    });
+
+    // Overall progress bar
+    const barX = 20;
+    const barY = y + 24;
+    const fullBarW = W - 40;
+    setColor(doc, BORDER_GRAY, 'fill');
+    doc.roundedRect(barX, barY, fullBarW, 5, 1, 1, 'F');
+    setColor(doc, BRAND_TEAL, 'fill');
+    doc.roundedRect(barX, barY, (fullBarW * taskPct) / 100, 5, 1, 1, 'F');
+    setColor(doc, BRAND_DARK);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text(`${taskPct}% complete`, barX + fullBarW + 2, barY + 4);
+    y += 36;
+
+    // Task list sorted by priority then status
+    const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+    const statusOrder = { in_progress: 0, todo: 1, done: 2 };
+    const sortedTasks = [...tasks].sort((a, b) => {
+      const po = (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4);
+      if (po !== 0) return po;
+      return (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3);
+    });
+
+    // Column headers
+    setColor(doc, LIGHT_GRAY, 'fill');
+    doc.rect(20, y, W - 40, 7, 'F');
+    setColor(doc, MID_GRAY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.text('Task', 24, y + 5);
+    doc.text('Priority', W - 90, y + 5);
+    doc.text('Status', W - 60, y + 5);
+    doc.text('Due Date', W - 30, y + 5, { align: 'right' });
+    y += 10;
+
+    sortedTasks.forEach((task) => {
+      const titleLines = doc.splitTextToSize(task.title, W - 120);
+      const rowH = Math.max(10, titleLines.length * 5 + 4);
+
+      if (y + rowH > H - 20) {
+        addPage(doc);
+        y = 30;
+      }
+
+      // Status indicator dot
+      const statusColor = task.status === 'done' ? BRAND_TEAL : task.status === 'in_progress' ? [234, 179, 8] : MID_GRAY;
+      setColor(doc, statusColor, 'fill');
+      doc.circle(22, y + rowH / 2, 1.5, 'F');
+
+      // Title
+      setColor(doc, task.status === 'done' ? MID_GRAY : BRAND_DARK);
+      doc.setFont('helvetica', task.status === 'done' ? 'normal' : 'bold');
+      doc.setFontSize(8.5);
+      doc.text(titleLines, 26, y + 5);
+
+      // Customer name sub-line
+      if (task.customer_name) {
+        setColor(doc, MID_GRAY);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.text(task.customer_name, 26, y + 5 + titleLines.length * 5);
+      }
+
+      // Priority badge
+      const prioColor = PRIORITY_COLORS[task.priority] || MID_GRAY;
+      setColor(doc, prioColor, 'fill');
+      doc.roundedRect(W - 98, y + rowH / 2 - 3.5, 20, 7, 1, 1, 'F');
+      setColor(doc, [255, 255, 255]);
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'bold');
+      doc.text((task.priority || 'medium').toUpperCase(), W - 88, y + rowH / 2 + 1, { align: 'center' });
+
+      // Status text
+      setColor(doc, MID_GRAY);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.text((task.status || '').replace('_', ' '), W - 60, y + rowH / 2 + 1);
+
+      // Due date
+      if (task.due_date) {
+        doc.text(task.due_date, W - 22, y + rowH / 2 + 1, { align: 'right' });
+      }
+
+      // Divider
+      setColor(doc, BORDER_GRAY, 'draw');
+      doc.setLineWidth(0.2);
+      doc.line(20, y + rowH, W - 20, y + rowH);
+
+      y += rowH + 2;
     });
   }
 

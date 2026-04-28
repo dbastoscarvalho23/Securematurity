@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
-import { Plus, Search, ClipboardCheck, MoreHorizontal, Trash2, Eye, Play } from 'lucide-react';
+import { Plus, Search, ClipboardCheck, MoreHorizontal, Trash2, Eye, Play, FileDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import NewAssessmentDialog from '@/components/assessments/NewAssessmentDialog';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
+import { exportReportPdf } from '@/lib/exportReportPdf';
 
 const statusStyles = {
   draft: 'bg-muted text-muted-foreground',
@@ -24,6 +25,7 @@ const statusStyles = {
 export default function Assessments() {
   const [showNew, setShowNew] = useState(false);
   const [search, setSearch] = useState('');
+  const [exportingId, setExportingId] = useState(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -41,6 +43,16 @@ export default function Assessments() {
     mutationFn: (id) => base44.entities.Assessment.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assessments'] }),
   });
+
+  const handleExport = async (a) => {
+    setExportingId(a.id);
+    const [recs, tasks] = await Promise.all([
+      base44.entities.Recommendation.filter({ assessment_id: a.id }, '-created_date', 200),
+      base44.entities.Task.filter({ customer_id: a.customer_id }, '-created_date', 200),
+    ]);
+    exportReportPdf(a, recs, tasks);
+    setExportingId(null);
+  };
 
   const filtered = assessments.filter(a =>
     a.title?.toLowerCase().includes(search.toLowerCase()) ||
@@ -144,6 +156,17 @@ export default function Assessments() {
                             {a.status === 'completed' ? 'View Results' : 'Continue'}
                           </Link>
                         </DropdownMenuItem>
+                        {a.status === 'completed' && (
+                          <DropdownMenuItem
+                            onClick={() => handleExport(a)}
+                            disabled={exportingId === a.id}
+                          >
+                            {exportingId === a.id
+                              ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              : <FileDown className="w-4 h-4 mr-2" />}
+                            Export PDF Report
+                          </DropdownMenuItem>
+                        )}
                         {isAdmin && (
                           <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(a.id)}>
                             <Trash2 className="w-4 h-4 mr-2" /> Delete
