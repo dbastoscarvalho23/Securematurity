@@ -30,19 +30,6 @@ function setColor(doc, rgb, type = 'text') {
 
 function addPage(doc) {
   doc.addPage();
-  return addFooter(doc);
-}
-
-function addFooter(doc) {
-  const pageH = doc.internal.pageSize.getHeight();
-  const pageW = doc.internal.pageSize.getWidth();
-  setColor(doc, BORDER_GRAY, 'draw');
-  doc.setLineWidth(0.3);
-  doc.line(20, pageH - 14, pageW - 20, pageH - 14);
-  setColor(doc, MID_GRAY);
-  doc.setFontSize(8);
-  doc.text('CyberMaturity Platform · Confidential', 20, pageH - 8);
-  doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageW - 20, pageH - 8, { align: 'right' });
   return 20; // reset y to top margin
 }
 
