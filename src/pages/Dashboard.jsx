@@ -1,12 +1,15 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Building2, ClipboardCheck, ShieldAlert, TrendingUp } from 'lucide-react';
+import { ShieldAlert, Building2, ClipboardCheck } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import MaturityRadar from '@/components/dashboard/MaturityRadar';
 import FrameworkScoreCard from '@/components/dashboard/FrameworkScoreCard';
 import TrendChart from '@/components/dashboard/TrendChart';
-import RecentActivity from '@/components/dashboard/RecentActivity';
+import CustomersOverview from '@/components/dashboard/CustomersOverview';
+import AssessmentsOverview from '@/components/dashboard/AssessmentsOverview';
+import MaturityOverview from '@/components/dashboard/MaturityOverview';
+import TasksOverview from '@/components/dashboard/TasksOverview';
 import { useAuth } from '@/lib/AuthContext';
 
 const FRAMEWORK_NAMES = {
@@ -44,9 +47,17 @@ export default function Dashboard() {
     enabled: isAdmin || !!customerId,
   });
 
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['tasks', user?.email, customerId],
+    queryFn: () => isAdmin
+      ? base44.entities.Task.list('-created_date', 100)
+      : base44.entities.Task.filter({ customer_id: customerId }, '-created_date', 100),
+    enabled: isAdmin || !!customerId,
+  });
+
   const completedAssessments = assessments.filter(a => a.status === 'completed');
   const latestAssessment = completedAssessments[0];
-  
+
   // Build radar data from latest assessment
   const radarData = [];
   if (latestAssessment?.framework_scores) {
@@ -74,25 +85,20 @@ export default function Dashboard() {
       return point;
     });
 
-  const overallScore = latestAssessment?.overall_score || 0;
   const openRecs = recommendations.filter(r => r.status === 'pending' || r.status === 'in_progress').length;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-muted-foreground text-sm">
-            Cybersecurity & Compliance Maturity Overview
-          </p>
-        </div>
+        <p className="text-muted-foreground text-sm">Cybersecurity & Compliance Maturity Overview</p>
         <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
           {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Top stat strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {isAdmin && (
           <StatCard
             title="Active Customers"
@@ -103,20 +109,11 @@ export default function Dashboard() {
           />
         )}
         <StatCard
-          title="Assessments"
+          title="Completed Assessments"
           value={completedAssessments.length}
           subtitle={`${assessments.filter(a => a.status === 'in_progress').length} in progress`}
           icon={ClipboardCheck}
           href="/assessments"
-        />
-        <StatCard
-          title="Overall Maturity"
-          value={overallScore.toFixed(1)}
-          subtitle="out of 5.0"
-          icon={TrendingUp}
-          trend={completedAssessments.length > 1 ? "+0.3" : undefined}
-          trendUp
-          href="/reports"
         />
         <StatCard
           title="Open Recommendations"
@@ -125,6 +122,14 @@ export default function Dashboard() {
           icon={ShieldAlert}
           href="/recommendations"
         />
+      </div>
+
+      {/* Main 4-panel overview grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {isAdmin && <CustomersOverview customers={customers} />}
+        <AssessmentsOverview assessments={assessments} />
+        <MaturityOverview assessment={latestAssessment} />
+        <TasksOverview tasks={tasks} />
       </div>
 
       {/* Framework Scores */}
@@ -147,14 +152,8 @@ export default function Dashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <MaturityRadar data={radarData} />
-        <TrendChart
-          data={trendData}
-          frameworks={Object.keys(FRAMEWORK_NAMES)}
-        />
+        <TrendChart data={trendData} frameworks={Object.keys(FRAMEWORK_NAMES)} />
       </div>
-
-      {/* Recent Activity */}
-      <RecentActivity assessments={assessments.slice(0, 5)} />
     </div>
   );
 }
