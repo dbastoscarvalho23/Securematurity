@@ -73,7 +73,7 @@ const customerAdminNavGroups = [
   {
     label: 'Tools',
     items: [
-      { path: '/recommendations', label: 'Recommendations', icon: Lightbulb },
+      { path: '/action-plan', label: 'Action Plan', icon: Target },
     ]
   },
   {
