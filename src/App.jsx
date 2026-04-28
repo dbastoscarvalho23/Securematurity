@@ -23,6 +23,7 @@ import TaskAnalytics from '@/pages/TaskAnalytics';
 import SecurityDocuments from '@/pages/SecurityDocuments';
 import DocumentAuditTrail from '@/pages/DocumentAuditTrail';
 import RiskAssessment from '@/pages/RiskAssessment';
+import EvidenceOverview from '@/pages/EvidenceOverview';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -70,6 +71,7 @@ const AuthenticatedApp = () => {
         <Route path="/security-documents" element={<SecurityDocuments />} />
         <Route path="/document-audit-trail" element={<DocumentAuditTrail />} />
         <Route path="/action-plan" element={<ActionPlan />} />
+        <Route path="/evidence" element={<EvidenceOverview />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
