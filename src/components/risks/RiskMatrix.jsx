@@ -123,7 +123,10 @@ export default function RiskMatrix({ risks, onEdit }) {
               <div key={risk.id} className="px-4 py-3 hover:bg-muted/30 transition-colors">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{risk.title}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {risk.risk_id && <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{risk.risk_id}</span>}
+                      <p className="text-sm font-medium">{risk.title}</p>
+                    </div>
                     {risk.description && (
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{risk.description}</p>
                     )}

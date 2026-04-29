@@ -2,6 +2,10 @@
   "name": "RiskItem",
   "type": "object",
   "properties": {
+    "risk_id": {
+      "type": "string",
+      "description": "Custom Risk ID (e.g. RISK-001)"
+    },
     "title": {
       "type": "string",
       "description": "Short risk title"

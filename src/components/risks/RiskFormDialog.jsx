@@ -47,7 +47,7 @@ function ScoreSelector({ label, value, onChange }) {
 }
 
 const DEFAULT = {
-  title: '', description: '', category: 'other', impact: 3, likelihood: 3,
+  risk_id: '', title: '', description: '', category: 'other', impact: 3, likelihood: 3,
   status: 'open', owner_email: '', treatment_notes: '', due_date: '',
   linked_document_ids: [], customer_id: '', customer_name: '',
 };
@@ -98,9 +98,15 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
           <DialogTitle>{risk?.id ? 'Edit Risk' : 'New Risk'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Title *</Label>
-            <Input value={form.title} onChange={e => set('title', e.target.value)} required placeholder="Brief risk description" />
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label>Risk ID</Label>
+              <Input value={form.risk_id} onChange={e => set('risk_id', e.target.value)} placeholder="e.g. RISK-001" />
+            </div>
+            <div className="col-span-2 space-y-1.5">
+              <Label>Title *</Label>
+              <Input value={form.title} onChange={e => set('title', e.target.value)} required placeholder="Brief risk description" />
+            </div>
           </div>
 
           <div className="space-y-1.5">

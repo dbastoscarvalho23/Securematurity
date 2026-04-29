@@ -266,6 +266,7 @@ export default function RiskAssessment() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
+                          {risk.risk_id && <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{risk.risk_id}</span>}
                           <p className="text-sm font-semibold">{risk.title}</p>
                           <RiskLevelBadge risk={risk} />
                           <Badge variant="outline" className={`text-xs border ${STATUS_STYLES[risk.status]}`}>

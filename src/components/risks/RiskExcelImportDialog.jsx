@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const RISK_FIELDS = [
+  { key: 'risk_id',         label: 'Risk ID',         required: false },
   { key: 'title',           label: 'Title',           required: true  },
   { key: 'description',     label: 'Description',     required: false },
   { key: 'category',        label: 'Category',        required: false },
@@ -38,6 +39,7 @@ const STATUS_MAP = {
 };
 
 const AUTO_HINTS = {
+  risk_id:         ['risk id', 'risk_id', 'id', 'risk number', 'ref', 'reference'],
   title:           ['title', 'risk', 'risk title', 'name', 'risk name', 'titulo', 'risco'],
   description:     ['description', 'desc', 'details', 'descricao', 'descrição'],
   category:        ['category', 'categoria', 'type', 'tipo'],
@@ -120,6 +122,7 @@ function buildRisksFromMapping(sheetData, enabledSheets, mapping) {
     const rawStatus   = String(getField('status')   || '').toLowerCase().trim();
 
     risks.push({
+      risk_id:         String(getField('risk_id')         || '').trim(),
       title,
       description:     String(getField('description')     || '').trim(),
       category:        CATEGORY_MAP[rawCategory] || 'other',
@@ -138,9 +141,9 @@ function buildRisksFromMapping(sheetData, enabledSheets, mapping) {
 
 function downloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['Title', 'Description', 'Category', 'Impact', 'Likelihood', 'Status', 'Owner Email', 'Due Date', 'Treatment Notes', 'Customer Name'],
-    ['Weak Password Policy', 'Users allowed to set short passwords without MFA', 'access_control', 4, 4, 'open', 'security@company.com', '2025-06-30', 'Enforce MFA and password complexity', 'Acme Corp'],
-    ['Unpatched Servers', 'Several servers running outdated OS versions', 'network_security', 5, 3, 'in_treatment', 'ops@company.com', '2025-05-15', 'Patch management process', ''],
+    ['Risk ID', 'Title', 'Description', 'Category', 'Impact', 'Likelihood', 'Status', 'Owner Email', 'Due Date', 'Treatment Notes', 'Customer Name'],
+    ['RISK-001', 'Weak Password Policy', 'Users allowed to set short passwords without MFA', 'access_control', 4, 4, 'open', 'security@company.com', '2025-06-30', 'Enforce MFA and password complexity', 'Acme Corp'],
+    ['RISK-002', 'Unpatched Servers', 'Several servers running outdated OS versions', 'network_security', 5, 3, 'in_treatment', 'ops@company.com', '2025-05-15', 'Patch management process', ''],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Risks');
