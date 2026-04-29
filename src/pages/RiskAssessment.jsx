@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, ShieldAlert, FileText, TrendingUp } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, ShieldAlert, FileText, TrendingUp, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import RiskFormDialog from '@/components/risks/RiskFormDialog';
+import RiskExcelImportDialog from '@/components/risks/RiskExcelImportDialog';
 import RiskMatrix from '@/components/risks/RiskMatrix';
 import { writeAuditLog } from '@/lib/auditLog';
 
@@ -45,6 +46,7 @@ export default function RiskAssessment() {
   const customerId = user?.customer_id;
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editingRisk, setEditingRisk] = useState(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -126,6 +128,25 @@ export default function RiskAssessment() {
   const handleNew = () => { setEditingRisk(null); setDialogOpen(true); };
   const handleEdit = (r) => { setEditingRisk(r); setDialogOpen(true); };
 
+  const handleExcelImport = async (risks) => {
+    let created = 0;
+    for (const r of risks) {
+      const data = { ...r };
+      if (!isAdmin) {
+        data.customer_id = customerId;
+        data.customer_name = user?.customer_name || r.customer_name;
+      } else if (r.customer_name && customers.length > 0) {
+        const match = customers.find(c => c.name?.toLowerCase() === r.customer_name?.toLowerCase());
+        if (match) { data.customer_id = match.id; data.customer_name = match.name; }
+      }
+      await base44.entities.RiskItem.create({ ...data, owner_email: data.owner_email || user?.email });
+      created++;
+    }
+    await writeAuditLog({ action: 'risk_created', entity_type: 'RiskItem', details: `Bulk imported ${created} risks from Excel` });
+    queryClient.invalidateQueries({ queryKey: ['riskItems'] });
+    toast.success(`${created} risk${created !== 1 ? 's' : ''} imported successfully`);
+  };
+
   const getLinkedDocs = (risk) =>
     documents.filter(d => risk.linked_document_ids?.includes(d.id));
 
@@ -143,6 +164,9 @@ export default function RiskAssessment() {
           <Button
             variant={view === 'matrix' ? 'default' : 'outline'} size="sm"
             onClick={() => setView('matrix')}>Risk Matrix</Button>
+          <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+            <FileSpreadsheet className="w-4 h-4" /> Import Excel
+          </Button>
           <Button onClick={handleNew} className="gap-2">
             <Plus className="w-4 h-4" /> New Risk
           </Button>
@@ -298,6 +322,12 @@ export default function RiskAssessment() {
           </div>
         </>
       )}
+
+      <RiskExcelImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImport={handleExcelImport}
+      />
 
       <RiskFormDialog
         open={dialogOpen}
