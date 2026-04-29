@@ -165,7 +165,7 @@ export default function RiskAssessment() {
             variant={view === 'matrix' ? 'default' : 'outline'} size="sm"
             onClick={() => setView('matrix')}>Risk Matrix</Button>
           <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
-            <FileSpreadsheet className="w-4 h-4" /> Import Excel
+            <FileSpreadsheet className="w-4 h-4" /> Import from Excel
           </Button>
           <Button onClick={handleNew} className="gap-2">
             <Plus className="w-4 h-4" /> New Risk
