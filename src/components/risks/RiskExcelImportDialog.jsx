@@ -3,8 +3,7 @@ import * as XLSX from 'xlsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, Download, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, Download, ChevronRight, ArrowLeft, X, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -38,7 +37,6 @@ const STATUS_MAP = {
   'closed': 'closed', 'fechado': 'closed',
 };
 
-// Auto-detect best column for a field based on known aliases
 const AUTO_HINTS = {
   title:           ['title', 'risk', 'risk title', 'name', 'risk name', 'titulo', 'risco'],
   description:     ['description', 'desc', 'details', 'descricao', 'descrição'],
@@ -56,11 +54,14 @@ const AUTO_HINTS = {
 
 function normalizeHeader(h) { return String(h || '').toLowerCase().trim(); }
 
-function autoDetectMapping(headers) {
+function autoDetectMapping(allSheetData) {
+  // Returns { fieldKey: { sheet, col } } using hints across all sheets
   const mapping = {};
   for (const [field, hints] of Object.entries(AUTO_HINTS)) {
-    const match = headers.find(h => hints.includes(normalizeHeader(h)));
-    mapping[field] = match || '__none__';
+    for (const [sheetName, { headers }] of Object.entries(allSheetData)) {
+      const match = headers.find(h => hints.includes(normalizeHeader(h)));
+      if (match) { mapping[field] = { sheet: sheetName, col: match }; break; }
+    }
   }
   return mapping;
 }
@@ -80,33 +81,55 @@ function parseExcelDate(raw) {
   return String(raw).trim();
 }
 
-function applyMappingToSheet(rawRows, headers, mapping) {
-  const getVal = (row, colName) => {
-    if (!colName || colName === '__none__') return '';
-    const idx = headers.indexOf(colName);
-    return idx >= 0 ? row[idx] : '';
+// mapping: { fieldKey: { sheet, col } }
+// sheetData: { sheetName: { headers, rows } }
+function buildRisksFromMapping(sheetData, enabledSheets, mapping) {
+  // Group fields by source sheet
+  const bySheet = {};
+  for (const [field, src] of Object.entries(mapping)) {
+    if (!src || !src.sheet || !src.col) continue;
+    if (!bySheet[src.sheet]) bySheet[src.sheet] = {};
+    bySheet[src.sheet][field] = src.col;
+  }
+
+  // We need a "primary" sheet (the one that has `title`) to drive row count
+  const titleSrc = mapping.title;
+  if (!titleSrc) return [];
+
+  const primarySheet = titleSrc.sheet;
+  const { rows: primaryRows = [], headers: primaryHeaders = [] } = sheetData[primarySheet] || {};
+
+  const getVal = (rows, headers, col, rowIdx) => {
+    const idx = headers.indexOf(col);
+    return idx >= 0 && rows[rowIdx] ? rows[rowIdx][idx] : '';
   };
 
   const risks = [];
-  for (let i = 1; i < rawRows.length; i++) {
-    const row = rawRows[i];
-    const title = String(getVal(row, mapping.title) || '').trim();
+  for (let i = 1; i < primaryRows.length; i++) {
+    const title = String(getVal(primaryRows, primaryHeaders, titleSrc.col, i) || '').trim();
     if (!title) continue;
 
-    const rawCategory = String(getVal(row, mapping.category) || '').toLowerCase().trim();
-    const rawStatus   = String(getVal(row, mapping.status)   || '').toLowerCase().trim();
+    const getField = (field) => {
+      const src = mapping[field];
+      if (!src || !src.sheet || !src.col) return '';
+      const { rows = [], headers = [] } = sheetData[src.sheet] || {};
+      return rows[i] !== undefined ? getVal(rows, headers, src.col, i) : '';
+    };
+
+    const rawCategory = String(getField('category') || '').toLowerCase().trim();
+    const rawStatus   = String(getField('status')   || '').toLowerCase().trim();
 
     risks.push({
       title,
-      description:     String(getVal(row, mapping.description)     || '').trim(),
+      description:     String(getField('description')     || '').trim(),
       category:        CATEGORY_MAP[rawCategory] || 'other',
-      impact:          parseNumber(getVal(row, mapping.impact)),
-      likelihood:      parseNumber(getVal(row, mapping.likelihood)),
+      impact:          parseNumber(getField('impact')),
+      likelihood:      parseNumber(getField('likelihood')),
       status:          STATUS_MAP[rawStatus] || 'open',
-      owner_email:     String(getVal(row, mapping.owner_email)     || '').trim(),
-      due_date:        parseExcelDate(getVal(row, mapping.due_date)),
-      treatment_notes: String(getVal(row, mapping.treatment_notes) || '').trim(),
-      customer_name:   String(getVal(row, mapping.customer_name)   || '').trim(),
+      owner_email:     String(getField('owner_email')     || '').trim(),
+      due_date:        parseExcelDate(getField('due_date')),
+      treatment_notes: String(getField('treatment_notes') || '').trim(),
+      customer_name:   String(getField('customer_name')   || '').trim(),
       linked_document_ids: [],
     });
   }
@@ -124,22 +147,8 @@ function downloadTemplate() {
   XLSX.writeFile(wb, 'risk_matrix_template.xlsx');
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+// ─── Step 1: Upload ────────────────────────────────────────────────────────────
 
-function ScoreBadge({ score }) {
-  return (
-    <Badge variant="outline" className={cn('text-[10px] border',
-      score >= 16 ? 'bg-destructive/10 text-destructive border-destructive/20' :
-      score >= 9  ? 'bg-chart-4/10 text-chart-4 border-chart-4/20' :
-      score >= 4  ? 'bg-chart-3/10 text-chart-3 border-chart-3/20' :
-                    'bg-chart-2/10 text-chart-2 border-chart-2/20'
-    )}>
-      {score}
-    </Badge>
-  );
-}
-
-// Step 1 – Upload
 function UploadStep({ onFile }) {
   const inputRef = useRef();
   const handleDrop = (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) onFile(f); };
@@ -166,122 +175,185 @@ function UploadStep({ onFile }) {
   );
 }
 
-// Step 2 – Sheet & Field Mapping
-function MappingStep({ sheets, sheetData, enabledSheets, onToggleSheet, mappings, onMappingChange, activeSheet, onSwitchSheet }) {
-  const sheetName = sheets[activeSheet];
-  const headers   = sheetData[sheetName]?.headers || [];
-  const mapping   = mappings[sheetName] || {};
-  const rawRows   = sheetData[sheetName]?.rows || [];
+// ─── Step 2: Drag & Drop Mapping ───────────────────────────────────────────────
+
+function ColumnChip({ col, sheet, preview, dragging, onDragStart }) {
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      className={cn(
+        'flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-xs cursor-grab select-none transition-all',
+        dragging ? 'opacity-40' : 'bg-card border-border hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm'
+      )}
+      title={`Sheet: ${sheet}\nSample: ${preview}`}
+    >
+      <GripVertical className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+      <div className="min-w-0">
+        <span className="font-medium truncate block max-w-[110px]">{col}</span>
+        {preview && <span className="text-muted-foreground truncate block max-w-[110px]">{preview}</span>}
+      </div>
+      <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-auto flex-shrink-0">{sheet}</Badge>
+    </div>
+  );
+}
+
+function DropZone({ field, mapped, onDrop, onClear, sheetData }) {
+  const [over, setOver] = useState(false);
+
+  // Get preview value from first data row
+  let preview = '';
+  if (mapped) {
+    const { rows = [], headers = [] } = sheetData[mapped.sheet] || {};
+    const idx = headers.indexOf(mapped.col);
+    if (rows[1] && idx >= 0) preview = String(rows[1][idx] || '').trim().slice(0, 30);
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Sheet selector */}
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Sheets to import</p>
-        <div className="flex gap-2 flex-wrap">
-          {sheets.map((name, idx) => (
-            <button
-              key={name}
-              onClick={() => onSwitchSheet(idx)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
-                activeSheet === idx ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:bg-muted'
-              )}
-            >
-              <input
-                type="checkbox"
-                checked={enabledSheets.includes(name)}
-                onChange={e => { e.stopPropagation(); onToggleSheet(name); }}
-                onClick={e => e.stopPropagation()}
-                className="w-3 h-3 accent-primary"
-              />
-              {name}
-              <span className="opacity-60">({rawRows.length - 1 > 0 ? rawRows.length - 1 : 0})</span>
-            </button>
-          ))}
-        </div>
+    <div
+      onDragOver={e => { e.preventDefault(); setOver(true); }}
+      onDragLeave={() => setOver(false)}
+      onDrop={e => { e.preventDefault(); setOver(false); onDrop(field.key); }}
+      className={cn(
+        'flex items-center gap-2 px-3 py-2 rounded-lg border transition-all min-h-[42px]',
+        over ? 'border-primary bg-primary/10 scale-[1.01]' : mapped ? 'border-border bg-muted/30' : 'border-dashed border-border bg-card'
+      )}
+    >
+      <div className="w-32 flex-shrink-0">
+        <span className="text-xs font-medium">{field.label}</span>
+        {field.required && <span className="text-destructive ml-0.5 text-xs">*</span>}
       </div>
-
-      {/* Column mapping for active sheet */}
-      {enabledSheets.includes(sheetName) && (
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            Column mapping — <span className="text-foreground normal-case font-medium">{sheetName}</span>
-          </p>
-          <div className="border rounded-lg overflow-hidden divide-y">
-            {RISK_FIELDS.map(field => (
-              <div key={field.key} className="flex items-center gap-3 px-3 py-2 bg-card hover:bg-muted/30 transition-colors">
-                <div className="w-36 flex-shrink-0">
-                  <span className="text-xs font-medium">{field.label}</span>
-                  {field.required && <span className="text-destructive ml-0.5">*</span>}
-                </div>
-                <ChevronRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                <Select
-                  value={mapping[field.key] || '__none__'}
-                  onValueChange={val => onMappingChange(sheetName, field.key, val)}
-                >
-                  <SelectTrigger className="h-7 text-xs flex-1">
-                    <SelectValue placeholder="— not mapped —" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— not mapped —</SelectItem>
-                    {headers.map(h => (
-                      <SelectItem key={h} value={h}>{h}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
+      <ChevronRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+      {mapped ? (
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10 border border-primary/20 text-xs flex-1 min-w-0">
+            <span className="font-medium text-primary truncate">{mapped.col}</span>
+            <Badge variant="secondary" className="text-[9px] px-1 py-0 flex-shrink-0">{mapped.sheet}</Badge>
+            {preview && <span className="text-muted-foreground truncate flex-shrink-0 hidden sm:block">· {preview}</span>}
           </div>
+          <button onClick={onClear} className="text-muted-foreground hover:text-destructive flex-shrink-0 transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
+      ) : (
+        <span className="text-xs text-muted-foreground italic">
+          {over ? '↓ Drop here' : 'drag a column here'}
+        </span>
       )}
     </div>
   );
 }
 
-// Step 3 – Preview
-function PreviewStep({ sheets, enabledSheets, sheetData, mappings, activeSheet, onSwitchSheet }) {
-  const sheetName = sheets[activeSheet];
-  const { rows = [], headers = [] } = sheetData[sheetName] || {};
-  const mapping = mappings[sheetName] || {};
-  const risks = applyMappingToSheet(rows, headers, mapping);
+function MappingStep({ sheets, sheetData, mapping, onDrop, onClear }) {
+  const [activeSheet, setActiveSheet] = useState(0);
+  const [dragging, setDragging] = useState(null); // { sheet, col }
 
-  const totalRisks = enabledSheets.reduce((acc, name) => {
-    const { rows: r = [], headers: h = [] } = sheetData[name] || {};
-    return acc + applyMappingToSheet(r, h, mappings[name] || {}).length;
-  }, 0);
+  const sheetName = sheets[activeSheet];
+  const headers = sheetData[sheetName]?.headers || [];
+  const rows = sheetData[sheetName]?.rows || [];
+
+  const handleDragStart = (sheet, col) => {
+    setDragging({ sheet, col });
+  };
+
+  const handleDrop = (fieldKey) => {
+    if (dragging) { onDrop(fieldKey, dragging); setDragging(null); }
+  };
+
+  // Get first data row as preview
+  const getPreview = (col) => {
+    const idx = headers.indexOf(col);
+    if (rows[1] && idx >= 0) return String(rows[1][idx] || '').trim().slice(0, 20);
+    return '';
+  };
 
   return (
-    <div className="space-y-3">
-      {/* Sheet tabs */}
-      {sheets.filter(s => enabledSheets.includes(s)).length > 1 && (
-        <div className="flex gap-1 flex-wrap">
-          {sheets.filter(s => enabledSheets.includes(s)).map((name, _, arr) => {
-            const idx = sheets.indexOf(name);
-            return (
-              <button
-                key={name}
-                onClick={() => onSwitchSheet(idx)}
-                className={cn(
-                  'px-3 py-1 rounded-md text-xs font-medium border transition-colors',
-                  activeSheet === idx ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:bg-muted'
-                )}
-              >
-                {name}
-              </button>
-            );
-          })}
+    <div className="flex gap-4 h-[420px]">
+      {/* Left: column browser */}
+      <div className="w-52 flex-shrink-0 flex flex-col border rounded-lg overflow-hidden">
+        {/* Sheet tabs */}
+        <div className="flex flex-wrap gap-0.5 p-1.5 bg-muted/40 border-b">
+          {sheets.map((name, idx) => (
+            <button
+              key={name}
+              onClick={() => setActiveSheet(idx)}
+              className={cn(
+                'px-2 py-0.5 rounded text-[10px] font-medium transition-colors',
+                activeSheet === idx ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+              )}
+            >
+              {name}
+            </button>
+          ))}
         </div>
-      )}
+        {/* Column chips */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide px-1 mb-1">Columns</p>
+          {headers.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-4">No columns found</p>
+          )}
+          {headers.map(col => (
+            <ColumnChip
+              key={col}
+              col={col}
+              sheet={sheetName}
+              preview={getPreview(col)}
+              dragging={dragging?.sheet === sheetName && dragging?.col === col}
+              onDragStart={() => handleDragStart(sheetName, col)}
+            />
+          ))}
+        </div>
+      </div>
 
+      {/* Right: drop targets */}
+      <div className="flex-1 overflow-y-auto">
+        <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mb-2">
+          Risk Fields — drag columns from the left onto each field
+        </p>
+        <div className="space-y-1.5">
+          {RISK_FIELDS.map(field => (
+            <DropZone
+              key={field.key}
+              field={field}
+              mapped={mapping[field.key]}
+              onDrop={handleDrop}
+              onClear={() => onClear(field.key)}
+              sheetData={sheetData}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 3: Preview ───────────────────────────────────────────────────────────
+
+function ScoreBadge({ score }) {
+  return (
+    <Badge variant="outline" className={cn('text-[10px] border',
+      score >= 16 ? 'bg-destructive/10 text-destructive border-destructive/20' :
+      score >= 9  ? 'bg-chart-4/10 text-chart-4 border-chart-4/20' :
+      score >= 4  ? 'bg-chart-3/10 text-chart-3 border-chart-3/20' :
+                    'bg-chart-2/10 text-chart-2 border-chart-2/20'
+    )}>
+      {score}
+    </Badge>
+  );
+}
+
+function PreviewStep({ sheetData, enabledSheets, mapping }) {
+  const risks = buildRisksFromMapping(sheetData, enabledSheets, mapping);
+  return (
+    <div className="space-y-3">
       {risks.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground text-sm">
+        <div className="text-center py-10 text-muted-foreground text-sm">
           <AlertCircle className="w-6 h-6 mx-auto mb-2 opacity-40" />
-          No valid rows. Make sure "Title" is mapped and rows aren't empty.
+          No valid rows found. Make sure the "Title" field is mapped.
         </div>
       ) : (
         <div className="border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto max-h-64">
+          <div className="overflow-x-auto max-h-72">
             <table className="w-full text-xs">
               <thead className="bg-muted/50 sticky top-0">
                 <tr>
@@ -295,7 +367,7 @@ function PreviewStep({ sheets, enabledSheets, sheetData, mappings, activeSheet, 
                   const score = r.impact * r.likelihood;
                   return (
                     <tr key={i} className="border-t hover:bg-muted/30">
-                      <td className="px-3 py-2 max-w-[180px] truncate font-medium">{r.title}</td>
+                      <td className="px-3 py-2 max-w-[200px] truncate font-medium">{r.title}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{r.category?.replace(/_/g, ' ')}</td>
                       <td className="px-3 py-2 text-center">{r.impact}</td>
                       <td className="px-3 py-2 text-center">{r.likelihood}</td>
@@ -310,8 +382,7 @@ function PreviewStep({ sheets, enabledSheets, sheetData, mappings, activeSheet, 
           </div>
           <div className="px-3 py-2 bg-muted/30 border-t flex items-center gap-2 text-xs text-muted-foreground">
             <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
-            {risks.length} risks in this sheet
-            {enabledSheets.length > 1 && ` · ${totalRisks} total across all selected sheets`}
+            {risks.length} risk{risks.length !== 1 ? 's' : ''} ready to import
           </div>
         </div>
       )}
@@ -319,25 +390,20 @@ function PreviewStep({ sheets, enabledSheets, sheetData, mappings, activeSheet, 
   );
 }
 
-// ─── Main component ────────────────────────────────────────────────────────────
+// ─── Main ──────────────────────────────────────────────────────────────────────
 
-const STEPS = ['Upload', 'Map Columns', 'Preview & Import'];
+const STEPS = ['Upload', 'Map Fields', 'Preview & Import'];
 
 export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) {
-  const [step, setStep]               = useState(0);
-  const [fileName, setFileName]       = useState('');
-  const [sheets, setSheets]           = useState([]);
-  const [sheetData, setSheetData]     = useState({}); // { sheetName: { headers, rows } }
-  const [enabledSheets, setEnabled]   = useState([]);
-  const [mappings, setMappings]       = useState({}); // { sheetName: { field: colHeader } }
-  const [activeSheet, setActiveSheet] = useState(0);
-  const [importing, setImporting]     = useState(false);
+  const [step, setStep]           = useState(0);
+  const [fileName, setFileName]   = useState('');
+  const [sheets, setSheets]       = useState([]);
+  const [sheetData, setSheetData] = useState({});
+  const [enabledSheets, setEnabled] = useState([]);
+  const [mapping, setMapping]     = useState({}); // { fieldKey: { sheet, col } }
+  const [importing, setImporting] = useState(false);
 
-  const reset = () => {
-    setStep(0); setFileName(''); setSheets([]); setSheetData({});
-    setEnabled([]); setMappings({}); setActiveSheet(0);
-  };
-
+  const reset = () => { setStep(0); setFileName(''); setSheets([]); setSheetData({}); setEnabled([]); setMapping({}); };
   const handleClose = () => { reset(); onOpenChange(false); };
 
   const handleFile = (file) => {
@@ -348,58 +414,43 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
       const wb = XLSX.read(e.target.result, { type: 'array' });
       const names = wb.SheetNames;
       const data = {};
-      const maps = {};
       names.forEach(name => {
         const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '' });
         const headers = rawRows.length > 0 ? rawRows[0].map(h => String(h || '').trim()).filter(Boolean) : [];
         data[name] = { headers, rows: rawRows };
-        maps[name] = autoDetectMapping(headers);
       });
       setSheets(names);
       setSheetData(data);
-      setEnabled(names); // all enabled by default
-      setMappings(maps);
-      setActiveSheet(0);
+      setEnabled(names);
+      setMapping(autoDetectMapping(data));
       setStep(1);
     };
     reader.readAsArrayBuffer(file);
   };
 
-  const toggleSheet = (name) => {
-    setEnabled(prev => prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]);
+  const handleDrop = (fieldKey, src) => {
+    setMapping(prev => ({ ...prev, [fieldKey]: src }));
   };
 
-  const handleMappingChange = (sheetName, field, col) => {
-    setMappings(prev => ({ ...prev, [sheetName]: { ...prev[sheetName], [field]: col } }));
+  const handleClear = (fieldKey) => {
+    setMapping(prev => { const n = { ...prev }; delete n[fieldKey]; return n; });
   };
 
-  const canProceedMapping = enabledSheets.some(name => {
-    const m = mappings[name] || {};
-    return m.title && m.title !== '__none__';
-  });
-
-  const getTotalRisks = () => enabledSheets.reduce((acc, name) => {
-    const { rows = [], headers = [] } = sheetData[name] || {};
-    return acc + applyMappingToSheet(rows, headers, mappings[name] || {}).length;
-  }, 0);
+  const canProceed = !!mapping.title;
+  const risks = step === 2 ? buildRisksFromMapping(sheetData, enabledSheets, mapping) : [];
 
   const handleImport = async () => {
     setImporting(true);
-    const allRisks = enabledSheets.flatMap(name => {
-      const { rows = [], headers = [] } = sheetData[name] || {};
-      return applyMappingToSheet(rows, headers, mappings[name] || {});
-    });
+    const allRisks = buildRisksFromMapping(sheetData, enabledSheets, mapping);
     await onImport(allRisks);
     setImporting(false);
     reset();
     onOpenChange(false);
   };
 
-  const totalRisks = getTotalRisks();
-
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-primary" />
@@ -408,7 +459,7 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
         </DialogHeader>
 
         {/* Step indicator */}
-        <div className="flex items-center gap-0 text-xs">
+        <div className="flex items-center gap-0 text-xs flex-shrink-0">
           {STEPS.map((s, i) => (
             <React.Fragment key={s}>
               <div className={cn(
@@ -418,14 +469,14 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
               )}>
                 {i + 1}. {s}
               </div>
-              {i < STEPS.length - 1 && <ChevronRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />}
+              {i < STEPS.length - 1 && <ChevronRight className="w-3 h-3 text-muted-foreground" />}
             </React.Fragment>
           ))}
         </div>
 
-        {/* File info bar (steps 1+) */}
+        {/* File info bar */}
         {fileName && (
-          <div className="flex items-center gap-3 p-2.5 bg-muted/40 rounded-lg text-xs">
+          <div className="flex items-center gap-3 p-2.5 bg-muted/40 rounded-lg text-xs flex-shrink-0">
             <FileSpreadsheet className="w-4 h-4 text-primary flex-shrink-0" />
             <span className="flex-1 truncate font-medium">{fileName}</span>
             <span className="text-muted-foreground">{sheets.length} sheet{sheets.length !== 1 ? 's' : ''}</span>
@@ -433,33 +484,27 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-h-0">
           {step === 0 && <UploadStep onFile={handleFile} />}
           {step === 1 && (
             <MappingStep
               sheets={sheets}
               sheetData={sheetData}
-              enabledSheets={enabledSheets}
-              onToggleSheet={toggleSheet}
-              mappings={mappings}
-              onMappingChange={handleMappingChange}
-              activeSheet={activeSheet}
-              onSwitchSheet={setActiveSheet}
+              mapping={mapping}
+              onDrop={handleDrop}
+              onClear={handleClear}
             />
           )}
           {step === 2 && (
             <PreviewStep
-              sheets={sheets}
-              enabledSheets={enabledSheets}
               sheetData={sheetData}
-              mappings={mappings}
-              activeSheet={activeSheet}
-              onSwitchSheet={setActiveSheet}
+              enabledSheets={enabledSheets}
+              mapping={mapping}
             />
           )}
         </div>
 
-        <DialogFooter className="border-t pt-4 flex items-center gap-2">
+        <DialogFooter className="border-t pt-4 flex items-center gap-2 flex-shrink-0">
           {step > 0 && (
             <Button variant="outline" onClick={() => setStep(s => s - 1)} className="gap-1 mr-auto">
               <ArrowLeft className="w-3.5 h-3.5" /> Back
@@ -467,17 +512,14 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
           )}
           <Button variant="outline" onClick={handleClose}>Cancel</Button>
           {step < 2 && (
-            <Button
-              onClick={() => setStep(s => s + 1)}
-              disabled={step === 1 && !canProceedMapping}
-            >
+            <Button onClick={() => setStep(s => s + 1)} disabled={step === 1 && !canProceed}>
               Next <ChevronRight className="w-3.5 h-3.5" />
             </Button>
           )}
           {step === 2 && (
-            <Button onClick={handleImport} disabled={totalRisks === 0 || importing} className="gap-2">
+            <Button onClick={handleImport} disabled={risks.length === 0 || importing} className="gap-2">
               {importing && <Loader2 className="w-4 h-4 animate-spin" />}
-              Import {totalRisks > 0 ? `${totalRisks} Risk${totalRisks !== 1 ? 's' : ''}` : ''}
+              Import {risks.length > 0 ? `${risks.length} Risk${risks.length !== 1 ? 's' : ''}` : ''}
             </Button>
           )}
         </DialogFooter>
