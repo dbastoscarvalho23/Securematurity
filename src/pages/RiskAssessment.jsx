@@ -206,7 +206,7 @@ export default function RiskAssessment() {
         <Card>
           <CardHeader><CardTitle className="text-base">Risk Matrix (Impact × Likelihood)</CardTitle></CardHeader>
           <CardContent>
-            <RiskMatrix risks={filtered} />
+            <RiskMatrix risks={filtered} onEdit={handleEdit} />
           </CardContent>
         </Card>
       )}

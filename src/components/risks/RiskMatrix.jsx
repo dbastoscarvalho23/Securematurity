@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { X, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { X, Pencil } from 'lucide-react';
 
 const CELL_COLOR = (impact, likelihood) => {
   const score = impact * likelihood;
@@ -24,7 +25,7 @@ const CATEGORY_LABELS = {
   third_party: 'Third Party', compliance: 'Compliance', operational: 'Operational', other: 'Other',
 };
 
-export default function RiskMatrix({ risks }) {
+export default function RiskMatrix({ risks, onEdit }) {
   const [selected, setSelected] = useState(null); // { impact, likelihood }
 
   const getCell = (impact, likelihood) =>
@@ -141,6 +142,11 @@ export default function RiskMatrix({ risks }) {
                       <p className="text-xs text-muted-foreground mt-1.5 italic border-l-2 border-muted pl-2">{risk.treatment_notes}</p>
                     )}
                   </div>
+                  {onEdit && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => onEdit(risk)}>
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
