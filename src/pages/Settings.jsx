@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight, Bell } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useAuth } from '@/lib/AuthContext';
 import EditUserDialog from '@/components/settings/EditUserDialog';
+import ReminderSettingsPanel from '@/components/settings/ReminderSettingsPanel';
 
 export default function Settings() {
   const { user: currentUser, checkAppState, refreshUser } = useAuth();
@@ -456,6 +457,7 @@ export default function Settings() {
         <TabsList>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="frameworks">Frameworks</TabsTrigger>
+          <TabsTrigger value="reminders" className="flex items-center gap-1.5"><Bell className="w-3.5 h-3.5" />Reminders</TabsTrigger>
         </TabsList>
 
         {/* Users Tab */}
@@ -816,6 +818,11 @@ export default function Settings() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+        </TabsContent>
+
+        {/* Reminders Tab */}
+        <TabsContent value="reminders" className="space-y-4 mt-4">
+          <ReminderSettingsPanel customers={customers} isAdmin={isAdmin} />
         </TabsContent>
       </Tabs>
     </div>

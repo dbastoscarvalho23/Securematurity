@@ -1,0 +1,41 @@
+{
+  "name": "ReminderSettings",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer (null = global default)"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "due_date_reminders_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether due date reminders are active"
+    },
+    "reminder_days_before": {
+      "type": "array",
+      "description": "Days before due date to send reminders (e.g. [7, 3, 1])",
+      "items": {
+        "type": "number"
+      }
+    },
+    "notify_on_assignment": {
+      "type": "boolean",
+      "default": true,
+      "description": "Send email when a risk is assigned to an owner"
+    },
+    "notify_on_status_change": {
+      "type": "boolean",
+      "default": true,
+      "description": "Send email when risk status changes"
+    },
+    "additional_recipients": {
+      "type": "string",
+      "description": "Comma-separated extra email addresses to CC on all notifications"
+    }
+  },
+  "required": []
+}
