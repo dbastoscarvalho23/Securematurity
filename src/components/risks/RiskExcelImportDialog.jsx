@@ -22,13 +22,26 @@ const RISK_FIELDS = [
   { key: 'customer_name',   label: 'Customer Name',   required: false },
 ];
 
+const CATEGORIES = [
+  { value: 'access_control',   label: 'Access Control' },
+  { value: 'data_protection',  label: 'Data Protection' },
+  { value: 'network_security', label: 'Network Security' },
+  { value: 'physical_security',label: 'Physical Security' },
+  { value: 'third_party',      label: 'Third Party' },
+  { value: 'compliance',       label: 'Compliance' },
+  { value: 'operational',      label: 'Operational' },
+  { value: 'other',            label: 'Other' },
+];
+
 const CATEGORY_MAP = {
-  'access control': 'access_control', 'access_control': 'access_control',
-  'data protection': 'data_protection', 'data_protection': 'data_protection',
-  'network security': 'network_security', 'network_security': 'network_security',
-  'physical security': 'physical_security', 'physical_security': 'physical_security',
-  'third party': 'third_party', 'third_party': 'third_party',
-  'compliance': 'compliance', 'operational': 'operational', 'other': 'other',
+  'access control': 'access_control', 'access_control': 'access_control', 'controlo de acesso': 'access_control', 'access': 'access_control',
+  'data protection': 'data_protection', 'data_protection': 'data_protection', 'proteção de dados': 'data_protection', 'data': 'data_protection',
+  'network security': 'network_security', 'network_security': 'network_security', 'segurança de rede': 'network_security', 'network': 'network_security',
+  'physical security': 'physical_security', 'physical_security': 'physical_security', 'segurança física': 'physical_security', 'physical': 'physical_security',
+  'third party': 'third_party', 'third_party': 'third_party', 'terceiros': 'third_party', 'supplier': 'third_party', 'vendor': 'third_party',
+  'compliance': 'compliance', 'conformidade': 'compliance', 'regulatory': 'compliance',
+  'operational': 'operational', 'operacional': 'operational', 'operations': 'operational',
+  'other': 'other', 'outro': 'other', 'outros': 'other', 'general': 'other',
 };
 
 const STATUS_MAP = {
@@ -345,10 +358,18 @@ function ScoreBadge({ score }) {
   );
 }
 
-function PreviewStep({ sheetData, enabledSheets, mapping }) {
+function PreviewStep({ sheetData, enabledSheets, mapping, overrides, onOverride }) {
   const risks = buildRisksFromMapping(sheetData, enabledSheets, mapping);
+  const unmappedCount = risks.filter(r => !r.category).length;
+
   return (
     <div className="space-y-3">
+      {unmappedCount > 0 && (
+        <div className="flex items-center gap-2 p-2.5 bg-chart-3/10 border border-chart-3/20 rounded-lg text-xs text-chart-3">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+          {unmappedCount} row{unmappedCount !== 1 ? 's have' : ' has'} no recognized category — set them inline below.
+        </div>
+      )}
       {risks.length === 0 ? (
         <div className="text-center py-10 text-muted-foreground text-sm">
           <AlertCircle className="w-6 h-6 mx-auto mb-2 opacity-40" />
@@ -367,16 +388,32 @@ function PreviewStep({ sheetData, enabledSheets, mapping }) {
               </thead>
               <tbody>
                 {risks.map((r, i) => {
+                  const effectiveCategory = overrides[i] ?? r.category;
                   const score = r.impact * r.likelihood;
+                  const missingCategory = !effectiveCategory;
                   return (
-                    <tr key={i} className="border-t hover:bg-muted/30">
-                      <td className="px-3 py-2 max-w-[200px] truncate font-medium">{r.title}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{r.category?.replace(/_/g, ' ')}</td>
+                    <tr key={i} className={cn('border-t', missingCategory ? 'bg-chart-3/5' : 'hover:bg-muted/30')}>
+                      <td className="px-3 py-2 max-w-[180px] truncate font-medium">{r.title}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">
+                        <select
+                          value={effectiveCategory || ''}
+                          onChange={e => onOverride(i, e.target.value)}
+                          className={cn(
+                            'text-xs rounded border px-1.5 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-ring',
+                            missingCategory ? 'border-chart-3/50 text-chart-3' : 'border-border text-foreground'
+                          )}
+                        >
+                          <option value="">— select —</option>
+                          {CATEGORIES.map(c => (
+                            <option key={c.value} value={c.value}>{c.label}</option>
+                          ))}
+                        </select>
+                      </td>
                       <td className="px-3 py-2 text-center">{r.impact}</td>
                       <td className="px-3 py-2 text-center">{r.likelihood}</td>
                       <td className="px-3 py-2 text-center"><ScoreBadge score={score} /></td>
                       <td className="px-3 py-2 whitespace-nowrap">{r.status?.replace(/_/g, ' ')}</td>
-                      <td className="px-3 py-2 max-w-[140px] truncate text-muted-foreground">{r.owner_email || '—'}</td>
+                      <td className="px-3 py-2 max-w-[130px] truncate text-muted-foreground">{r.owner_email || '—'}</td>
                     </tr>
                   );
                 })}
@@ -403,10 +440,11 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
   const [sheets, setSheets]       = useState([]);
   const [sheetData, setSheetData] = useState({});
   const [enabledSheets, setEnabled] = useState([]);
-  const [mapping, setMapping]     = useState({}); // { fieldKey: { sheet, col } }
-  const [importing, setImporting] = useState(false);
+  const [mapping, setMapping]         = useState({}); // { fieldKey: { sheet, col } }
+  const [categoryOverrides, setOverrides] = useState({}); // { rowIndex: categoryValue }
+  const [importing, setImporting]     = useState(false);
 
-  const reset = () => { setStep(0); setFileName(''); setSheets([]); setSheetData({}); setEnabled([]); setMapping({}); };
+  const reset = () => { setStep(0); setFileName(''); setSheets([]); setSheetData({}); setEnabled([]); setMapping({}); setOverrides({}); };
   const handleClose = () => { reset(); onOpenChange(false); };
 
   const handleFile = (file) => {
@@ -440,11 +478,14 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
   };
 
   const canProceed = !!mapping.title;
-  const risks = step === 2 ? buildRisksFromMapping(sheetData, enabledSheets, mapping) : [];
+  const risks = step === 2 ? buildRisksFromMapping(sheetData, enabledSheets, mapping).map((r, i) => ({ ...r, category: categoryOverrides[i] ?? r.category })) : [];
 
   const handleImport = async () => {
     setImporting(true);
-    const allRisks = buildRisksFromMapping(sheetData, enabledSheets, mapping);
+    const allRisks = buildRisksFromMapping(sheetData, enabledSheets, mapping).map((r, i) => ({
+      ...r,
+      category: categoryOverrides[i] ?? r.category,
+    }));
     await onImport(allRisks);
     setImporting(false);
     reset();
@@ -503,6 +544,8 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
               sheetData={sheetData}
               enabledSheets={enabledSheets}
               mapping={mapping}
+              overrides={categoryOverrides}
+              onOverride={(i, val) => setOverrides(prev => ({ ...prev, [i]: val }))}
             />
           )}
         </div>
