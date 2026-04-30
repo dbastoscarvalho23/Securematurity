@@ -9,6 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search, Pencil, Trash2, AlertTriangle, ShieldAlert, FileText, TrendingUp, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import RiskFormDialog from '@/components/risks/RiskFormDialog';
 import RiskExcelImportDialog from '@/components/risks/RiskExcelImportDialog';
 import RiskMatrix from '@/components/risks/RiskMatrix';
@@ -47,6 +51,7 @@ export default function RiskAssessment() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [editingRisk, setEditingRisk] = useState(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -128,6 +133,16 @@ export default function RiskAssessment() {
   const handleNew = () => { setEditingRisk(null); setDialogOpen(true); };
   const handleEdit = (r) => { setEditingRisk(r); setDialogOpen(true); };
 
+  const handleBulkDelete = async () => {
+    for (const r of scoped) {
+      await base44.entities.RiskItem.delete(r.id);
+    }
+    await writeAuditLog({ action: 'risk_deleted', entity_type: 'RiskItem', details: `Bulk deleted ${scoped.length} risks` });
+    queryClient.invalidateQueries({ queryKey: ['riskItems'] });
+    setBulkDeleteOpen(false);
+    toast.success(`${scoped.length} risk${scoped.length !== 1 ? 's' : ''} deleted`);
+  };
+
   const handleExcelImport = async (risks) => {
     let created = 0;
     for (const r of risks) {
@@ -167,6 +182,11 @@ export default function RiskAssessment() {
           <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
             <FileSpreadsheet className="w-4 h-4" /> Import from Excel
           </Button>
+          {scoped.length > 0 && (
+            <Button variant="outline" onClick={() => setBulkDeleteOpen(true)} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10">
+              <Trash2 className="w-4 h-4" /> Delete All
+            </Button>
+          )}
           <Button onClick={handleNew} className="gap-2">
             <Plus className="w-4 h-4" /> New Risk
           </Button>
@@ -323,6 +343,23 @@ export default function RiskAssessment() {
           </div>
         </>
       )}
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete all risks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all <strong>{scoped.length}</strong> risk{scoped.length !== 1 ? 's' : ''}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <RiskExcelImportDialog
         open={importOpen}
