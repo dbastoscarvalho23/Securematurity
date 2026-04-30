@@ -125,7 +125,7 @@ function buildRisksFromMapping(sheetData, enabledSheets, mapping) {
       risk_id:         String(getField('risk_id')         || '').trim(),
       title,
       description:     String(getField('description')     || '').trim(),
-      category:        CATEGORY_MAP[rawCategory] || 'other',
+      category:        CATEGORY_MAP[rawCategory] || '',
       impact:          parseNumber(getField('impact')),
       likelihood:      parseNumber(getField('likelihood')),
       status:          STATUS_MAP[rawStatus] || 'open',

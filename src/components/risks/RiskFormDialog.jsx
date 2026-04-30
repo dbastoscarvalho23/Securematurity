@@ -47,7 +47,7 @@ function ScoreSelector({ label, value, onChange }) {
 }
 
 const DEFAULT = {
-  risk_id: '', title: '', description: '', category: 'other', impact: 3, likelihood: 3,
+  risk_id: '', title: '', description: '', category: '', impact: 3, likelihood: 3,
   status: 'open', owner_email: '', treatment_notes: '', due_date: '',
   linked_document_ids: [], customer_id: '', customer_name: '',
 };
@@ -118,7 +118,7 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
             <div className="space-y-1.5">
               <Label>Category</Label>
               <Select value={form.category} onValueChange={v => set('category', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
                 <SelectContent>
                   {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                 </SelectContent>
