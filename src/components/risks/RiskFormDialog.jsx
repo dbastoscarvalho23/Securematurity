@@ -10,6 +10,7 @@ import { Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
 import RiskHistoryTimeline from './RiskHistoryTimeline';
+import MitigationTasksPanel from './MitigationTasksPanel';
 
 const CATEGORIES = [
   { value: 'access_control', label: 'Access Control' },
@@ -114,7 +115,7 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit Risk' : 'New Risk'}</DialogTitle>
         </DialogHeader>
@@ -123,6 +124,7 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <TabsList className="w-full flex-shrink-0">
               <TabsTrigger value="edit" className="flex-1">Edit</TabsTrigger>
+              <TabsTrigger value="tasks" className="flex-1">Mitigation Tasks</TabsTrigger>
               <TabsTrigger value="history" className="flex-1">History</TabsTrigger>
             </TabsList>
 
@@ -133,6 +135,10 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
                 saving={saving} onSubmit={handleSubmit} onCancel={() => onOpenChange(false)}
                 isEdit={isEdit}
               />
+            </TabsContent>
+
+            <TabsContent value="tasks" className="flex-1 overflow-y-auto mt-0 pt-4">
+              <MitigationTasksPanel riskId={risk.id} />
             </TabsContent>
 
             <TabsContent value="history" className="flex-1 overflow-y-auto mt-0 pt-4">
