@@ -77,6 +77,7 @@ export default function RiskAssessment() {
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       const isEdit = !!data.id;
+      const previousRisk = isEdit ? risks.find(r => r.id === data.id) : null;
       let result;
       if (isEdit) {
         result = await base44.entities.RiskItem.update(data.id, data);
@@ -85,6 +86,21 @@ export default function RiskAssessment() {
         result = await base44.entities.RiskItem.create({ ...data, owner_email: data.owner_email || user?.email });
         await writeAuditLog({ action: 'risk_created', entity_type: 'RiskItem', entity_id: result?.id, details: `Created risk: ${data.title} (score: ${(data.impact || 0) * (data.likelihood || 0)})` });
       }
+      const savedRisk = result || data;
+
+      // Fire notifications in the background (don't block save)
+      if (savedRisk.owner_email) {
+        const ownerChanged = !isEdit || (previousRisk?.owner_email !== savedRisk.owner_email);
+        const statusChanged = isEdit && previousRisk?.status !== savedRisk.status;
+
+        if (ownerChanged) {
+          base44.functions.invoke('riskNotifications', { type: 'assigned', risk: savedRisk, previousRisk }).catch(() => {});
+        }
+        if (statusChanged) {
+          base44.functions.invoke('riskNotifications', { type: 'status_changed', risk: savedRisk, previousRisk }).catch(() => {});
+        }
+      }
+
       return result;
     },
     onSuccess: (_, variables) => {
