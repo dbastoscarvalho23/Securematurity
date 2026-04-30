@@ -89,6 +89,7 @@ export default function RiskAssessment() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['riskItems'] });
+      queryClient.invalidateQueries({ queryKey: ['riskHistory'] });
       setDialogOpen(false);
       setEditingRisk(null);
       toast.success(variables?.id ? 'Risk updated' : 'Risk created');
@@ -376,6 +377,7 @@ export default function RiskAssessment() {
         isAdmin={isAdmin}
         customerId={customerId}
         customerName={user?.customer_name}
+        currentUser={user}
         onSave={(data) => saveMutation.mutateAsync(data)}
       />
     </div>

@@ -1,0 +1,38 @@
+{
+  "name": "RiskHistory",
+  "type": "object",
+  "properties": {
+    "risk_id": {
+      "type": "string",
+      "description": "Reference to RiskItem"
+    },
+    "changed_by": {
+      "type": "string",
+      "description": "Email of the user who made the change"
+    },
+    "impact": {
+      "type": "number",
+      "description": "Impact score at time of change"
+    },
+    "likelihood": {
+      "type": "number",
+      "description": "Likelihood score at time of change"
+    },
+    "status": {
+      "type": "string",
+      "description": "Status at time of change"
+    },
+    "title": {
+      "type": "string",
+      "description": "Title at time of change"
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional note about what changed"
+    }
+  },
+  "required": [
+    "risk_id",
+    "changed_by"
+  ]
+}
