@@ -3,6 +3,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Building2, Mail, Phone, Globe, Users, Briefcase, Hash, Pencil, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/AuthContext';
+import CustomerUsersPanel from './CustomerUsersPanel';
 
 const statusStyles = {
   active: 'bg-accent/10 text-accent border-accent/20',
@@ -42,6 +44,9 @@ function Section({ title, defaultOpen = false, children }) {
 }
 
 export default function CustomerDetailPanel({ customer, onEdit }) {
+  const { user } = useAuth();
+  const canManageUsers = user?.role === 'admin' || user?.role === 'customer_admin';
+
   if (!customer) return null;
 
   return (
@@ -118,6 +123,14 @@ export default function CustomerDetailPanel({ customer, onEdit }) {
         {customer.notes && (
           <Section title="Notes" defaultOpen={false}>
             <p className="text-sm text-foreground py-2">{customer.notes}</p>
+          </Section>
+        )}
+
+        {canManageUsers && (
+          <Section title="Users" defaultOpen={false}>
+            <div className="py-2">
+              <CustomerUsersPanel customer={customer} />
+            </div>
           </Section>
         )}
       </div>
