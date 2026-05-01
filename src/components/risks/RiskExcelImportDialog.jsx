@@ -139,6 +139,7 @@ function buildRisksFromMapping(sheetData, enabledSheets, mapping) {
       title,
       description:     String(getField('description')     || '').trim(),
       category:        CATEGORY_MAP[rawCategory] || '',
+      rawCategory:     rawCategory, // keep original cell value for display
       impact:          parseNumber(getField('impact')),
       likelihood:      parseNumber(getField('likelihood')),
       status:          STATUS_MAP[rawStatus] || 'open',
@@ -395,19 +396,24 @@ function PreviewStep({ sheetData, enabledSheets, mapping, overrides, onOverride 
                     <tr key={i} className={cn('border-t', missingCategory ? 'bg-chart-3/5' : 'hover:bg-muted/30')}>
                       <td className="px-3 py-2 max-w-[180px] truncate font-medium">{r.title}</td>
                       <td className="px-2 py-1.5 whitespace-nowrap">
-                        <select
-                          value={effectiveCategory || ''}
-                          onChange={e => onOverride(i, e.target.value)}
-                          className={cn(
-                            'text-xs rounded border px-1.5 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-ring',
-                            missingCategory ? 'border-chart-3/50 text-chart-3' : 'border-border text-foreground'
+                        <div className="flex flex-col gap-0.5">
+                          <select
+                            value={effectiveCategory || ''}
+                            onChange={e => onOverride(i, e.target.value)}
+                            className={cn(
+                              'text-xs rounded border px-1.5 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-ring',
+                              missingCategory ? 'border-chart-3/50 text-chart-3' : 'border-border text-foreground'
+                            )}
+                          >
+                            <option value="">— select —</option>
+                            {CATEGORIES.map(c => (
+                              <option key={c.value} value={c.value}>{c.label}</option>
+                            ))}
+                          </select>
+                          {missingCategory && r.rawCategory && (
+                            <span className="text-[10px] text-muted-foreground italic">from Excel: "{r.rawCategory}"</span>
                           )}
-                        >
-                          <option value="">— select —</option>
-                          {CATEGORIES.map(c => (
-                            <option key={c.value} value={c.value}>{c.label}</option>
-                          ))}
-                        </select>
+                        </div>
                       </td>
                       <td className="px-3 py-2 text-center">{r.impact}</td>
                       <td className="px-3 py-2 text-center">{r.likelihood}</td>
