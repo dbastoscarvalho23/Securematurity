@@ -131,14 +131,14 @@ function buildRisksFromMapping(sheetData, enabledSheets, mapping) {
       return rows[i] !== undefined ? getVal(rows, headers, src.col, i) : '';
     };
 
-    const rawCategory = String(getField('category') || '').toLowerCase().trim();
+    const rawCategory = String(getField('category') || '').trim();
     const rawStatus   = String(getField('status')   || '').toLowerCase().trim();
 
     risks.push({
       risk_id:         String(getField('risk_id')         || '').trim(),
       title,
       description:     String(getField('description')     || '').trim(),
-      category:        CATEGORY_MAP[rawCategory] || '',
+      category:        CATEGORY_MAP[rawCategory.toLowerCase()] || rawCategory,
       rawCategory:     rawCategory, // keep original cell value for display
       impact:          parseNumber(getField('impact')),
       likelihood:      parseNumber(getField('likelihood')),
@@ -392,24 +392,29 @@ function PreviewStep({ sheetData, enabledSheets, mapping, overrides, onOverride 
                   const effectiveCategory = overrides[i] ?? r.category;
                   const score = r.impact * r.likelihood;
                   const missingCategory = !effectiveCategory;
+                  const isKnown = CATEGORIES.find(c => c.value === effectiveCategory);
                   return (
                     <tr key={i} className={cn('border-t', missingCategory ? 'bg-chart-3/5' : 'hover:bg-muted/30')}>
                       <td className="px-3 py-2 max-w-[180px] truncate font-medium">{r.title}</td>
                       <td className="px-2 py-1.5 whitespace-nowrap">
                         <div className="flex flex-col gap-0.5">
-                          <select
-                            value={effectiveCategory || ''}
-                            onChange={e => onOverride(i, e.target.value)}
-                            className={cn(
-                              'text-xs rounded border px-1.5 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-ring',
-                              missingCategory ? 'border-chart-3/50 text-chart-3' : 'border-border text-foreground'
-                            )}
-                          >
-                            <option value="">— select —</option>
-                            {CATEGORIES.map(c => (
-                              <option key={c.value} value={c.value}>{c.label}</option>
-                            ))}
-                          </select>
+                          {isKnown || missingCategory ? (
+                            <select
+                              value={effectiveCategory || ''}
+                              onChange={e => onOverride(i, e.target.value)}
+                              className={cn(
+                                'text-xs rounded border px-1.5 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-ring',
+                                missingCategory ? 'border-chart-3/50 text-chart-3' : 'border-border text-foreground'
+                              )}
+                            >
+                              <option value="">— select —</option>
+                              {CATEGORIES.map(c => (
+                                <option key={c.value} value={c.value}>{c.label}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-xs px-1.5 py-1 rounded border border-border bg-muted/30">{effectiveCategory}</span>
+                          )}
                           {missingCategory && r.rawCategory && (
                             <span className="text-[10px] text-muted-foreground italic">from Excel: "{r.rawCategory}"</span>
                           )}

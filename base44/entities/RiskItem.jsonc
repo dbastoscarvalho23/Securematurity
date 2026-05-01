@@ -16,16 +16,6 @@
     },
     "category": {
       "type": "string",
-      "enum": [
-        "access_control",
-        "data_protection",
-        "network_security",
-        "physical_security",
-        "third_party",
-        "compliance",
-        "operational",
-        "other"
-      ],
       "description": "Risk category"
     },
     "impact": {

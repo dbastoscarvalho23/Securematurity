@@ -180,15 +180,27 @@ function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs,
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label>Category</Label>
-          <Select value={form.category} onValueChange={v => set('category', v)}>
-            <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
-            <SelectContent>
-              {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="space-y-1.5">
+        <Label>Category</Label>
+        <Select
+          value={CATEGORIES.find(c => c.value === form.category) ? form.category : '__custom__'}
+          onValueChange={v => { if (v !== '__custom__') set('category', v); }}
+        >
+          <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
+          <SelectContent>
+            {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+            <SelectItem value="__custom__">Other / Custom...</SelectItem>
+          </SelectContent>
+        </Select>
+        {(!CATEGORIES.find(c => c.value === form.category) || form.category === '') && (
+          <Input
+            value={form.category || ''}
+            onChange={e => set('category', e.target.value)}
+            placeholder="Type category manually..."
+            className="mt-1.5"
+          />
+        )}
+      </div>
         <div className="space-y-1.5">
           <Label>Status</Label>
           <Select value={form.status} onValueChange={v => set('status', v)}>
