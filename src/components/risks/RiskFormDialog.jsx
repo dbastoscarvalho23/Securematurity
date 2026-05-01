@@ -93,16 +93,46 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
     }
     const savedRisk = await onSave(data);
 
-    // Record history snapshot
+    // Compute field-level diff and record history
     const riskId = savedRisk?.id || risk?.id;
     if (riskId) {
+      const TRACKED_FIELDS = [
+        { key: 'title',           label: 'Title' },
+        { key: 'category',        label: 'Category' },
+        { key: 'impact',          label: 'Impact' },
+        { key: 'likelihood',      label: 'Likelihood' },
+        { key: 'status',          label: 'Status' },
+        { key: 'owner_email',     label: 'Owner Email' },
+        { key: 'due_date',        label: 'Due Date' },
+        { key: 'treatment_notes', label: 'Treatment Notes' },
+      ];
+
+      const changed_fields = isEdit
+        ? TRACKED_FIELDS
+            .filter(f => String(risk?.[f.key] ?? '') !== String(data[f.key] ?? ''))
+            .map(f => ({
+              field: f.key,
+              label: f.label,
+              from: String(risk?.[f.key] ?? ''),
+              to:   String(data[f.key] ?? ''),
+            }))
+        : [];
+
       await base44.entities.RiskHistory.create({
         risk_id: riskId,
         changed_by: currentUser?.email || 'unknown',
-        impact: data.impact,
-        likelihood: data.likelihood,
-        status: data.status,
-        title: data.title,
+        action: isEdit ? 'updated' : 'created',
+        changed_fields,
+        snapshot: {
+          title: data.title,
+          impact: data.impact,
+          likelihood: data.likelihood,
+          status: data.status,
+          category: data.category,
+          owner_email: data.owner_email,
+          due_date: data.due_date,
+          treatment_notes: data.treatment_notes,
+        },
       });
     }
 

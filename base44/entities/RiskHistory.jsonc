@@ -10,21 +10,65 @@
       "type": "string",
       "description": "Email of the user who made the change"
     },
-    "impact": {
-      "type": "number",
-      "description": "Impact score at time of change"
-    },
-    "likelihood": {
-      "type": "number",
-      "description": "Likelihood score at time of change"
-    },
-    "status": {
+    "action": {
       "type": "string",
-      "description": "Status at time of change"
+      "enum": [
+        "created",
+        "updated"
+      ],
+      "default": "updated",
+      "description": "Type of action"
     },
-    "title": {
-      "type": "string",
-      "description": "Title at time of change"
+    "changed_fields": {
+      "type": "array",
+      "description": "List of field-level changes with before/after values",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "description": "Full risk snapshot at time of change",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "impact": {
+          "type": "number"
+        },
+        "likelihood": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "owner_email": {
+          "type": "string"
+        },
+        "due_date": {
+          "type": "string"
+        },
+        "treatment_notes": {
+          "type": "string"
+        }
+      }
     },
     "note": {
       "type": "string",
