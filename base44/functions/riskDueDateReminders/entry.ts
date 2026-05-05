@@ -90,6 +90,13 @@ Deno.serve(async (req) => {
         body,
       });
     }
+    await base44.asServiceRole.entities.AuditLog.create({
+      action: 'email_sent',
+      user_email: 'system',
+      entity_type: 'RiskItem',
+      entity_id: risk.id,
+      details: `Due date reminder email sent to ${recipients.join(', ')} for risk: ${risk.title} (due in ${daysLeft} day${daysLeft !== 1 ? 's' : ''})`,
+    });
     sent++;
   }
 

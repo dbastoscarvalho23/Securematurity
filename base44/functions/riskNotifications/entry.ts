@@ -76,6 +76,13 @@ Deno.serve(async (req) => {
     for (const to of recipients) {
       await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Risk Assigned] ${risk.title}`, body });
     }
+    await base44.asServiceRole.entities.AuditLog.create({
+      action: 'email_sent',
+      user_email: user.email,
+      entity_type: 'RiskItem',
+      entity_id: risk.id,
+      details: `Risk assignment email sent to ${recipients.join(', ')} for risk: ${risk.title}`,
+    });
     return Response.json({ sent: 'assigned', to: recipients });
   }
 
@@ -105,6 +112,13 @@ Deno.serve(async (req) => {
     for (const to of recipients) {
       await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Risk Update] Status changed — ${risk.title}`, body });
     }
+    await base44.asServiceRole.entities.AuditLog.create({
+      action: 'email_sent',
+      user_email: user.email,
+      entity_type: 'RiskItem',
+      entity_id: risk.id,
+      details: `Risk status change email sent to ${recipients.join(', ')} for risk: ${risk.title} (${STATUS_LABELS[oldStatus] || oldStatus} → ${STATUS_LABELS[newStatus] || newStatus})`,
+    });
     return Response.json({ sent: 'status_changed', to: recipients });
   }
 
