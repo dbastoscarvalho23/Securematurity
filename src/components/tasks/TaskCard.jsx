@@ -15,9 +15,10 @@ const PRIORITY_STYLES = {
 };
 
 const STATUS_TRANSITIONS = {
-  todo: { next: 'in_progress', label: 'Move to In Progress' },
-  in_progress: { next: 'done', label: 'Mark as Done' },
-  done: { next: 'todo', label: 'Reopen' },
+  todo:        { next: 'in_progress', label: 'Move to In Progress' },
+  in_progress: { next: 'done',        label: 'Mark as Done' },
+  blocked:     { next: 'in_progress', label: 'Unblock → In Progress' },
+  done:        { next: 'todo',        label: 'Reopen' },
 };
 
 export default function TaskCard({ task, onStatusChange, onEdit, onDelete }) {

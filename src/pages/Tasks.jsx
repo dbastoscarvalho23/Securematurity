@@ -107,6 +107,7 @@ export default function Tasks() {
   const counts = {
     todo: tasks.filter(t => t.status === 'todo').length,
     in_progress: tasks.filter(t => t.status === 'in_progress').length,
+    blocked: tasks.filter(t => t.status === 'blocked').length,
     done: tasks.filter(t => t.status === 'done').length,
   };
 
@@ -116,7 +117,9 @@ export default function Tasks() {
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <span><strong className="text-foreground">{counts.todo}</strong> to-do</span>
           <span>·</span>
-          <span><strong className="text-chart-3">{counts.in_progress}</strong> in progress</span>
+          <span><strong className="text-chart-4">{counts.in_progress}</strong> in progress</span>
+          <span>·</span>
+          <span><strong className="text-destructive">{counts.blocked}</strong> blocked</span>
           <span>·</span>
           <span><strong className="text-accent">{counts.done}</strong> done</span>
         </div>
@@ -143,6 +146,7 @@ export default function Tasks() {
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="todo">To-Do</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
+            <SelectItem value="blocked">Blocked</SelectItem>
             <SelectItem value="done">Done</SelectItem>
           </SelectContent>
         </Select>
