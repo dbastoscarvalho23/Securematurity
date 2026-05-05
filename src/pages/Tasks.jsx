@@ -35,12 +35,27 @@ export default function Tasks() {
   const saveMutation = useMutation({
     mutationFn: async (form) => {
       if (form.id) {
+        const previousTask = tasks.find(t => t.id === form.id);
         const result = await base44.entities.Task.update(form.id, form);
         await writeAuditLog({ action: 'task_updated', entity_type: 'Task', entity_id: form.id, details: `Updated task: ${form.title}` });
+
+        if (form.assigned_to) {
+          const assigneeChanged = previousTask?.assigned_to !== form.assigned_to;
+          const statusChanged = previousTask?.status !== form.status;
+          if (assigneeChanged) {
+            base44.functions.invoke('taskNotifications', { type: 'assigned', task: result || form, previousTask }).catch(() => {});
+          }
+          if (statusChanged) {
+            base44.functions.invoke('taskNotifications', { type: 'status_changed', task: result || form, previousTask }).catch(() => {});
+          }
+        }
         return result;
       }
       const result = await base44.entities.Task.create(form);
       await writeAuditLog({ action: 'task_created', entity_type: 'Task', entity_id: result?.id, details: `Created task: ${form.title}` });
+      if (result?.assigned_to) {
+        base44.functions.invoke('taskNotifications', { type: 'assigned', task: result, previousTask: null }).catch(() => {});
+      }
       return result;
     },
     onSuccess: () => {
@@ -51,8 +66,12 @@ export default function Tasks() {
 
   const statusMutation = useMutation({
     mutationFn: async ({ id, status, title }) => {
+      const previousTask = tasks.find(t => t.id === id);
       await base44.entities.Task.update(id, { status });
       await writeAuditLog({ action: 'task_status_changed', entity_type: 'Task', entity_id: id, details: `Task status changed to "${status}"${title ? `: ${title}` : ''}` });
+      if (previousTask?.assigned_to) {
+        base44.functions.invoke('taskNotifications', { type: 'status_changed', task: { ...previousTask, status }, previousTask }).catch(() => {});
+      }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
