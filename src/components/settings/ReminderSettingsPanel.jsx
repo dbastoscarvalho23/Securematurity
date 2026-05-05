@@ -65,6 +65,7 @@ function SettingsForm({ initialData, customerId, customerName, onSaved }) {
           <div>
             <p className="text-sm font-medium">Due Date Reminders</p>
             <p className="text-xs text-muted-foreground">Send email as the risk due date approaches</p>
+            <p className="text-xs text-muted-foreground">(Applies to risks only)</p>
           </div>
           <Switch
             checked={form.due_date_reminders_enabled}
@@ -74,7 +75,7 @@ function SettingsForm({ initialData, customerId, customerName, onSaved }) {
         <div className="flex items-center justify-between py-2 border-t">
           <div>
             <p className="text-sm font-medium">Notify on Assignment</p>
-            <p className="text-xs text-muted-foreground">Email owner when a risk is assigned to them</p>
+            <p className="text-xs text-muted-foreground">Email owner/assignee when a risk or task is assigned to them</p>
           </div>
           <Switch
             checked={form.notify_on_assignment}
@@ -84,7 +85,7 @@ function SettingsForm({ initialData, customerId, customerName, onSaved }) {
         <div className="flex items-center justify-between py-2 border-t">
           <div>
             <p className="text-sm font-medium">Notify on Status Change</p>
-            <p className="text-xs text-muted-foreground">Email owner when a risk status is updated</p>
+            <p className="text-xs text-muted-foreground">Email owner/assignee when a risk or task status is updated</p>
           </div>
           <Switch
             checked={form.notify_on_status_change}
@@ -137,7 +138,7 @@ function SettingsForm({ initialData, customerId, customerName, onSaved }) {
           onChange={e => setForm(f => ({ ...f, additional_recipients: e.target.value }))}
           placeholder="manager@company.com, security@company.com"
         />
-        <p className="text-xs text-muted-foreground">Comma-separated emails to receive copies of all notifications.</p>
+        <p className="text-xs text-muted-foreground">Comma-separated emails to receive copies of all risk and task notifications.</p>
       </div>
 
       <Button onClick={handleSave} disabled={saving} className="gap-2">
@@ -178,7 +179,7 @@ export default function ReminderSettingsPanel({ customers = [], isAdmin }) {
             Email Reminder Configuration
           </CardTitle>
           <CardDescription>
-            Configure when and how email notifications are sent to risk owners.
+            Configure when and how email notifications are sent to risk owners and task assignees.
             {isAdmin && ' Set global defaults or override per customer.'}
           </CardDescription>
         </CardHeader>
