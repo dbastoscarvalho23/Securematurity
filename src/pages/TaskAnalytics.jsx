@@ -1,20 +1,86 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { AlertTriangle, CheckCircle2, Clock, Users } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AlertTriangle, CheckCircle2, Clock, Users, ListTodo } from 'lucide-react';
 import { format, isAfter, parseISO } from 'date-fns';
 
 const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444'];
+
+const PRIORITY_STYLES = {
+  critical: 'bg-destructive/10 text-destructive border-destructive/20',
+  high: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
+  medium: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
+  low: 'bg-muted text-muted-foreground',
+};
+
+const STATUS_STYLES = {
+  todo: 'bg-destructive/10 text-destructive border-destructive/20',
+  in_progress: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
+  done: 'bg-accent/10 text-accent border-accent/20',
+};
+
+const STATUS_LABELS = { todo: 'To-Do', in_progress: 'In Progress', done: 'Done' };
+
+function TaskRow({ task }) {
+  return (
+    <div className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium leading-tight">{task.title}</p>
+        {task.description && (
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{task.description}</p>
+        )}
+        <div className="flex flex-wrap gap-2 mt-1.5 text-xs text-muted-foreground">
+          {task.assigned_to && <span>👤 {task.assigned_to}</span>}
+          {task.due_date && <span>📅 {format(parseISO(task.due_date), 'MMM d, yyyy')}</span>}
+          {task.customer_name && <span>🏢 {task.customer_name}</span>}
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        <Badge variant="outline" className={`text-xs border ${STATUS_STYLES[task.status]}`}>
+          {STATUS_LABELS[task.status] || task.status}
+        </Badge>
+        {task.priority && (
+          <Badge variant="outline" className={`text-xs border capitalize ${PRIORITY_STYLES[task.priority]}`}>
+            {task.priority}
+          </Badge>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DrillDownSheet({ open, onClose, title, description, tasks }) {
+  return (
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetHeader className="mb-4">
+          <SheetTitle>{title}</SheetTitle>
+          {description && <SheetDescription>{description}</SheetDescription>}
+        </SheetHeader>
+        <div className="space-y-2">
+          {tasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No tasks to display</p>
+          ) : (
+            tasks.map(t => <TaskRow key={t.id} task={t} />)
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
 
 export default function TaskAnalytics() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const customerId = user?.customer_id;
+
+  const [drillDown, setDrillDown] = useState(null); // { title, description, tasks }
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks-analytics', customerId],
@@ -24,45 +90,36 @@ export default function TaskAnalytics() {
     enabled: isAdmin || !!customerId,
   });
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['users-list'],
-    queryFn: () => base44.entities.User.list(),
-  });
-
   const analytics = useMemo(() => {
-    // Calculate completion rate
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter(t => t.status === 'done').length;
+    const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-    // Workload per user
     const workloadMap = {};
     tasks.forEach(task => {
       if (task.assigned_to) {
         if (!workloadMap[task.assigned_to]) {
-          workloadMap[task.assigned_to] = { user: task.assigned_to, total: 0, completed: 0, inProgress: 0 };
+          workloadMap[task.assigned_to] = { user: task.assigned_to, total: 0, completed: 0, inProgress: 0, tasks: [] };
         }
         workloadMap[task.assigned_to].total++;
+        workloadMap[task.assigned_to].tasks.push(task);
         if (task.status === 'done') workloadMap[task.assigned_to].completed++;
         if (task.status === 'in_progress') workloadMap[task.assigned_to].inProgress++;
       }
     });
     const workloadData = Object.values(workloadMap).sort((a, b) => b.total - a.total);
 
-    // Overdue tasks
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const overdueTasks = tasks.filter(t => 
-      t.due_date && 
-      t.status !== 'done' && 
-      isAfter(today, parseISO(t.due_date))
+    const overdueTasks = tasks.filter(t =>
+      t.due_date && t.status !== 'done' && isAfter(today, parseISO(t.due_date))
     );
 
-    // Task status distribution
     const statusCounts = {
       todo: tasks.filter(t => t.status === 'todo').length,
-      in_progress: tasks.filter(t => t.status === 'in_progress').length,
-      done: tasks.filter(t => t.status === 'done').length,
+      in_progress: inProgressTasks.length,
+      done: completedTasks,
     };
     const statusData = [
       { name: 'To-Do', value: statusCounts.todo, color: COLORS[3] },
@@ -70,7 +127,6 @@ export default function TaskAnalytics() {
       { name: 'Done', value: statusCounts.done, color: COLORS[1] },
     ].filter(s => s.value > 0);
 
-    // Priority distribution
     const priorityCounts = {};
     tasks.forEach(task => {
       priorityCounts[task.priority] = (priorityCounts[task.priority] || 0) + 1;
@@ -84,6 +140,7 @@ export default function TaskAnalytics() {
       totalTasks,
       completedTasks,
       completionRate,
+      inProgressTasks,
       workloadData,
       overdueTasks,
       statusData,
@@ -91,59 +148,74 @@ export default function TaskAnalytics() {
     };
   }, [tasks]);
 
-  const getPriorityColor = (priority) => {
-    const colors = {
-      critical: 'text-destructive',
-      high: 'text-chart-4',
-      medium: 'text-chart-3',
-      low: 'text-muted-foreground',
-    };
-    return colors[priority] || 'text-muted-foreground';
+  const openDrillDown = (title, description, taskList) => {
+    setDrillDown({ title, description, tasks: taskList });
   };
 
   return (
     <div className="space-y-6">
-      {/* Summary Stats */}
+      {/* Summary Stats — all clickable */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card
+          className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all"
+          onClick={() => openDrillDown('All Tasks', `${analytics.totalTasks} tasks total`, tasks)}
+        >
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Total Tasks</p>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-muted-foreground">Total Tasks</p>
+              <ListTodo className="w-4 h-4 text-muted-foreground" />
+            </div>
             <p className="text-2xl font-bold">{analytics.totalTasks}</p>
+            <p className="text-xs text-muted-foreground mt-1">Click to view all</p>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card
+          className="cursor-pointer hover:shadow-md hover:border-accent/30 transition-all"
+          onClick={() => openDrillDown('Completed Tasks', `${analytics.completedTasks} tasks done`, tasks.filter(t => t.status === 'done'))}
+        >
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Completion Rate</p>
-            <div className="flex items-center gap-2">
-              <p className="text-2xl font-bold text-accent">{analytics.completionRate}%</p>
-              <CheckCircle2 className="w-5 h-5 text-accent" />
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-muted-foreground">Completion Rate</p>
+              <CheckCircle2 className="w-4 h-4 text-accent" />
             </div>
+            <p className="text-2xl font-bold text-accent">{analytics.completionRate}%</p>
             <Progress value={analytics.completionRate} className="h-1.5 mt-2" />
+            <p className="text-xs text-muted-foreground mt-1">{analytics.completedTasks} completed — click to view</p>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card
+          className="cursor-pointer hover:shadow-md hover:border-chart-3/30 transition-all"
+          onClick={() => openDrillDown('In Progress Tasks', `${analytics.inProgressTasks.length} tasks currently active`, analytics.inProgressTasks)}
+        >
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">In Progress</p>
-            <div className="flex items-center gap-2">
-              <p className="text-2xl font-bold text-chart-3">{analytics.statusData.find(s => s.name === 'In Progress')?.value || 0}</p>
-              <Clock className="w-5 h-5 text-chart-3" />
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-muted-foreground">In Progress</p>
+              <Clock className="w-4 h-4 text-chart-3" />
             </div>
+            <p className="text-2xl font-bold text-chart-3">{analytics.inProgressTasks.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">Click to view active tasks</p>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card
+          className="cursor-pointer hover:shadow-md hover:border-destructive/30 transition-all"
+          onClick={() => openDrillDown('Overdue Tasks', `${analytics.overdueTasks.length} tasks past their due date`, analytics.overdueTasks)}
+        >
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Overdue Tasks</p>
-            <div className="flex items-center gap-2">
-              <p className="text-2xl font-bold text-destructive">{analytics.overdueTasks.length}</p>
-              <AlertTriangle className="w-5 h-5 text-destructive" />
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-muted-foreground">Overdue Tasks</p>
+              <AlertTriangle className="w-4 h-4 text-destructive" />
             </div>
+            <p className="text-2xl font-bold text-destructive">{analytics.overdueTasks.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">Click to view overdue</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Status Distribution */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Task Status Distribution</CardTitle>
@@ -159,7 +231,6 @@ export default function TaskAnalytics() {
                     labelLine={false}
                     label={({ name, value }) => `${name} (${value})`}
                     outerRadius={100}
-                    fill="#8884d8"
                     dataKey="value"
                   >
                     {analytics.statusData.map((entry, index) => (
@@ -175,7 +246,6 @@ export default function TaskAnalytics() {
           </CardContent>
         </Card>
 
-        {/* Priority Distribution */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Tasks by Priority</CardTitle>
@@ -198,34 +268,38 @@ export default function TaskAnalytics() {
         </Card>
       </div>
 
-      {/* User Workload */}
+      {/* User Workload — rows clickable */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Users className="w-4 h-4" />
             Workload Distribution by User
           </CardTitle>
-          <CardDescription>Task allocation and completion status per team member</CardDescription>
+          <CardDescription>Click a user row to see their tasks</CardDescription>
         </CardHeader>
         <CardContent>
           {analytics.workloadData.length > 0 ? (
-            <div className="space-y-4">
-              {analytics.workloadData.map((user) => {
-                const completionRate = user.total > 0 ? Math.round((user.completed / user.total) * 100) : 0;
+            <div className="space-y-3">
+              {analytics.workloadData.map((u) => {
+                const rate = u.total > 0 ? Math.round((u.completed / u.total) * 100) : 0;
                 return (
-                  <div key={user.user} className="space-y-2">
+                  <div
+                    key={u.user}
+                    className="space-y-1.5 p-3 rounded-lg border hover:bg-muted/30 cursor-pointer transition-colors"
+                    onClick={() => openDrillDown(`Tasks for ${u.user}`, `${u.total} task${u.total !== 1 ? 's' : ''} assigned`, u.tasks)}
+                  >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{user.user}</span>
+                      <span className="text-sm font-medium">{u.user}</span>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">{user.total} tasks</Badge>
-                        <Badge variant="secondary" className="text-xs">{completionRate}%</Badge>
+                        <Badge variant="outline" className="text-xs">{u.total} tasks</Badge>
+                        <Badge variant="secondary" className="text-xs">{rate}%</Badge>
                       </div>
                     </div>
-                    <Progress value={completionRate} className="h-2" />
-                    <div className="flex gap-2 text-xs text-muted-foreground">
-                      <span>✓ {user.completed} done</span>
-                      <span>→ {user.inProgress} in progress</span>
-                      <span>○ {user.total - user.completed - user.inProgress} to-do</span>
+                    <Progress value={rate} className="h-2" />
+                    <div className="flex gap-3 text-xs text-muted-foreground">
+                      <span>✓ {u.completed} done</span>
+                      <span>→ {u.inProgress} in progress</span>
+                      <span>○ {u.total - u.completed - u.inProgress} to-do</span>
                     </div>
                   </div>
                 );
@@ -249,26 +323,24 @@ export default function TaskAnalytics() {
         <CardContent>
           {analytics.overdueTasks.length > 0 ? (
             <div className="space-y-2">
-              {analytics.overdueTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 rounded-lg border bg-destructive/5">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{task.title}</p>
-                    <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
-                      {task.due_date && <span>Due: {format(parseISO(task.due_date), 'MMM d')}</span>}
-                      {task.assigned_to && <span>• Assigned to: {task.assigned_to}</span>}
-                    </div>
-                  </div>
-                  <Badge className={`ml-2 flex-shrink-0 ${getPriorityColor(task.priority)}`} variant="outline">
-                    {task.priority}
-                  </Badge>
-                </div>
-              ))}
+              {analytics.overdueTasks.map(task => <TaskRow key={task.id} task={task} />)}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground py-8 text-center text-accent">✓ No overdue tasks</p>
           )}
         </CardContent>
       </Card>
+
+      {/* Drill-down sheet */}
+      {drillDown && (
+        <DrillDownSheet
+          open={!!drillDown}
+          onClose={() => setDrillDown(null)}
+          title={drillDown.title}
+          description={drillDown.description}
+          tasks={drillDown.tasks}
+        />
+      )}
     </div>
   );
 }
