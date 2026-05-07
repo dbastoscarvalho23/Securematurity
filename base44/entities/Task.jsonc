@@ -15,7 +15,8 @@
       "enum": [
         "todo",
         "in_progress",
-        "done"
+        "done",
+        "blocked"
       ],
       "default": "todo",
       "description": "Task status"
@@ -66,6 +67,30 @@
     "notes": {
       "type": "string",
       "description": "Additional notes or comments"
+    },
+    "attachments": {
+      "type": "array",
+      "description": "Files attached directly to this task",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number"
+          },
+          "uploaded_by": {
+            "type": "string"
+          },
+          "uploaded_at": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "required": [

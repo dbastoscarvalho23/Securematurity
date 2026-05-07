@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2, ArrowRight, CalendarDays, User } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, ArrowRight, CalendarDays, User, Paperclip } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -82,8 +82,16 @@ export default function TaskCard({ task, onStatusChange, onEdit, onDelete }) {
           )}
         </div>
 
-        {task.customer_name && (
-          <p className="text-xs text-muted-foreground mt-2 pt-2 border-t truncate">{task.customer_name}</p>
+        {(task.customer_name || task.attachments?.length > 0) && (
+          <div className="flex items-center justify-between mt-2 pt-2 border-t gap-2">
+            {task.customer_name && <p className="text-xs text-muted-foreground truncate">{task.customer_name}</p>}
+            {task.attachments?.length > 0 && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto flex-shrink-0">
+                <Paperclip className="w-3 h-3" />
+                <span>{task.attachments.length}</span>
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

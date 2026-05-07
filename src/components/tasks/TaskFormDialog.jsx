@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import TaskComments from './TaskComments';
+import TaskAttachments from './TaskAttachments';
 
 const DEFAULT_TASK = {
   title: '',
@@ -71,6 +72,7 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
                 <SelectContent>
                   <SelectItem value="todo">To-Do</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="blocked">Blocked</SelectItem>
                   <SelectItem value="done">Done</SelectItem>
                 </SelectContent>
               </Select>
@@ -133,6 +135,12 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
           <div className="space-y-1.5">
             <Label>Notes</Label>
             <Textarea value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Additional notes..." rows={2} />
+          </div>
+          <div className="border-t pt-4">
+            <TaskAttachments
+              attachments={form.attachments || []}
+              onChange={val => set('attachments', val)}
+            />
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
