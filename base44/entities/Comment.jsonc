@@ -32,29 +32,21 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
+      "data.task_id": {
+        "$in": {
+          "$query": {
+            "collection": "Task",
+            "filter": {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            "select": [
+              "id"
+            ]
           }
-        },
-        {
-          "created_by": "{{user.email}}"
         }
-      ]
+      }
     },
-    "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "created_by": "{{user.email}}"
-        }
-      ]
-    },
+    "read": null,
     "update": {
       "$or": [
         {
@@ -63,7 +55,26 @@
           }
         },
         {
-          "created_by": "{{user.email}}"
+          "$and": [
+            {
+              "created_by": "{{user.email}}"
+            },
+            {
+              "data.task_id": {
+                "$in": {
+                  "$query": {
+                    "collection": "Task",
+                    "filter": {
+                      "data.customer_id": "{{user.customer_id}}"
+                    },
+                    "select": [
+                      "id"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -75,7 +86,26 @@
           }
         },
         {
-          "created_by": "{{user.email}}"
+          "$and": [
+            {
+              "created_by": "{{user.email}}"
+            },
+            {
+              "data.task_id": {
+                "$in": {
+                  "$query": {
+                    "collection": "Task",
+                    "filter": {
+                      "data.customer_id": "{{user.customer_id}}"
+                    },
+                    "select": [
+                      "id"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
         }
       ]
     }
