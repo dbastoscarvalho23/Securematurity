@@ -91,32 +91,92 @@
   ],
   "rls": {
     "create": {
-      "data.customer_id": "{{user.customer_id}}",
-      "owner_email": "{{user.email}}"
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "$in": [
+                  "customer_admin",
+                  "user"
+                ]
+              }
+            },
+            {
+              "data.customer_id": "{{user.customer_id}}"
+            }
+          ]
+        }
+      ]
     },
     "read": {
       "$or": [
         {
-          "data.customer_id": "{{user.customer_id}}"
+          "user_condition": {
+            "role": "admin"
+          }
         },
         {
-          "owner_email": "{{user.email}}"
+          "data.customer_id": null
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
         }
       ]
     },
     "update": {
       "$or": [
         {
-          "data.customer_id": "{{user.customer_id}}",
-          "owner_email": "{{user.email}}"
+          "user_condition": {
+            "role": "admin"
+          }
         },
         {
-          "created_by": "{{user.email}}"
+          "$and": [
+            {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            {
+              "$or": [
+                {
+                  "data.owner_email": "{{user.email}}"
+                },
+                {
+                  "user_condition": {
+                    "role": "customer_admin"
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     },
     "delete": {
-      "data.customer_id": "{{user.customer_id}}"
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.customer_id}}"
+            }
+          ]
+        }
+      ]
     }
   }
 }
