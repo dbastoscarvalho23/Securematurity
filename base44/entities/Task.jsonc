@@ -96,5 +96,100 @@
   "required": [
     "title",
     "status"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "$in": [
+                  "customer_admin",
+                  "user"
+                ]
+              }
+            },
+            {
+              "data.customer_id": "{{user.customer_id}}"
+            }
+          ]
+        },
+        {
+          "data.assigned_to": "{{user.email}}"
+        },
+        {
+          "created_by": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "$in": [
+                  "customer_admin",
+                  "user"
+                ]
+              }
+            },
+            {
+              "data.customer_id": "{{user.customer_id}}"
+            }
+          ]
+        },
+        {
+          "data.assigned_to": "{{user.email}}"
+        },
+        {
+          "created_by": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.customer_id}}"
+            }
+          ]
+        }
+      ]
+    }
+  }
 }
