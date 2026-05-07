@@ -91,88 +91,32 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.customer_id": "{{user.customer_id}}"
-        }
-      ]
+      "data.customer_id": "{{user.customer_id}}",
+      "owner_email": "{{user.email}}"
     },
     "read": {
       "$or": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "data.customer_id": "{{user.customer_id}}"
         },
         {
-          "$and": [
-            {
-              "user_condition": {
-                "$in": [
-                  "customer_admin",
-                  "user"
-                ]
-              }
-            },
-            {
-              "data.customer_id": "{{user.customer_id}}"
-            }
-          ]
-        },
-        {
-          "data.owner_email": "{{user.email}}"
+          "owner_email": "{{user.email}}"
         }
       ]
     },
     "update": {
       "$or": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "data.customer_id": "{{user.customer_id}}",
+          "owner_email": "{{user.email}}"
         },
         {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "customer_admin"
-              }
-            },
-            {
-              "data.customer_id": "{{user.customer_id}}"
-            }
-          ]
-        },
-        {
-          "data.owner_email": "{{user.email}}"
+          "created_by": "{{user.email}}"
         }
       ]
     },
     "delete": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "customer_admin"
-              }
-            },
-            {
-              "data.customer_id": "{{user.customer_id}}"
-            }
-          ]
-        }
-      ]
+      "data.customer_id": "{{user.customer_id}}"
     }
   }
 }
