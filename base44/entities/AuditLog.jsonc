@@ -68,11 +68,28 @@
     "user_email"
   ],
   "rls": {
-    "create": {},
+    "create": null,
     "read": {
-      "customer_id": "{{user.customer_id}}"
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
+        }
+      ]
     },
-    "update": {},
-    "delete": {}
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
   }
 }
