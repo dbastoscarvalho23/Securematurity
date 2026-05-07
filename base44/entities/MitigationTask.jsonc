@@ -73,65 +73,90 @@
     "title"
   ],
   "rls": {
-    "create": {
-      "data.risk_id": {
-        "$in": {
-          "$query": {
-            "collection": "RiskItem",
-            "filter": {
-              "data.customer_id": "{{user.customer_id}}"
-            },
-            "select": [
-              "id"
-            ]
-          }
-        }
-      }
-    },
-    "read": {
-      "data.risk_id": {
-        "$in": {
-          "$query": {
-            "collection": "RiskItem",
-            "filter": {
-              "data.customer_id": "{{user.customer_id}}"
-            },
-            "select": [
-              "id"
-            ]
-          }
-        }
-      }
-    },
+    "create": null,
+    "read": null,
     "update": {
-      "data.risk_id": {
-        "$in": {
-          "$query": {
-            "collection": "RiskItem",
-            "filter": {
-              "data.customer_id": "{{user.customer_id}}"
-            },
-            "select": [
-              "id"
-            ]
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.risk_id": {
+                "$in": {
+                  "$query": {
+                    "collection": "RiskItem",
+                    "filter": {
+                      "data.customer_id": "{{user.customer_id}}"
+                    },
+                    "select": [
+                      "id"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "$or": [
+                {
+                  "created_by": "{{user.email}}"
+                },
+                {
+                  "data.assigned_to": "{{user.email}}"
+                },
+                {
+                  "user_condition": {
+                    "role": "customer_admin"
+                  }
+                }
+              ]
+            }
+          ]
         }
-      }
+      ]
     },
     "delete": {
-      "data.risk_id": {
-        "$in": {
-          "$query": {
-            "collection": "RiskItem",
-            "filter": {
-              "data.customer_id": "{{user.customer_id}}"
-            },
-            "select": [
-              "id"
-            ]
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.risk_id": {
+                "$in": {
+                  "$query": {
+                    "collection": "RiskItem",
+                    "filter": {
+                      "data.customer_id": "{{user.customer_id}}"
+                    },
+                    "select": [
+                      "id"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "$or": [
+                {
+                  "created_by": "{{user.email}}"
+                },
+                {
+                  "user_condition": {
+                    "role": "customer_admin"
+                  }
+                }
+              ]
+            }
+          ]
         }
-      }
+      ]
     }
   }
 }
