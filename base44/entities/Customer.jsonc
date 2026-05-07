@@ -108,19 +108,7 @@
           }
         },
         {
-          "$and": [
-            {
-              "user_condition": {
-                "$in": [
-                  "customer_admin",
-                  "user"
-                ]
-              }
-            },
-            {
-              "id": "{{user.customer_id}}"
-            }
-          ]
+          "id": "{{user.customer_id}}"
         }
       ]
     },
@@ -132,16 +120,7 @@
           }
         },
         {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "customer_admin"
-              }
-            },
-            {
-              "id": "{{user.customer_id}}"
-            }
-          ]
+          "id": "{{user.customer_id}}"
         }
       ]
     },
