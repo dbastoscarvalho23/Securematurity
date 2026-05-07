@@ -64,29 +64,30 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
+      "data.document_id": {
+        "$in": {
+          "$query": {
+            "collection": "SecurityDocument",
+            "filter": {
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "admin"
+                  }
+                },
+                {
+                  "data.customer_id": "{{user.customer_id}}"
+                }
+              ]
+            },
+            "select": [
+              "id"
+            ]
           }
-        },
-        {
-          "data.changed_by": "{{user.email}}"
         }
-      ]
+      }
     },
-    "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.changed_by": "{{user.email}}"
-        }
-      ]
-    },
+    "read": null,
     "update": {
       "user_condition": {
         "role": "admin"
