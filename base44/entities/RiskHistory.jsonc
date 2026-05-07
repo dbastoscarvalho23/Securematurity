@@ -80,30 +80,8 @@
     "changed_by"
   ],
   "rls": {
-    "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.changed_by": "{{user.email}}"
-        }
-      ]
-    },
-    "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.changed_by": "{{user.email}}"
-        }
-      ]
-    },
+    "create": null,
+    "read": null,
     "update": {
       "user_condition": {
         "role": "admin"
