@@ -74,58 +74,64 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
+      "data.risk_id": {
+        "$in": {
+          "$query": {
+            "collection": "RiskItem",
+            "filter": {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            "select": [
+              "id"
+            ]
           }
-        },
-        {
-          "created_by": "{{user.email}}"
         }
-      ]
+      }
     },
     "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
+      "data.risk_id": {
+        "$in": {
+          "$query": {
+            "collection": "RiskItem",
+            "filter": {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            "select": [
+              "id"
+            ]
           }
-        },
-        {
-          "data.assigned_to": "{{user.email}}"
-        },
-        {
-          "created_by": "{{user.email}}"
         }
-      ]
+      }
     },
     "update": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
+      "data.risk_id": {
+        "$in": {
+          "$query": {
+            "collection": "RiskItem",
+            "filter": {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            "select": [
+              "id"
+            ]
           }
-        },
-        {
-          "data.assigned_to": "{{user.email}}"
-        },
-        {
-          "created_by": "{{user.email}}"
         }
-      ]
+      }
     },
     "delete": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
+      "data.risk_id": {
+        "$in": {
+          "$query": {
+            "collection": "RiskItem",
+            "filter": {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            "select": [
+              "id"
+            ]
           }
-        },
-        {
-          "created_by": "{{user.email}}"
         }
-      ]
+      }
     }
   }
 }
