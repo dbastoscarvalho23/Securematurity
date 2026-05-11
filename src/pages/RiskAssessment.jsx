@@ -16,6 +16,7 @@ import {
 import RiskFormDialog from '@/components/risks/RiskFormDialog';
 import RiskExcelImportDialog from '@/components/risks/RiskExcelImportDialog';
 import RiskMatrix from '@/components/risks/RiskMatrix';
+import RiskHeatmap from '@/components/risks/RiskHeatmap';
 import { writeAuditLog } from '@/lib/auditLog';
 
 const STATUS_STYLES = {
@@ -56,7 +57,7 @@ export default function RiskAssessment() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCustomer, setFilterCustomer] = useState('');
-  const [view, setView] = useState('list'); // 'list' | 'matrix'
+  const [view, setView] = useState('list'); // 'list' | 'matrix' | 'heatmap'
 
   const { data: risks = [] } = useQuery({
     queryKey: ['riskItems'],
@@ -196,6 +197,9 @@ export default function RiskAssessment() {
           <Button
             variant={view === 'matrix' ? 'default' : 'outline'} size="sm"
             onClick={() => setView('matrix')}>Risk Matrix</Button>
+          <Button
+            variant={view === 'heatmap' ? 'default' : 'outline'} size="sm"
+            onClick={() => setView('heatmap')}>Heatmap</Button>
           <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
             <FileSpreadsheet className="w-4 h-4" /> Import from Excel
           </Button>
@@ -244,6 +248,19 @@ export default function RiskAssessment() {
           <CardHeader><CardTitle className="text-base">Risk Matrix (Impact × Likelihood)</CardTitle></CardHeader>
           <CardContent>
             <RiskMatrix risks={filtered} onEdit={handleEdit} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Heatmap view */}
+      {view === 'heatmap' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Risk Heatmap</CardTitle>
+            <p className="text-xs text-muted-foreground">Click any cell to drill into risks, linked tasks, and mitigation strategies.</p>
+          </CardHeader>
+          <CardContent>
+            <RiskHeatmap risks={filtered} onEdit={handleEdit} />
           </CardContent>
         </Card>
       )}
