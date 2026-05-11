@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
 import RiskHistoryTimeline from './RiskHistoryTimeline';
 import MitigationTasksPanel from './MitigationTasksPanel';
+import CreateTaskFromRiskPanel from './CreateTaskFromRiskPanel';
 
 const CATEGORIES = [
   { value: 'access_control', label: 'Access Control' },
@@ -56,7 +57,7 @@ const DEFAULT = {
   linked_document_ids: [], customer_id: '', customer_name: '',
 };
 
-export default function RiskFormDialog({ open, onOpenChange, risk, documents, customers, isAdmin, customerId, customerName, onSave, currentUser }) {
+export default function RiskFormDialog({ open, onOpenChange, risk, documents, customers, isAdmin, customerId, customerName, onSave, currentUser, initialTab = 'edit' }) {
   const [form, setForm] = useState(DEFAULT);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('edit');
@@ -66,8 +67,8 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
   useEffect(() => {
     if (risk) setForm({ ...DEFAULT, ...risk });
     else setForm(DEFAULT);
-    setActiveTab('edit');
-  }, [risk, open]);
+    setActiveTab(risk?.id ? initialTab : 'edit');
+  }, [risk, open, initialTab]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -154,7 +155,8 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <TabsList className="w-full flex-shrink-0">
               <TabsTrigger value="edit" className="flex-1">Edit</TabsTrigger>
-              <TabsTrigger value="tasks" className="flex-1">Mitigation Tasks</TabsTrigger>
+              <TabsTrigger value="mitigation" className="flex-1">Mitigation</TabsTrigger>
+              <TabsTrigger value="create_task" className="flex-1">Create Task</TabsTrigger>
               <TabsTrigger value="history" className="flex-1">History</TabsTrigger>
             </TabsList>
 
@@ -167,8 +169,12 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
               />
             </TabsContent>
 
-            <TabsContent value="tasks" className="flex-1 overflow-y-auto mt-0 pt-4">
+            <TabsContent value="mitigation" className="flex-1 overflow-y-auto mt-0 pt-4">
               <MitigationTasksPanel riskId={risk.id} />
+            </TabsContent>
+
+            <TabsContent value="create_task" className="flex-1 overflow-y-auto mt-0 pt-4">
+              <CreateTaskFromRiskPanel risk={risk} />
             </TabsContent>
 
             <TabsContent value="history" className="flex-1 overflow-y-auto mt-0 pt-4">

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, ShieldAlert, FileText, TrendingUp, FileSpreadsheet } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, ShieldAlert, FileText, TrendingUp, FileSpreadsheet, ClipboardList, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -148,8 +148,9 @@ export default function RiskAssessment() {
   const high = scoped.filter(r => riskScore(r) >= 9 && riskScore(r) < 16).length;
   const openCount = scoped.filter(r => r.status === 'open').length;
 
-  const handleNew = () => { setEditingRisk(null); setDialogOpen(true); };
-  const handleEdit = (r) => { setEditingRisk(r); setDialogOpen(true); };
+  const [initialTab, setInitialTab] = useState('edit');
+  const handleNew = () => { setEditingRisk(null); setInitialTab('edit'); setDialogOpen(true); };
+  const handleEdit = (r, tab = 'edit') => { setEditingRisk(r); setInitialTab(tab); setDialogOpen(true); };
 
   const handleBulkDelete = async () => {
     for (const r of scoped) {
@@ -361,6 +362,18 @@ export default function RiskAssessment() {
                       </div>
 
                       <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-primary hover:text-primary"
+                          title="Create Task from this risk"
+                          onClick={() => handleEdit(risk, 'create_task')}>
+                          <ClipboardList className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Task</span>
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-accent hover:text-accent"
+                          title="Add Mitigation Procedure"
+                          onClick={() => handleEdit(risk, 'mitigation')}>
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Mitigate</span>
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(risk)}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
@@ -411,6 +424,7 @@ export default function RiskAssessment() {
         customerId={customerId}
         customerName={user?.customer_name}
         currentUser={user}
+        initialTab={initialTab}
         onSave={(data) => saveMutation.mutateAsync(data)}
       />
     </div>
