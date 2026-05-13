@@ -12,6 +12,7 @@ import { base44 } from '@/api/base44Client';
 import RiskHistoryTimeline from './RiskHistoryTimeline';
 import MitigationTasksPanel from './MitigationTasksPanel';
 import CreateTaskFromRiskPanel from './CreateTaskFromRiskPanel';
+import ResidualRiskGauge from './ResidualRiskGauge';
 
 const CATEGORIES = [
   { value: 'access_control', label: 'Access Control' },
@@ -253,6 +254,8 @@ function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs,
 
       <ScoreSelector label="Impact (1–5)" value={form.impact} onChange={v => set('impact', v)} />
       <ScoreSelector label="Likelihood (1–5)" value={form.likelihood} onChange={v => set('likelihood', v)} />
+
+      <ResidualRiskGauge impact={form.impact} likelihood={form.likelihood} />
 
       {isAdmin && customers?.length > 0 && (
         <div className="space-y-1.5">

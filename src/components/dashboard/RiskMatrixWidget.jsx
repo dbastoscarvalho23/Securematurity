@@ -73,19 +73,44 @@ export default function RiskMatrixWidget() {
     [allRisks]
   );
 
+  // Build score distribution bar
+  const total = allRisks.length;
+  const distPct = {
+    critical: total ? Math.round((summary.critical / total) * 100) : 0,
+    high:     total ? Math.round((summary.high     / total) * 100) : 0,
+    medium:   total ? Math.round((summary.medium   / total) * 100) : 0,
+    low:      total ? Math.round((summary.low      / total) * 100) : 0,
+  };
+
   return (
     <Card className="col-span-full">
-      <CardHeader className="pb-3 flex flex-row items-center justify-between">
-        <CardTitle className="text-base flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-destructive" />
-          Risk Matrix
-          <span className="text-xs font-normal text-muted-foreground ml-1">
-            auto-calculated from assessments + manual risks
-          </span>
-        </CardTitle>
-        <Link to="/risk-assessment" className="text-xs text-primary flex items-center gap-1 hover:underline">
-          Manage Risks <ExternalLink className="w-3 h-3" />
-        </Link>
+      <CardHeader className="pb-3">
+        <div className="flex flex-row items-center justify-between mb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-destructive" />
+            Risk Heatmap
+            <span className="text-xs font-normal text-muted-foreground ml-1">
+              auto-calculated from assessments + manual risks
+            </span>
+          </CardTitle>
+          <Link to="/risk-assessment" className="text-xs text-primary flex items-center gap-1 hover:underline">
+            Manage Risks <ExternalLink className="w-3 h-3" />
+          </Link>
+        </div>
+        {total > 0 && (
+          <div className="space-y-1">
+            <div className="flex h-2.5 rounded-full overflow-hidden w-full gap-px">
+              {distPct.critical > 0 && <div className="bg-red-500 transition-all duration-700"    style={{ width: `${distPct.critical}%` }} title={`Critical: ${summary.critical}`} />}
+              {distPct.high > 0     && <div className="bg-orange-400 transition-all duration-700" style={{ width: `${distPct.high}%` }}     title={`High: ${summary.high}`} />}
+              {distPct.medium > 0   && <div className="bg-yellow-400 transition-all duration-700" style={{ width: `${distPct.medium}%` }}   title={`Medium: ${summary.medium}`} />}
+              {distPct.low > 0      && <div className="bg-emerald-400 transition-all duration-700" style={{ width: `${distPct.low}%` }}    title={`Low: ${summary.low}`} />}
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Score distribution across <strong>{total}</strong> risk{total !== 1 ? 's' : ''}
+              {summary.critical > 0 && <span className="text-red-600 ml-1">· {summary.critical} critical</span>}
+            </p>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
