@@ -88,14 +88,15 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-lg flex flex-col max-h-[90vh]">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {doc?.id ? 'Edit Document' : 'New Document'}
             {isUser && <span className="text-xs font-normal text-muted-foreground ml-2">(will be submitted for approval)</span>}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+        <div className="flex-1 overflow-y-auto pr-1 space-y-4">
           <div className="space-y-1.5">
             <Label>Title *</Label>
             <Input value={form.title} onChange={e => set('title', e.target.value)} required placeholder="Document title" />
@@ -210,13 +211,14 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
             </div>
           )}
 
-          <DialogFooter>
+          </div>
+          <div className="flex-shrink-0 flex justify-end gap-2 pt-4 border-t mt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={saving || uploading}>
               {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               {doc?.id ? 'Save Changes' : 'Create Document'}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

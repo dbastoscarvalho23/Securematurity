@@ -74,11 +74,12 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-lg flex flex-col max-h-[90vh]">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{question ? 'Edit Question' : 'New Question'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+        <div className="flex-1 overflow-y-auto pr-1 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Framework *</Label>
@@ -165,12 +166,13 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
             <Input type="number" value={form.order_index} onChange={e => set('order_index', Number(e.target.value))} placeholder="0" />
           </div>
 
-          <DialogFooter>
+          </div>
+          <div className="flex-shrink-0 flex justify-end gap-2 pt-4 border-t mt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={saveMutation.isPending}>
               {saveMutation.isPending ? 'Saving...' : question ? 'Update Question' : 'Create Question'}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

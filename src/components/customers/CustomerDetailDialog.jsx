@@ -31,7 +31,7 @@ export default function CustomerDetailDialog({ open, onOpenChange, customer, onE
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-lg font-bold flex-shrink-0">
@@ -51,7 +51,7 @@ export default function CustomerDetailDialog({ open, onOpenChange, customer, onE
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-0 mt-2">
+        <div className="flex-1 overflow-y-auto pr-1 space-y-0 mt-2">
           <InfoRow icon={Hash} label="NIF" value={customer.nif} />
           <InfoRow icon={ShieldCheck} label="Cybersecurity Manager" value={customer.cybersecurity_manager} />
           <InfoRow icon={Mail} label="Manager Email" value={customer.cybersecurity_manager_email} />

@@ -106,14 +106,16 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className={cn("max-w-2xl", step === 'build' && "max-w-3xl")}>
-        <DialogHeader>
+      <DialogContent className={cn("max-w-2xl flex flex-col max-h-[90vh]", step === 'build' && "max-w-3xl")}>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {step === 'mode' && 'New Assessment'}
             {step === 'meta' && 'Assessment Details'}
             {step === 'build' && (mode === 'ai' ? 'AI-Generated Questionnaire' : 'Build Questionnaire')}
           </DialogTitle>
         </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto pr-1">
 
         {/* Step: Mode selection */}
         {step === 'mode' && (
@@ -175,6 +177,8 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
             isSaving={isSaving}
           />
         )}
+
+        </div>
       </DialogContent>
     </Dialog>
   );

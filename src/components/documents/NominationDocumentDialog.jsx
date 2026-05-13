@@ -53,11 +53,12 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-lg flex flex-col max-h-[90vh]">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{doc?.id ? 'Edit Nomination Document' : 'New Nomination Document'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+        <div className="flex-1 overflow-y-auto pr-1 space-y-4 mt-2">
           <div className="space-y-1.5">
             <Label>Title *</Label>
             <Input value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Appointment of Risk Officer Manager" required />
@@ -150,7 +151,8 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
             )}
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          </div>
+          <div className="flex-shrink-0 flex justify-end gap-2 pt-4 border-t mt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={saving || uploading || !form.title || !form.role_type}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
