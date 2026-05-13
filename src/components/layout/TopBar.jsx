@@ -22,6 +22,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import GlobalSearch from './GlobalSearch';
 
 const PAGE_TITLES = {
   '/': 'Dashboard',
@@ -95,7 +96,8 @@ export default function TopBar() {
           <h2 className="text-base font-semibold text-foreground">{pageTitle}</h2>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <GlobalSearch />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2.5 text-sm font-medium h-9 px-3">
