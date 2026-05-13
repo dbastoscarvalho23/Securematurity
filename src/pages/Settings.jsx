@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight, Bell } from 'lucide-react';
+import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight, Bell, Link, Upload, FileText, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
@@ -33,8 +33,25 @@ export default function Settings() {
   const [invitedToDelete, setInvitedToDelete] = useState(null);
   const [userToEdit, setUserToEdit] = useState(null);
   const [newFwDialog, setNewFwDialog] = useState(false);
-  const [newFwForm, setNewFwForm] = useState({ code: '', name: '', version: '', description: '' });
+  const [newFwForm, setNewFwForm] = useState({ code: '', name: '', version: '', description: '', reference_url: '' });
   const [isSavingFw, setIsSavingFw] = useState(false);
+  const [fwRefEdit, setFwRefEdit] = useState({}); // { [fw.id]: { url: '', uploading: false } }
+
+  const handleFwRefUrlSave = async (fw, url) => {
+    await base44.entities.Framework.update(fw.id, { reference_url: url });
+    queryClient.invalidateQueries({ queryKey: ['frameworks'] });
+    setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: false } }));
+    toast.success('Reference link saved');
+  };
+
+  const handleFwDocUpload = async (fw, file) => {
+    setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], uploading: true } }));
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    await base44.entities.Framework.update(fw.id, { document_url: file_url, document_name: file.name });
+    queryClient.invalidateQueries({ queryKey: ['frameworks'] });
+    setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], uploading: false } }));
+    toast.success('Document uploaded');
+  };
 
   // Profile edit state (for current user's own profile)
   const [profileName, setProfileName] = useState('');
@@ -99,7 +116,7 @@ export default function Settings() {
     queryClient.invalidateQueries({ queryKey: ['frameworks'] });
     setIsSavingFw(false);
     setNewFwDialog(false);
-    setNewFwForm({ code: '', name: '', version: '', description: '' });
+    setNewFwForm({ code: '', name: '', version: '', description: '', reference_url: '' });
     toast.success('Framework created successfully');
   };
 
@@ -758,6 +775,62 @@ export default function Settings() {
                             )}
                           </div>
                         )}
+
+                        {/* Reference Link & Document */}
+                        <div className="mt-3 pt-3 border-t space-y-2">
+                          {/* Reference URL */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Link className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                            {fwRefEdit[fw.id]?.editingUrl ? (
+                              <form className="flex gap-2 flex-1" onSubmit={e => { e.preventDefault(); handleFwRefUrlSave(fw, fwRefEdit[fw.id]?.url ?? fw.reference_url ?? ''); }}>
+                                <Input
+                                  autoFocus
+                                  className="h-7 text-xs flex-1"
+                                  placeholder="https://..."
+                                  value={fwRefEdit[fw.id]?.url ?? fw.reference_url ?? ''}
+                                  onChange={e => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], url: e.target.value } }))}
+                                />
+                                <Button type="submit" size="sm" className="h-7 text-xs px-3">Save</Button>
+                                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: false } }))}>Cancel</Button>
+                              </form>
+                            ) : fw.reference_url ? (
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <a href={fw.reference_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate flex items-center gap-1">
+                                  <ExternalLink className="w-3 h-3 flex-shrink-0" />{fw.reference_url}
+                                </a>
+                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs flex-shrink-0" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: true, url: fw.reference_url } }))}>Edit</Button>
+                              </div>
+                            ) : (
+                              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: true, url: '' } }))}>
+                                Add reference link
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* Document upload */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                            {fw.document_url ? (
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <a href={fw.document_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate flex items-center gap-1">
+                                  <ExternalLink className="w-3 h-3 flex-shrink-0" />{fw.document_name || 'Reference document'}
+                                </a>
+                                <label className="cursor-pointer">
+                                  <span className="text-xs text-muted-foreground hover:text-foreground border rounded px-2 py-0.5">Replace</span>
+                                  <input type="file" className="hidden" onChange={e => e.target.files[0] && handleFwDocUpload(fw, e.target.files[0])} />
+                                </label>
+                              </div>
+                            ) : (
+                              <label className="cursor-pointer flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                                {fwRefEdit[fw.id]?.uploading
+                                  ? <><Loader2 className="w-3 h-3 animate-spin" /> Uploading...</>
+                                  : <><Upload className="w-3 h-3" /> Upload reference document</>
+                                }
+                                <input type="file" className="hidden" disabled={fwRefEdit[fw.id]?.uploading} onChange={e => e.target.files[0] && handleFwDocUpload(fw, e.target.files[0])} />
+                              </label>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -806,6 +879,14 @@ export default function Settings() {
                     onChange={e => setNewFwForm(p => ({ ...p, description: e.target.value }))}
                     placeholder="Brief description of the framework"
                     rows={3}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Reference URL</Label>
+                  <Input
+                    value={newFwForm.reference_url}
+                    onChange={e => setNewFwForm(p => ({ ...p, reference_url: e.target.value }))}
+                    placeholder="https://..."
                   />
                 </div>
               </div>
