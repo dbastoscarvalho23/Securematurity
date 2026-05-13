@@ -14,6 +14,7 @@ import SecurityDocumentDialog from '@/components/documents/SecurityDocumentDialo
 import VersionHistoryDialog from '@/components/documents/VersionHistoryDialog';
 import PendingReviewsPanel from '@/components/documents/PendingReviewsPanel';
 import ApprovalDialog from '@/components/documents/ApprovalDialog';
+import NominationsPanel from '@/components/documents/NominationsPanel';
 
 const LEVELS = [
   {
@@ -387,6 +388,9 @@ export default function SecurityDocuments() {
           );
         })}
       </div>
+
+      {/* Nominations & Governance */}
+      <NominationsPanel customers={customers} selectedCustomerId={selectedCustomerId} />
 
       {/* Level sections */}
       {LEVELS.map(level => {

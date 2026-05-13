@@ -1,0 +1,88 @@
+{
+  "name": "NominationDocument",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Document title"
+    },
+    "role_type": {
+      "type": "string",
+      "enum": [
+        "risk_officer",
+        "risk_committee",
+        "cybersecurity_manager",
+        "cybersecurity_committee",
+        "dpo",
+        "ciso",
+        "incident_response_lead",
+        "compliance_officer",
+        "other"
+      ],
+      "description": "The governance role this document refers to"
+    },
+    "nominated_person": {
+      "type": "string",
+      "description": "Name of the nominated/appointed person or committee members"
+    },
+    "nomination_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of nomination/appointment"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Expiry or renewal date (if applicable)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "expired",
+        "draft",
+        "revoked"
+      ],
+      "default": "draft",
+      "description": "Status of the nomination"
+    },
+    "description": {
+      "type": "string",
+      "description": "Additional notes or context"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL of the uploaded nomination document"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original file name"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email of the user who uploaded this"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Name of the approver"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of approval"
+    }
+  },
+  "required": [
+    "title",
+    "role_type",
+    "status"
+  ]
+}
