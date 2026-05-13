@@ -24,95 +24,44 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/lib/AuthContext';
 
-const adminNavGroups = [
-  {
-    label: 'Main',
-    items: [
-      { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-      { path: '/customers', label: 'Customers', icon: Building2 },
-      { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
-      { path: '/evidence', label: 'Evidence', icon: Paperclip },
-      { path: '/tasks', label: 'Tasks', icon: ListTodo },
-      { path: '/task-analytics', label: 'Task Analytics', icon: TrendingUp },
-      { path: '/risk-assessment', label: 'Risk Assessment', icon: TriangleAlert },
-      { path: '/security-documents', label: 'Documents', icon: FolderLock },
-      { path: '/document-audit-trail', label: 'Doc Audit Trail', icon: Activity },
-      { path: '/reports', label: 'Reports', icon: BarChart3 },
-    ]
-  },
-  {
-    label: 'Tools',
-    items: [
-      { path: '/action-plan', label: 'Action Plan', icon: Target },
-      { path: '/question-bank', label: 'Question DB', icon: BookOpen },
-    ]
-  },
-  {
-    label: 'System',
-    items: [
-      { path: '/admin', label: 'Admin', icon: ShieldCheck },
-      { path: '/audit-log', label: 'Audit Log', icon: ScrollText },
-      { path: '/settings', label: 'Settings', icon: Settings },
-    ]
-  }
+const mainNavItems = [
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/customers', label: 'Customers', icon: Building2 },
+  { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
+  { path: '/evidence', label: 'Evidence', icon: Paperclip },
+  { path: '/tasks', label: 'Tasks', icon: ListTodo },
+  { path: '/task-analytics', label: 'Task Analytics', icon: TrendingUp },
+  { path: '/risk-assessment', label: 'Risk Assessment', icon: TriangleAlert },
+  { path: '/security-documents', label: 'Documents', icon: FolderLock },
+  { path: '/document-audit-trail', label: 'Doc Audit Trail', icon: Activity },
+  { path: '/reports', label: 'Reports', icon: BarChart3 },
 ];
 
-const customerAdminNavGroups = [
-  {
-    label: 'Main',
-    items: [
-      { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-      { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
-      { path: '/tasks', label: 'Tasks', icon: ListTodo },
-      { path: '/risk-assessment', label: 'Risk Assessment', icon: TriangleAlert },
-      { path: '/security-documents', label: 'Documents', icon: FolderLock },
-      { path: '/document-audit-trail', label: 'Doc Audit Trail', icon: Activity },
-      { path: '/reports', label: 'Reports', icon: BarChart3 },
-    ]
-  },
-  {
-    label: 'Tools',
-    items: [
-      { path: '/action-plan', label: 'Action Plan', icon: Target },
-    ]
-  },
-  {
-    label: 'System',
-    items: [
-      { path: '/settings', label: 'Settings', icon: Settings },
-    ]
-  }
-];
-
-const userNavGroups = [
-  {
-    label: 'Main',
-    items: [
-      { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-      { path: '/assessments', label: 'My Assessments', icon: ClipboardCheck },
-      { path: '/tasks', label: 'Tasks', icon: ListTodo },
-      { path: '/risk-assessment', label: 'Risk Assessment', icon: TriangleAlert },
-      { path: '/security-documents', label: 'Documents', icon: FolderLock },
-      { path: '/document-audit-trail', label: 'Doc Audit Trail', icon: Activity },
-      { path: '/reports', label: 'Reports', icon: BarChart3 },
-    ]
-  },
-  {
-    label: 'System',
-    items: [
-      { path: '/settings', label: 'Settings', icon: Settings },
-    ]
-  }
+const toolsNavItems = [
+  { path: '/action-plan', label: 'Action Plan', icon: Target },
+  { path: '/question-bank', label: 'Question DB', icon: BookOpen },
 ];
 
 export default function Sidebar({ collapsed, onToggle }) {
   const location = useLocation();
   const { user } = useAuth();
   const role = user?.role;
-  const navGroups =
-    role === 'admin' ? adminNavGroups :
-    role === 'customer_admin' ? customerAdminNavGroups :
-    userNavGroups;
+  const isAdmin = role === 'admin';
+
+  const navGroups = [
+    { label: 'Main', items: mainNavItems },
+    ...(isAdmin ? [{ label: 'Tools', items: toolsNavItems }] : []),
+    {
+      label: 'System',
+      items: [
+        ...(isAdmin ? [
+          { path: '/admin', label: 'Admin', icon: ShieldCheck },
+          { path: '/audit-log', label: 'Audit Log', icon: ScrollText },
+        ] : []),
+        { path: '/settings', label: 'Settings', icon: Settings },
+      ]
+    }
+  ];
 
   return (
     <TooltipProvider delayDuration={0}>
