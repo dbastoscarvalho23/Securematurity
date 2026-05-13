@@ -116,7 +116,7 @@ export default function Settings() {
     queryClient.invalidateQueries({ queryKey: ['frameworks'] });
     setIsSavingFw(false);
     setNewFwDialog(false);
-    setNewFwForm({ code: '', name: '', version: '', description: '', reference_url: '' });
+    setNewFwForm({ code: '', name: '', version: '', description: '', reference_url: '', document_url: '', document_name: '' });
     toast.success('Framework created successfully');
   };
 
@@ -888,6 +888,30 @@ export default function Settings() {
                     onChange={e => setNewFwForm(p => ({ ...p, reference_url: e.target.value }))}
                     placeholder="https://..."
                   />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Reference Document</Label>
+                  {newFwForm.document_name ? (
+                    <div className="flex items-center gap-2 p-2 rounded-md border bg-muted/40 text-sm">
+                      <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <span className="truncate flex-1 text-xs">{newFwForm.document_name}</span>
+                      <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setNewFwForm(p => ({ ...p, document_url: '', document_name: '' }))}>Remove</Button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-2 cursor-pointer border border-dashed rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:border-primary transition-colors">
+                      {newFwForm.uploadingDoc
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
+                        : <><Upload className="w-4 h-4" /> Upload reference document</>
+                      }
+                      <input type="file" className="hidden" disabled={newFwForm.uploadingDoc} onChange={async e => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        setNewFwForm(p => ({ ...p, uploadingDoc: true }));
+                        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+                        setNewFwForm(p => ({ ...p, document_url: file_url, document_name: file.name, uploadingDoc: false }));
+                      }} />
+                    </label>
+                  )}
                 </div>
               </div>
               <DialogFooter>
