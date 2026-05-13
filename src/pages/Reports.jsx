@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import MaturityRadar from '@/components/dashboard/MaturityRadar';
 import TrendChart from '@/components/dashboard/TrendChart';
 import FrameworkScoreCard from '@/components/dashboard/FrameworkScoreCard';
-import { BarChart3, TrendingUp, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BarChart3, TrendingUp, ChevronDown, ChevronUp, Loader2, Download } from 'lucide-react';
+import { exportReportPdf } from '@/lib/exportReportPdf';
 
 const FRAMEWORK_NAMES = {
   NIS2: 'NIS2 / DL 125/2025',
@@ -118,6 +120,18 @@ export default function Reports() {
 
   const [selectedCustomer, setSelectedCustomer] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
+  const [exportingId, setExportingId] = useState(null);
+
+  const handleExportPdf = async (a, e) => {
+    e.stopPropagation();
+    setExportingId(a.id);
+    const [recommendations, tasks] = await Promise.all([
+      base44.entities.Recommendation.filter({ assessment_id: a.id }),
+      base44.entities.Task.filter({ assessment_id: a.id }),
+    ]);
+    exportReportPdf(a, recommendations, tasks);
+    setExportingId(null);
+  };
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -238,6 +252,14 @@ export default function Reports() {
                           ))}
                         </div>
                         <span className="text-lg font-bold">{a.overall_score?.toFixed(1)}</span>
+                        <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs"
+                          onClick={(e) => handleExportPdf(a, e)}
+                          disabled={exportingId === a.id}>
+                          {exportingId === a.id
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <Download className="w-3.5 h-3.5" />}
+                          PDF
+                        </Button>
                         {isOpen
                           ? <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                           : <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
