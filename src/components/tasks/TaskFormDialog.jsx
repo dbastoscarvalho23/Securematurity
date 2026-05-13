@@ -51,11 +51,12 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg flex flex-col max-h-[90vh]">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{task ? 'Edit Task' : 'New Task'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+
+        <div className="flex-1 overflow-y-auto pr-1 space-y-4">
           <div className="space-y-1.5">
             <Label>Title *</Label>
             <Input value={form.title} onChange={e => set('title', e.target.value)} required placeholder="Task title" />
@@ -142,15 +143,20 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
               onChange={val => set('attachments', val)}
             />
           </div>
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              {task ? 'Save Changes' : 'Create Task'}
-            </Button>
-          </div>
-        </form>
-        {task?.id && <TaskComments taskId={task.id} />}
+          {task?.id && (
+            <div className="border-t pt-4">
+              <TaskComments taskId={task.id} />
+            </div>
+          )}
+        </div>
+
+        <div className="flex-shrink-0 flex justify-end gap-2 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={saving}>
+            {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+            {task ? 'Save Changes' : 'Create Task'}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
