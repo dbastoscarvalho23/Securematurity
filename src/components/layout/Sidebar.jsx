@@ -35,6 +35,8 @@ const adminNavGroups = [
       { path: '/risk-assessment', label: 'Risk Assessment', icon: TriangleAlert },
       { path: '/security-documents', label: 'Documents', icon: FolderLock },
       { path: '/document-audit-trail', label: 'Doc Audit Trail', icon: Activity },
+      { path: '/task-analytics', label: 'Task Analytics', icon: TrendingUp },
+      { path: '/evidence', label: 'Evidence', icon: Paperclip },
       { path: '/reports', label: 'Reports', icon: BarChart3 },
     ]
   },
@@ -42,8 +44,6 @@ const adminNavGroups = [
     label: 'Tools',
     items: [
       { path: '/action-plan', label: 'Action Plan', icon: Target },
-      { path: '/task-analytics', label: 'Task Analytics', icon: TrendingUp },
-      { path: '/evidence', label: 'Evidence', icon: Paperclip },
       { path: '/question-bank', label: 'Question DB', icon: BookOpen },
     ]
   },
