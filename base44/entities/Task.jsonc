@@ -99,16 +99,7 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.customer_id": "{{user.customer_id}}"
-        }
-      ]
+      "data.customer_id": "{{user.customer_id}}"
     },
     "read": {
       "$or": [
@@ -130,23 +121,7 @@
           }
         },
         {
-          "$and": [
-            {
-              "data.customer_id": "{{user.customer_id}}"
-            },
-            {
-              "$or": [
-                {
-                  "data.assigned_to": "{{user.email}}"
-                },
-                {
-                  "user_condition": {
-                    "role": "customer_admin"
-                  }
-                }
-              ]
-            }
-          ]
+          "data.customer_id": "{{user.customer_id}}"
         }
       ]
     },
@@ -158,16 +133,7 @@
           }
         },
         {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "customer_admin"
-              }
-            },
-            {
-              "data.customer_id": "{{user.customer_id}}"
-            }
-          ]
+          "data.customer_id": "{{user.customer_id}}"
         }
       ]
     }
