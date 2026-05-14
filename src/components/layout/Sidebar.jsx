@@ -28,6 +28,7 @@ import { useAuth } from '@/lib/AuthContext';
 const mainNavItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/customers', label: 'Customers', icon: Building2 },
+  { path: '/compliance-journey', label: 'Compliance Journey', icon: MapPin },
   { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
   { path: '/evidence', label: 'Evidence', icon: Paperclip },
   { path: '/tasks', label: 'Tasks', icon: ListTodo },
@@ -36,7 +37,6 @@ const mainNavItems = [
   { path: '/security-documents', label: 'Documents', icon: FolderLock },
   { path: '/document-audit-trail', label: 'Doc Audit Trail', icon: Activity },
   { path: '/reports', label: 'Reports', icon: BarChart3 },
-  { path: '/compliance-journey', label: 'Jornada RJCS', icon: MapPin },
 ];
 
 const toolsNavItems = [
