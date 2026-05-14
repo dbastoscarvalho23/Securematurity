@@ -13,10 +13,10 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 const STATUS_CONFIG = {
-  pending:        { label: 'Pendente',       icon: Circle,       color: 'text-muted-foreground', bg: 'bg-muted/50 border-border' },
-  in_progress:    { label: 'Em Curso',        icon: Clock,        color: 'text-chart-4',          bg: 'bg-chart-4/10 border-chart-4/20' },
-  done:           { label: 'Concluído',       icon: CheckCircle2, color: 'text-accent',            bg: 'bg-accent/10 border-accent/20' },
-  not_applicable: { label: 'N/A',             icon: MinusCircle,  color: 'text-muted-foreground', bg: 'bg-muted/30 border-border' },
+  pending:        { label: 'Pending',        icon: Circle,       color: 'text-muted-foreground', bg: 'bg-muted/50 border-border' },
+  in_progress:    { label: 'In Progress',    icon: Clock,        color: 'text-chart-4',          bg: 'bg-chart-4/10 border-chart-4/20' },
+  done:           { label: 'Completed',      icon: CheckCircle2, color: 'text-accent',            bg: 'bg-accent/10 border-accent/20' },
+  not_applicable: { label: 'N/A',            icon: MinusCircle,  color: 'text-muted-foreground', bg: 'bg-muted/30 border-border' },
 };
 
 export default function ChecklistItemRow({ item, queryKey }) {
@@ -50,7 +50,7 @@ export default function ChecklistItemRow({ item, queryKey }) {
   return (
     <div className={cn('rounded-lg border p-3 transition-colors', cfg.bg)}>
       <div className="flex items-start gap-3">
-        <button onClick={cycleStatus} className="mt-0.5 flex-shrink-0" title="Clique para mudar estado">
+        <button onClick={cycleStatus} className="mt-0.5 flex-shrink-0" title="Click to change status">
           <StatusIcon className={cn('w-4 h-4', cfg.color)} />
         </button>
         <div className="flex-1 min-w-0">
@@ -77,7 +77,7 @@ export default function ChecklistItemRow({ item, queryKey }) {
                 </Select>
                 <Input
                   className="h-8 text-xs"
-                  placeholder="Responsável"
+                  placeholder="Owner"
                   value={form.owner}
                   onChange={e => setForm(p => ({ ...p, owner: e.target.value }))}
                 />
@@ -87,7 +87,7 @@ export default function ChecklistItemRow({ item, queryKey }) {
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm" className="h-8 text-xs justify-start gap-1.5 font-normal">
                       <CalendarDays className="w-3 h-3" />
-                      {form.due_date ? format(new Date(form.due_date), 'dd/MM/yyyy') : 'Prazo'}
+                      {form.due_date ? format(new Date(form.due_date), 'dd/MM/yyyy') : 'Due date'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -100,22 +100,22 @@ export default function ChecklistItemRow({ item, queryKey }) {
                 </Popover>
                 {form.due_date && (
                   <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setForm(p => ({ ...p, due_date: '' }))}>
-                    Limpar prazo
+                    Clear date
                   </Button>
                 )}
               </div>
               <Textarea
                 className="text-xs min-h-[60px]"
-                placeholder="Notas / evidências..."
+                placeholder="Notes / evidence..."
                 value={form.notes}
                 onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
               />
               <div className="flex gap-2">
                 <Button size="sm" className="h-7 text-xs gap-1" onClick={() => updateMutation.mutate(form)} disabled={updateMutation.isPending}>
-                  <Check className="w-3 h-3" /> Guardar
+                  <Check className="w-3 h-3" /> Save
                 </Button>
                 <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => setEditing(false)}>
-                  <X className="w-3 h-3" /> Cancelar
+                  <X className="w-3 h-3" /> Cancel
                 </Button>
               </div>
             </div>
