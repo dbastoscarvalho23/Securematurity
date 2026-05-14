@@ -1,0 +1,114 @@
+{
+  "name": "ComplianceChecklist",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "framework": {
+      "type": "string",
+      "description": "Framework this checklist belongs to (e.g. RJCS)",
+      "default": "RJCS"
+    },
+    "section": {
+      "type": "string",
+      "description": "Section/step number and name (e.g. 1. Enquadramento e registo no CNCS)"
+    },
+    "section_order": {
+      "type": "number",
+      "description": "Numeric order of the section"
+    },
+    "task_text": {
+      "type": "string",
+      "description": "The task description"
+    },
+    "task_order": {
+      "type": "number",
+      "description": "Order within section"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "done",
+        "not_applicable"
+      ],
+      "default": "pending",
+      "description": "Current status of this checklist item"
+    },
+    "owner": {
+      "type": "string",
+      "description": "Responsible person name or email"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Target completion date"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or evidence"
+    }
+  },
+  "required": [
+    "customer_id",
+    "section",
+    "task_text"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
+        }
+      ]
+    }
+  }
+}

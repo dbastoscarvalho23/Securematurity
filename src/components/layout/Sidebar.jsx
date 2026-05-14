@@ -18,7 +18,8 @@ import {
   FolderLock,
   Activity,
   TriangleAlert,
-  Paperclip
+  Paperclip,
+  MapPin
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -35,6 +36,7 @@ const mainNavItems = [
   { path: '/security-documents', label: 'Documents', icon: FolderLock },
   { path: '/document-audit-trail', label: 'Doc Audit Trail', icon: Activity },
   { path: '/reports', label: 'Reports', icon: BarChart3 },
+  { path: '/compliance-journey', label: 'Jornada RJCS', icon: MapPin },
 ];
 
 const toolsNavItems = [
