@@ -6,15 +6,31 @@
       "type": "string",
       "enum": [
         "admin",
-        "user",
-        "customer_admin"
+        "customer_admin",
+        "user"
       ],
-      "default": "user",
-      "description": "User role"
+      "default": "user"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Display name override"
     },
     "customer_id": {
       "type": "string",
-      "description": "Reference to Customer (required for user and customer_admin roles)"
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "en",
+        "pt"
+      ],
+      "default": "en",
+      "description": "Preferred UI language"
     }
   }
 }

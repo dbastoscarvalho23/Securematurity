@@ -24,43 +24,44 @@ import {
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/lib/AuthContext';
-
-const mainNavItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/customers', label: 'Customers', icon: Building2 },
-  { path: '/compliance-journey', label: 'Compliance Journey', icon: MapPin },
-  { path: '/assessments', label: 'Assessments', icon: ClipboardCheck },
-  { path: '/evidence', label: 'Evidence', icon: Paperclip },
-  { path: '/tasks', label: 'Tasks', icon: ListTodo },
-  { path: '/task-analytics', label: 'Task Analytics', icon: TrendingUp },
-  { path: '/risk-assessment', label: 'Risk Assessment', icon: TriangleAlert },
-  { path: '/security-documents', label: 'Documents', icon: FolderLock },
-  { path: '/document-audit-trail', label: 'Doc Audit Trail', icon: Activity },
-  { path: '/reports', label: 'Reports', icon: BarChart3 },
-];
-
-const toolsNavItems = [
-  { path: '/action-plan', label: 'Action Plan', icon: Target },
-  { path: '/question-bank', label: 'Question DB', icon: BookOpen },
-];
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function Sidebar({ collapsed, onToggle }) {
   const location = useLocation();
   const { user } = useAuth();
-  const role = user?.role;
-  const isAdmin = role === 'admin';
+  const { t } = useLanguage();
+  const isAdmin = user?.role === 'admin';
+
+  const mainNavItems = [
+    { path: '/', labelKey: 'nav_dashboard', icon: LayoutDashboard },
+    { path: '/customers', labelKey: 'nav_customers', icon: Building2 },
+    { path: '/compliance-journey', labelKey: 'nav_compliance_journey', icon: MapPin },
+    { path: '/assessments', labelKey: 'nav_assessments', icon: ClipboardCheck },
+    { path: '/evidence', labelKey: 'nav_evidence', icon: Paperclip },
+    { path: '/tasks', labelKey: 'nav_tasks', icon: ListTodo },
+    { path: '/task-analytics', labelKey: 'nav_task_analytics', icon: TrendingUp },
+    { path: '/risk-assessment', labelKey: 'nav_risk_assessment', icon: TriangleAlert },
+    { path: '/security-documents', labelKey: 'nav_documents', icon: FolderLock },
+    { path: '/document-audit-trail', labelKey: 'nav_doc_audit_trail', icon: Activity },
+    { path: '/reports', labelKey: 'nav_reports', icon: BarChart3 },
+  ];
+
+  const toolsNavItems = [
+    { path: '/action-plan', labelKey: 'nav_action_plan', icon: Target },
+    { path: '/question-bank', labelKey: 'nav_question_bank', icon: BookOpen },
+  ];
 
   const navGroups = [
-    { label: 'Main', items: mainNavItems },
-    ...(isAdmin ? [{ label: 'Tools', items: toolsNavItems }] : []),
+    { labelKey: 'nav_main', items: mainNavItems },
+    ...(isAdmin ? [{ labelKey: 'nav_tools', items: toolsNavItems }] : []),
     {
-      label: 'System',
+      labelKey: 'nav_system',
       items: [
         ...(isAdmin ? [
-          { path: '/admin', label: 'Admin', icon: ShieldCheck },
-          { path: '/audit-log', label: 'Audit Log', icon: ScrollText },
+          { path: '/admin', labelKey: 'nav_admin', icon: ShieldCheck },
+          { path: '/audit-log', labelKey: 'nav_audit_log', icon: ScrollText },
         ] : []),
-        { path: '/settings', label: 'Settings', icon: Settings },
+        { path: '/settings', labelKey: 'nav_settings', icon: Settings },
       ]
     }
   ];
@@ -87,14 +88,15 @@ export default function Sidebar({ collapsed, onToggle }) {
         {/* Navigation */}
         <nav className="flex-1 py-3 px-2 overflow-y-auto space-y-4">
           {navGroups.map((group) => (
-            <div key={group.label}>
+            <div key={group.labelKey}>
               {!collapsed && (
                 <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30">
-                  {group.label}
+                  {t(group.labelKey)}
                 </p>
               )}
               <div className="space-y-0.5">
                 {group.items.map((item) => {
+                  const label = t(item.labelKey);
                   const isActive = item.path === '/'
                     ? location.pathname === '/'
                     : location.pathname.startsWith(item.path);
@@ -110,14 +112,14 @@ export default function Sidebar({ collapsed, onToggle }) {
                       )}
                     >
                       <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "opacity-100" : "opacity-70")} />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
+                      {!collapsed && <span className="truncate">{label}</span>}
                     </Link>
                   );
                   if (collapsed) {
                     return (
                       <Tooltip key={item.path}>
                         <TooltipTrigger asChild>{link}</TooltipTrigger>
-                        <TooltipContent side="right">{item.label}</TooltipContent>
+                        <TooltipContent side="right">{label}</TooltipContent>
                       </Tooltip>
                     );
                   }

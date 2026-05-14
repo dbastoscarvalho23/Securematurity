@@ -18,40 +18,47 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import GlobalSearch from './GlobalSearch';
 
-const PAGE_TITLES = {
-  '/': 'Dashboard',
-  '/customers': 'Customers',
-  '/assessments': 'Assessments',
-  '/question-bank': 'Question DB',
-  '/recommendations': 'Recommendations',
-  '/tasks': 'Tasks',
-  '/task-analytics': 'Task Analytics',
-  '/action-plan': 'Action Plan',
-  '/reports': 'Reports & Analytics',
-  '/admin': 'Admin Dashboard',
-  '/audit-log': 'Audit Log',
-  '/settings': 'Settings',
-  '/risk-assessment': 'Risk Assessment',
-  '/security-documents': 'Security Documents',
-  '/document-audit-trail': 'Document Audit Trail',
+const PAGE_TITLE_KEYS = {
+  '/': 'page_dashboard',
+  '/customers': 'page_customers',
+  '/assessments': 'page_assessments',
+  '/question-bank': 'page_question_bank',
+  '/recommendations': 'page_recommendations',
+  '/tasks': 'page_tasks',
+  '/task-analytics': 'page_task_analytics',
+  '/action-plan': 'page_action_plan',
+  '/reports': 'page_reports',
+  '/admin': 'page_admin',
+  '/audit-log': 'page_audit_log',
+  '/settings': 'page_settings',
+  '/risk-assessment': 'page_risk_assessment',
+  '/security-documents': 'page_security_documents',
+  '/document-audit-trail': 'page_document_audit_trail',
+  '/compliance-journey': 'page_compliance_journey',
+  '/evidence': 'page_evidence',
 };
 
 export default function TopBar() {
   const { user, refreshUser } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
   const [name, setName] = useState('');
+  const [selectedLang, setSelectedLang] = useState(language);
   const [saving, setSaving] = useState(false);
 
-  const pageTitle = Object.entries(PAGE_TITLES).find(([path]) =>
+  const pageTitleKey = Object.entries(PAGE_TITLE_KEYS).find(([path]) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
-  )?.[1] || 'CyberMaturity';
+  )?.[1];
+  const pageTitle = pageTitleKey ? t(pageTitleKey) : 'CyberMaturity';
 
   const displayName = user?.display_name || user?.full_name || user?.email || 'User';
   const initials = displayName
@@ -59,18 +66,22 @@ export default function TopBar() {
     : 'U';
 
   const [currentTime, setCurrentTime] = useState(new Date());
-
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
   const isAdmin = user?.role === 'admin';
-  const roleLabel = { admin: 'Platform Admin', customer_admin: 'Customer Admin', user: 'User' }[user?.role] || 'User';
+  const roleLabel = {
+    admin: t('role_admin'),
+    customer_admin: t('role_customer_admin'),
+    user: t('role_user'),
+  }[user?.role] || t('role_user');
   const customerName = user?.customer_name;
 
   const openProfile = () => {
     setName(user?.display_name || user?.full_name || user?.email || '');
+    setSelectedLang(language);
     setProfileOpen(true);
   };
 
@@ -78,12 +89,13 @@ export default function TopBar() {
     e.preventDefault();
     setSaving(true);
     try {
-      await base44.auth.updateMe({ display_name: name });
+      await base44.auth.updateMe({ display_name: name, language: selectedLang });
+      setLanguage(selectedLang);
       await refreshUser();
-      toast.success('Profile updated');
+      toast.success(t('profile_updated'));
       setProfileOpen(false);
     } catch (err) {
-      toast.error(err?.message || 'Failed to update profile');
+      toast.error(err?.message || t('profile_update_failed'));
     } finally {
       setSaving(false);
     }
@@ -135,13 +147,13 @@ export default function TopBar() {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={openProfile}>
                 <User className="w-4 h-4 mr-2" />
-                My Profile
+                {t('my_profile')}
               </DropdownMenuItem>
               {isAdmin && (
                 <DropdownMenuItem asChild>
                   <Link to="/settings">
                     <Settings className="w-4 h-4 mr-2" />
-                    Settings
+                    {t('settings')}
                   </Link>
                 </DropdownMenuItem>
               )}
@@ -151,7 +163,7 @@ export default function TopBar() {
                 className="text-destructive focus:text-destructive"
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
+                {t('sign_out')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -162,28 +174,40 @@ export default function TopBar() {
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>My Profile</DialogTitle>
+            <DialogTitle>{t('profile_title')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4 py-1">
             <div className="space-y-1.5">
-              <Label>Full Name</Label>
+              <Label>{t('profile_full_name')}</Label>
               <Input
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Your full name"
+                placeholder={t('profile_full_name_placeholder')}
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Email</Label>
+              <Label>{t('profile_email')}</Label>
               <Input value={user?.email || ''} disabled className="bg-muted/50 text-muted-foreground" />
             </div>
             <div className="space-y-1.5">
-              <Label>Role</Label>
+              <Label>{t('profile_role')}</Label>
               <Input value={roleLabel} disabled className="bg-muted/50 text-muted-foreground" />
             </div>
             <div className="space-y-1.5">
-              <Label>Local Time</Label>
+              <Label>{t('profile_language')}</Label>
+              <Select value={selectedLang} onValueChange={setSelectedLang}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">🇬🇧 EN — English (International)</SelectItem>
+                  <SelectItem value="pt">🇵🇹 PT — Português (Portugal)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('profile_local_time')}</Label>
               <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-muted/50">
                 <Clock className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm font-mono text-muted-foreground">
@@ -193,15 +217,15 @@ export default function TopBar() {
             </div>
             {!isAdmin && customerName && (
               <div className="space-y-1.5">
-                <Label>Customer</Label>
+                <Label>{t('profile_customer')}</Label>
                 <Input value={customerName} disabled className="bg-muted/50 text-muted-foreground" />
               </div>
             )}
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setProfileOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setProfileOpen(false)}>{t('profile_cancel')}</Button>
               <Button type="submit" disabled={saving}>
                 {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                Save
+                {t('profile_save')}
               </Button>
             </DialogFooter>
           </form>

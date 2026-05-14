@@ -13,6 +13,7 @@ import TasksOverview from '@/components/dashboard/TasksOverview';
 import RiskMatrixWidget from '@/components/dashboard/RiskMatrixWidget';
 import RiskExposureTrend from '@/components/dashboard/RiskExposureTrend';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const FRAMEWORK_NAMES = {
   NIS2: 'NIS2 / DL 125/2025',
@@ -24,6 +25,7 @@ const FRAMEWORK_NAMES = {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const customerId = user?.customer_id;
 
@@ -93,9 +95,9 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">Cybersecurity & Compliance Maturity Overview</p>
+        <p className="text-muted-foreground text-sm">{t('dashboard_subtitle')}</p>
         <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-          {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
       </div>
 
@@ -103,24 +105,24 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {isAdmin && (
           <StatCard
-            title="Active Customers"
+            title={t('dashboard_active_customers')}
             value={customers.filter(c => c.status === 'active').length}
-            subtitle={`${customers.length} total`}
+            subtitle={`${customers.length} ${t('dashboard_total')}`}
             icon={Building2}
             href="/customers"
           />
         )}
         <StatCard
-          title="Completed Assessments"
+          title={t('dashboard_completed_assessments')}
           value={completedAssessments.length}
-          subtitle={`${assessments.filter(a => a.status === 'in_progress').length} in progress`}
+          subtitle={`${assessments.filter(a => a.status === 'in_progress').length} ${t('dashboard_in_progress')}`}
           icon={ClipboardCheck}
           href="/assessments"
         />
         <StatCard
-          title="Open Recommendations"
+          title={t('dashboard_open_recommendations')}
           value={openRecs}
-          subtitle={`${recommendations.filter(r => r.priority === 'critical').length} critical`}
+          subtitle={`${recommendations.filter(r => r.priority === 'critical').length} ${t('dashboard_critical')}`}
           icon={ShieldAlert}
           href="/recommendations"
         />
@@ -137,7 +139,7 @@ export default function Dashboard() {
       {/* Framework Scores */}
       {latestAssessment?.framework_scores && (
         <div>
-          <h2 className="text-lg font-semibold mb-3">Framework Scores</h2>
+          <h2 className="text-lg font-semibold mb-3">{t('dashboard_framework_scores')}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {latestAssessment.framework_scores.map(fs => (
               <FrameworkScoreCard

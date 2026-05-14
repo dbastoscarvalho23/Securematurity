@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { cn } from '@/lib/utils';
 import ChecklistItemRow from '@/components/compliance/ChecklistItemRow';
 import { toast } from 'sonner';
 
-const RJCS_TEMPLATE = [
+const RJCS_TEMPLATE_EN = [
   {
     section: '1. Registration and CNCS Enrolment',
     section_order: 1,
@@ -99,7 +100,95 @@ const RJCS_TEMPLATE = [
   },
 ];
 
+const RJCS_TEMPLATE_PT = [
+  {
+    section: '1. Enquadramento e registo no CNCS',
+    section_order: 1,
+    tasks: [
+      'Confirmar se a entidade é entidade pública relevante Grupo A ou Grupo B (número de trabalhadores, tipo de serviços, criticidade).',
+      'Identificar o interlocutor com o CNCS (jurídico ou gestão de sistemas de informação).',
+      'Efetuar o registo na plataforma eletrónica do CNCS dentro do prazo aplicável.',
+      'Verificar e documentar a classificação (A ou B), mantendo justificação em ata ou despacho interno.',
+    ],
+  },
+  {
+    section: '2. Modelo de governação e responsabilidades',
+    section_order: 2,
+    tasks: [
+      'Designar formalmente um Responsável pela Cibersegurança com ligação direta à gestão de topo.',
+      'Designar um ponto de contacto permanente para comunicação com o CNCS e autoridades setoriais.',
+      'Criar uma Comissão de Cibersegurança / Risco Digital com representantes das áreas críticas.',
+      'Definir periodicidade de reuniões e reporte ao órgão executivo.',
+    ],
+  },
+  {
+    section: '3. Sistema de gestão do risco',
+    section_order: 3,
+    tasks: [
+      'Identificar ativos e serviços críticos (água, resíduos, mobilidade, serviços sociais, etc.).',
+      'Realizar análise de risco de cibersegurança incluindo riscos de cadeia de fornecimento.',
+      'Aprovar a política de cibersegurança pelo órgão de gestão.',
+      'Definir plano de tratamento de risco com prioridades, prazos e responsáveis.',
+      'Estabelecer revisão periódica do risco (pelo menos anual ou após incidentes significativos).',
+    ],
+  },
+  {
+    section: '4. Medidas técnicas e organizacionais',
+    section_order: 4,
+    tasks: [
+      'Manter inventário atualizado de ativos de TI e sistemas de informação críticos.',
+      'Implementar gestão de acessos e identidades com revisão periódica de privilégios.',
+      'Aplicar autenticação multifator em sistemas críticos e acessos remotos.',
+      'Definir processo de gestão de vulnerabilidades e patches.',
+      'Implementar políticas de backup com testes de restauro e cópias segregadas.',
+      'Reforçar medidas de segurança de rede (segmentação, firewalls, proteção de endpoints).',
+      'Definir regras de segurança para aquisição, desenvolvimento e manutenção de sistemas.',
+      'Alinhar práticas de segurança da informação com o RGPD (classificação, cifragem, etc.).',
+    ],
+  },
+  {
+    section: '5. Cadeia de fornecimento e contratos',
+    section_order: 5,
+    tasks: [
+      'Identificar fornecedores e prestadores de serviços críticos.',
+      'Rever contratos para incluir requisitos de cibersegurança e obrigações de notificação de incidentes.',
+      'Prever direitos de auditoria ou o direito a obter evidências de segurança.',
+      'Estabelecer processo de avaliação do risco de fornecedores antes de novas aquisições.',
+    ],
+  },
+  {
+    section: '6. Gestão e reporte de incidentes',
+    section_order: 6,
+    tasks: [
+      'Criar procedimento escrito de gestão de incidentes com papéis e fluxos claros.',
+      'Definir critérios para classificar um incidente como significativo.',
+      'Preparar capacidade de notificação ao CNCS via plataforma dentro dos prazos legais.',
+      'Realizar simulacros/exercícios anuais do processo de resposta a incidentes.',
+    ],
+  },
+  {
+    section: '7. Formação e cultura',
+    section_order: 7,
+    tasks: [
+      'Definir plano anual de formação em cibersegurança para órgãos de gestão e quadros superiores.',
+      'Incluir ações específicas para equipas de TI/operacionais e serviços críticos.',
+      'Implementar campanhas de sensibilização e simuladores de phishing para todos os colaboradores.',
+      'Definir indicadores para medir a participação e eficácia das ações de sensibilização.',
+    ],
+  },
+  {
+    section: '8. Reporte e supervisão',
+    section_order: 8,
+    tasks: [
+      'Preparar relatório anual de cibersegurança cobrindo riscos, medidas, incidentes e planos futuros.',
+      'Arquivar evidências: atas, relatórios, registos de formação, notificações, auditorias.',
+      'Organizar documentação para facilitar inspeções do CNCS e pedidos de informação.',
+    ],
+  },
+];
+
 function SectionCard({ section, items, queryKey }) {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState(true);
   const total = items.length;
   const done = items.filter(i => i.status === 'done').length;
@@ -125,8 +214,8 @@ function SectionCard({ section, items, queryKey }) {
               </CardTitle>
               <div className="flex items-center gap-3 mt-1">
                 <Progress value={progress} className="h-1.5 w-28" />
-                <span className="text-xs text-muted-foreground">{done}/{active} completed</span>
-                {inProgress > 0 && <Badge variant="outline" className="text-xs text-chart-4 border-chart-4/30">{inProgress} in progress</Badge>}
+                <span className="text-xs text-muted-foreground">{done}/{active} {t('compliance_section_completed_of')}</span>
+                {inProgress > 0 && <Badge variant="outline" className="text-xs text-chart-4 border-chart-4/30">{inProgress} {t('status_in_progress')}</Badge>}
               </div>
             </div>
           </div>
@@ -146,10 +235,13 @@ function SectionCard({ section, items, queryKey }) {
 
 export default function ComplianceJourney() {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === 'admin';
   const [selectedCustomerId, setSelectedCustomerId] = useState(isAdmin ? '' : user?.customer_id);
   const [initializing, setInitializing] = useState(false);
+
+  const RJCS_TEMPLATE = language === 'pt' ? RJCS_TEMPLATE_PT : RJCS_TEMPLATE_EN;
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -189,7 +281,7 @@ export default function ComplianceJourney() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       setInitializing(false);
-      toast.success('RJCS checklist initialised successfully!');
+      toast.success(t('compliance_init_success'));
     },
     onError: () => setInitializing(false),
   });
@@ -216,15 +308,13 @@ export default function ComplianceJourney() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold">Compliance Journey — RJCS</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Legal Framework for Cybersecurity — Step-by-step compliance checklist
-          </p>
+          <h1 className="text-xl font-bold">{t('compliance_journey_title')}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{t('compliance_journey_subtitle')}</p>
         </div>
         {isAdmin && (
           <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
             <SelectTrigger className="w-64">
-              <SelectValue placeholder="Select a customer..." />
+              <SelectValue placeholder={t('compliance_select_customer')} />
             </SelectTrigger>
             <SelectContent>
               {customers.map(c => (
@@ -239,7 +329,7 @@ export default function ComplianceJourney() {
         <Card>
           <CardContent className="py-16 text-center text-muted-foreground">
             <Circle className="w-8 h-8 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">Select a customer to view the checklist</p>
+            <p className="font-medium">{t('compliance_select_customer_prompt')}</p>
           </CardContent>
         </Card>
       ) : isLoading ? (
@@ -250,45 +340,24 @@ export default function ComplianceJourney() {
         <Card>
           <CardContent className="py-16 text-center">
             <CheckCircle2 className="w-10 h-10 mx-auto mb-4 text-muted-foreground opacity-40" />
-            <p className="font-medium text-lg mb-1">Checklist not yet initialised</p>
+            <p className="font-medium text-lg mb-1">{t('compliance_not_initialised')}</p>
             <p className="text-sm text-muted-foreground mb-6">
-              Click below to create the full RJCS checklist for{' '}
-              <strong>{selectedCustomer?.name || 'this customer'}</strong>.
+              {t('compliance_not_initialised_desc')}{' '}
+              <strong>{selectedCustomer?.name || ''}</strong>.
             </p>
             <Button onClick={() => initMutation.mutate()} disabled={initializing} className="gap-2">
               {initializing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Initialise RJCS Checklist
+              {t('compliance_init_button')}
             </Button>
           </CardContent>
         </Card>
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Total Tasks</p>
-                <p className="text-2xl font-bold mt-1">{total}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold mt-1 text-accent">{done}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold mt-1 text-chart-4">{inProgress}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Overall Progress</p>
-                <p className="text-2xl font-bold mt-1">{overallProgress}%</p>
-                <Progress value={overallProgress} className="h-1.5 mt-1" />
-              </CardContent>
-            </Card>
+            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">{t('compliance_total_tasks')}</p><p className="text-2xl font-bold mt-1">{total}</p></CardContent></Card>
+            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">{t('compliance_completed')}</p><p className="text-2xl font-bold mt-1 text-accent">{done}</p></CardContent></Card>
+            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">{t('compliance_in_progress')}</p><p className="text-2xl font-bold mt-1 text-chart-4">{inProgress}</p></CardContent></Card>
+            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">{t('compliance_overall_progress')}</p><p className="text-2xl font-bold mt-1">{overallProgress}%</p><Progress value={overallProgress} className="h-1.5 mt-1" /></CardContent></Card>
           </div>
 
           <div className="space-y-4">
@@ -304,7 +373,7 @@ export default function ComplianceJourney() {
                 size="sm"
                 className="gap-2 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
                 onClick={async () => {
-                  if (!confirm('Are you sure you want to reinitialise the checklist? All data will be lost.')) return;
+                  if (!confirm(t('compliance_reinit_confirm'))) return;
                   setInitializing(true);
                   for (const item of items) {
                     await base44.entities.ComplianceChecklist.delete(item.id);
@@ -313,7 +382,7 @@ export default function ComplianceJourney() {
                 }}
                 disabled={initializing}
               >
-                <RefreshCw className="w-3 h-3" /> Reinitialise Checklist
+                <RefreshCw className="w-3 h-3" /> {t('compliance_reinit')}
               </Button>
             </div>
           )}
