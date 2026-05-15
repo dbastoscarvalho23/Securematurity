@@ -110,6 +110,18 @@ export default function TopBar() {
 
         <div className="flex items-center gap-3">
           <GlobalSearch />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2.5 text-xs font-semibold tracking-wide"
+            onClick={() => {
+              const next = language === 'en' ? 'pt' : 'en';
+              setLanguage(next);
+              base44.auth.updateMe({ language: next });
+            }}
+          >
+            {language === 'en' ? 'PT' : 'EN'}
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2.5 text-sm font-medium h-9 px-3">
