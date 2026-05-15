@@ -63,40 +63,9 @@
     "changed_by"
   ],
   "rls": {
-    "create": {
-      "data.document_id": {
-        "$in": {
-          "$query": {
-            "collection": "SecurityDocument",
-            "filter": {
-              "$or": [
-                {
-                  "user_condition": {
-                    "role": "admin"
-                  }
-                },
-                {
-                  "data.customer_id": "{{user.customer_id}}"
-                }
-              ]
-            },
-            "select": [
-              "id"
-            ]
-          }
-        }
-      }
-    },
+    "create": null,
     "read": null,
-    "update": {
-      "user_condition": {
-        "role": "admin"
-      }
-    },
-    "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
-    }
+    "update": null,
+    "delete": null
   }
 }
