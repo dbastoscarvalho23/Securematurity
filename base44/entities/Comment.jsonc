@@ -31,8 +31,45 @@
     "content"
   ],
   "rls": {
-    "create": null,
-    "read": null,
+    "create": {
+      "data.task_id": {
+        "$in": {
+          "$query": {
+            "collection": "Task",
+            "filter": {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            "select": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.task_id": {
+            "$in": {
+              "$query": {
+                "collection": "Task",
+                "filter": {
+                  "data.customer_id": "{{user.customer_id}}"
+                },
+                "select": [
+                  "id"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
     "update": {
       "$or": [
         {
@@ -51,16 +88,7 @@
                   "$query": {
                     "collection": "Task",
                     "filter": {
-                      "$or": [
-                        {
-                          "user_condition": {
-                            "role": "admin"
-                          }
-                        },
-                        {
-                          "data.customer_id": "{{user.customer_id}}"
-                        }
-                      ]
+                      "data.customer_id": "{{user.customer_id}}"
                     },
                     "select": [
                       "id"
@@ -91,16 +119,7 @@
                   "$query": {
                     "collection": "Task",
                     "filter": {
-                      "$or": [
-                        {
-                          "user_condition": {
-                            "role": "admin"
-                          }
-                        },
-                        {
-                          "data.customer_id": "{{user.customer_id}}"
-                        }
-                      ]
+                      "data.customer_id": "{{user.customer_id}}"
                     },
                     "select": [
                       "id"
