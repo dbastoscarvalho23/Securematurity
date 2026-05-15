@@ -145,15 +145,22 @@ export default function TopBar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  const next = language === 'en' ? 'pt' : 'en';
-                  setLanguage(next);
-                  base44.auth.updateMe({ language: next });
-                }}
-              >
-                <span className="font-semibold tracking-wide">{language === 'en' ? 'EN' : 'PT'}</span>
-              </DropdownMenuItem>
+              <div className="flex items-center gap-2 px-2 py-1.5">
+                <span className="text-sm text-muted-foreground flex-1">{t('profile_language')}</span>
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    const next = language === 'en' ? 'pt' : 'en';
+                    setLanguage(next);
+                    base44.auth.updateMe({ language: next });
+                  }}
+                  className="flex items-center bg-muted rounded-full h-6 w-[3.25rem] relative border border-border overflow-hidden"
+                >
+                  <span className={`absolute inset-y-0.5 w-[calc(50%-1px)] rounded-full bg-primary transition-all duration-200 ${language === 'en' ? 'left-0.5' : 'left-[calc(50%+1px)]'}`} />
+                  <span className={`relative z-10 w-1/2 text-center text-[10px] font-bold transition-colors duration-200 ${language === 'en' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>EN</span>
+                  <span className={`relative z-10 w-1/2 text-center text-[10px] font-bold transition-colors duration-200 ${language === 'pt' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>PT</span>
+                </button>
+              </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={openProfile}>
                 <User className="w-4 h-4 mr-2" />
