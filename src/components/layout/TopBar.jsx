@@ -152,8 +152,7 @@ export default function TopBar() {
                   base44.auth.updateMe({ language: next });
                 }}
               >
-                <span className="mr-2 text-base">{language === 'en' ? '🇵🇹' : '🇬🇧'}</span>
-                {language === 'en' ? 'Switch to PT' : 'Switch to EN'}
+                <span className="font-semibold tracking-wide">{language === 'en' ? 'PT' : 'EN'}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={openProfile}>
