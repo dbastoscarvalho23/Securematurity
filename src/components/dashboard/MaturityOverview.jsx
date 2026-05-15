@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { TrendingUp, ArrowRight } from 'lucide-react';
 import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis } from 'recharts';
-
-const MATURITY_LABELS = ['', 'Initial', 'Developing', 'Defined', 'Managed', 'Optimized'];
+import { useLanguage } from '@/lib/LanguageContext';
 
 function MaturityGauge({ score }) {
   const pct = (score / 5) * 100;
@@ -27,39 +26,49 @@ function MaturityGauge({ score }) {
       </ResponsiveContainer>
       <div className="absolute bottom-2 text-center">
         <p className="text-3xl font-bold tracking-tight">{score.toFixed(1)}</p>
-        <p className="text-xs text-muted-foreground">out of 5.0</p>
+        <p className="text-xs text-muted-foreground">/ 5.0</p>
       </div>
     </div>
   );
 }
 
 export default function MaturityOverview({ assessment }) {
+  const { t } = useLanguage();
   const score = assessment?.overall_score || 0;
-  const label = MATURITY_LABELS[Math.round(score)] || 'N/A';
+
+  const MATURITY_LABELS = [
+    '',
+    t('maturity_initial'),
+    t('maturity_developing'),
+    t('maturity_defined'),
+    t('maturity_managed'),
+    t('maturity_optimized'),
+  ];
+
+  const label = MATURITY_LABELS[Math.round(score)] || t('maturity_na');
 
   return (
     <Card className="flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary" /> Overall Maturity
+            <TrendingUp className="w-4 h-4 text-primary" /> {t('dashboard_overall_maturity')}
           </CardTitle>
           <Link to="/reports" className="text-xs text-primary hover:underline flex items-center gap-1">
-            Reports <ArrowRight className="w-3 h-3" />
+            {t('dashboard_reports')} <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col">
         {score === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No completed assessments yet.</p>
+          <p className="text-sm text-muted-foreground text-center py-8">{t('dashboard_no_maturity')}</p>
         ) : (
           <>
             <MaturityGauge score={score} />
             <p className="text-center text-sm font-semibold mt-1">{label}</p>
             {assessment?.period && (
-              <p className="text-center text-xs text-muted-foreground mt-0.5">Based on {assessment.period}</p>
+              <p className="text-center text-xs text-muted-foreground mt-0.5">{t('dashboard_based_on')} {assessment.period}</p>
             )}
-            {/* Per-framework breakdown */}
             {assessment?.framework_scores?.length > 0 && (
               <div className="mt-4 space-y-2">
                 {assessment.framework_scores.map(fs => (

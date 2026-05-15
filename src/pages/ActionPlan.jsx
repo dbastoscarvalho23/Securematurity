@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { writeAuditLog } from '@/lib/auditLog';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const PRIORITY_STYLES = {
   critical: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -36,14 +37,19 @@ const STATUS_ICONS = {
   done: <CheckCircle2 className="w-4 h-4 text-accent" />,
 };
 
-const STATUS_LABELS = { todo: 'To-Do', in_progress: 'In Progress', done: 'Done' };
 const REC_STATUS_OPTIONS = ['pending', 'in_progress', 'completed', 'dismissed'];
 
-function RecommendationRow({ rec, tasks, onAddTask, onEditTask, onStatusChange, onRecStatusChange }) {
+function RecommendationRow({ rec, tasks, onAddTask, onEditTask, onStatusChange, onRecStatusChange, t }) {
   const [expanded, setExpanded] = useState(false);
   const linked = tasks.filter(t => t.recommendation_id === rec.id);
   const done = linked.filter(t => t.status === 'done').length;
   const progress = linked.length > 0 ? Math.round((done / linked.length) * 100) : 0;
+
+  const STATUS_LABELS = {
+    todo: t('action_plan_status_todo'),
+    in_progress: t('action_plan_status_in_progress'),
+    done: t('action_plan_status_done'),
+  };
 
   return (
     <div className="border rounded-lg overflow-hidden">
@@ -60,14 +66,14 @@ function RecommendationRow({ rec, tasks, onAddTask, onEditTask, onStatusChange, 
               <Badge variant="outline" className="text-xs">{rec.framework_code}</Badge>
             )}
             {rec.domain && <span className="text-xs text-muted-foreground">{rec.domain}</span>}
-            {rec.effort && <span className="text-xs text-muted-foreground">Effort: {rec.effort}</span>}
+            {rec.effort && <span className="text-xs text-muted-foreground">{t('action_plan_effort')}: {rec.effort}</span>}
           </div>
           <p className="text-sm font-medium leading-snug">{rec.title}</p>
           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{rec.description}</p>
           {linked.length > 0 && (
             <div className="flex items-center gap-2 mt-2">
               <Progress value={progress} className="h-1.5 flex-1 max-w-[160px]" />
-              <span className="text-xs text-muted-foreground">{done}/{linked.length} tasks done</span>
+              <span className="text-xs text-muted-foreground">{done}/{linked.length} {t('action_plan_tasks_done')}</span>
             </div>
           )}
         </div>
@@ -78,7 +84,7 @@ function RecommendationRow({ rec, tasks, onAddTask, onEditTask, onStatusChange, 
             className="gap-1.5 text-xs h-7"
             onClick={() => onAddTask(rec)}
           >
-            <Plus className="w-3 h-3" /> Add Task
+            <Plus className="w-3 h-3" /> {t('action_plan_add_task')}
           </Button>
           <Select value={rec.status} onValueChange={(v) => onRecStatusChange(rec.id, v, rec.title)}>
             <SelectTrigger className="w-28 text-xs h-7">
@@ -98,7 +104,7 @@ function RecommendationRow({ rec, tasks, onAddTask, onEditTask, onStatusChange, 
         <div className="border-t bg-muted/10 px-4 py-3 space-y-2">
           <p className="text-xs text-muted-foreground">{rec.description}</p>
           {linked.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic py-2">No tasks yet. Click "Add Task" to create one.</p>
+            <p className="text-xs text-muted-foreground italic py-2">{t('action_plan_no_tasks')}</p>
           ) : (
             <div className="space-y-2 mt-2">
               {linked.map(task => (
@@ -147,6 +153,7 @@ function RecommendationRow({ rec, tasks, onAddTask, onEditTask, onStatusChange, 
 }
 
 export default function ActionPlan() {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -212,7 +219,7 @@ export default function ActionPlan() {
       queryClient.invalidateQueries({ queryKey: ['recommendations'] });
       setNewRecDialog(false);
       setNewRecForm({ title: '', description: '', priority: 'medium', framework_code: '', domain: '', control_id: '', effort: 'medium', timeline: 'short_term' });
-      toast.success('Recommendation created');
+      toast.success(t('action_plan_rec_created'));
     },
   });
 
@@ -222,7 +229,7 @@ export default function ActionPlan() {
       : base44.entities.Task.create(form),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success(vars.id ? 'Task updated' : 'Task created');
+      toast.success(vars.id ? t('action_plan_task_updated') : t('action_plan_task_created'));
     },
   });
 
@@ -258,8 +265,8 @@ export default function ActionPlan() {
     });
     setIsCheckingDuplicates(false);
     dupes === 0
-      ? toast.success('No duplicates found — your recommendations are clean!')
-      : toast.info(`Found ${dupes} potential duplicate${dupes !== 1 ? 's' : ''}`);
+      ? toast.success(t('action_plan_no_dupes'))
+      : toast.info(`${dupes} ${dupes !== 1 ? t('action_plan_dupes_found_pl') : t('action_plan_dupes_found')}`);
   };
 
   // Stats
@@ -295,18 +302,18 @@ export default function ActionPlan() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <p className="text-muted-foreground text-sm">
-          Recommendations & action plan · <span className="text-foreground font-medium">{recommendations.length}</span> recommendations
+          {t('action_plan_subtitle')} · <span className="text-foreground font-medium">{recommendations.length}</span> {t('action_plan_recommendations')}
         </p>
         <div className="flex gap-2 items-center flex-wrap">
           <Button onClick={handleCheckDuplicates} variant="outline" disabled={isCheckingDuplicates} className="gap-2">
             {isCheckingDuplicates ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-            Check Duplicates
+            {t('action_plan_check_duplicates')}
           </Button>
           <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
-            <Sparkles className="w-4 h-4" /> AI Generate
+            <Sparkles className="w-4 h-4" /> {t('action_plan_ai_generate')}
           </Button>
           <Button onClick={() => setNewRecDialog(true)} className="gap-2">
-            <Plus className="w-4 h-4" /> New Recommendation
+            <Plus className="w-4 h-4" /> {t('action_plan_new_rec')}
           </Button>
         </div>
       </div>
@@ -315,25 +322,25 @@ export default function ActionPlan() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Recommendations</p>
+            <p className="text-xs text-muted-foreground">{t('action_plan_rec_count')}</p>
             <p className="text-2xl font-bold mt-1">{recommendations.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Tasks Created</p>
+            <p className="text-xs text-muted-foreground">{t('action_plan_tasks_created')}</p>
             <p className="text-2xl font-bold mt-1">{linkedTasks.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">In Progress</p>
+            <p className="text-xs text-muted-foreground">{t('action_plan_in_progress')}</p>
             <p className="text-2xl font-bold mt-1 text-chart-4">{totalInProgress}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Overall Progress</p>
+            <p className="text-xs text-muted-foreground">{t('action_plan_overall_progress')}</p>
             <p className="text-2xl font-bold mt-1 text-accent">{overallProgress}%</p>
             <Progress value={overallProgress} className="h-1.5 mt-1" />
           </CardContent>
@@ -344,23 +351,23 @@ export default function ActionPlan() {
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search recommendations..." className="pl-9" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('action_plan_search_placeholder')} className="pl-9" />
         </div>
         <Filter className="w-4 h-4 text-muted-foreground" />
         <Select value={filterPriority} onValueChange={setFilterPriority}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="all">{t('action_plan_all_priorities')}</SelectItem>
+            <SelectItem value="critical">{t('tasks_priority_critical')}</SelectItem>
+            <SelectItem value="high">{t('tasks_priority_high')}</SelectItem>
+            <SelectItem value="medium">{t('tasks_priority_medium')}</SelectItem>
+            <SelectItem value="low">{t('tasks_priority_low')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="all">{t('action_plan_all_statuses')}</SelectItem>
             {REC_STATUS_OPTIONS.map(s => (
               <SelectItem key={s} value={s} className="capitalize">{s.replace('_', ' ')}</SelectItem>
             ))}
@@ -368,14 +375,14 @@ export default function ActionPlan() {
         </Select>
         {frameworks.length > 0 && (
           <Select value={filterFramework} onValueChange={setFilterFramework}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="All Frameworks" /></SelectTrigger>
+            <SelectTrigger className="w-40"><SelectValue placeholder={t('action_plan_all_frameworks')} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Frameworks</SelectItem>
+              <SelectItem value="all">{t('action_plan_all_frameworks')}</SelectItem>
               {frameworks.map(fw => <SelectItem key={fw} value={fw}>{fw.replace(/_/g, ' ')}</SelectItem>)}
             </SelectContent>
           </Select>
         )}
-        <span className="text-sm text-muted-foreground ml-auto">{filtered.length} shown</span>
+        <span className="text-sm text-muted-foreground ml-auto">{filtered.length} {t('action_plan_shown')}</span>
       </div>
 
       {/* Recommendation groups by priority */}
@@ -383,8 +390,8 @@ export default function ActionPlan() {
         <Card>
           <CardContent className="py-16 text-center text-muted-foreground">
             <Sparkles className="w-8 h-8 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No recommendations found</p>
-            <p className="text-sm mt-1">Use AI Generate or complete an assessment to get recommendations.</p>
+            <p className="font-medium">{t('action_plan_no_recs')}</p>
+            <p className="text-sm mt-1">{t('action_plan_no_recs_desc')}</p>
           </CardContent>
         </Card>
       ) : (

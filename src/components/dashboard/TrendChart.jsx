@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const COLORS = [
   'hsl(var(--chart-1))',
@@ -9,13 +10,16 @@ const COLORS = [
   'hsl(var(--chart-4))',
 ];
 
-export default function TrendChart({ data, frameworks, title = "Maturity Trends" }) {
+export default function TrendChart({ data, frameworks }) {
+  const { t } = useLanguage();
+  const title = t('dashboard_maturity_trends');
+
   if (!data || data.length === 0) {
     return (
       <Card>
         <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
         <CardContent className="flex items-center justify-center h-64 text-muted-foreground text-sm">
-          Complete at least 2 assessments to see trends
+          {t('dashboard_trends_empty')}
         </CardContent>
       </Card>
     );

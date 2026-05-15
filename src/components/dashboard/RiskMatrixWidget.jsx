@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
@@ -26,6 +27,7 @@ const LEVEL_COLORS = {
 
 export default function RiskMatrixWidget() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const customerId = user?.customer_id;
   const [hoveredRisks, setHoveredRisks] = useState([]);
@@ -43,7 +45,6 @@ export default function RiskMatrixWidget() {
     enabled: isAdmin || !!customerId,
   });
 
-  // Derive risks from most recent completed assessment per customer
   const derivedRisks = useMemo(() => {
     const seen = new Set();
     const latest = [];
@@ -54,7 +55,6 @@ export default function RiskMatrixWidget() {
     return latest.flatMap(deriveRisksFromAssessment);
   }, [assessments]);
 
-  // Scope manual risks
   const scopedManual = useMemo(() => {
     if (isAdmin) return manualRisks;
     return manualRisks.filter(r => !r.customer_id || r.customer_id === customerId);
@@ -73,7 +73,6 @@ export default function RiskMatrixWidget() {
     [allRisks]
   );
 
-  // Build score distribution bar
   const total = allRisks.length;
   const distPct = {
     critical: total ? Math.round((summary.critical / total) * 100) : 0,
@@ -82,32 +81,39 @@ export default function RiskMatrixWidget() {
     low:      total ? Math.round((summary.low      / total) * 100) : 0,
   };
 
+  const levelLabel = (level) => {
+    if (level === 'critical') return t('risk_level_critical');
+    if (level === 'high') return t('risk_level_high');
+    if (level === 'medium') return t('risk_level_medium');
+    return t('risk_level_low');
+  };
+
   return (
     <Card className="col-span-full">
       <CardHeader className="pb-3">
         <div className="flex flex-row items-center justify-between mb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-destructive" />
-            Risk Heatmap
+            {t('dashboard_risk_heatmap')}
             <span className="text-xs font-normal text-muted-foreground ml-1">
-              auto-calculated from assessments + manual risks
+              {t('dashboard_risk_heatmap_sub')}
             </span>
           </CardTitle>
           <Link to="/risk-assessment" className="text-xs text-primary flex items-center gap-1 hover:underline">
-            Manage Risks <ExternalLink className="w-3 h-3" />
+            {t('dashboard_manage_risks')} <ExternalLink className="w-3 h-3" />
           </Link>
         </div>
         {total > 0 && (
           <div className="space-y-1">
             <div className="flex h-2.5 rounded-full overflow-hidden w-full gap-px">
-              {distPct.critical > 0 && <div className="bg-red-500 transition-all duration-700"    style={{ width: `${distPct.critical}%` }} title={`Critical: ${summary.critical}`} />}
-              {distPct.high > 0     && <div className="bg-orange-400 transition-all duration-700" style={{ width: `${distPct.high}%` }}     title={`High: ${summary.high}`} />}
-              {distPct.medium > 0   && <div className="bg-yellow-400 transition-all duration-700" style={{ width: `${distPct.medium}%` }}   title={`Medium: ${summary.medium}`} />}
-              {distPct.low > 0      && <div className="bg-emerald-400 transition-all duration-700" style={{ width: `${distPct.low}%` }}    title={`Low: ${summary.low}`} />}
+              {distPct.critical > 0 && <div className="bg-red-500 transition-all duration-700"    style={{ width: `${distPct.critical}%` }} title={`${t('risk_level_critical')}: ${summary.critical}`} />}
+              {distPct.high > 0     && <div className="bg-orange-400 transition-all duration-700" style={{ width: `${distPct.high}%` }}     title={`${t('risk_level_high')}: ${summary.high}`} />}
+              {distPct.medium > 0   && <div className="bg-yellow-400 transition-all duration-700" style={{ width: `${distPct.medium}%` }}   title={`${t('risk_level_medium')}: ${summary.medium}`} />}
+              {distPct.low > 0      && <div className="bg-emerald-400 transition-all duration-700" style={{ width: `${distPct.low}%` }}    title={`${t('risk_level_low')}: ${summary.low}`} />}
             </div>
             <p className="text-[10px] text-muted-foreground">
-              Score distribution across <strong>{total}</strong> risk{total !== 1 ? 's' : ''}
-              {summary.critical > 0 && <span className="text-red-600 ml-1">· {summary.critical} critical</span>}
+              {t('dashboard_score_dist')} <strong>{total}</strong> {total !== 1 ? t('dashboard_risks') : t('dashboard_risk')}
+              {summary.critical > 0 && <span className="text-red-600 ml-1">· {summary.critical} {t('dashboard_critical_risks')}</span>}
             </p>
           </div>
         )}
@@ -116,16 +122,15 @@ export default function RiskMatrixWidget() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Matrix */}
           <div className="lg:col-span-2">
-            {/* Summary pills */}
             <div className="flex gap-2 mb-4 flex-wrap">
               {[
-                { label: 'Critical', count: summary.critical, cls: LEVEL_COLORS.critical },
-                { label: 'High', count: summary.high, cls: LEVEL_COLORS.high },
-                { label: 'Medium', count: summary.medium, cls: LEVEL_COLORS.medium },
-                { label: 'Low', count: summary.low, cls: LEVEL_COLORS.low },
-              ].map(({ label, count, cls }) => (
-                <Badge key={label} variant="outline" className={cn('border text-xs px-2.5 py-1', cls)}>
-                  {count} {label}
+                { key: 'critical', count: summary.critical },
+                { key: 'high', count: summary.high },
+                { key: 'medium', count: summary.medium },
+                { key: 'low', count: summary.low },
+              ].map(({ key, count }) => (
+                <Badge key={key} variant="outline" className={cn('border text-xs px-2.5 py-1', LEVEL_COLORS[key])}>
+                  {count} {levelLabel(key)}
                 </Badge>
               ))}
             </div>
@@ -133,8 +138,8 @@ export default function RiskMatrixWidget() {
             <div className="overflow-x-auto">
               <div className="min-w-[280px] max-w-md">
                 <div className="flex items-center mb-1">
-                  <div className="w-12 text-[10px] text-muted-foreground text-right pr-2">Impact ↑</div>
-                  <div className="flex-1 text-center text-[10px] text-muted-foreground">Likelihood →</div>
+                  <div className="w-12 text-[10px] text-muted-foreground text-right pr-2">{t('dashboard_impact')}</div>
+                  <div className="flex-1 text-center text-[10px] text-muted-foreground">{t('dashboard_likelihood')}</div>
                 </div>
                 <div className="flex">
                   <div className="w-12 flex flex-col-reverse pr-2 py-0.5 gap-0.5">
@@ -173,10 +178,10 @@ export default function RiskMatrixWidget() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground flex-wrap">
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-chart-2/25 inline-block" /> Low</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-chart-3/50 inline-block" /> Medium</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-chart-4/60 inline-block" /> High</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-destructive/80 inline-block" /> Critical</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-chart-2/25 inline-block" /> {t('risk_trend_low')}</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-chart-3/50 inline-block" /> {t('risk_trend_medium')}</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-chart-4/60 inline-block" /> {t('risk_trend_high')}</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-destructive/80 inline-block" /> {t('risk_trend_critical')}</span>
                 </div>
               </div>
             </div>
@@ -185,10 +190,10 @@ export default function RiskMatrixWidget() {
           {/* Top risks sidebar */}
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-              Top Risks
+              {t('dashboard_top_risks')}
             </p>
             {topRisks.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-4 text-center">No risks detected. Complete an assessment to auto-generate risks.</p>
+              <p className="text-xs text-muted-foreground py-4 text-center">{t('dashboard_no_risks')}</p>
             ) : topRisks.map(risk => {
               const score = riskScore(risk.impact, risk.likelihood);
               const level = score >= 16 ? 'critical' : score >= 9 ? 'high' : score >= 4 ? 'medium' : 'low';
@@ -211,7 +216,7 @@ export default function RiskMatrixWidget() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium leading-snug truncate">{risk.title}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                      <Badge variant="outline" className={cn('text-[10px] border py-0', LEVEL_COLORS[level])}>{level}</Badge>
+                      <Badge variant="outline" className={cn('text-[10px] border py-0', LEVEL_COLORS[level])}>{levelLabel(level)}</Badge>
                       {risk.isDerived && (
                         <span className="text-[10px] text-muted-foreground bg-muted px-1 py-0.5 rounded">auto</span>
                       )}
@@ -226,7 +231,7 @@ export default function RiskMatrixWidget() {
 
             {allRisks.length > 5 && (
               <Link to="/risk-assessment" className="text-xs text-primary hover:underline block text-center pt-1">
-                View all {allRisks.length} risks →
+                {t('dashboard_view_all_risks')} {allRisks.length} {t('dashboard_risks')} →
               </Link>
             )}
           </div>

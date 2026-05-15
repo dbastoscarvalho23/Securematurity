@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { CheckSquare, ArrowRight, Circle, Loader2, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const priorityStyles = {
   critical: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -19,6 +20,7 @@ const StatusIcon = ({ status }) => {
 };
 
 export default function TasksOverview({ tasks }) {
+  const { t } = useLanguage();
   const done = tasks.filter(t => t.status === 'done').length;
   const inProgress = tasks.filter(t => t.status === 'in_progress').length;
   const todo = tasks.filter(t => t.status === 'todo').length;
@@ -32,21 +34,28 @@ export default function TasksOverview({ tasks }) {
     })
     .slice(0, 6);
 
+  const priorityLabel = (p) => {
+    if (p === 'critical') return t('tasks_priority_critical');
+    if (p === 'high') return t('tasks_priority_high');
+    if (p === 'medium') return t('tasks_priority_medium');
+    if (p === 'low') return t('tasks_priority_low');
+    return p;
+  };
+
   return (
     <Card className="flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
-            <CheckSquare className="w-4 h-4 text-primary" /> Task Implementation
+            <CheckSquare className="w-4 h-4 text-primary" /> {t('dashboard_task_implementation')}
           </CardTitle>
           <Link to="/tasks" className="text-xs text-primary hover:underline flex items-center gap-1">
-            View all <ArrowRight className="w-3 h-3" />
+            {t('dashboard_view_all')} <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
-        {/* Progress bar */}
         <div className="mt-2 space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{done} of {total} tasks completed</span>
+            <span>{done} {t('dashboard_of')} {total} {t('dashboard_tasks_completed')}</span>
             <span className="font-semibold text-foreground">{pct}%</span>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -56,30 +65,30 @@ export default function TasksOverview({ tasks }) {
             />
           </div>
           <div className="flex gap-3 text-xs text-muted-foreground pt-0.5">
-            <span><span className="font-medium text-chart-3">{inProgress}</span> in progress</span>
-            <span><span className="font-medium text-muted-foreground">{todo}</span> to do</span>
+            <span><span className="font-medium text-chart-3">{inProgress}</span> {t('dashboard_in_prog')}</span>
+            <span><span className="font-medium text-muted-foreground">{todo}</span> {t('dashboard_to_do')}</span>
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0 flex-1">
         {tasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">No tasks yet.</p>
+          <p className="text-sm text-muted-foreground text-center py-4">{t('dashboard_no_tasks')}</p>
         ) : (
           <div className="space-y-1.5">
-            {recentTasks.map(t => (
-              <Link key={t.id} to="/tasks" className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/40 transition-colors group">
-                <StatusIcon status={t.status} />
+            {recentTasks.map(task => (
+              <Link key={task.id} to="/tasks" className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/40 transition-colors group">
+                <StatusIcon status={task.status} />
                 <div className="flex-1 min-w-0">
-                  <p className={cn("text-sm truncate group-hover:text-primary transition-colors", t.status === 'done' && "line-through text-muted-foreground")}>
-                    {t.title}
+                  <p className={cn("text-sm truncate group-hover:text-primary transition-colors", task.status === 'done' && "line-through text-muted-foreground")}>
+                    {task.title}
                   </p>
-                  {t.customer_name && (
-                    <p className="text-xs text-muted-foreground truncate">{t.customer_name}</p>
+                  {task.customer_name && (
+                    <p className="text-xs text-muted-foreground truncate">{task.customer_name}</p>
                   )}
                 </div>
-                {t.priority && (
-                  <Badge variant="outline" className={cn("text-xs border capitalize flex-shrink-0", priorityStyles[t.priority])}>
-                    {t.priority}
+                {task.priority && (
+                  <Badge variant="outline" className={cn("text-xs border flex-shrink-0", priorityStyles[task.priority])}>
+                    {priorityLabel(task.priority)}
                   </Badge>
                 )}
               </Link>

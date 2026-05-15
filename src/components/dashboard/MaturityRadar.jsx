@@ -1,14 +1,18 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend } from 'recharts';
+import { useLanguage } from '@/lib/LanguageContext';
 
-export default function MaturityRadar({ data, title = "Maturity Overview" }) {
+export default function MaturityRadar({ data }) {
+  const { t } = useLanguage();
+  const title = t('dashboard_maturity_overview');
+
   if (!data || data.length === 0) {
     return (
       <Card>
         <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
         <CardContent className="flex items-center justify-center h-64 text-muted-foreground text-sm">
-          No assessment data available
+          {t('dashboard_radar_empty')}
         </CardContent>
       </Card>
     );
@@ -33,7 +37,7 @@ export default function MaturityRadar({ data, title = "Maturity Overview" }) {
               tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
             />
             <Radar
-              name="Current"
+              name={t('maturity_initial') === 'Inicial' ? 'Atual' : 'Current'}
               dataKey="current"
               stroke="hsl(var(--chart-1))"
               fill="hsl(var(--chart-1))"
@@ -41,7 +45,7 @@ export default function MaturityRadar({ data, title = "Maturity Overview" }) {
               strokeWidth={2}
             />
             <Radar
-              name="Target"
+              name={t('maturity_initial') === 'Inicial' ? 'Objetivo' : 'Target'}
               dataKey="target"
               stroke="hsl(var(--chart-2))"
               fill="hsl(var(--chart-2))"
