@@ -56,14 +56,39 @@
           }
         },
         {
-          "invited_by": "{{user.email}}"
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.invited_by": "{{user.email}}"
+            }
+          ]
         }
       ]
     },
     "update": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.invited_by": "{{user.email}}"
+            }
+          ]
+        }
+      ]
     },
     "delete": {
       "$or": [
@@ -80,7 +105,7 @@
               }
             },
             {
-              "invited_by": "{{user.email}}"
+              "data.invited_by": "{{user.email}}"
             }
           ]
         }
