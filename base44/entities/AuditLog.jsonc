@@ -68,7 +68,7 @@
     "user_email"
   ],
   "rls": {
-    "create": null,
+    "create": {},
     "read": {
       "$or": [
         {
