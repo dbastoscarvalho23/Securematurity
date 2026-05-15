@@ -113,9 +113,16 @@
       ]
     },
     "update": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "id": "{{user.customer_id}}"
+        }
+      ]
     },
     "delete": {
       "user_condition": {
