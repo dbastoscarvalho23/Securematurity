@@ -110,18 +110,6 @@ export default function TopBar() {
 
         <div className="flex items-center gap-3">
           <GlobalSearch />
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 px-2.5 text-xs font-semibold tracking-wide"
-            onClick={() => {
-              const next = language === 'en' ? 'pt' : 'en';
-              setLanguage(next);
-              base44.auth.updateMe({ language: next });
-            }}
-          >
-            {language === 'en' ? 'PT' : 'EN'}
-          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2.5 text-sm font-medium h-9 px-3">
@@ -156,6 +144,17 @@ export default function TopBar() {
                   )}
                 </div>
               </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  const next = language === 'en' ? 'pt' : 'en';
+                  setLanguage(next);
+                  base44.auth.updateMe({ language: next });
+                }}
+              >
+                <span className="mr-2 text-base">{language === 'en' ? '🇵🇹' : '🇬🇧'}</span>
+                {language === 'en' ? 'Switch to PT' : 'Switch to EN'}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={openProfile}>
                 <User className="w-4 h-4 mr-2" />
