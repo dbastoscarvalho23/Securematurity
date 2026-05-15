@@ -119,9 +119,6 @@
         },
         {
           "data.customer_id": "{{user.customer_id}}"
-        },
-        {
-          "data.assigned_to": "{{user.email}}"
         }
       ]
     },
@@ -133,10 +130,38 @@
           }
         },
         {
-          "data.customer_id": "{{user.customer_id}}"
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.customer_id}}"
+            }
+          ]
         },
         {
-          "data.assigned_to": "{{user.email}}"
+          "$and": [
+            {
+              "user_condition": {
+                "role": "user"
+              }
+            },
+            {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            {
+              "$or": [
+                {
+                  "data.assigned_to": "{{user.email}}"
+                },
+                {
+                  "created_by": "{{user.email}}"
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -148,17 +173,14 @@
           }
         },
         {
-          "user_condition": {
-            "role": "customer_admin"
-          }
-        },
-        {
           "$and": [
             {
-              "data.customer_id": "{{user.customer_id}}"
+              "user_condition": {
+                "role": "customer_admin"
+              }
             },
             {
-              "created_by": "{{user.email}}"
+              "data.customer_id": "{{user.customer_id}}"
             }
           ]
         }
