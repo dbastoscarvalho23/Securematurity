@@ -76,6 +76,11 @@
           }
         },
         {
+          "data.customer_id": {
+            "$exists": false
+          }
+        },
+        {
           "data.customer_id": "{{user.customer_id}}"
         }
       ]
