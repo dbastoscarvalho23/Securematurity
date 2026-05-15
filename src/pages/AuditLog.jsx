@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollText, X } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const formatLocalTimestamp = (dateStr) => {
   if (!dateStr) return '';
@@ -65,6 +66,7 @@ const actionColors = {
 
 export default function AuditLog() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [filterAction, setFilterAction] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
   const [filterEntity, setFilterEntity] = useState('all');
@@ -102,7 +104,7 @@ export default function AuditLog() {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center space-y-2">
         <ScrollText className="w-10 h-10 text-muted-foreground opacity-40" />
-        <p className="text-muted-foreground">You don't have permission to view this page.</p>
+        <p className="text-muted-foreground">{t('common_no_permission')}</p>
       </div>
     );
   }
@@ -110,10 +112,10 @@ export default function AuditLog() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">Track all platform activity and changes · <span className="text-foreground font-medium">{filtered.length}</span> of {logs.length} entries</p>
+        <p className="text-muted-foreground text-sm">{t('audit_subtitle')} · <span className="text-foreground font-medium">{filtered.length}</span> {t('audit_of')} {logs.length} {t('audit_entries')}</p>
         {hasFilters && (
           <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5 text-muted-foreground">
-            <X className="w-3.5 h-3.5" /> Clear filters
+            <X className="w-3.5 h-3.5" /> {t('audit_clear_filters')}
           </Button>
         )}
       </div>
@@ -121,33 +123,33 @@ export default function AuditLog() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <Input
-          placeholder="Search details, user, action..."
+          placeholder={t('audit_search_placeholder')}
           value={filterSearch}
           onChange={e => setFilterSearch(e.target.value)}
           className="w-56"
         />
         <Select value={filterAction} onValueChange={setFilterAction}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="All Actions" /></SelectTrigger>
+          <SelectTrigger className="w-48"><SelectValue placeholder={t('audit_all_actions')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Actions</SelectItem>
+            <SelectItem value="all">{t('audit_all_actions')}</SelectItem>
             {uniqueActions.map(a => (
               <SelectItem key={a} value={a}>{a.replace(/_/g, ' ')}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={filterUser} onValueChange={setFilterUser}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="All Users" /></SelectTrigger>
+          <SelectTrigger className="w-48"><SelectValue placeholder={t('audit_all_users')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Users</SelectItem>
+            <SelectItem value="all">{t('audit_all_users')}</SelectItem>
             {uniqueUsers.map(u => (
               <SelectItem key={u} value={u}>{u}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={filterEntity} onValueChange={setFilterEntity}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="All Entities" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder={t('audit_all_entities')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Entities</SelectItem>
+            <SelectItem value="all">{t('audit_all_entities')}</SelectItem>
             {uniqueEntities.map(e => (
               <SelectItem key={e} value={e}>{e}</SelectItem>
             ))}
@@ -160,29 +162,29 @@ export default function AuditLog() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Entity</TableHead>
-                <TableHead>Details</TableHead>
+                <TableHead>{t('audit_col_timestamp')}</TableHead>
+                <TableHead>{t('audit_col_action')}</TableHead>
+                <TableHead>{t('audit_col_user')}</TableHead>
+                <TableHead>{t('audit_col_entity')}</TableHead>
+                <TableHead>{t('audit_col_details')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">{t('common_loading')}</TableCell>
                 </TableRow>
               ) : logs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
                     <ScrollText className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                    No audit entries yet.
+                    {t('audit_empty')}
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
-                    No entries match your filters.
+                    {t('audit_no_match')}
                   </TableCell>
                 </TableRow>
               ) : filtered.map(log => (

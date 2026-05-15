@@ -9,11 +9,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { ShieldCheck, Building2, BarChart3, Users } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const COLORS = ['hsl(217,91%,60%)', 'hsl(173,58%,39%)', 'hsl(43,74%,66%)', 'hsl(27,87%,67%)', 'hsl(262,52%,56%)'];
 
 export default function Admin() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [filterSector, setFilterSector] = useState('all');
 
   const { data: customers = [] } = useQuery({
@@ -35,7 +37,7 @@ export default function Admin() {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center space-y-2">
         <ShieldCheck className="w-10 h-10 text-muted-foreground opacity-40" />
-        <p className="text-muted-foreground">You don't have permission to view this page.</p>
+        <p className="text-muted-foreground">{t('common_no_permission')}</p>
       </div>
     );
   }
@@ -79,16 +81,16 @@ export default function Admin() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-muted-foreground text-sm">Platform-wide benchmarking and analytics</p>
+        <p className="text-muted-foreground text-sm">{t('admin_subtitle')}</p>
       </div>
 
       {/* Platform Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Customers" value={customers.length} icon={Building2} />
-        <StatCard title="Total Users" value={users.length} icon={Users} />
-        <StatCard title="Completed Assessments" value={completed.length} icon={ShieldCheck} />
+        <StatCard title={t('admin_total_customers')} value={customers.length} icon={Building2} />
+        <StatCard title={t('admin_total_users')} value={users.length} icon={Users} />
+        <StatCard title={t('admin_completed_assessments')} value={completed.length} icon={ShieldCheck} />
         <StatCard
-          title="Avg Maturity Score"
+          title={t('admin_avg_maturity')}
           value={completed.length > 0
             ? (completed.reduce((s, a) => s + (a.overall_score || 0), 0) / completed.length).toFixed(1)
             : '—'
@@ -100,7 +102,7 @@ export default function Admin() {
       {/* Sector Benchmark */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Maturity by Sector</CardTitle>
+          <CardTitle className="text-base">{t('admin_maturity_by_sector')}</CardTitle>
         </CardHeader>
         <CardContent>
           {benchmarkData.length > 0 ? (
@@ -125,7 +127,7 @@ export default function Admin() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">No benchmark data yet.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t('admin_no_benchmark')}</p>
           )}
         </CardContent>
       </Card>
@@ -134,11 +136,11 @@ export default function Admin() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Customer Rankings</CardTitle>
+            <CardTitle className="text-base">{t('admin_customer_rankings')}</CardTitle>
             <Select value={filterSector} onValueChange={setFilterSector}>
               <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Sectors</SelectItem>
+                <SelectItem value="all">{t('admin_all_sectors')}</SelectItem>
                 {sectors.map(s => (
                   <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g, ' ')}</SelectItem>
                 ))}
@@ -151,12 +153,12 @@ export default function Admin() {
             <TableHeader>
               <TableRow>
                 <TableHead>#</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Sector</TableHead>
-                <TableHead>Employees</TableHead>
-                <TableHead>Assessments</TableHead>
-                <TableHead>Latest Period</TableHead>
-                <TableHead>Score</TableHead>
+                <TableHead>{t('admin_col_customer')}</TableHead>
+                <TableHead>{t('admin_col_sector')}</TableHead>
+                <TableHead>{t('admin_col_employees')}</TableHead>
+                <TableHead>{t('admin_col_assessments')}</TableHead>
+                <TableHead>{t('admin_col_latest_period')}</TableHead>
+                <TableHead>{t('admin_col_score')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

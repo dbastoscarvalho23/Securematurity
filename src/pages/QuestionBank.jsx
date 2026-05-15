@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import QuestionFormDialog from '@/components/questions/QuestionFormDialog';
 import AIQuestionGeneratorDialog from '@/components/questions/AIQuestionGeneratorDialog';
 import { writeAuditLog } from '@/lib/auditLog';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const FRAMEWORK_COLORS = {
   NIS2: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
@@ -24,6 +25,7 @@ const FRAMEWORK_COLORS = {
 
 export default function QuestionBank() {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [filterFramework, setFilterFramework] = useState('all');
   const [filterDomain, setFilterDomain] = useState('all');
@@ -189,24 +191,24 @@ Return only valid JSON with the translations.`,
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-sm">
-          Manage assessment questions across all frameworks
+          {t('qb_subtitle')}
         </p>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleTranslate} disabled={isTranslating} className="gap-2">
             {isTranslating
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Translating {translateProgress.done}/{translateProgress.total}</>
-              : <><Languages className="w-4 h-4" /> Translate to PT</>
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('qb_translating')} {translateProgress.done}/{translateProgress.total}</>
+              : <><Languages className="w-4 h-4" /> {t('qb_translate_pt')}</>
             }
           </Button>
           <Button variant="outline" onClick={handleRemoveDuplicates} disabled={isDeduplicating} className="gap-2">
             {isDeduplicating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-            Remove Duplicates
+            {t('qb_remove_dupes')}
           </Button>
           <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="gap-2">
-            <Sparkles className="w-4 h-4" /> AI Generate
+            <Sparkles className="w-4 h-4" /> {t('qb_ai_generate')}
           </Button>
           <Button onClick={handleNew} className="gap-2">
-            <Plus className="w-4 h-4" /> New Question
+            <Plus className="w-4 h-4" /> {t('qb_new_question')}
           </Button>
         </div>
       </div>
@@ -215,7 +217,7 @@ Return only valid JSON with the translations.`,
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Search questions..."
+          placeholder={t('qb_search_placeholder')}
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="pl-9"
@@ -224,7 +226,7 @@ Return only valid JSON with the translations.`,
 
       {/* Stats */}
       <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
-        <span>Showing <strong className="text-foreground">{filtered.length}</strong> of {questions.length} questions</span>
+        <span>{t('qb_showing')} <strong className="text-foreground">{filtered.length}</strong> {t('qb_of')} {questions.length} {t('qb_questions')}</span>
         {allFrameworks.filter(fw => fw.status === 'active').map(fw => {
           const count = questions.filter(q => q.framework_code === fw.code).length;
           return count > 0 ? (
@@ -240,11 +242,11 @@ Return only valid JSON with the translations.`,
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center justify-center h-48 text-muted-foreground">Loading...</div>
+            <div className="flex items-center justify-center h-48 text-muted-foreground">{t('common_loading')}</div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-2">
-              <p>No questions found.</p>
-              <Button variant="outline" size="sm" onClick={handleNew}>Create your first question</Button>
+              <p>{t('qb_empty')}</p>
+              <Button variant="outline" size="sm" onClick={handleNew}>{t('qb_create_first')}</Button>
             </div>
           ) : (
             <Table>
@@ -254,7 +256,7 @@ Return only valid JSON with the translations.`,
                   <TableHead>Question</TableHead>
                   <TableHead className="w-36">
                     <div className="space-y-1">
-                      <span>Framework</span>
+                      <span>{t('qb_col_framework')}</span>
                       <Select value={filterFramework} onValueChange={v => { setFilterFramework(v); setFilterDomain('all'); }}>
                         <SelectTrigger className="h-7 text-xs w-full">
                           <SelectValue placeholder="All" />
@@ -268,7 +270,7 @@ Return only valid JSON with the translations.`,
                   </TableHead>
                   <TableHead className="w-44">
                     <div className="space-y-1">
-                      <span>Domain</span>
+                      <span>{t('qb_col_domain')}</span>
                       <Select value={filterDomain} onValueChange={setFilterDomain}>
                         <SelectTrigger className="h-7 text-xs w-full">
                           <SelectValue placeholder="All" />
@@ -282,7 +284,7 @@ Return only valid JSON with the translations.`,
                   </TableHead>
                   <TableHead className="w-32">
                     <div className="space-y-1">
-                      <span>Control ID</span>
+                      <span>{t('qb_col_control_id')}</span>
                       <Input
                         value={filterControlId}
                         onChange={e => setFilterControlId(e.target.value)}
@@ -293,7 +295,7 @@ Return only valid JSON with the translations.`,
                   </TableHead>
                   <TableHead className="w-20">
                     <div className="space-y-1">
-                      <span>Weight</span>
+                      <span>{t('qb_col_weight')}</span>
                       <Select value={filterWeight} onValueChange={setFilterWeight}>
                         <SelectTrigger className="h-7 text-xs w-full">
                           <SelectValue placeholder="All" />
@@ -307,7 +309,7 @@ Return only valid JSON with the translations.`,
                   </TableHead>
                   <TableHead className="w-20">
                     <div className="space-y-1">
-                      <span>Language</span>
+                      <span>{t('qb_col_language')}</span>
                       <Select value={filterLang} onValueChange={setFilterLang}>
                         <SelectTrigger className="h-7 text-xs w-full">
                           <SelectValue placeholder="All" />
@@ -320,7 +322,7 @@ Return only valid JSON with the translations.`,
                       </Select>
                     </div>
                   </TableHead>
-                  <TableHead className="w-20">Actions</TableHead>
+                  <TableHead className="w-20">{t('common_actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
