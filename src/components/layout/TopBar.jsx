@@ -152,7 +152,7 @@ export default function TopBar() {
                   base44.auth.updateMe({ language: next });
                 }}
               >
-                <span className="font-semibold tracking-wide">{language === 'en' ? 'PT' : 'EN'}</span>
+                <span className="font-semibold tracking-wide">{language === 'en' ? 'EN' : 'PT'}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={openProfile}>
