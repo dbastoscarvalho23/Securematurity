@@ -17,11 +17,13 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import EditUserDialog from '@/components/settings/EditUserDialog';
 import ReminderSettingsPanel from '@/components/settings/ReminderSettingsPanel';
 
 export default function Settings() {
   const { user: currentUser, checkAppState, refreshUser } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = currentUser?.role === 'admin';
   const isCustomerAdmin = currentUser?.role === 'customer_admin';
 
@@ -41,7 +43,7 @@ export default function Settings() {
     await base44.entities.Framework.update(fw.id, { reference_url: url });
     queryClient.invalidateQueries({ queryKey: ['frameworks'] });
     setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: false } }));
-    toast.success('Reference link saved');
+    toast.success(t('settings_ref_link'));
   };
 
   const handleFwDocUpload = async (fw, file) => {
@@ -50,7 +52,7 @@ export default function Settings() {
     await base44.entities.Framework.update(fw.id, { document_url: file_url, document_name: file.name });
     queryClient.invalidateQueries({ queryKey: ['frameworks'] });
     setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], uploading: false } }));
-    toast.success('Document uploaded');
+    toast.success(t('settings_doc_uploaded'));
   };
 
   // Profile edit state (for current user's own profile)
@@ -66,11 +68,11 @@ export default function Settings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('User deleted successfully');
+      toast.success(t('settings_user_deleted'));
       setUserToDelete(null);
-    },
-    onError: (err) => {
-      toast.error(err?.message || 'Failed to delete user');
+      },
+      onError: (err) => {
+      toast.error(err?.message || t('settings_user_delete_error'));
     }
   });
 
@@ -80,11 +82,11 @@ export default function Settings() {
     },
     onSuccess: () => {
       refetchInvited();
-      toast.success('Invitation deleted');
+      toast.success(t('settings_invitation_deleted'));
       setInvitedToDelete(null);
-    },
-    onError: (err) => {
-      toast.error(err?.message || 'Failed to delete invitation');
+      },
+      onError: (err) => {
+      toast.error(err?.message || t('settings_invitation_delete_error'));
     }
   });
 
@@ -99,12 +101,12 @@ export default function Settings() {
       if (result?.roleError) {
         toast.warning(`Profile updated, but role could not be changed: ${result.roleError}`);
       } else {
-        toast.success('User updated successfully');
+        toast.success(t('settings_user_updated'));
       }
       setUserToEdit(null);
     },
     onError: (err) => {
-      toast.error(err?.message || 'Failed to update user');
+      toast.error(err?.message || t('settings_user_update_error'));
     }
   });
 
@@ -117,7 +119,7 @@ export default function Settings() {
     setIsSavingFw(false);
     setNewFwDialog(false);
     setNewFwForm({ code: '', name: '', version: '', description: '', reference_url: '', document_url: '', document_name: '' });
-    toast.success('Framework created successfully');
+    toast.success(t('settings_fw_created'));
   };
 
   const handleToggleFrameworkStatus = async (fw) => {
@@ -125,7 +127,7 @@ export default function Settings() {
     await base44.entities.Framework.update(fw.id, { status: newStatus });
     await writeAuditLog({ action: 'framework_status_changed', entity_type: 'Framework', entity_id: fw.id, details: `Framework ${fw.code} (${fw.name}) set to ${newStatus}` });
     queryClient.invalidateQueries({ queryKey: ['frameworks'] });
-    toast.success(`Framework ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
+    toast.success(`${t('settings_fw_framework')} ${newStatus === 'active' ? t('settings_fw_activated') : t('settings_fw_deactivated')}`);
   };
 
   const { data: customers = [] } = useQuery({
@@ -189,11 +191,11 @@ export default function Settings() {
   };
 
   const getRiskLabel = (score) => {
-    if (score === null) return { label: 'No Data', color: 'text-muted-foreground' };
-    if (score >= 4) return { label: 'Low Risk', color: 'text-accent' };
-    if (score >= 3) return { label: 'Moderate', color: 'text-chart-3' };
-    if (score >= 2) return { label: 'Elevated', color: 'text-chart-4' };
-    return { label: 'High Risk', color: 'text-destructive' };
+    if (score === null) return { label: t('settings_fw_no_data'), color: 'text-muted-foreground' };
+    if (score >= 4) return { label: t('settings_fw_low_risk'), color: 'text-accent' };
+    if (score >= 3) return { label: t('settings_fw_moderate'), color: 'text-chart-3' };
+    if (score >= 2) return { label: t('settings_fw_elevated'), color: 'text-chart-4' };
+    return { label: t('settings_fw_high_risk'), color: 'text-destructive' };
   };
 
   // Derive current user's record from the users list
@@ -211,9 +213,9 @@ export default function Settings() {
       });
       await refreshUser();
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Profile updated successfully');
+      toast.success(t('settings_profile_saved'));
     } catch (err) {
-      toast.error(err?.message || 'Failed to update profile');
+      toast.error(err?.message || t('settings_profile_error'));
     } finally {
       setIsSavingProfile(false);
     }
@@ -237,12 +239,12 @@ export default function Settings() {
           invited_by: me?.email || '',
         });
       }
-      toast.success(`Invitation sent to ${inviteEmail}`);
+      toast.success(`${t('settings_invitation_sent')} ${inviteEmail}`);
       setInviteEmail('');
       setInviteRole('user');
       refetchInvited();
     } catch (err) {
-      toast.error(err?.message || `Failed to send invitation to ${inviteEmail}`);
+      toast.error(err?.message || `${t('settings_invitation_error')} ${inviteEmail}`);
     } finally {
       setIsInviting(false);
     }
@@ -407,7 +409,7 @@ export default function Settings() {
     queryClient.invalidateQueries({ queryKey: ['frameworks'] });
     queryClient.invalidateQueries({ queryKey: ['questions'] });
     setIsSeeding(false);
-    toast.success('Frameworks and questions seeded successfully');
+    toast.success(t('settings_fw_seeded'));
   };
 
   return (
@@ -416,19 +418,19 @@ export default function Settings() {
       <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogTitle>{t('settings_delete_user_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{userToDelete?.email}</strong>? This action cannot be undone.
+              {t('settings_delete_user_desc')} <strong>{userToDelete?.email}</strong>? {t('settings_delete_user_undone')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-2 justify-end">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => deleteUserMutation.mutate(userToDelete?.id)}
               disabled={deleteUserMutation.isPending}
             >
-              {deleteUserMutation.isPending ? 'Deleting...' : 'Delete'}
+              {deleteUserMutation.isPending ? t('common_deleting') : t('common_delete')}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
@@ -438,19 +440,19 @@ export default function Settings() {
       <AlertDialog open={!!invitedToDelete} onOpenChange={() => setInvitedToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Invitation</AlertDialogTitle>
+            <AlertDialogTitle>{t('settings_delete_invite_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the invitation for <strong>{invitedToDelete?.email}</strong>? This action cannot be undone.
+              {t('settings_delete_invite_desc')} <strong>{invitedToDelete?.email}</strong>? {t('settings_delete_user_undone')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-2 justify-end">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => deleteInvitedUserMutation.mutate(invitedToDelete?.id)}
               disabled={deleteInvitedUserMutation.isPending}
             >
-              {deleteInvitedUserMutation.isPending ? 'Deleting...' : 'Delete'}
+              {deleteInvitedUserMutation.isPending ? t('common_deleting') : t('common_delete')}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
@@ -467,14 +469,14 @@ export default function Settings() {
         onSave={(userId, data) => updateUserMutation.mutate({ userId, data })}
       />
       <div>
-        <p className="text-muted-foreground text-sm">Platform configuration and framework management</p>
+        <p className="text-muted-foreground text-sm">{t('settings_subtitle')}</p>
       </div>
 
       <Tabs defaultValue="users">
         <TabsList>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="frameworks">Frameworks</TabsTrigger>
-          <TabsTrigger value="reminders" className="flex items-center gap-1.5"><Bell className="w-3.5 h-3.5" />Reminders</TabsTrigger>
+          <TabsTrigger value="users">{t('settings_tab_users')}</TabsTrigger>
+          <TabsTrigger value="frameworks">{t('settings_tab_frameworks')}</TabsTrigger>
+          <TabsTrigger value="reminders" className="flex items-center gap-1.5"><Bell className="w-3.5 h-3.5" />{t('settings_tab_reminders')}</TabsTrigger>
         </TabsList>
 
         {/* Users Tab */}
@@ -485,37 +487,37 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <User className="w-4 h-4" />
-                My Profile
+                {t('settings_my_profile')}
               </CardTitle>
-              <CardDescription>Update your display name and linked customer.</CardDescription>
+              <CardDescription>{t('settings_my_profile_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSaveProfile} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label>Full Name</Label>
+                    <Label>{t('settings_full_name')}</Label>
                     <Input
                       value={profileName}
                       onChange={e => setProfileName(e.target.value)}
-                      placeholder="Your full name"
+                      placeholder={t('settings_full_name_placeholder')}
                     />
                   </div>
                   {currentUser?.role !== 'admin' && (
                     <div className="space-y-1.5">
-                      <Label>Associated Customer</Label>
+                      <Label>{t('settings_associated_customer')}</Label>
                       <Input
                         value={currentUser?.customer_name || '—'}
                         disabled
                         className="bg-muted/50 text-muted-foreground"
                       />
-                      <p className="text-xs text-muted-foreground">Contact a platform admin to change your customer assignment.</p>
+                      <p className="text-xs text-muted-foreground">{t('settings_customer_contact_admin')}</p>
                     </div>
                   )}
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t gap-4">
                   <Button type="submit" disabled={isSavingProfile} size="sm" className="gap-2">
                     {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                    Save Profile
+                    {t('settings_save_profile')}
                   </Button>
                   <Button
                     type="button"
@@ -524,7 +526,7 @@ export default function Settings() {
                     className="gap-2"
                     onClick={() => myRecord && setUserToDelete(myRecord)}
                   >
-                    <Trash2 className="w-4 h-4" /> Delete My Account
+                    <Trash2 className="w-4 h-4" /> {t('settings_delete_account')}
                   </Button>
                 </div>
               </form>
@@ -538,18 +540,16 @@ export default function Settings() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <UserPlus className="w-4 h-4" />
-                    Invite User
+                    {t('settings_invite_user')}
                   </CardTitle>
                   <CardDescription>
-                    {isCustomerAdmin
-                      ? 'Invite users to join your customer organization.'
-                      : 'Send an invitation to a new user to join the platform.'}
+                    {isCustomerAdmin ? t('settings_invite_user_desc_customer') : t('settings_invite_user_desc_admin')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleInvite} className="flex gap-3 items-end flex-wrap">
                     <div className="flex-1 min-w-48 space-y-1.5">
-                      <label className="text-sm font-medium">Email</label>
+                      <label className="text-sm font-medium">{t('settings_email')}</label>
                       <Input
                         type="email"
                         placeholder="user@example.com"
@@ -560,20 +560,20 @@ export default function Settings() {
                     </div>
                     {isAdmin && (
                       <div className="w-36 space-y-1.5">
-                        <label className="text-sm font-medium">Role</label>
+                        <label className="text-sm font-medium">{t('settings_role')}</label>
                         <Select value={inviteRole} onValueChange={setInviteRole}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="user">User</SelectItem>
-                            <SelectItem value="customer_admin">Customer Admin</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="user">{t('settings_role_user')}</SelectItem>
+                            <SelectItem value="customer_admin">{t('settings_role_customer_admin')}</SelectItem>
+                            <SelectItem value="admin">{t('settings_role_admin')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     )}
                     <Button type="submit" disabled={isInviting} className="gap-2">
                       {isInviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                      {isInviting ? 'Sending...' : 'Send Invite'}
+                      {isInviting ? t('common_sending') : t('settings_send_invite')}
                     </Button>
                   </form>
                 </CardContent>
@@ -587,19 +587,19 @@ export default function Settings() {
             <>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">All Users</CardTitle>
-                  <CardDescription>{users.length} registered · {invitedUsers.filter(i => !users.find(u => u.email === i.email)).length} pending invitation</CardDescription>
+                  <CardTitle className="text-base">{t('settings_all_users')}</CardTitle>
+                  <CardDescription>{users.length} {t('settings_registered')} · {invitedUsers.filter(i => !users.find(u => u.email === i.email)).length} {t('settings_pending_invitation')}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Joined</TableHead>
+                        <TableHead>{t('settings_col_name')}</TableHead>
+                        <TableHead>{t('settings_col_email')}</TableHead>
+                        <TableHead>{t('settings_col_customer')}</TableHead>
+                        <TableHead>{t('settings_col_role')}</TableHead>
+                        <TableHead>{t('settings_col_status')}</TableHead>
+                        <TableHead>{t('settings_col_joined')}</TableHead>
                         <TableHead className="w-20"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -610,19 +610,19 @@ export default function Settings() {
                           <TableCell className="text-muted-foreground text-sm">{u.email}</TableCell>
                           <TableCell className="text-sm">
                             {u.role === 'admin'
-                              ? <span className="text-muted-foreground italic text-xs">N/A (admin)</span>
+                              ? <span className="text-muted-foreground italic text-xs">{t('settings_na_admin')}</span>
                               : u.customer_name
                                 ? <Badge variant="outline" className="text-xs">{u.customer_name}</Badge>
-                                : <span className="text-destructive text-xs font-medium">Not assigned</span>
+                                : <span className="text-destructive text-xs font-medium">{t('common_not_assigned')}</span>
                             }
                           </TableCell>
                           <TableCell>
                             <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                              {u.role === 'customer_admin' ? 'Customer Admin' : u.role}
+                              {u.role === 'customer_admin' ? t('settings_role_customer_admin') : u.role === 'admin' ? t('settings_role_admin') : t('settings_role_user')}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge className="bg-accent/10 text-accent border-accent/20">Active</Badge>
+                            <Badge className="bg-accent/10 text-accent border-accent/20">{t('settings_user_active')}</Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground text-xs">
                             {u.created_date ? new Date(u.created_date).toLocaleDateString() : '—'}
@@ -658,14 +658,14 @@ export default function Settings() {
                             <TableCell className="text-muted-foreground text-xs">—</TableCell>
                             <TableCell>
                               <Badge variant={i.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                                {i.role === 'customer_admin' ? 'Customer Admin' : i.role}
+                                {i.role === 'customer_admin' ? t('settings_role_customer_admin') : i.role === 'admin' ? t('settings_role_admin') : t('settings_role_user')}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>
+                              <Badge variant="outline" className="text-muted-foreground">{t('settings_user_inactive')}</Badge>
                             </TableCell>
                             <TableCell className="text-muted-foreground text-xs">
-                              Invited {i.created_date ? new Date(i.created_date).toLocaleDateString() : ''}
+                              {t('settings_invited')} {i.created_date ? new Date(i.created_date).toLocaleDateString() : ''}
                             </TableCell>
                             <TableCell className="text-right">
                               <Button
@@ -697,19 +697,19 @@ export default function Settings() {
                 <div>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Shield className="w-4 h-4" />
-                    Compliance Frameworks
+                    {t('settings_frameworks')}
                   </CardTitle>
-                  <CardDescription>Compliance frameworks configured in the platform</CardDescription>
+                  <CardDescription>{t('settings_frameworks_desc')}</CardDescription>
                 </div>
                 <div className="flex gap-2">
                   {frameworks.length === 0 && (
                     <Button onClick={seedFrameworks} disabled={isSeeding} variant="outline" className="gap-2">
                       {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <SettingsIcon className="w-4 h-4" />}
-                      {isSeeding ? 'Seeding...' : 'Initialize Defaults'}
+                      {isSeeding ? t('common_seeding') : t('settings_init_defaults')}
                     </Button>
                   )}
                   <Button onClick={() => setNewFwDialog(true)} className="gap-2">
-                    <Plus className="w-4 h-4" /> New Framework
+                    <Plus className="w-4 h-4" /> {t('settings_new_framework')}
                   </Button>
                 </div>
               </div>
@@ -717,7 +717,7 @@ export default function Settings() {
             <CardContent>
               {frameworks.length === 0 ? (
                 <div className="text-center py-8 space-y-3">
-                  <p className="text-sm text-muted-foreground">No frameworks configured yet. Use the buttons above to get started.</p>
+                  <p className="text-sm text-muted-foreground">{t('settings_no_frameworks')}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -746,21 +746,21 @@ export default function Settings() {
                               title={isActive ? 'Click to deactivate' : 'Click to activate'}
                             >
                               {isActive
-                                ? <><ToggleRight className="w-3.5 h-3.5" /> Active</>
-                                : <><ToggleLeft className="w-3.5 h-3.5" /> Inactive</>
+                                ? <><ToggleRight className="w-3.5 h-3.5" /> {t('settings_fw_active')}</>
+                                : <><ToggleLeft className="w-3.5 h-3.5" /> {t('settings_fw_inactive')}</>
                               }
                             </button>
                           </div>
                         </div>
                         <p className="text-sm text-muted-foreground">{fw.description}</p>
                         <p className="text-xs text-muted-foreground mt-2">
-                          {fwQuestions.length} questions · {domains.length} domains
+                          {fwQuestions.length} {t('settings_fw_questions')} · {domains.length} {t('settings_fw_domains')}
                         </p>
                         {/* Risk Score */}
                         {isActive && (
                           <div className="mt-3 pt-3 border-t">
                             <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-xs font-medium text-muted-foreground">Overall Risk Score</span>
+                              <span className="text-xs font-medium text-muted-foreground">{t('settings_fw_overall_score')}</span>
                               <div className="flex items-center gap-2">
                                 <span className={`text-xs font-semibold ${riskColor}`}>{riskLabel}</span>
                                 {score !== null && (
@@ -771,7 +771,7 @@ export default function Settings() {
                             {score !== null ? (
                               <Progress value={(score / 5) * 100} className="h-2" />
                             ) : (
-                              <p className="text-xs text-muted-foreground italic">No assessment responses yet for this framework.</p>
+                              <p className="text-xs text-muted-foreground italic">{t('settings_fw_no_responses')}</p>
                             )}
                           </div>
                         )}
@@ -790,8 +790,8 @@ export default function Settings() {
                                   value={fwRefEdit[fw.id]?.url ?? fw.reference_url ?? ''}
                                   onChange={e => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], url: e.target.value } }))}
                                 />
-                                <Button type="submit" size="sm" className="h-7 text-xs px-3">Save</Button>
-                                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: false } }))}>Cancel</Button>
+                                <Button type="submit" size="sm" className="h-7 text-xs px-3">{t('common_save')}</Button>
+                                 <Button type="button" variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: false } }))}>{t('common_cancel')}</Button>
                               </form>
                             ) : fw.reference_url ? (
                               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -802,7 +802,7 @@ export default function Settings() {
                               </div>
                             ) : (
                               <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: true, url: '' } }))}>
-                                Add reference link
+                                {t('docs_add_ref_link')}
                               </Button>
                             )}
                           </div>
@@ -816,7 +816,7 @@ export default function Settings() {
                                   <ExternalLink className="w-3 h-3 flex-shrink-0" />{fw.document_name || 'Reference document'}
                                 </a>
                                 <label className="cursor-pointer">
-                                  <span className="text-xs text-muted-foreground hover:text-foreground border rounded px-2 py-0.5">Replace</span>
+                                  <span className="text-xs text-muted-foreground hover:text-foreground border rounded px-2 py-0.5">{t('docs_replace')}</span>
                                   <input type="file" className="hidden" onChange={e => e.target.files[0] && handleFwDocUpload(fw, e.target.files[0])} />
                                 </label>
                               </div>
@@ -843,12 +843,12 @@ export default function Settings() {
           <Dialog open={newFwDialog} onOpenChange={setNewFwDialog}>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>New Framework</DialogTitle>
+                <DialogTitle>{t('settings_fw_new_dialog_title')}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label>Code *</Label>
+                    <Label>{t('settings_fw_code')}</Label>
                     <Input
                       value={newFwForm.code}
                       onChange={e => setNewFwForm(p => ({ ...p, code: e.target.value.toUpperCase() }))}
@@ -856,7 +856,7 @@ export default function Settings() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Version</Label>
+                    <Label>{t('settings_fw_version')}</Label>
                     <Input
                       value={newFwForm.version}
                       onChange={e => setNewFwForm(p => ({ ...p, version: e.target.value }))}
@@ -865,7 +865,7 @@ export default function Settings() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Name *</Label>
+                  <Label>{t('settings_fw_name')}</Label>
                   <Input
                     value={newFwForm.name}
                     onChange={e => setNewFwForm(p => ({ ...p, name: e.target.value }))}
@@ -873,7 +873,7 @@ export default function Settings() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Description</Label>
+                  <Label>{t('settings_fw_description')}</Label>
                   <Textarea
                     value={newFwForm.description}
                     onChange={e => setNewFwForm(p => ({ ...p, description: e.target.value }))}
@@ -882,7 +882,7 @@ export default function Settings() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Reference URL</Label>
+                  <Label>{t('settings_fw_ref_url')}</Label>
                   <Input
                     value={newFwForm.reference_url}
                     onChange={e => setNewFwForm(p => ({ ...p, reference_url: e.target.value }))}
@@ -890,18 +890,18 @@ export default function Settings() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Reference Document</Label>
+                  <Label>{t('settings_fw_ref_doc')}</Label>
                   {newFwForm.document_name ? (
                     <div className="flex items-center gap-2 p-2 rounded-md border bg-muted/40 text-sm">
                       <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                       <span className="truncate flex-1 text-xs">{newFwForm.document_name}</span>
-                      <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setNewFwForm(p => ({ ...p, document_url: '', document_name: '' }))}>Remove</Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setNewFwForm(p => ({ ...p, document_url: '', document_name: '' }))}>{t('settings_fw_remove')}</Button>
                     </div>
                   ) : (
                     <label className="flex items-center gap-2 cursor-pointer border border-dashed rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:border-primary transition-colors">
                       {newFwForm.uploadingDoc
                         ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
-                        : <><Upload className="w-4 h-4" /> Upload reference document</>
+                        : <><Upload className="w-4 h-4" /> {t('docs_upload_doc')}</>
                       }
                       <input type="file" className="hidden" disabled={newFwForm.uploadingDoc} onChange={async e => {
                         const file = e.target.files[0];
@@ -915,10 +915,10 @@ export default function Settings() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setNewFwDialog(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setNewFwDialog(false)}>{t('common_cancel')}</Button>
                 <Button onClick={handleCreateFramework} disabled={isSavingFw || !newFwForm.code || !newFwForm.name}>
                   {isSavingFw ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Create Framework
+                  {t('settings_fw_create')}
                 </Button>
               </DialogFooter>
             </DialogContent>

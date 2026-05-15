@@ -13,6 +13,7 @@ import NewAssessmentDialog from '@/components/assessments/NewAssessmentDialog';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { exportReportPdf } from '@/lib/exportReportPdf';
 
 const statusStyles = {
@@ -28,6 +29,7 @@ export default function Assessments() {
   const [exportingId, setExportingId] = useState(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const customerId = user?.customer_id;
 
@@ -62,10 +64,10 @@ export default function Assessments() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">Maturity assessments across frameworks</p>
+        <p className="text-muted-foreground text-sm">{t('assessments_subtitle')}</p>
         {isAdmin && (
           <Button onClick={() => setShowNew(true)} className="gap-2">
-            <Plus className="w-4 h-4" /> New Assessment
+            <Plus className="w-4 h-4" /> {t('assessments_new')}
           </Button>
         )}
       </div>
@@ -78,7 +80,7 @@ export default function Assessments() {
             <div className="relative max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search assessments..."
+                placeholder={t('assessments_search_placeholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -88,24 +90,24 @@ export default function Assessments() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Assessment</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Period</TableHead>
-                <TableHead>Frameworks</TableHead>
-                <TableHead>Score</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t('assessments_col_assessment')}</TableHead>
+                <TableHead>{t('assessments_col_customer')}</TableHead>
+                <TableHead>{t('assessments_col_period')}</TableHead>
+                <TableHead>{t('assessments_col_frameworks')}</TableHead>
+                <TableHead>{t('assessments_col_score')}</TableHead>
+                <TableHead>{t('assessments_col_status')}</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('common_loading')}</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    {search ? 'No assessments match.' : 'No assessments yet.'}
+                    {search ? t('assessments_no_results') : t('assessments_empty')}
                   </TableCell>
                 </TableRow>
               ) : filtered.map(a => (
@@ -153,7 +155,7 @@ export default function Assessments() {
                         <DropdownMenuItem asChild>
                           <Link to={`/assessments/${a.id}`}>
                             {a.status === 'completed' ? <Eye className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-                            {a.status === 'completed' ? 'View Results' : 'Continue'}
+                            {a.status === 'completed' ? t('assessments_view_results') : t('assessments_continue')}
                           </Link>
                         </DropdownMenuItem>
                         {a.status === 'completed' && (
@@ -164,7 +166,7 @@ export default function Assessments() {
                             {exportingId === a.id
                               ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                               : <FileDown className="w-4 h-4 mr-2" />}
-                            Export PDF Report
+                            {t('assessments_export_pdf')}
                           </DropdownMenuItem>
                         )}
                         {isAdmin && (

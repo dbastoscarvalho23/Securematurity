@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Paperclip, Download, FileText, ExternalLink, FolderOpen } from 'lucide-react';
 import { format } from 'date-fns';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function fileIcon(name = '') {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -21,6 +22,7 @@ function fileSizeLabel(url) {
 
 export default function EvidenceOverview() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const customerId = user?.customer_id;
 
@@ -127,13 +129,13 @@ export default function EvidenceOverview() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total Evidence Files</p>
+            <p className="text-xs text-muted-foreground">{t('evidence_total_files')}</p>
             <p className="text-2xl font-bold mt-1">{allFiles.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Assessments with Evidence</p>
+            <p className="text-xs text-muted-foreground">{t('evidence_assessments_with')}</p>
             <p className="text-2xl font-bold mt-1">
               {new Set(allFiles.map(f => f.assessmentId)).size}
             </p>
@@ -141,7 +143,7 @@ export default function EvidenceOverview() {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Frameworks Covered</p>
+            <p className="text-xs text-muted-foreground">{t('evidence_frameworks_covered')}</p>
             <p className="text-2xl font-bold mt-1">{frameworks.length}</p>
           </CardContent>
         </Card>
@@ -154,14 +156,14 @@ export default function EvidenceOverview() {
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search files, domains, notes..."
+            placeholder={t('evidence_search_placeholder')}
             className="pl-9"
           />
         </div>
         <Select value={filterAssessment} onValueChange={setFilterAssessment}>
           <SelectTrigger className="w-48"><SelectValue placeholder="Assessment" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Assessments</SelectItem>
+            <SelectItem value="all">{t('evidence_all_assessments')}</SelectItem>
             {assessments.map(a => (
               <SelectItem key={a.id} value={a.id}>{a.title}</SelectItem>
             ))}
@@ -171,7 +173,7 @@ export default function EvidenceOverview() {
           <Select value={filterFramework} onValueChange={setFilterFramework}>
             <SelectTrigger className="w-40"><SelectValue placeholder="Framework" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Frameworks</SelectItem>
+              <SelectItem value="all">{t('evidence_all_frameworks')}</SelectItem>
               {frameworks.map(fw => <SelectItem key={fw} value={fw}>{fw}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -180,7 +182,7 @@ export default function EvidenceOverview() {
           <Select value={filterDomain} onValueChange={setFilterDomain}>
             <SelectTrigger className="w-44"><SelectValue placeholder="Domain" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Domains</SelectItem>
+              <SelectItem value="all">{t('evidence_all_domains')}</SelectItem>
               {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -190,14 +192,14 @@ export default function EvidenceOverview() {
       {/* Results */}
       {isLoading ? (
         <Card>
-          <CardContent className="py-16 text-center text-muted-foreground">Loading evidence files...</CardContent>
+          <CardContent className="py-16 text-center text-muted-foreground">{t('evidence_loading')}</CardContent>
         </Card>
       ) : filtered.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center text-muted-foreground">
             <Paperclip className="w-8 h-8 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No evidence files found</p>
-            <p className="text-sm mt-1">Upload evidence files when answering assessment questions.</p>
+            <p className="font-medium">{t('evidence_empty')}</p>
+            <p className="text-sm mt-1">{t('evidence_empty_desc')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -208,7 +210,7 @@ export default function EvidenceOverview() {
                 <div className="flex items-center gap-3">
                   <FolderOpen className="w-4 h-4 text-primary" />
                   <div>
-                    <p className="font-semibold text-sm">{assessment?.title || 'Unknown Assessment'}</p>
+                    <p className="font-semibold text-sm">{assessment?.title || t('evidence_unknown_assessment')}</p>
                     <p className="text-xs text-muted-foreground">
                       {assessment?.customer_name} · {assessment?.period} · {files.length} file{files.length !== 1 ? 's' : ''}
                     </p>
@@ -221,7 +223,7 @@ export default function EvidenceOverview() {
                   onClick={() => handleBulkDownload(files)}
                 >
                   <Download className="w-3.5 h-3.5" />
-                  Download All ({files.length})
+                  {t('evidence_download_all')} ({files.length})
                 </Button>
               </div>
               <CardContent className="p-0">
@@ -230,7 +232,7 @@ export default function EvidenceOverview() {
                     <div key={idx} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/20 transition-colors">
                       {fileIcon(f.name)}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{f.name || 'Unnamed file'}</p>
+                        <p className="text-sm font-medium truncate">{f.name || t('evidence_unnamed_file')}</p>
                         <div className="flex flex-wrap items-center gap-2 mt-0.5">
                           {f.framework_code && (
                             <Badge variant="outline" className="text-xs">{f.framework_code}</Badge>

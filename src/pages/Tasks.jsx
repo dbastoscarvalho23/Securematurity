@@ -11,6 +11,7 @@ import TaskFormDialog from '@/components/tasks/TaskFormDialog';
 import TaskListView from '@/components/tasks/TaskListView';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function Tasks() {
   const [search, setSearch] = useState('');
@@ -21,6 +22,7 @@ export default function Tasks() {
   const [editingTask, setEditingTask] = useState(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const customerId = user?.customer_id;
 
@@ -60,7 +62,7 @@ export default function Tasks() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success(editingTask ? 'Task updated' : 'Task created');
+      toast.success(editingTask ? t('tasks_updated') : t('tasks_created'));
     },
   });
 
@@ -83,7 +85,7 @@ export default function Tasks() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('Task deleted');
+      toast.success(t('tasks_deleted'));
     },
   });
 
@@ -115,17 +117,17 @@ export default function Tasks() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span><strong className="text-foreground">{counts.todo}</strong> to-do</span>
+          <span><strong className="text-foreground">{counts.todo}</strong> {t('tasks_count_todo')}</span>
           <span>·</span>
-          <span><strong className="text-chart-4">{counts.in_progress}</strong> in progress</span>
+          <span><strong className="text-chart-4">{counts.in_progress}</strong> {t('tasks_count_in_progress')}</span>
           <span>·</span>
-          <span><strong className="text-destructive">{counts.blocked}</strong> blocked</span>
+          <span><strong className="text-destructive">{counts.blocked}</strong> {t('tasks_count_blocked')}</span>
           <span>·</span>
-          <span><strong className="text-accent">{counts.done}</strong> done</span>
+          <span><strong className="text-accent">{counts.done}</strong> {t('tasks_count_done')}</span>
         </div>
         <Button onClick={handleNew} className="gap-2">
           <Plus className="w-4 h-4" />
-          New Task
+          {t('tasks_new')}
         </Button>
       </div>
 
@@ -136,28 +138,28 @@ export default function Tasks() {
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search tasks..."
+            placeholder={t('tasks_search_placeholder')}
             className="pl-9"
           />
         </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-36"><SelectValue placeholder={t('common_status')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="todo">To-Do</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="blocked">Blocked</SelectItem>
-            <SelectItem value="done">Done</SelectItem>
+            <SelectItem value="all">{t('tasks_filter_all_statuses')}</SelectItem>
+            <SelectItem value="todo">{t('tasks_status_todo')}</SelectItem>
+            <SelectItem value="in_progress">{t('tasks_status_in_progress')}</SelectItem>
+            <SelectItem value="blocked">{t('tasks_status_blocked')}</SelectItem>
+            <SelectItem value="done">{t('tasks_status_done')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterPriority} onValueChange={setFilterPriority}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="Priority" /></SelectTrigger>
+          <SelectTrigger className="w-36"><SelectValue placeholder={t('common_priority')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="all">{t('tasks_filter_all_priorities')}</SelectItem>
+            <SelectItem value="critical">{t('tasks_priority_critical')}</SelectItem>
+            <SelectItem value="high">{t('tasks_priority_high')}</SelectItem>
+            <SelectItem value="medium">{t('tasks_priority_medium')}</SelectItem>
+            <SelectItem value="low">{t('tasks_priority_low')}</SelectItem>
           </SelectContent>
         </Select>
         <div className="flex rounded-md border border-border overflow-hidden ml-auto">

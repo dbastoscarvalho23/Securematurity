@@ -15,6 +15,7 @@ import {
 import CustomerForm from '@/components/customers/CustomerForm';
 import CustomerDetailPanel from '@/components/customers/CustomerDetailPanel';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const statusStyles = {
   active: 'bg-accent/10 text-accent border-accent/20',
@@ -23,6 +24,7 @@ const statusStyles = {
 };
 
 export default function Customers() {
+  const { t } = useLanguage();
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -86,10 +88,10 @@ export default function Customers() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-sm">
-          Manage your tenant organizations · <span className="text-foreground font-medium">{customers.length}</span> total
+          {t('customers_subtitle')} · <span className="text-foreground font-medium">{customers.length}</span> {t('common_total')}
         </p>
         <Button onClick={() => { setEditingCustomer(null); setShowForm(true); }} className="gap-2">
-          <Plus className="w-4 h-4" /> Add Customer
+          <Plus className="w-4 h-4" /> {t('customers_add')}
         </Button>
       </div>
 
@@ -110,7 +112,7 @@ export default function Customers() {
               <div className="relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or NIF..."
+                  placeholder={t('customers_search_placeholder')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-10"
@@ -120,25 +122,25 @@ export default function Customers() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Organization</TableHead>
-                  {!selectedCustomer && <TableHead>NIF</TableHead>}
-                  <TableHead>Sector</TableHead>
-                  {!selectedCustomer && <TableHead>Contact</TableHead>}
-                  {!selectedCustomer && <TableHead>Cybersecurity Manager</TableHead>}
-                  {!selectedCustomer && <TableHead>Employees</TableHead>}
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t('customers_col_org')}</TableHead>
+                  {!selectedCustomer && <TableHead>{t('customers_col_nif')}</TableHead>}
+                  <TableHead>{t('customers_col_sector')}</TableHead>
+                  {!selectedCustomer && <TableHead>{t('customers_col_contact')}</TableHead>}
+                  {!selectedCustomer && <TableHead>{t('customers_col_csm')}</TableHead>}
+                  {!selectedCustomer && <TableHead>{t('customers_col_employees')}</TableHead>}
+                  <TableHead>{t('customers_col_status')}</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('common_loading')}</TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      {search ? 'No customers match your search.' : 'No customers yet. Add your first customer.'}
+                      {search ? t('customers_no_results') : t('customers_empty')}
                     </TableCell>
                   </TableRow>
                 ) : filtered.map(c => (
@@ -191,19 +193,19 @@ export default function Customers() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleEdit(c)}>
-                            <Pencil className="w-4 h-4 mr-2" /> Edit
-                          </DropdownMenuItem>
-                          {c.website && (
-                            <DropdownMenuItem onClick={() => window.open(c.website, '_blank')}>
-                              <ExternalLink className="w-4 h-4 mr-2" /> Website
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => deleteMutation.mutate(c.id)}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete
-                          </DropdownMenuItem>
+                                            <Pencil className="w-4 h-4 mr-2" /> {t('customers_menu_edit')}
+                                          </DropdownMenuItem>
+                                          {c.website && (
+                                            <DropdownMenuItem onClick={() => window.open(c.website, '_blank')}>
+                                              <ExternalLink className="w-4 h-4 mr-2" /> {t('customers_menu_website')}
+                                            </DropdownMenuItem>
+                                          )}
+                                          <DropdownMenuItem
+                                            className="text-destructive"
+                                            onClick={() => deleteMutation.mutate(c.id)}
+                                          >
+                                            <Trash2 className="w-4 h-4 mr-2" /> {t('customers_menu_delete')}
+                                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

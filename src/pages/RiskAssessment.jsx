@@ -18,6 +18,7 @@ import RiskExcelImportDialog from '@/components/risks/RiskExcelImportDialog';
 import RiskMatrix from '@/components/risks/RiskMatrix';
 import RiskHeatmap from '@/components/risks/RiskHeatmap';
 import { writeAuditLog } from '@/lib/auditLog';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const STATUS_STYLES = {
   open: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -46,6 +47,7 @@ function RiskLevelBadge({ risk }) {
 export default function RiskAssessment() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const isCustomerAdmin = user?.role === 'customer_admin';
   const customerId = user?.customer_id;
@@ -109,7 +111,7 @@ export default function RiskAssessment() {
       queryClient.invalidateQueries({ queryKey: ['riskHistory'] });
       setDialogOpen(false);
       setEditingRisk(null);
-      toast.success(variables?.id ? 'Risk updated' : 'Risk created');
+      toast.success(variables?.id ? t('risk_updated') : t('risk_created'));
     },
   });
 
@@ -120,7 +122,7 @@ export default function RiskAssessment() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['riskItems'] });
-      toast.success('Risk deleted');
+      toast.success(t('risk_deleted'));
     },
   });
 
@@ -189,28 +191,22 @@ export default function RiskAssessment() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Track and treat security risks · <span className="text-foreground font-medium">{scoped.length}</span> total
+          {t('risk_subtitle')} · <span className="text-foreground font-medium">{scoped.length}</span> {t('common_total')}
         </p>
         <div className="flex items-center gap-2">
-          <Button
-            variant={view === 'list' ? 'default' : 'outline'} size="sm"
-            onClick={() => setView('list')}>List</Button>
-          <Button
-            variant={view === 'matrix' ? 'default' : 'outline'} size="sm"
-            onClick={() => setView('matrix')}>Risk Matrix</Button>
-          <Button
-            variant={view === 'heatmap' ? 'default' : 'outline'} size="sm"
-            onClick={() => setView('heatmap')}>Heatmap</Button>
+          <Button variant={view === 'list' ? 'default' : 'outline'} size="sm" onClick={() => setView('list')}>{t('risk_view_list')}</Button>
+          <Button variant={view === 'matrix' ? 'default' : 'outline'} size="sm" onClick={() => setView('matrix')}>{t('risk_view_matrix')}</Button>
+          <Button variant={view === 'heatmap' ? 'default' : 'outline'} size="sm" onClick={() => setView('heatmap')}>{t('risk_view_heatmap')}</Button>
           <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
-            <FileSpreadsheet className="w-4 h-4" /> Import from Excel
+            <FileSpreadsheet className="w-4 h-4" /> {t('risk_import_excel')}
           </Button>
           {scoped.length > 0 && (
             <Button variant="outline" onClick={() => setBulkDeleteOpen(true)} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10">
-              <Trash2 className="w-4 h-4" /> Delete All
+              <Trash2 className="w-4 h-4" /> {t('risk_delete_all')}
             </Button>
           )}
           <Button onClick={handleNew} className="gap-2">
-            <Plus className="w-4 h-4" /> New Risk
+            <Plus className="w-4 h-4" /> {t('risk_new')}
           </Button>
         </div>
       </div>
@@ -220,25 +216,25 @@ export default function RiskAssessment() {
         <Card className="border-destructive/20">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-destructive/10"><AlertTriangle className="w-4 h-4 text-destructive" /></div>
-            <div><p className="text-2xl font-bold">{critical}</p><p className="text-xs text-muted-foreground">Critical</p></div>
+            <div><p className="text-2xl font-bold">{critical}</p><p className="text-xs text-muted-foreground">{t('risk_card_critical')}</p></div>
           </CardContent>
         </Card>
         <Card className="border-chart-4/20">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-chart-4/10"><ShieldAlert className="w-4 h-4 text-chart-4" /></div>
-            <div><p className="text-2xl font-bold">{high}</p><p className="text-xs text-muted-foreground">High</p></div>
+            <div><p className="text-2xl font-bold">{high}</p><p className="text-xs text-muted-foreground">{t('risk_card_high')}</p></div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10"><TrendingUp className="w-4 h-4 text-primary" /></div>
-            <div><p className="text-2xl font-bold">{openCount}</p><p className="text-xs text-muted-foreground">Open</p></div>
+            <div><p className="text-2xl font-bold">{openCount}</p><p className="text-xs text-muted-foreground">{t('risk_card_open')}</p></div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-chart-2/10"><FileText className="w-4 h-4 text-chart-2" /></div>
-            <div><p className="text-2xl font-bold">{scoped.length}</p><p className="text-xs text-muted-foreground">Total Risks</p></div>
+            <div><p className="text-2xl font-bold">{scoped.length}</p><p className="text-xs text-muted-foreground">{t('risk_card_total')}</p></div>
           </CardContent>
         </Card>
       </div>
@@ -246,7 +242,7 @@ export default function RiskAssessment() {
       {/* Risk Matrix view */}
       {view === 'matrix' && (
         <Card>
-          <CardHeader><CardTitle className="text-base">Risk Matrix (Impact × Likelihood)</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{t('risk_matrix_title')}</CardTitle></CardHeader>
           <CardContent>
             <RiskMatrix risks={filtered} onEdit={handleEdit} />
           </CardContent>
@@ -257,8 +253,8 @@ export default function RiskAssessment() {
       {view === 'heatmap' && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Risk Heatmap</CardTitle>
-            <p className="text-xs text-muted-foreground">Click any cell to drill into risks, linked tasks, and mitigation strategies.</p>
+            <CardTitle className="text-base">{t('risk_heatmap_title')}</CardTitle>
+            <p className="text-xs text-muted-foreground">{t('risk_heatmap_desc')}</p>
           </CardHeader>
           <CardContent>
             <RiskHeatmap risks={filtered} onEdit={handleEdit} />
@@ -273,16 +269,16 @@ export default function RiskAssessment() {
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search risks..." className="pl-9 w-56" />
+              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('risk_search_placeholder')} className="pl-9 w-56" />
             </div>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="All Statuses" /></SelectTrigger>
+              <SelectTrigger className="w-40"><SelectValue placeholder={t('risk_filter_all_statuses')} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="in_treatment">In Treatment</SelectItem>
-                <SelectItem value="accepted">Accepted</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="all">{t('risk_filter_all_statuses')}</SelectItem>
+                <SelectItem value="open">{t('risk_status_open')}</SelectItem>
+                <SelectItem value="in_treatment">{t('risk_status_in_treatment')}</SelectItem>
+                <SelectItem value="accepted">{t('risk_status_accepted')}</SelectItem>
+                <SelectItem value="closed">{t('risk_status_closed')}</SelectItem>
               </SelectContent>
             </Select>
             {isAdmin && (
@@ -301,7 +297,7 @@ export default function RiskAssessment() {
             {filtered.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <ShieldAlert className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">No risks found. Create your first risk assessment.</p>
+                <p className="text-sm">{t('risk_empty')}</p>
               </div>
             ) : filtered.map(risk => {
               const score = riskScore(risk);
@@ -316,7 +312,7 @@ export default function RiskAssessment() {
                           score >= 9 ? 'bg-chart-4/15 text-chart-4' :
                           score >= 4 ? 'bg-chart-3/15 text-chart-3' : 'bg-chart-2/15 text-chart-2'}`}>
                         <span className="text-lg leading-none">{score}</span>
-                        <span className="text-[10px] opacity-70">score</span>
+                        <span className="text-[10px] opacity-70">{t('risk_score')}</span>
                       </div>
 
                       <div className="flex-1 min-w-0">
@@ -339,10 +335,10 @@ export default function RiskAssessment() {
                         )}
 
                         <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
-                          <span>Impact: <strong>{risk.impact}</strong></span>
-                          <span>Likelihood: <strong>{risk.likelihood}</strong></span>
-                          {risk.owner_email && <span>Owner: {risk.owner_email}</span>}
-                          {risk.due_date && <span>Due: {risk.due_date}</span>}
+                          <span>{t('risk_impact')}: <strong>{risk.impact}</strong></span>
+                          <span>{t('risk_likelihood')}: <strong>{risk.likelihood}</strong></span>
+                          {risk.owner_email && <span>{t('risk_owner')}: {risk.owner_email}</span>}
+                          {risk.due_date && <span>{t('risk_due')}: {risk.due_date}</span>}
                           {isAdmin && risk.customer_name && <span>· {risk.customer_name}</span>}
                         </div>
 
@@ -366,13 +362,13 @@ export default function RiskAssessment() {
                           title="Create Task from this risk"
                           onClick={() => handleEdit(risk, 'create_task')}>
                           <ClipboardList className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Task</span>
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-accent hover:text-accent"
+                          <span className="hidden sm:inline">{t('risk_create_task')}</span>
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-accent hover:text-accent"
                           title="Add Mitigation Procedure"
                           onClick={() => handleEdit(risk, 'mitigation')}>
                           <ShieldCheck className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Mitigate</span>
+                          <span className="hidden sm:inline">{t('risk_mitigate')}</span>
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(risk)}>
                           <Pencil className="w-3.5 h-3.5" />
@@ -394,15 +390,15 @@ export default function RiskAssessment() {
       <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete all risks?</AlertDialogTitle>
+            <AlertDialogTitle>{t('risk_bulk_delete_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete all <strong>{scoped.length}</strong> risk{scoped.length !== 1 ? 's' : ''}. This action cannot be undone.
+              {t('risk_bulk_delete_desc')} <strong>{scoped.length}</strong> {scoped.length !== 1 ? 'risks' : 'risk'}. {t('risk_bulk_delete_desc2')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete All
+              {t('risk_delete_all')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

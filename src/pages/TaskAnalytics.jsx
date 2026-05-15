@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -77,6 +78,7 @@ function DrillDownSheet({ open, onClose, title, description, tasks }) {
 
 export default function TaskAnalytics() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const customerId = user?.customer_id;
 
@@ -122,9 +124,9 @@ export default function TaskAnalytics() {
       done: completedTasks,
     };
     const statusData = [
-      { name: 'To-Do', value: statusCounts.todo, color: COLORS[3] },
-      { name: 'In Progress', value: statusCounts.in_progress, color: COLORS[2] },
-      { name: 'Done', value: statusCounts.done, color: COLORS[1] },
+      { name: STATUS_LABELS.todo, value: statusCounts.todo, color: COLORS[3] },
+      { name: STATUS_LABELS.in_progress, value: statusCounts.in_progress, color: COLORS[2] },
+      { name: STATUS_LABELS.done, value: statusCounts.done, color: COLORS[1] },
     ].filter(s => s.value > 0);
 
     const priorityCounts = {};
@@ -158,58 +160,58 @@ export default function TaskAnalytics() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card
           className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all"
-          onClick={() => openDrillDown('All Tasks', `${analytics.totalTasks} tasks total`, tasks)}
+          onClick={() => openDrillDown(t('analytics_all_tasks'), `${analytics.totalTasks} ${t('analytics_tasks_total')}`, tasks)}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-muted-foreground">Total Tasks</p>
+              <p className="text-xs text-muted-foreground">{t('analytics_total_tasks')}</p>
               <ListTodo className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold">{analytics.totalTasks}</p>
-            <p className="text-xs text-muted-foreground mt-1">Click to view all</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('analytics_view_all')}</p>
           </CardContent>
         </Card>
 
         <Card
           className="cursor-pointer hover:shadow-md hover:border-accent/30 transition-all"
-          onClick={() => openDrillDown('Completed Tasks', `${analytics.completedTasks} tasks done`, tasks.filter(t => t.status === 'done'))}
+          onClick={() => openDrillDown(t('analytics_completed_tasks'), `${analytics.completedTasks} ${t('analytics_tasks_done')}`, tasks.filter(tk => tk.status === 'done'))}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-muted-foreground">Completion Rate</p>
+              <p className="text-xs text-muted-foreground">{t('analytics_completion_rate')}</p>
               <CheckCircle2 className="w-4 h-4 text-accent" />
             </div>
             <p className="text-2xl font-bold text-accent">{analytics.completionRate}%</p>
             <Progress value={analytics.completionRate} className="h-1.5 mt-2" />
-            <p className="text-xs text-muted-foreground mt-1">{analytics.completedTasks} completed — click to view</p>
+            <p className="text-xs text-muted-foreground mt-1">{analytics.completedTasks} {t('analytics_completed')}</p>
           </CardContent>
         </Card>
 
         <Card
           className="cursor-pointer hover:shadow-md hover:border-chart-3/30 transition-all"
-          onClick={() => openDrillDown('In Progress Tasks', `${analytics.inProgressTasks.length} tasks currently active`, analytics.inProgressTasks)}
+          onClick={() => openDrillDown(t('analytics_in_progress'), `${analytics.inProgressTasks.length} ${t('analytics_tasks_active')}`, analytics.inProgressTasks)}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-muted-foreground">In Progress</p>
+              <p className="text-xs text-muted-foreground">{t('analytics_in_progress')}</p>
               <Clock className="w-4 h-4 text-chart-3" />
             </div>
             <p className="text-2xl font-bold text-chart-3">{analytics.inProgressTasks.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">Click to view active tasks</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('analytics_view_active')}</p>
           </CardContent>
         </Card>
 
         <Card
           className="cursor-pointer hover:shadow-md hover:border-destructive/30 transition-all"
-          onClick={() => openDrillDown('Overdue Tasks', `${analytics.overdueTasks.length} tasks past their due date`, analytics.overdueTasks)}
+          onClick={() => openDrillDown(t('analytics_overdue_title'), `${analytics.overdueTasks.length} ${t('analytics_tasks_past_due')}`, analytics.overdueTasks)}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-muted-foreground">Overdue Tasks</p>
+              <p className="text-xs text-muted-foreground">{t('analytics_overdue')}</p>
               <AlertTriangle className="w-4 h-4 text-destructive" />
             </div>
             <p className="text-2xl font-bold text-destructive">{analytics.overdueTasks.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">Click to view overdue</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('analytics_view_overdue')}</p>
           </CardContent>
         </Card>
       </div>
@@ -218,7 +220,7 @@ export default function TaskAnalytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Task Status Distribution</CardTitle>
+            <CardTitle className="text-base">{t('analytics_status_distribution')}</CardTitle>
           </CardHeader>
           <CardContent>
             {analytics.statusData.length > 0 ? (
@@ -248,7 +250,7 @@ export default function TaskAnalytics() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Tasks by Priority</CardTitle>
+            <CardTitle className="text-base">{t('analytics_by_priority')}</CardTitle>
           </CardHeader>
           <CardContent>
             {analytics.priorityData.length > 0 ? (
@@ -273,9 +275,9 @@ export default function TaskAnalytics() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Users className="w-4 h-4" />
-            Workload Distribution by User
+            {t('analytics_workload')}
           </CardTitle>
-          <CardDescription>Click a user row to see their tasks</CardDescription>
+          <CardDescription>{t('analytics_workload_desc')}</CardDescription>
         </CardHeader>
         <CardContent>
           {analytics.workloadData.length > 0 ? (
@@ -286,27 +288,27 @@ export default function TaskAnalytics() {
                   <div
                     key={u.user}
                     className="space-y-1.5 p-3 rounded-lg border hover:bg-muted/30 cursor-pointer transition-colors"
-                    onClick={() => openDrillDown(`Tasks for ${u.user}`, `${u.total} task${u.total !== 1 ? 's' : ''} assigned`, u.tasks)}
+                    onClick={() => openDrillDown(`${t('analytics_tasks_for')} ${u.user}`, `${u.total} ${u.total !== 1 ? t('analytics_tasks_assigned') : t('analytics_task_assigned')}`, u.tasks)}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">{u.user}</span>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">{u.total} tasks</Badge>
+                        <Badge variant="outline" className="text-xs">{u.total} {t('analytics_tasks_assigned')}</Badge>
                         <Badge variant="secondary" className="text-xs">{rate}%</Badge>
                       </div>
                     </div>
                     <Progress value={rate} className="h-2" />
                     <div className="flex gap-3 text-xs text-muted-foreground">
-                      <span>✓ {u.completed} done</span>
-                      <span>→ {u.inProgress} in progress</span>
-                      <span>○ {u.total - u.completed - u.inProgress} to-do</span>
+                      <span>✓ {u.completed} {t('analytics_done')}</span>
+                      <span>→ {u.inProgress} {t('analytics_in_prog')}</span>
+                      <span>○ {u.total - u.completed - u.inProgress} {t('analytics_todo')}</span>
                     </div>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground py-8 text-center">No assigned tasks</p>
+            <p className="text-sm text-muted-foreground py-8 text-center">{t('analytics_no_assigned')}</p>
           )}
         </CardContent>
       </Card>
@@ -316,9 +318,9 @@ export default function TaskAnalytics() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-destructive" />
-            Overdue Tasks ({analytics.overdueTasks.length})
+            {t('analytics_overdue_title')} ({analytics.overdueTasks.length})
           </CardTitle>
-          <CardDescription>Tasks past due date and not completed</CardDescription>
+          <CardDescription>{t('analytics_overdue_desc')}</CardDescription>
         </CardHeader>
         <CardContent>
           {analytics.overdueTasks.length > 0 ? (
@@ -326,7 +328,7 @@ export default function TaskAnalytics() {
               {analytics.overdueTasks.map(task => <TaskRow key={task.id} task={task} />)}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground py-8 text-center text-accent">✓ No overdue tasks</p>
+            <p className="text-sm text-muted-foreground py-8 text-center text-accent">{t('analytics_no_overdue')}</p>
           )}
         </CardContent>
       </Card>

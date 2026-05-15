@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Search, FileText, Shield, BookOpen, Workflow, Zap, ExternalLink, Pencil, Trash2, ChevronDown, ChevronRight, CheckCircle, Clock, History, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
+import { useLanguage } from '@/lib/LanguageContext';
 import SecurityDocumentDialog from '@/components/documents/SecurityDocumentDialog';
 import VersionHistoryDialog from '@/components/documents/VersionHistoryDialog';
 import PendingReviewsPanel from '@/components/documents/PendingReviewsPanel';
@@ -70,6 +71,7 @@ const STATUS_LABELS = { draft: 'Draft', under_review: 'Under Review', approved: 
 export default function SecurityDocuments() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const isCustomerAdmin = user?.role === 'customer_admin';
   const isUser = !isAdmin && !isCustomerAdmin;
@@ -272,10 +274,10 @@ export default function SecurityDocuments() {
           {isAdmin && (
             <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
               <SelectTrigger className="w-52">
-                <SelectValue placeholder="All Customers" />
+                <SelectValue placeholder={t('docs_all_customers')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={null}>All Customers</SelectItem>
+                <SelectItem value={null}>{t('docs_all_customers')}</SelectItem>
                 {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -289,19 +291,19 @@ export default function SecurityDocuments() {
           )}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search documents..." className="pl-9 w-56" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('docs_search_placeholder')} className="pl-9 w-56" />
           </div>
         </div>
         <div className="flex items-center gap-2">
           {pendingApprovals > 0 && canApprove && (
             <div className="flex items-center gap-1.5 text-sm text-chart-3 bg-chart-3/10 px-3 py-1.5 rounded-lg">
               <Clock className="w-3.5 h-3.5" />
-              {pendingApprovals} pending approval{pendingApprovals > 1 ? 's' : ''}
+              {pendingApprovals} {pendingApprovals > 1 ? t('docs_pending_approvals_plural') : t('docs_pending_approvals')}
             </div>
           )}
           {canCreate && (
             <Button onClick={() => { setEditingDoc(null); setDialogOpen(true); }} className="gap-2">
-              <Plus className="w-4 h-4" /> New Document
+              <Plus className="w-4 h-4" /> {t('docs_new')}
             </Button>
           )}
         </div>
@@ -314,16 +316,16 @@ export default function SecurityDocuments() {
           value={searchQuery}
           onChange={e => { setSearchQuery(e.target.value); if (!e.target.value) setSearchResults(null); }}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          placeholder="Full-text search across all documents..."
+          placeholder={t('docs_fulltext_placeholder')}
           className="border-0 bg-transparent shadow-none focus-visible:ring-0 flex-1 pl-0"
         />
         <Button size="sm" onClick={handleSearch} disabled={searching} className="gap-1.5">
           {searching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-          Search
+          {t('docs_search_btn')}
         </Button>
         {searchResults !== null && (
           <Button size="sm" variant="ghost" onClick={() => { setSearchResults(null); setSearchQuery(''); }}>
-            Clear
+            {t('docs_clear')}
           </Button>
         )}
       </div>
@@ -331,9 +333,9 @@ export default function SecurityDocuments() {
       {/* Search results */}
       {searchResults !== null && (
         <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">{searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"</p>
+          <p className="text-sm font-medium text-muted-foreground">{searchResults.length} {searchResults.length !== 1 ? t('docs_search_results_plural') : t('docs_search_results')} {t('docs_search_for')} "{searchQuery}"</p>
           {searchResults.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No matching documents found.</p>
+            <p className="text-sm text-muted-foreground text-center py-6">{t('docs_search_no_results')}</p>
           ) : (
             <div className="divide-y border rounded-xl bg-card overflow-hidden">
               {searchResults.map(doc => (
@@ -416,7 +418,7 @@ export default function SecurityDocuments() {
                 {canCreate && (
                   <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7"
                     onClick={e => { e.stopPropagation(); handleNew(level.id); }}>
-                    <Plus className="w-3 h-3" /> Add
+                    <Plus className="w-3 h-3" /> {t('docs_add')}
                   </Button>
                 )}
                 {isCollapsed ? <ChevronRight className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
@@ -428,11 +430,11 @@ export default function SecurityDocuments() {
                 {levelDocs.length === 0 ? (
                   <div className="px-5 py-8 text-center space-y-2">
                     <FileText className="w-8 h-8 mx-auto text-muted-foreground opacity-30" />
-                    <p className="text-sm text-muted-foreground">No documents yet</p>
-                    <p className="text-xs text-muted-foreground">Examples: {level.examples.join(' · ')}</p>
+                    <p className="text-sm text-muted-foreground">{t('docs_no_docs')}</p>
+                    <p className="text-xs text-muted-foreground">{t('docs_examples')} {level.examples.join(' · ')}</p>
                     {canCreate && (
                       <Button size="sm" variant="outline" className="mt-2 gap-1.5" onClick={() => handleNew(level.id)}>
-                        <Plus className="w-3 h-3" /> Add first document
+                        <Plus className="w-3 h-3" /> {t('docs_add_first')}
                       </Button>
                     )}
                   </div>
@@ -451,7 +453,7 @@ export default function SecurityDocuments() {
                             {doc.status === 'under_review' && canApprove && (
                               <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-chart-2 border-chart-2/30 hover:bg-chart-2/10"
                                 onClick={() => handleApproveClick(doc)}>
-                                <CheckCircle className="w-3 h-3" /> Approve
+                                <CheckCircle className="w-3 h-3" /> {t('docs_approve')}
                               </Button>
                             )}
                           </div>
@@ -465,7 +467,7 @@ export default function SecurityDocuments() {
                             ))}
                           </div>
                           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                            {doc.approved_by && <span>Approved by: {doc.approved_by}</span>}
+                            {doc.approved_by && <span>{t('docs_approved_by')} {doc.approved_by}</span>}
                             {doc.approved_date && <span>{new Date(doc.approved_date).toLocaleDateString()}</span>}
                             {isAdmin && doc.customer_name && <span>· {doc.customer_name}</span>}
                             {doc.owner_email && isCustomerAdmin && <span>· by {doc.owner_email}</span>}

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +35,7 @@ const MATURITY_COLORS = [
 ];
 
 function AssessmentAnswersPanel({ assessmentId }) {
+  const { t } = useLanguage();
   const { data: responses = [], isLoading } = useQuery({
     queryKey: ['responses', assessmentId],
     queryFn: () => base44.entities.AssessmentResponse.filter({ assessment_id: assessmentId }),
@@ -46,13 +49,13 @@ function AssessmentAnswersPanel({ assessmentId }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8 text-muted-foreground">
-        <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading answers...
+        <Loader2 className="w-4 h-4 animate-spin mr-2" /> {t('reports_loading_answers')}
       </div>
     );
   }
 
   if (responses.length === 0) {
-    return <p className="text-sm text-muted-foreground text-center py-6">No answers recorded for this assessment.</p>;
+    return <p className="text-sm text-muted-foreground text-center py-6">{t('reports_no_answers')}</p>;
   }
 
   // Group by framework then domain
@@ -115,6 +118,7 @@ function AssessmentAnswersPanel({ assessmentId }) {
 
 export default function Reports() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const customerId = user?.customer_id;
 
@@ -175,12 +179,12 @@ export default function Reports() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">Historical comparison and maturity trends</p>
+        <p className="text-muted-foreground text-sm">{t('reports_subtitle')}</p>
         {isAdmin && (
           <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
             <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Customers</SelectItem>
+              <SelectItem value="all">{t('reports_all_customers')}</SelectItem>
               {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -192,8 +196,8 @@ export default function Reports() {
         <div>
           <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-primary" />
-            Current Framework Scores
-            {previous && <span className="text-sm font-normal text-muted-foreground">vs {previous.period}</span>}
+            {t('reports_current_framework_scores')}
+            {previous && <span className="text-sm font-normal text-muted-foreground">{t('reports_vs')} {previous.period}</span>}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {(latest.framework_scores || []).map(fs => {
@@ -214,8 +218,8 @@ export default function Reports() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MaturityRadar data={radarData} title="Domain Coverage Analysis" />
-        <TrendChart data={trendData} frameworks={Object.keys(FRAMEWORK_NAMES)} title="Maturity Evolution" />
+        <MaturityRadar data={radarData} title={t('reports_domain_coverage')} />
+        <TrendChart data={trendData} frameworks={Object.keys(FRAMEWORK_NAMES)} title={t('reports_maturity_evolution')} />
       </div>
 
       {/* Assessment History */}
@@ -223,12 +227,12 @@ export default function Reports() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
-            Assessment History
+            {t('reports_assessment_history')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {completed.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No completed assessments to report on.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t('reports_no_completed')}</p>
           ) : (
             <div className="space-y-2">
               {completed.map(a => {
