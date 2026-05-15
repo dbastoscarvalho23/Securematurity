@@ -119,6 +119,9 @@
         },
         {
           "data.customer_id": "{{user.customer_id}}"
+        },
+        {
+          "data.assigned_to": "{{user.email}}"
         }
       ]
     },
@@ -131,6 +134,9 @@
         },
         {
           "data.customer_id": "{{user.customer_id}}"
+        },
+        {
+          "data.assigned_to": "{{user.email}}"
         }
       ]
     },
@@ -142,7 +148,19 @@
           }
         },
         {
-          "data.customer_id": "{{user.customer_id}}"
+          "user_condition": {
+            "role": "customer_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            {
+              "created_by": "{{user.email}}"
+            }
+          ]
         }
       ]
     }
