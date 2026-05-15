@@ -39,7 +39,8 @@ const STATUS_ICONS = {
 
 const REC_STATUS_OPTIONS = ['pending', 'in_progress', 'completed', 'dismissed'];
 
-function RecommendationRow({ rec, tasks, onAddTask, onEditTask, onStatusChange, onRecStatusChange, t }) {
+function RecommendationRow({ rec, tasks, onAddTask, onEditTask, onStatusChange, onRecStatusChange }) {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const linked = tasks.filter(t => t.recommendation_id === rec.id);
   const done = linked.filter(t => t.status === 'done').length;
