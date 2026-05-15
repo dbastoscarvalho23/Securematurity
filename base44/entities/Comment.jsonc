@@ -31,21 +31,7 @@
     "content"
   ],
   "rls": {
-    "create": {
-      "data.task_id": {
-        "$in": {
-          "$query": {
-            "collection": "Task",
-            "filter": {
-              "data.customer_id": "{{user.customer_id}}"
-            },
-            "select": [
-              "id"
-            ]
-          }
-        }
-      }
-    },
+    "create": null,
     "read": null,
     "update": {
       "$or": [
@@ -65,7 +51,16 @@
                   "$query": {
                     "collection": "Task",
                     "filter": {
-                      "data.customer_id": "{{user.customer_id}}"
+                      "$or": [
+                        {
+                          "user_condition": {
+                            "role": "admin"
+                          }
+                        },
+                        {
+                          "data.customer_id": "{{user.customer_id}}"
+                        }
+                      ]
                     },
                     "select": [
                       "id"
@@ -96,7 +91,16 @@
                   "$query": {
                     "collection": "Task",
                     "filter": {
-                      "data.customer_id": "{{user.customer_id}}"
+                      "$or": [
+                        {
+                          "user_condition": {
+                            "role": "admin"
+                          }
+                        },
+                        {
+                          "data.customer_id": "{{user.customer_id}}"
+                        }
+                      ]
                     },
                     "select": [
                       "id"
