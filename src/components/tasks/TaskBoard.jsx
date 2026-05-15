@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { useLanguage } from '@/lib/LanguageContext';
 import TaskCard from './TaskCard';
 
-const COLUMNS = [
-  { id: 'todo',        label: 'To-Do',       color: 'text-muted-foreground', dot: 'bg-muted-foreground', bg: 'bg-muted/30' },
-  { id: 'in_progress', label: 'In Progress',  color: 'text-chart-4',          dot: 'bg-chart-4',          bg: 'bg-chart-4/5' },
-  { id: 'blocked',     label: 'Blocked',      color: 'text-destructive',      dot: 'bg-destructive',      bg: 'bg-destructive/5' },
-  { id: 'done',        label: 'Done',         color: 'text-chart-2',          dot: 'bg-chart-2',          bg: 'bg-chart-2/5' },
+const COLUMN_CONFIG = [
+  { id: 'todo',        i18nKey: 'tasks_status_todo',       color: 'text-muted-foreground', dot: 'bg-muted-foreground', bg: 'bg-muted/30' },
+  { id: 'in_progress', i18nKey: 'tasks_status_in_progress', color: 'text-chart-4',          dot: 'bg-chart-4',          bg: 'bg-chart-4/5' },
+  { id: 'blocked',     i18nKey: 'tasks_status_blocked',     color: 'text-destructive',      dot: 'bg-destructive',      bg: 'bg-destructive/5' },
+  { id: 'done',        i18nKey: 'tasks_status_done',        color: 'text-chart-2',          dot: 'bg-chart-2',          bg: 'bg-chart-2/5' },
 ];
 
 export default function TaskBoard({ tasks, onStatusChange, onEdit, onDelete }) {
+  const { t } = useLanguage();
   const [draggingOver, setDraggingOver] = useState(null);
 
   const handleDragEnd = (result) => {
@@ -26,7 +28,7 @@ export default function TaskBoard({ tasks, onStatusChange, onEdit, onDelete }) {
   return (
     <DragDropContext onDragEnd={handleDragEnd} onDragUpdate={(u) => setDraggingOver(u.destination?.droppableId || null)}>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {COLUMNS.map(col => {
+        {COLUMN_CONFIG.map(col => {
           const colTasks = tasks.filter(t => t.status === col.id);
           const isOver = draggingOver === col.id;
           return (
@@ -34,7 +36,7 @@ export default function TaskBoard({ tasks, onStatusChange, onEdit, onDelete }) {
               {/* Column header */}
               <div className="flex items-center gap-2 px-1">
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${col.dot}`} />
-                <h3 className={`text-sm font-semibold ${col.color}`}>{col.label}</h3>
+                <h3 className={`text-sm font-semibold ${col.color}`}>{t(col.i18nKey)}</h3>
                 <Badge variant="secondary" className="ml-auto text-xs">{colTasks.length}</Badge>
               </div>
 
