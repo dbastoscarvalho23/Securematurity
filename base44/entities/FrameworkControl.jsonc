@@ -55,7 +55,11 @@
         "role": "admin"
       }
     },
-    "read": {},
+    "read": {
+      "user_condition": {
+        "$ne": "anonymous"
+      }
+    },
     "update": {
       "user_condition": {
         "role": "admin"
