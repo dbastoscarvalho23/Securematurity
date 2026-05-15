@@ -62,7 +62,16 @@
   ],
   "rls": {
     "create": {
-      "data.customer_id": "{{user.customer_id}}"
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
+        }
+      ]
     },
     "read": {
       "$or": [
