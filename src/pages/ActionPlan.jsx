@@ -399,7 +399,7 @@ export default function ActionPlan() {
           <div key={priority}>
             <div className="flex items-center gap-2 mb-3">
               {priority === 'critical' && <AlertTriangle className="w-4 h-4 text-destructive" />}
-              <h2 className="text-sm font-semibold capitalize">{priority} Priority</h2>
+              <h2 className="text-sm font-semibold capitalize">{t(`tasks_priority_${priority}`)} {t('action_plan_priority')}</h2>
               <Badge variant="secondary" className="text-xs">{recs.length}</Badge>
             </div>
             <div className="space-y-2">
@@ -435,7 +435,7 @@ export default function ActionPlan() {
         onSave={async (recs) => {
           await base44.entities.Recommendation.bulkCreate(recs);
           queryClient.invalidateQueries({ queryKey: ['recommendations'] });
-          toast.success(`${recs.length} recommendation${recs.length !== 1 ? 's' : ''} added`);
+          toast.success(`${recs.length} ${t('action_plan_recommendations')} added`);
         }}
       />
 
@@ -443,34 +443,34 @@ export default function ActionPlan() {
       <Dialog open={newRecDialog} onOpenChange={setNewRecDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>New Recommendation</DialogTitle>
+            <DialogTitle>{t('action_plan_new_rec_title')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Title *</Label>
-              <Input value={newRecForm.title} onChange={e => setNewRecForm(p => ({ ...p, title: e.target.value }))} placeholder="Recommendation title" />
+              <Label>{t('action_plan_title_label')}</Label>
+              <Input value={newRecForm.title} onChange={e => setNewRecForm(p => ({ ...p, title: e.target.value }))} placeholder={t('action_plan_title_placeholder')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Description *</Label>
-              <Textarea value={newRecForm.description} onChange={e => setNewRecForm(p => ({ ...p, description: e.target.value }))} placeholder="Detailed description" rows={3} />
+              <Label>{t('action_plan_desc_label')}</Label>
+              <Textarea value={newRecForm.description} onChange={e => setNewRecForm(p => ({ ...p, description: e.target.value }))} placeholder={t('action_plan_desc_placeholder')} rows={3} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Priority</Label>
+                <Label>{t('action_plan_priority_label')}</Label>
                 <Select value={newRecForm.priority} onValueChange={v => setNewRecForm(p => ({ ...p, priority: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="critical">Critical</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="critical">{t('tasks_priority_critical')}</SelectItem>
+                    <SelectItem value="high">{t('tasks_priority_high')}</SelectItem>
+                    <SelectItem value="medium">{t('tasks_priority_medium')}</SelectItem>
+                    <SelectItem value="low">{t('tasks_priority_low')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Framework</Label>
+                <Label>{t('action_plan_framework_label')}</Label>
                 <Select value={newRecForm.framework_code} onValueChange={v => setNewRecForm(p => ({ ...p, framework_code: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('common_all')} /></SelectTrigger>
                   <SelectContent>
                     {frameworks.map(fw => <SelectItem key={fw} value={fw}>{fw}</SelectItem>)}
                   </SelectContent>
@@ -479,47 +479,47 @@ export default function ActionPlan() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Effort</Label>
+                <Label>{t('action_plan_effort_label')}</Label>
                 <Select value={newRecForm.effort} onValueChange={v => setNewRecForm(p => ({ ...p, effort: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="low">{t('tasks_priority_low')}</SelectItem>
+                    <SelectItem value="medium">{t('tasks_priority_medium')}</SelectItem>
+                    <SelectItem value="high">{t('tasks_priority_high')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Timeline</Label>
+                <Label>{t('action_plan_timeline_label')}</Label>
                 <Select value={newRecForm.timeline} onValueChange={v => setNewRecForm(p => ({ ...p, timeline: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="immediate">Immediate</SelectItem>
-                    <SelectItem value="short_term">Short Term</SelectItem>
-                    <SelectItem value="medium_term">Medium Term</SelectItem>
-                    <SelectItem value="long_term">Long Term</SelectItem>
+                    <SelectItem value="immediate">{t('action_plan_timeline_immediate')}</SelectItem>
+                    <SelectItem value="short_term">{t('action_plan_timeline_short')}</SelectItem>
+                    <SelectItem value="medium_term">{t('action_plan_timeline_medium')}</SelectItem>
+                    <SelectItem value="long_term">{t('action_plan_timeline_long')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Domain</Label>
-                <Input value={newRecForm.domain} onChange={e => setNewRecForm(p => ({ ...p, domain: e.target.value }))} placeholder="e.g. Access Control" />
+                <Label>{t('action_plan_domain_label')}</Label>
+                <Input value={newRecForm.domain} onChange={e => setNewRecForm(p => ({ ...p, domain: e.target.value }))} placeholder={t('action_plan_domain_placeholder')} />
               </div>
               <div className="space-y-1.5">
-                <Label>Control ID</Label>
-                <Input value={newRecForm.control_id} onChange={e => setNewRecForm(p => ({ ...p, control_id: e.target.value }))} placeholder="e.g. A.5.1" />
+                <Label>{t('action_plan_control_label')}</Label>
+                <Input value={newRecForm.control_id} onChange={e => setNewRecForm(p => ({ ...p, control_id: e.target.value }))} placeholder={t('action_plan_control_placeholder')} />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setNewRecDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setNewRecDialog(false)}>{t('action_plan_cancel')}</Button>
             <Button
               onClick={() => createRecMutation.mutate(newRecForm)}
               disabled={createRecMutation.isPending || !newRecForm.title || !newRecForm.description}
             >
-              {createRecMutation.isPending ? 'Creating...' : 'Create'}
+              {createRecMutation.isPending ? t('action_plan_creating') : t('action_plan_create')}
             </Button>
           </DialogFooter>
         </DialogContent>
