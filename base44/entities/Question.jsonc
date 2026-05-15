@@ -65,20 +65,141 @@
   ],
   "rls": {
     "create": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.assessment_id": {
+                "$ne": null
+              }
+            },
+            {
+              "data.assessment_id": {
+                "$in": {
+                  "$query": {
+                    "collection": "Assessment",
+                    "filter": {
+                      "data.customer_id": "{{user.customer_id}}"
+                    },
+                    "select": [
+                      "id"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
     },
-    "read": {},
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.assessment_id": {
+            "$eq": null
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.assessment_id": {
+                "$ne": null
+              }
+            },
+            {
+              "data.assessment_id": {
+                "$in": {
+                  "$query": {
+                    "collection": "Assessment",
+                    "filter": {
+                      "data.customer_id": "{{user.customer_id}}"
+                    },
+                    "select": [
+                      "id"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
     "update": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.assessment_id": {
+                "$ne": null
+              }
+            },
+            {
+              "data.assessment_id": {
+                "$in": {
+                  "$query": {
+                    "collection": "Assessment",
+                    "filter": {
+                      "data.customer_id": "{{user.customer_id}}"
+                    },
+                    "select": [
+                      "id"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
     },
     "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.assessment_id": {
+                "$ne": null
+              }
+            },
+            {
+              "data.assessment_id": {
+                "$in": {
+                  "$query": {
+                    "collection": "Assessment",
+                    "filter": {
+                      "data.customer_id": "{{user.customer_id}}"
+                    },
+                    "select": [
+                      "id"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
     }
   }
 }
