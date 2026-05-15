@@ -25,72 +25,27 @@
     "notify_on_assignment": {
       "type": "boolean",
       "default": true,
-      "description": "Send email when a risk is assigned to an owner"
+      "description": "Send email when a risk or task is assigned to an owner"
     },
     "notify_on_status_change": {
       "type": "boolean",
       "default": true,
-      "description": "Send email when risk status changes"
+      "description": "Send email when risk or task status changes"
+    },
+    "notify_on_document_review": {
+      "type": "boolean",
+      "default": true,
+      "description": "Send email when a document is submitted for review"
+    },
+    "notify_on_document_approval": {
+      "type": "boolean",
+      "default": true,
+      "description": "Send email when a document is approved"
     },
     "additional_recipients": {
       "type": "string",
       "description": "Comma-separated extra email addresses to CC on all notifications"
     }
   },
-  "required": [],
-  "rls": {
-    "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.customer_id": "{{user.customer_id}}"
-        }
-      ]
-    },
-    "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.customer_id": {
-            "$exists": false
-          }
-        },
-        {
-          "data.customer_id": "{{user.customer_id}}"
-        }
-      ]
-    },
-    "update": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.customer_id": "{{user.customer_id}}"
-        }
-      ]
-    },
-    "delete": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.customer_id": "{{user.customer_id}}"
-        }
-      ]
-    }
-  }
+  "required": []
 }
