@@ -47,16 +47,7 @@
           }
         },
         {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "customer_admin"
-              }
-            },
-            {
-              "data.customer_id": "{{user.customer_id}}"
-            }
-          ]
+          "data.customer_id": "{{user.customer_id}}"
         }
       ]
     },
@@ -68,10 +59,12 @@
           }
         },
         {
-          "data.customer_id": "{{user.customer_id}}"
+          "data.customer_id": {
+            "$exists": false
+          }
         },
         {
-          "data.customer_id": null
+          "data.customer_id": "{{user.customer_id}}"
         }
       ]
     },
@@ -83,16 +76,7 @@
           }
         },
         {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "customer_admin"
-              }
-            },
-            {
-              "data.customer_id": "{{user.customer_id}}"
-            }
-          ]
+          "data.customer_id": "{{user.customer_id}}"
         }
       ]
     },
@@ -104,16 +88,7 @@
           }
         },
         {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "customer_admin"
-              }
-            },
-            {
-              "data.customer_id": "{{user.customer_id}}"
-            }
-          ]
+          "data.customer_id": "{{user.customer_id}}"
         }
       ]
     }
