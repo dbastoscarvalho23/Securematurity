@@ -40,9 +40,6 @@
   "required": [],
   "rls": {
     "create": {
-      "data.customer_id": "{{user.customer_id}}"
-    },
-    "read": {
       "$or": [
         {
           "user_condition": {
@@ -54,6 +51,7 @@
         }
       ]
     },
+    "read": null,
     "update": {
       "$or": [
         {
@@ -67,9 +65,16 @@
       ]
     },
     "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
+        }
+      ]
     }
   }
 }
