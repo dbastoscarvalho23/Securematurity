@@ -25,7 +25,7 @@ const FRAMEWORK_NAMES = {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const customerId = user?.customer_id;
 
@@ -87,7 +87,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-sm">{t('dashboard_subtitle')}</p>
         <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-          {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          {new Date().toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
       </div>
 
