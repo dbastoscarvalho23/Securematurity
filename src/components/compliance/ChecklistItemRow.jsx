@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 
-export default function ChecklistItemRow({ item, queryKey }) {
+export default function ChecklistItemRow({ item, queryKey, displayText }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -57,7 +57,7 @@ export default function ChecklistItemRow({ item, queryKey }) {
         </button>
         <div className="flex-1 min-w-0">
           <p className={cn('text-sm leading-snug', item.status === 'done' && 'line-through text-muted-foreground', item.status === 'not_applicable' && 'text-muted-foreground')}>
-            {item.task_text}
+            {displayText || item.task_text}
           </p>
           {!editing && (item.owner || item.due_date || item.notes) && (
             <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-muted-foreground">

@@ -193,9 +193,14 @@ const RJCS_TEMPLATE_PT = [
   },
 ];
 
-function SectionCard({ section, items, queryKey }) {
+function SectionCard({ section, items, queryKey, template }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(true);
+  // Build a map from task_order -> translated text using the template for this section
+  const translatedTasks = {};
+  if (template) {
+    template.tasks.forEach((text, idx) => { translatedTasks[idx + 1] = text; });
+  }
   const total = items.length;
   const done = items.filter(i => i.status === 'done').length;
   const inProgress = items.filter(i => i.status === 'in_progress').length;
@@ -231,7 +236,7 @@ function SectionCard({ section, items, queryKey }) {
       {expanded && (
         <CardContent className="pt-0 space-y-2">
           {items.map(item => (
-            <ChecklistItemRow key={item.id} item={item} queryKey={queryKey} />
+            <ChecklistItemRow key={item.id} item={item} queryKey={queryKey} displayText={translatedTasks[item.task_order]} />
           ))}
         </CardContent>
       )}
@@ -367,9 +372,13 @@ export default function ComplianceJourney() {
           </div>
 
           <div className="space-y-4">
-            {sections.map(sec => (
-              <SectionCard key={sec} section={sec} items={grouped[sec]} queryKey={queryKey} />
-            ))}
+            {sections.map(sec => {
+              const secOrder = grouped[sec][0]?.section_order;
+              const templateSection = RJCS_TEMPLATE.find(t => t.section_order === secOrder);
+              return (
+                <SectionCard key={sec} section={templateSection?.section || sec} items={grouped[sec]} queryKey={queryKey} template={templateSection} />
+              );
+            })}
           </div>
 
           {isAdmin && (
