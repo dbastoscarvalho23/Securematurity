@@ -619,7 +619,7 @@ export const translations = {
     // Sidebar items
     nav_dashboard: 'Painel',
     nav_customers: 'Clientes',
-    nav_compliance_journey: 'Jornada de Conformidade',
+    nav_compliance_journey: 'Jornada Conformidade',
     nav_assessments: 'Avaliações',
     nav_evidence: 'Evidências',
     nav_tasks: 'Tarefas',
