@@ -235,7 +235,7 @@ function SectionCard({ section, items, queryKey, template }) {
       </CardHeader>
       {expanded && (
         <CardContent className="pt-0 space-y-2">
-          {items.map(item => (
+          {[...items].sort((a, b) => (a.task_order ?? 0) - (b.task_order ?? 0)).map(item => (
             <ChecklistItemRow key={item.id} item={item} queryKey={queryKey} displayText={translatedTasks[item.task_order]} />
           ))}
         </CardContent>
