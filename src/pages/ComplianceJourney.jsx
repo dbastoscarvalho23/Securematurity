@@ -217,7 +217,7 @@ function SectionCard({ section, items, queryKey, template }) {
               'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0',
               progress === 100 ? 'bg-accent/20 text-accent' : 'bg-primary/10 text-primary'
             )}>
-              {items[0]?.section_order ?? '?'}
+              {section.match(/^([A-H])\./)?.[1] ?? items[0]?.section_order ?? '?'}
             </div>
             <div className="min-w-0">
               <CardTitle className="text-sm font-semibold leading-tight">
