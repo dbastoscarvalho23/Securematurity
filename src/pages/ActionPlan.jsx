@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import {
   Plus, Sparkles, Search, CheckCircle2, Circle, ArrowUpCircle,
   AlertTriangle, CalendarDays, User, ChevronDown, ChevronUp,
-  Filter, ListTodo, ShieldCheck, Loader2
+  Filter, ListTodo, ShieldCheck, Loader2, Languages
 } from 'lucide-react';
 import TaskFormDialog from '@/components/tasks/TaskFormDialog';
 import AIRecommendationDialog from '@/components/recommendations/AIRecommendationDialog';
@@ -166,6 +166,8 @@ export default function ActionPlan() {
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [newRecDialog, setNewRecDialog] = useState(false);
   const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translateProgress, setTranslateProgress] = useState({ done: 0, total: 0 });
   const [newRecForm, setNewRecForm] = useState({
     title: '', description: '', priority: 'medium', framework_code: '',
     domain: '', control_id: '', effort: 'medium', timeline: 'short_term',
@@ -255,6 +257,64 @@ export default function ActionPlan() {
     setDialogOpen(true);
   };
 
+  const handleTranslate = async () => {
+    const untranslated = recommendations.filter(r => !r.title_pt);
+    if (untranslated.length === 0) {
+      toast.success(t('action_plan_all_translated'));
+      return;
+    }
+    if (!confirm(`${t('action_plan_translate_confirm_prefix')} ${untranslated.length} ${t('action_plan_translate_confirm_suffix')}`)) return;
+
+    setIsTranslating(true);
+    setTranslateProgress({ done: 0, total: untranslated.length });
+
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < untranslated.length; i += BATCH_SIZE) {
+      const batch = untranslated.slice(i, i + BATCH_SIZE);
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a professional translator specialising in European Portuguese (Portugal), not Brazilian Portuguese.
+Translate the following cybersecurity recommendation titles and descriptions to European Portuguese (Portugal).
+Use formal register ("a organização"), European vocabulary and spelling.
+
+Recommendations to translate (JSON array):
+${JSON.stringify(batch.map(r => ({ id: r.id, title: r.title, description: r.description })), null, 2)}
+
+Return only valid JSON with the translations.`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            translations: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  title_pt: { type: 'string' },
+                  description_pt: { type: 'string' },
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (result?.translations) {
+        await Promise.all(result.translations.map(tr =>
+          base44.entities.Recommendation.update(tr.id, {
+            title_pt: tr.title_pt,
+            description_pt: tr.description_pt,
+          })
+        ));
+      }
+
+      setTranslateProgress({ done: Math.min(i + BATCH_SIZE, untranslated.length), total: untranslated.length });
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+    setIsTranslating(false);
+    toast.success(`${t('action_plan_translated_success')} ${untranslated.length}.`);
+  };
+
   const handleCheckDuplicates = async () => {
     setIsCheckingDuplicates(true);
     const normalize = str => str?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
@@ -306,6 +366,12 @@ export default function ActionPlan() {
           {t('action_plan_subtitle')} · <span className="text-foreground font-medium">{recommendations.length}</span> {t('action_plan_recommendations')}
         </p>
         <div className="flex gap-2 items-center flex-wrap">
+          <Button onClick={handleTranslate} variant="outline" disabled={isTranslating} className="gap-2">
+            {isTranslating
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('action_plan_translating')} {translateProgress.done}/{translateProgress.total}</>
+              : <><Languages className="w-4 h-4" /> {t('action_plan_translate_pt')}</>
+            }
+          </Button>
           <Button onClick={handleCheckDuplicates} variant="outline" disabled={isCheckingDuplicates} className="gap-2">
             {isCheckingDuplicates ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
             {t('action_plan_check_duplicates')}

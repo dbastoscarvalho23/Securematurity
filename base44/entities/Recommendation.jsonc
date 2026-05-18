@@ -33,9 +33,17 @@
       "type": "string",
       "description": "Short recommendation title"
     },
+    "title_pt": {
+      "type": "string",
+      "description": "Recommendation title in European Portuguese"
+    },
     "description": {
       "type": "string",
       "description": "Detailed recommendation"
+    },
+    "description_pt": {
+      "type": "string",
+      "description": "Detailed recommendation in European Portuguese"
     },
     "current_level": {
       "type": "number"
