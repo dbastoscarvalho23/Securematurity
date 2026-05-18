@@ -189,11 +189,9 @@ Return only valid JSON with the translations.`,
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">
-          {t('qb_subtitle')}
-        </p>
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <p className="text-muted-foreground text-sm">{t('qb_subtitle')}</p>
+        <div className="flex gap-2 items-center flex-wrap">
           <Button variant="outline" onClick={handleTranslate} disabled={isTranslating} className="gap-2">
             {isTranslating
               ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('qb_translating')} {translateProgress.done}/{translateProgress.total}</>
