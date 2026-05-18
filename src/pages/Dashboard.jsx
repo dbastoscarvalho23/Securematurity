@@ -43,14 +43,6 @@ export default function Dashboard() {
     enabled: isAdmin || !!customerId,
   });
 
-  const { data: recommendations = [] } = useQuery({
-    queryKey: ['recommendations', user?.email, customerId],
-    queryFn: () => isAdmin
-      ? base44.entities.Recommendation.list('-created_date', 50)
-      : base44.entities.Recommendation.filter({ customer_id: customerId }, '-created_date', 50),
-    enabled: isAdmin || !!customerId,
-  });
-
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks', user?.email, customerId],
     queryFn: () => isAdmin
@@ -89,8 +81,6 @@ export default function Dashboard() {
       return point;
     });
 
-  const openRecs = recommendations.filter(r => r.status === 'pending' || r.status === 'in_progress').length;
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -118,13 +108,6 @@ export default function Dashboard() {
           subtitle={`${assessments.filter(a => a.status === 'in_progress').length} ${t('dashboard_in_progress')}`}
           icon={ClipboardCheck}
           href="/assessments"
-        />
-        <StatCard
-          title={t('dashboard_open_recommendations')}
-          value={openRecs}
-          subtitle={`${recommendations.filter(r => r.priority === 'critical').length} ${t('dashboard_critical')}`}
-          icon={ShieldAlert}
-          href="/recommendations"
         />
       </div>
 
