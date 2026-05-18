@@ -5,10 +5,40 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Loader2, CheckSquare, Square } from 'lucide-react';
+import { Sparkles, Loader2, CheckSquare, Square, AlertTriangle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { writeAuditLog } from '@/lib/auditLog';
+
+// Normalize text for comparison
+const normalize = (str) => str?.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim() || '';
+
+// Tokenize into words
+const tokenize = (str) => new Set(normalize(str).split(' ').filter(w => w.length > 3));
+
+// Jaccard similarity between two strings (word overlap)
+const jaccardSimilarity = (a, b) => {
+  const setA = tokenize(a);
+  const setB = tokenize(b);
+  if (setA.size === 0 || setB.size === 0) return 0;
+  const intersection = new Set([...setA].filter(x => setB.has(x)));
+  const union = new Set([...setA, ...setB]);
+  return intersection.size / union.size;
+};
+
+// Returns { isDuplicate, isSimilar, matchedQuestion } for a generated question vs existing
+const checkDuplicate = (generated, existingQuestions) => {
+  for (const existing of existingQuestions) {
+    const simEn = jaccardSimilarity(generated.question_text, existing.question_text);
+    const simPt = generated.question_text_pt && existing.question_text_pt
+      ? jaccardSimilarity(generated.question_text_pt, existing.question_text_pt)
+      : 0;
+    const sim = Math.max(simEn, simPt);
+    if (sim >= 0.75) return { isDuplicate: true, similarity: sim, matchedQuestion: existing };
+    if (sim >= 0.45) return { isSimilar: true, similarity: sim, matchedQuestion: existing };
+  }
+  return { isDuplicate: false, isSimilar: false };
+};
 
 const FRAMEWORKS = [
   { code: 'NIS2', name: 'NIS2' },
@@ -118,20 +148,30 @@ CRITICAL RULES:
 
     const rawQs = result?.questions || [];
 
-    // Deduplicate against existing questions using normalized text comparison
-    const normalize = (str) => str?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
-    const existingNormalized = new Set(existingQuestions.map(q => normalize(q.question_text)));
+    // Check each generated question against existing ones
+    const seenNormalized = new Set(existingQuestions.map(q => normalize(q.question_text)));
+    let duplicateCount = 0;
 
-    const qs = rawQs.filter(q => {
+    const qs = [];
+    for (const q of rawQs) {
       const norm = normalize(q.question_text);
-      // Also deduplicate within the generated batch itself
-      if (existingNormalized.has(norm)) return false;
-      existingNormalized.add(norm); // prevent duplicates within the batch
-      return true;
-    });
+      // Hard deduplicate within the batch itself (exact normalized match)
+      if (seenNormalized.has(norm)) {
+        duplicateCount++;
+        continue;
+      }
+      seenNormalized.add(norm);
+
+      const { isDuplicate, isSimilar, similarity, matchedQuestion } = checkDuplicate(q, existingQuestions);
+      if (isDuplicate) {
+        duplicateCount++;
+        continue; // block exact/near-exact duplicates (≥75% similarity)
+      }
+      qs.push({ ...q, _isSimilar: isSimilar, _similarity: similarity, _matchedQuestion: matchedQuestion });
+    }
 
     setSuggestions(qs);
-    setDuplicatesRemoved(rawQs.length - qs.length);
+    setDuplicatesRemoved(duplicateCount);
     // Select all by default
     const sel = {};
     qs.forEach((_, i) => { sel[i] = true; });
@@ -147,7 +187,10 @@ CRITICAL RULES:
   };
 
   const handleSave = async () => {
-    const toSave = suggestions.filter((_, i) => selected[i]);
+    // Final safety check: strip internal metadata before saving
+    const toSave = suggestions
+      .filter((_, i) => selected[i])
+      .map(({ _isSimilar, _similarity, _matchedQuestion, ...q }) => q);
     if (toSave.length === 0) return;
     setIsSaving(true);
     await onSave(toSave);
@@ -235,9 +278,13 @@ CRITICAL RULES:
                   onClick={() => setSelected(s => ({ ...s, [i]: !s[i] }))}
                   className={cn(
                     "p-4 rounded-lg border cursor-pointer transition-all",
-                    selected[i]
-                      ? "border-primary/40 bg-primary/5"
-                      : "border-border opacity-60 hover:opacity-80"
+                    q._isSimilar
+                      ? selected[i]
+                        ? "border-amber-400/60 bg-amber-50/50 dark:bg-amber-900/10"
+                        : "border-amber-300/40 opacity-70 hover:opacity-90"
+                      : selected[i]
+                        ? "border-primary/40 bg-primary/5"
+                        : "border-border opacity-60 hover:opacity-80"
                   )}
                 >
                   <div className="flex items-start gap-3">
@@ -256,8 +303,19 @@ CRITICAL RULES:
                         {q.control_id && (
                           <span className="text-xs font-mono text-muted-foreground">{q.control_id}</span>
                         )}
+                        {q._isSimilar && (
+                          <Badge variant="outline" className="text-xs gap-1 border-amber-400/60 text-amber-600 bg-amber-50">
+                            <AlertTriangle className="w-3 h-3" />
+                            Similar to existing ({Math.round(q._similarity * 100)}%)
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm font-medium leading-snug">{q.question_text}</p>
+                      {q._isSimilar && q._matchedQuestion && (
+                        <p className="text-xs text-amber-600/80 mt-1 bg-amber-50 rounded px-2 py-1">
+                          <span className="font-medium">Similar existing:</span> {q._matchedQuestion.question_text}
+                        </p>
+                      )}
                       {q.guidance && (
                         <p className="text-xs text-muted-foreground mt-1 italic">{q.guidance}</p>
                       )}
