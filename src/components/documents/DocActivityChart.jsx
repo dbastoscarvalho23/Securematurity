@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { format, eachDayOfInterval, subDays, startOfWeek, eachWeekOfInterval } from 'date-fns';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function DocActivityChart({ docs, versions, rangeDays, isLoading }) {
+  const { t } = useLanguage();
   const chartData = useMemo(() => {
     const today = new Date();
     const useWeeks = !rangeDays || rangeDays > 60;
@@ -50,12 +52,12 @@ export default function DocActivityChart({ docs, versions, rangeDays, isLoading 
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-chart-1" />
-          Document Activity Over Time
+          {t('doc_audit_activity_title')}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="h-56 flex items-center justify-center text-muted-foreground text-sm">Loading...</div>
+          <div className="h-56 flex items-center justify-center text-muted-foreground text-sm">{t('doc_audit_activity_loading')}</div>
         ) : (
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -77,8 +79,8 @@ export default function DocActivityChart({ docs, versions, rangeDays, isLoading 
                 labelStyle={{ fontWeight: 600 }}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Area type="monotone" dataKey="created" name="Documents Created" stroke="hsl(var(--chart-1))" fill="url(#colorCreated)" strokeWidth={2} dot={false} />
-              <Area type="monotone" dataKey="updated" name="Versions Saved" stroke="hsl(var(--chart-5))" fill="url(#colorUpdated)" strokeWidth={2} dot={false} />
+              <Area type="monotone" dataKey="created" name={t('doc_audit_series_created')} stroke="hsl(var(--chart-1))" fill="url(#colorCreated)" strokeWidth={2} dot={false} />
+              <Area type="monotone" dataKey="updated" name={t('doc_audit_series_versions')} stroke="hsl(var(--chart-5))" fill="url(#colorUpdated)" strokeWidth={2} dot={false} />
             </AreaChart>
           </ResponsiveContainer>
         )}

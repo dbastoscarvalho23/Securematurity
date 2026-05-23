@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Users } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const STATUS_COLORS = {
   approved: 'hsl(var(--chart-2))',
@@ -12,6 +13,7 @@ const STATUS_COLORS = {
 };
 
 export default function DocCustomerBreakdown({ docs, customers, isAdmin, user }) {
+  const { t } = useLanguage();
   const breakdown = useMemo(() => {
     if (isAdmin) {
       // Group by customer
@@ -36,7 +38,7 @@ export default function DocCustomerBreakdown({ docs, customers, isAdmin, user })
     }
   }, [docs, isAdmin]);
 
-  const title = isAdmin ? 'Documents by Customer' : 'Documents by Level';
+  const title = isAdmin ? t('doc_audit_breakdown_by_customer') : t('doc_audit_breakdown_by_level');
 
   return (
     <Card>
@@ -55,10 +57,10 @@ export default function DocCustomerBreakdown({ docs, customers, isAdmin, user })
             <Tooltip
               contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }}
             />
-            <Bar dataKey="approved" name="Approved" stackId="a" fill="hsl(var(--chart-2))" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="under_review" name="Under Review" stackId="a" fill="hsl(var(--chart-3))" />
-            <Bar dataKey="draft" name="Draft" stackId="a" fill="hsl(var(--muted-foreground))" opacity={0.5} />
-            <Bar dataKey="deprecated" name="Deprecated" stackId="a" fill="hsl(var(--destructive))" opacity={0.6} radius={[0, 4, 4, 0]} />
+            <Bar dataKey="approved" name={t('doc_audit_bar_approved')} stackId="a" fill="hsl(var(--chart-2))" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="under_review" name={t('doc_audit_bar_under_review')} stackId="a" fill="hsl(var(--chart-3))" />
+            <Bar dataKey="draft" name={t('doc_audit_bar_draft')} stackId="a" fill="hsl(var(--muted-foreground))" opacity={0.5} />
+            <Bar dataKey="deprecated" name={t('doc_audit_bar_deprecated')} stackId="a" fill="hsl(var(--destructive))" opacity={0.6} radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
 
@@ -67,17 +69,17 @@ export default function DocCustomerBreakdown({ docs, customers, isAdmin, user })
           {breakdown.map(row => (
             <div key={row.name} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-muted/20 text-sm">
               <p className="flex-1 font-medium truncate">{row.name}</p>
-              <span className="text-xs text-muted-foreground">{row.total} total</span>
+              <span className="text-xs text-muted-foreground">{row.total} {t('doc_audit_breakdown_total')}</span>
               {row.under_review > 0 && (
-                <Badge className="bg-chart-3/10 text-chart-3 border-chart-3/20 text-xs">{row.under_review} pending</Badge>
+                <Badge className="bg-chart-3/10 text-chart-3 border-chart-3/20 text-xs">{row.under_review} {t('doc_audit_breakdown_pending')}</Badge>
               )}
               {row.approved > 0 && (
-                <Badge className="bg-chart-2/10 text-chart-2 border-chart-2/20 text-xs">{row.approved} approved</Badge>
+                <Badge className="bg-chart-2/10 text-chart-2 border-chart-2/20 text-xs">{row.approved} {t('doc_audit_breakdown_approved')}</Badge>
               )}
             </div>
           ))}
           {breakdown.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">No data available.</p>
+            <p className="text-sm text-muted-foreground text-center py-4">{t('doc_audit_breakdown_no_data')}</p>
           )}
         </div>
       </CardContent>

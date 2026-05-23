@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollText } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const STATUS_STYLES = {
   draft: 'bg-muted text-muted-foreground',
@@ -19,6 +20,7 @@ function formatTs(dateStr) {
 }
 
 export default function DocAuditTable({ docs, versions, scopedDocIds, cutoff }) {
+  const { t } = useLanguage();
   const [show, setShow] = useState(20);
 
   // Build unified timeline of events
@@ -63,8 +65,8 @@ export default function DocAuditTable({ docs, versions, scopedDocIds, cutoff }) 
   }, [docs, versions, scopedDocIds, cutoff]);
 
   const TYPE_STYLES = {
-    created: { label: 'Created', cls: 'bg-chart-1/10 text-chart-1' },
-    version_saved: { label: 'Version Saved', cls: 'bg-chart-5/10 text-chart-5' },
+    created: { label: t('doc_audit_event_created'), cls: 'bg-chart-1/10 text-chart-1' },
+    version_saved: { label: t('doc_audit_event_version_saved'), cls: 'bg-chart-5/10 text-chart-5' },
   };
 
   return (
@@ -72,14 +74,14 @@ export default function DocAuditTable({ docs, versions, scopedDocIds, cutoff }) 
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <ScrollText className="w-4 h-4 text-muted-foreground" />
-          Recent Document Activity
-          <span className="text-sm font-normal text-muted-foreground ml-1">({events.length} events)</span>
+          {t('doc_audit_table_title')}
+          <span className="text-sm font-normal text-muted-foreground ml-1">({events.length} {t('doc_audit_table_events')})</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         {events.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground text-sm">
-            No document activity found for the selected period.
+            {t('doc_audit_table_empty')}
           </div>
         ) : (
           <>

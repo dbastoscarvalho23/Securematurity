@@ -9,16 +9,18 @@ import { FileText, GitBranch, Clock, CheckCircle } from 'lucide-react';
 import DocActivityChart from '@/components/documents/DocActivityChart';
 import DocCustomerBreakdown from '@/components/documents/DocCustomerBreakdown';
 import DocAuditTable from '@/components/documents/DocAuditTable';
+import { useLanguage } from '@/lib/LanguageContext';
 
-const RANGES = [
-  { label: 'Last 30 days', days: 30 },
-  { label: 'Last 60 days', days: 60 },
-  { label: 'Last 90 days', days: 90 },
-  { label: 'All time', days: null },
+const RANGE_KEYS = [
+  { key: 'doc_audit_range_30', days: 30 },
+  { key: 'doc_audit_range_60', days: 60 },
+  { key: 'doc_audit_range_90', days: 90 },
+  { key: 'doc_audit_range_all', days: null },
 ];
 
 export default function DocumentAuditTrail() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const isCustomerAdmin = user?.role === 'customer_admin';
   const customerId = user?.customer_id;
@@ -100,16 +102,16 @@ export default function DocumentAuditTrail() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 justify-between">
         <p className="text-sm text-muted-foreground">
-          Security document activity and history
+          {t('doc_audit_subtitle')}
         </p>
         <div className="flex items-center gap-2">
           {isAdmin && (
             <Select value={filterCustomer} onValueChange={setFilterCustomer}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="All Customers" />
+                <SelectValue placeholder={t('doc_audit_all_customers')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Customers</SelectItem>
+                <SelectItem value="all">{t('doc_audit_all_customers')}</SelectItem>
                 {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -119,8 +121,8 @@ export default function DocumentAuditTrail() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {RANGES.map(r => (
-                <SelectItem key={String(r.days)} value={String(r.days)}>{r.label}</SelectItem>
+              {RANGE_KEYS.map(r => (
+                <SelectItem key={String(r.days)} value={String(r.days)}>{t(r.key)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -129,10 +131,10 @@ export default function DocumentAuditTrail() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard icon={FileText} label="Total Documents" value={totalDocs} color="text-chart-1" bg="bg-chart-1/10" />
-        <KpiCard icon={GitBranch} label="Version Updates" value={totalVersions} color="text-chart-5" bg="bg-chart-5/10" />
-        <KpiCard icon={Clock} label="Pending Approvals" value={pendingApprovals} color="text-chart-3" bg="bg-chart-3/10" />
-        <KpiCard icon={CheckCircle} label="Approved" value={approvedDocs} color="text-chart-2" bg="bg-chart-2/10" />
+        <KpiCard icon={FileText} label={t('doc_audit_kpi_total_docs')} value={totalDocs} color="text-chart-1" bg="bg-chart-1/10" />
+        <KpiCard icon={GitBranch} label={t('doc_audit_kpi_versions')} value={totalVersions} color="text-chart-5" bg="bg-chart-5/10" />
+        <KpiCard icon={Clock} label={t('doc_audit_kpi_pending')} value={pendingApprovals} color="text-chart-3" bg="bg-chart-3/10" />
+        <KpiCard icon={CheckCircle} label={t('doc_audit_kpi_approved')} value={approvedDocs} color="text-chart-2" bg="bg-chart-2/10" />
       </div>
 
       {/* Activity Chart */}
