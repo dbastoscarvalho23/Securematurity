@@ -103,7 +103,7 @@ export default function DocAuditTable({ docs, versions, scopedDocIds, cutoff }) 
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      by <span className="font-medium">{ev.actor || '—'}</span>
+                      {t('doc_audit_table_by')} <span className="font-medium">{ev.actor || '—'}</span>
                       {ev.customer && <span> · {ev.customer}</span>}
                       {ev.note && <span> · {ev.note}</span>}
                     </p>
@@ -120,7 +120,7 @@ export default function DocAuditTable({ docs, versions, scopedDocIds, cutoff }) 
                   className="text-xs text-primary hover:underline"
                   onClick={() => setShow(s => s + 20)}
                 >
-                  Show more ({events.length - show} remaining)
+                  {t('doc_audit_table_show_more')} ({events.length - show} {t('doc_audit_table_remaining')})
                 </button>
               </div>
             )}
