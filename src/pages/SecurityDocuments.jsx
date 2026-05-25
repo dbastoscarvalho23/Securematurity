@@ -18,10 +18,10 @@ import ApprovalDialog from '@/components/documents/ApprovalDialog';
 import NominationsPanel from '@/components/documents/NominationsPanel';
 
 const LEVEL_CONFIGS = [
-  { id: 'policy',    labelKey: 'docs_level1_label', sublabelKey: 'docs_level1_sublabel', exampleKeys: ['docs_level1_ex1','docs_level1_ex2','docs_level1_ex3'], icon: Shield,   color: 'text-chart-1', bg: 'bg-chart-1/10', border: 'border-chart-1/20' },
-  { id: 'standard',  labelKey: 'docs_level2_label', sublabelKey: 'docs_level2_sublabel', exampleKeys: ['docs_level2_ex1','docs_level2_ex2','docs_level2_ex3'], icon: BookOpen, color: 'text-chart-2', bg: 'bg-chart-2/10', border: 'border-chart-2/20' },
-  { id: 'procedure', labelKey: 'docs_level3_label', sublabelKey: 'docs_level3_sublabel', exampleKeys: ['docs_level3_ex1','docs_level3_ex2','docs_level3_ex3'], icon: Workflow, color: 'text-chart-4', bg: 'bg-chart-4/10', border: 'border-chart-4/20' },
-  { id: 'playbook',  labelKey: 'docs_level4_label', sublabelKey: 'docs_level4_sublabel', exampleKeys: ['docs_level4_ex1','docs_level4_ex2','docs_level4_ex3'], icon: Zap,      color: 'text-chart-5', bg: 'bg-chart-5/10', border: 'border-chart-5/20' },
+  { id: 'policy',    labelKey: 'docs_level1_label', sublabelKey: 'docs_level1_sublabel', statLabelKey: 'docs_stat_policies',  exampleKeys: ['docs_level1_ex1','docs_level1_ex2','docs_level1_ex3'], icon: Shield,   color: 'text-chart-1', bg: 'bg-chart-1/10', border: 'border-chart-1/20' },
+  { id: 'standard',  labelKey: 'docs_level2_label', sublabelKey: 'docs_level2_sublabel', statLabelKey: 'docs_stat_standards',  exampleKeys: ['docs_level2_ex1','docs_level2_ex2','docs_level2_ex3'], icon: BookOpen, color: 'text-chart-2', bg: 'bg-chart-2/10', border: 'border-chart-2/20' },
+  { id: 'procedure', labelKey: 'docs_level3_label', sublabelKey: 'docs_level3_sublabel', statLabelKey: 'docs_stat_procedures', exampleKeys: ['docs_level3_ex1','docs_level3_ex2','docs_level3_ex3'], icon: Workflow, color: 'text-chart-4', bg: 'bg-chart-4/10', border: 'border-chart-4/20' },
+  { id: 'playbook',  labelKey: 'docs_level4_label', sublabelKey: 'docs_level4_sublabel', statLabelKey: 'docs_stat_playbooks',  exampleKeys: ['docs_level4_ex1','docs_level4_ex2','docs_level4_ex3'], icon: Zap,      color: 'text-chart-5', bg: 'bg-chart-5/10', border: 'border-chart-5/20' },
 ];
 
 const STATUS_STYLES = {
@@ -40,6 +40,7 @@ export default function SecurityDocuments() {
     ...cfg,
     label: t(cfg.labelKey),
     sublabel: t(cfg.sublabelKey),
+    statLabel: t(cfg.statLabelKey),
     examples: cfg.exampleKeys.map(k => t(k)),
   }));
 
@@ -360,7 +361,7 @@ export default function SecurityDocuments() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{count}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{level.id}s</p>
+                  <p className="text-xs text-muted-foreground">{level.statLabel}</p>
                 </div>
               </CardContent>
             </Card>

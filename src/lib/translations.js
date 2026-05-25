@@ -333,6 +333,10 @@ export const translations = {
     docs_replace: 'Replace',
     docs_add_ref_link: 'Add reference link',
     docs_upload_doc: 'Upload reference document',
+    docs_stat_policies: 'Policies',
+    docs_stat_standards: 'Standards',
+    docs_stat_procedures: 'Procedures',
+    docs_stat_playbooks: 'Playbooks',
     // Evidence page
     evidence_total_files: 'Total Evidence Files',
     evidence_assessments_with: 'Assessments with Evidence',
@@ -1071,6 +1075,10 @@ export const translations = {
     docs_replace: 'Substituir',
     docs_add_ref_link: 'Adicionar link de referência',
     docs_upload_doc: 'Carregar documento de referência',
+    docs_stat_policies: 'Políticas',
+    docs_stat_standards: 'Normas',
+    docs_stat_procedures: 'Procedimentos',
+    docs_stat_playbooks: 'Playbooks',
     // Evidence page
     evidence_total_files: 'Total de Ficheiros de Evidência',
     evidence_assessments_with: 'Avaliações com Evidências',
