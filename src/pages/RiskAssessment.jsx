@@ -192,18 +192,41 @@ export default function RiskAssessment() {
         <p className="text-sm text-muted-foreground">
           {t('risk_subtitle')} · <span className="text-foreground font-medium">{scoped.length}</span> {t('common_total')}
         </p>
-        <div className="flex items-center gap-2">
-          <Button variant={view === 'list' ? 'default' : 'outline'} size="sm" onClick={() => setView('list')}>{t('risk_view_list')}</Button>
-          <Button variant={view === 'heatmap' ? 'default' : 'outline'} size="sm" onClick={() => setView('heatmap')}>{t('risk_view_heatmap')}</Button>
-          <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* View toggle — segmented style */}
+          <div className="flex items-center rounded-lg border border-border bg-muted p-0.5 gap-0.5">
+            <button
+              onClick={() => setView('list')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                view === 'list'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t('risk_view_list')}
+            </button>
+            <button
+              onClick={() => setView('heatmap')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                view === 'heatmap'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t('risk_view_heatmap')}
+            </button>
+          </div>
+
+          {/* Action buttons */}
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="gap-2">
             <FileSpreadsheet className="w-4 h-4" /> {t('risk_import_excel')}
           </Button>
           {scoped.length > 0 && (
-            <Button variant="outline" onClick={() => setBulkDeleteOpen(true)} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10">
+            <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(true)} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10">
               <Trash2 className="w-4 h-4" /> {t('risk_delete_all')}
             </Button>
           )}
-          <Button onClick={handleNew} className="gap-2">
+          <Button size="sm" onClick={handleNew} className="gap-2">
             <Plus className="w-4 h-4" /> {t('risk_new')}
           </Button>
         </div>
