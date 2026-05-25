@@ -17,47 +17,11 @@ import PendingReviewsPanel from '@/components/documents/PendingReviewsPanel';
 import ApprovalDialog from '@/components/documents/ApprovalDialog';
 import NominationsPanel from '@/components/documents/NominationsPanel';
 
-const LEVELS = [
-  {
-    id: 'policy',
-    label: 'Level 1 — Policies',
-    sublabel: 'Strategic · Approved by Board of Directors',
-    icon: Shield,
-    color: 'text-chart-1',
-    bg: 'bg-chart-1/10',
-    border: 'border-chart-1/20',
-    examples: ['General Information Security Policy (GISP)', 'Privacy and Minor Data Protection Policy', 'Acceptable Use Policy (AUP)'],
-  },
-  {
-    id: 'standard',
-    label: 'Level 2 — Standards',
-    sublabel: 'Tactical · Approved by CISO / Security Committee',
-    icon: BookOpen,
-    color: 'text-chart-2',
-    bg: 'bg-chart-2/10',
-    border: 'border-chart-2/20',
-    examples: ['Information Classification Standard', 'Access Control and Authentication Standard', 'Secure Software Development Standard'],
-  },
-  {
-    id: 'procedure',
-    label: 'Level 3 — Procedures',
-    sublabel: 'Operational · Approved by Operational Managers',
-    icon: Workflow,
-    color: 'text-chart-4',
-    bg: 'bg-chart-4/10',
-    border: 'border-chart-4/20',
-    examples: ['Employee Onboarding and Offboarding Procedure', 'Backup Management Procedure', 'Data Subject Request Procedure (GDPR)'],
-  },
-  {
-    id: 'playbook',
-    label: 'Level 4 — Playbooks / Runbooks',
-    sublabel: 'Technical · Created by Technical Teams',
-    icon: Zap,
-    color: 'text-chart-5',
-    bg: 'bg-chart-5/10',
-    border: 'border-chart-5/20',
-    examples: ['Ransomware Incident Response Playbook', 'Application Portal Restoration Runbook', 'Phishing Response Playbook'],
-  },
+const LEVEL_CONFIGS = [
+  { id: 'policy',    labelKey: 'docs_level1_label', sublabelKey: 'docs_level1_sublabel', exampleKeys: ['docs_level1_ex1','docs_level1_ex2','docs_level1_ex3'], icon: Shield,   color: 'text-chart-1', bg: 'bg-chart-1/10', border: 'border-chart-1/20' },
+  { id: 'standard',  labelKey: 'docs_level2_label', sublabelKey: 'docs_level2_sublabel', exampleKeys: ['docs_level2_ex1','docs_level2_ex2','docs_level2_ex3'], icon: BookOpen, color: 'text-chart-2', bg: 'bg-chart-2/10', border: 'border-chart-2/20' },
+  { id: 'procedure', labelKey: 'docs_level3_label', sublabelKey: 'docs_level3_sublabel', exampleKeys: ['docs_level3_ex1','docs_level3_ex2','docs_level3_ex3'], icon: Workflow, color: 'text-chart-4', bg: 'bg-chart-4/10', border: 'border-chart-4/20' },
+  { id: 'playbook',  labelKey: 'docs_level4_label', sublabelKey: 'docs_level4_sublabel', exampleKeys: ['docs_level4_ex1','docs_level4_ex2','docs_level4_ex3'], icon: Zap,      color: 'text-chart-5', bg: 'bg-chart-5/10', border: 'border-chart-5/20' },
 ];
 
 const STATUS_STYLES = {
@@ -66,12 +30,25 @@ const STATUS_STYLES = {
   approved: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
   deprecated: 'bg-destructive/10 text-destructive border-destructive/20',
 };
-const STATUS_LABELS = { draft: 'Draft', under_review: 'Under Review', approved: 'Approved', deprecated: 'Deprecated' };
 
 export default function SecurityDocuments() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
+
+  const LEVELS = LEVEL_CONFIGS.map(cfg => ({
+    ...cfg,
+    label: t(cfg.labelKey),
+    sublabel: t(cfg.sublabelKey),
+    examples: cfg.exampleKeys.map(k => t(k)),
+  }));
+
+  const STATUS_LABELS = {
+    draft: t('docs_status_draft'),
+    under_review: t('docs_status_under_review'),
+    approved: t('docs_status_approved'),
+    deprecated: t('docs_status_deprecated'),
+  };
   const isAdmin = user?.role === 'admin';
   const isCustomerAdmin = user?.role === 'customer_admin';
   const isUser = !isAdmin && !isCustomerAdmin;
@@ -470,7 +447,7 @@ export default function SecurityDocuments() {
                             {doc.approved_by && <span>{t('docs_approved_by')} {doc.approved_by}</span>}
                             {doc.approved_date && <span>{new Date(doc.approved_date).toLocaleDateString()}</span>}
                             {isAdmin && doc.customer_name && <span>· {doc.customer_name}</span>}
-                            {doc.owner_email && isCustomerAdmin && <span>· by {doc.owner_email}</span>}
+                            {doc.owner_email && isCustomerAdmin && <span>· {t('docs_by')} {doc.owner_email}</span>}
                           </div>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
