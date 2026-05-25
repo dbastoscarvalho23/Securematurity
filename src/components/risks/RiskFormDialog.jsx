@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -197,7 +197,26 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
   );
 }
 
+const PREDEFINED_VALUES = CATEGORIES.map(c => c.value);
+
 function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs, saving, onSubmit, onCancel, isEdit }) {
+  const isCustomCategory = form.category && !PREDEFINED_VALUES.includes(form.category);
+  const [showCustom, setShowCustom] = useState(isCustomCategory);
+
+  useEffect(() => {
+    setShowCustom(form.category && !PREDEFINED_VALUES.includes(form.category));
+  }, [form.category]);
+
+  const handleCategoryChange = (v) => {
+    if (v === '__custom__') {
+      setShowCustom(true);
+      set('category', '');
+    } else {
+      setShowCustom(false);
+      set('category', v);
+    }
+  };
+
   return (
     <form onSubmit={onSubmit} className="space-y-4 pb-4">
       <div className="grid grid-cols-3 gap-4">
@@ -220,8 +239,8 @@ function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs,
       <div className="space-y-1.5">
         <Label>Category</Label>
         <Select
-          value={CATEGORIES.find(c => c.value === form.category) ? form.category : '__custom__'}
-          onValueChange={v => { if (v !== '__custom__') set('category', v); }}
+          value={showCustom ? '__custom__' : (form.category || '')}
+          onValueChange={handleCategoryChange}
         >
           <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
           <SelectContent>
@@ -229,11 +248,12 @@ function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs,
             <SelectItem value="__custom__">Other / Custom...</SelectItem>
           </SelectContent>
         </Select>
-        {(!CATEGORIES.find(c => c.value === form.category) || form.category === '') && (
+        {showCustom && (
           <Input
+            autoFocus
             value={form.category || ''}
             onChange={e => set('category', e.target.value)}
-            placeholder="Type category manually..."
+            placeholder="Type your custom category..."
             className="mt-1.5"
           />
         )}
