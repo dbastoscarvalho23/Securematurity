@@ -662,7 +662,7 @@ export const translations = {
     nav_doc_audit_trail: 'Auditoria de Docs',
     nav_reports: 'Relatórios',
     nav_action_plan: 'Plano de Ação',
-    nav_question_bank: 'Base de Perguntas',
+    nav_question_bank: 'BD de Perguntas',
     nav_admin: 'Administração',
     nav_audit_log: 'Registo de Auditoria',
     nav_settings: 'Definições',
