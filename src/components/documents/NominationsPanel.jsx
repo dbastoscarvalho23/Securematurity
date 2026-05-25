@@ -8,18 +8,7 @@ import { Plus, UserCheck, Pencil, Trash2, ExternalLink, ChevronDown, ChevronRigh
 import { toast } from 'sonner';
 import NominationDocumentDialog from './NominationDocumentDialog';
 import { writeAuditLog } from '@/lib/auditLog';
-
-const ROLE_LABELS = {
-  risk_officer: 'Risk Officer Manager',
-  risk_committee: 'Risk Committee',
-  cybersecurity_manager: 'Cybersecurity Manager',
-  cybersecurity_committee: 'Cybersecurity Committee',
-  dpo: 'DPO',
-  ciso: 'CISO',
-  incident_response_lead: 'Incident Response Lead',
-  compliance_officer: 'Compliance Officer',
-  other: 'Other',
-};
+import { useLanguage } from '@/lib/LanguageContext';
 
 const STATUS_STYLES = {
   active: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
@@ -31,7 +20,28 @@ const STATUS_STYLES = {
 export default function NominationsPanel({ customers, selectedCustomerId }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
+
+  const ROLE_LABELS = {
+    risk_officer: t('nominations_role_risk_officer'),
+    risk_committee: t('nominations_role_risk_committee'),
+    cybersecurity_manager: t('nominations_role_cybersecurity_manager'),
+    cybersecurity_committee: t('nominations_role_cybersecurity_committee'),
+    dpo: t('nominations_role_dpo'),
+    ciso: t('nominations_role_ciso'),
+    incident_response_lead: t('nominations_role_incident_response_lead'),
+    compliance_officer: t('nominations_role_compliance_officer'),
+    other: t('nominations_role_other'),
+  };
+
+  const STATUS_LABEL_MAP = {
+    active: t('common_active'),
+    inactive: t('common_inactive'),
+    draft: t('docs_status_draft'),
+    expired: t('nominations_expired'),
+    revoked: t('nominations_role_other'), // fallback
+  };
   const isCustomerAdmin = user?.role === 'customer_admin';
   const customerId = user?.customer_id;
   const effectiveCustomerId = isAdmin ? selectedCustomerId : customerId;
@@ -83,7 +93,7 @@ export default function NominationsPanel({ customers, selectedCustomerId }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['nominationDocuments'] });
-      toast.success(editing?.id ? 'Nomination updated' : 'Nomination document created');
+      toast.success(editing?.id ? t('nominations_title') + ' updated' : t('nominations_title') + ' created');
       setDialogOpen(false);
       setEditing(null);
     },
@@ -118,21 +128,21 @@ export default function NominationsPanel({ customers, selectedCustomerId }) {
         <div className="flex items-center gap-3">
           <UserCheck className="w-5 h-5 text-chart-5" />
           <div>
-            <h3 className="font-semibold text-chart-5">Nominations & Governance Appointments</h3>
-            <p className="text-xs text-muted-foreground">Appointment letters · Role mandates · Committee charters</p>
+            <h3 className="font-semibold text-chart-5">{t('nominations_title')}</h3>
+            <p className="text-xs text-muted-foreground">{t('nominations_sublabel')}</p>
           </div>
           <Badge variant="secondary" className="ml-2">{filtered.length}</Badge>
           {expiringCount > 0 && (
             <div className="flex items-center gap-1 text-xs text-chart-3 bg-chart-3/10 px-2 py-0.5 rounded-full">
               <AlertTriangle className="w-3 h-3" />
-              {expiringCount} expiring
+              {expiringCount} {t('nominations_expiring')}
             </div>
           )}
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7"
             onClick={e => { e.stopPropagation(); setEditing(null); setDialogOpen(true); }}>
-            <Plus className="w-3 h-3" /> Add
+            <Plus className="w-3 h-3" /> {t('nominations_add')}
           </Button>
           {collapsed ? <ChevronRight className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
         </div>
@@ -143,10 +153,10 @@ export default function NominationsPanel({ customers, selectedCustomerId }) {
           {filtered.length === 0 ? (
             <div className="px-5 py-8 text-center space-y-2">
               <UserCheck className="w-8 h-8 mx-auto text-muted-foreground opacity-30" />
-              <p className="text-sm text-muted-foreground">No nomination documents yet</p>
-              <p className="text-xs text-muted-foreground">Examples: Risk Officer appointment · Cybersecurity Committee charter · DPO designation letter</p>
+              <p className="text-sm text-muted-foreground">{t('nominations_empty')}</p>
+              <p className="text-xs text-muted-foreground">{t('nominations_empty_examples')}</p>
               <Button size="sm" variant="outline" className="mt-2 gap-1.5" onClick={() => { setEditing(null); setDialogOpen(true); }}>
-                <Plus className="w-3 h-3" /> Add first document
+                <Plus className="w-3 h-3" /> {t('nominations_add_first')}
               </Button>
             </div>
           ) : (
@@ -163,29 +173,29 @@ export default function NominationsPanel({ customers, selectedCustomerId }) {
                           {ROLE_LABELS[n.role_type] || n.role_type}
                         </Badge>
                         <Badge variant="outline" className={`text-xs ${STATUS_STYLES[n.status]}`}>
-                          {n.status?.charAt(0).toUpperCase() + n.status?.slice(1)}
+                          {STATUS_LABEL_MAP[n.status] || (n.status?.charAt(0).toUpperCase() + n.status?.slice(1))}
                         </Badge>
                         {warning === 'expired' && (
                           <span className="flex items-center gap-1 text-xs text-destructive">
-                            <AlertTriangle className="w-3 h-3" /> Expired
+                            <AlertTriangle className="w-3 h-3" /> {t('nominations_expired')}
                           </span>
                         )}
                         {warning === 'expiring_soon' && (
                           <span className="flex items-center gap-1 text-xs text-chart-3">
-                            <AlertTriangle className="w-3 h-3" /> Expiring soon
+                            <AlertTriangle className="w-3 h-3" /> {t('nominations_expiring_soon')}
                           </span>
                         )}
                       </div>
                       {n.nominated_person && (
-                        <p className="text-xs text-muted-foreground mt-0.5">Person/Committee: {n.nominated_person}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{t('nominations_person')} {n.nominated_person}</p>
                       )}
                       {n.description && (
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{n.description}</p>
                       )}
                       <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                        {n.nomination_date && <span>Nominated: {new Date(n.nomination_date).toLocaleDateString()}</span>}
-                        {n.expiry_date && <span>· Expires: {new Date(n.expiry_date).toLocaleDateString()}</span>}
-                        {n.approved_by && <span>· Approved by: {n.approved_by}</span>}
+                        {n.nomination_date && <span>{t('nominations_nominated')} {new Date(n.nomination_date).toLocaleDateString()}</span>}
+                        {n.expiry_date && <span>{t('nominations_expires')} {new Date(n.expiry_date).toLocaleDateString()}</span>}
+                        {n.approved_by && <span>{t('nominations_approved_by')} {n.approved_by}</span>}
                         {isAdmin && n.customer_name && <span>· {n.customer_name}</span>}
                       </div>
                     </div>
