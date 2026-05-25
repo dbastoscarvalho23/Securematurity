@@ -9,25 +9,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
+import { useLanguage } from '@/lib/LanguageContext';
 import RiskHistoryTimeline from './RiskHistoryTimeline';
 import MitigationTasksPanel from './MitigationTasksPanel';
 import CreateTaskFromRiskPanel from './CreateTaskFromRiskPanel';
 import ResidualRiskGauge from './ResidualRiskGauge';
 
-const CATEGORIES = [
-  { value: 'access_control', label: 'Access Control' },
-  { value: 'data_protection', label: 'Data Protection' },
-  { value: 'network_security', label: 'Network Security' },
-  { value: 'physical_security', label: 'Physical Security' },
-  { value: 'third_party', label: 'Third Party' },
-  { value: 'compliance', label: 'Compliance' },
-  { value: 'operational', label: 'Operational' },
-  { value: 'other', label: 'Other' },
+const CATEGORY_KEYS = [
+  { value: 'access_control', key: 'risk_cat_access_control' },
+  { value: 'data_protection', key: 'risk_cat_data_protection' },
+  { value: 'network_security', key: 'risk_cat_network_security' },
+  { value: 'physical_security', key: 'risk_cat_physical_security' },
+  { value: 'third_party', key: 'risk_cat_third_party' },
+  { value: 'compliance', key: 'risk_cat_compliance' },
+  { value: 'operational', key: 'risk_cat_operational' },
+  { value: 'other', key: 'risk_cat_other' },
 ];
 
-const SCORE_LABELS = { 1: 'Very Low', 2: 'Low', 3: 'Medium', 4: 'High', 5: 'Very High' };
+const PREDEFINED_VALUES = CATEGORY_KEYS.map(c => c.value);
 
-function ScoreSelector({ label, value, onChange }) {
+function ScoreSelector({ label, value, onChange, scoreLabels }) {
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>
@@ -47,7 +48,7 @@ function ScoreSelector({ label, value, onChange }) {
           </button>
         ))}
       </div>
-      {value && <p className="text-xs text-muted-foreground">{SCORE_LABELS[value]}</p>}
+      {value && <p className="text-xs text-muted-foreground">{scoreLabels[value]}</p>}
     </div>
   );
 }
@@ -59,6 +60,7 @@ const DEFAULT = {
 };
 
 export default function RiskFormDialog({ open, onOpenChange, risk, documents, customers, isAdmin, customerId, customerName, onSave, currentUser, initialTab = 'edit' }) {
+  const { t } = useLanguage();
   const [form, setForm] = useState(DEFAULT);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('edit');
@@ -149,16 +151,16 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Risk' : 'New Risk'}</DialogTitle>
+          <DialogTitle>{isEdit ? t('risk_form_edit') : t('risk_form_new')}</DialogTitle>
         </DialogHeader>
 
         {isEdit ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <TabsList className="w-full flex-shrink-0">
-              <TabsTrigger value="edit" className="flex-1">Edit</TabsTrigger>
-              <TabsTrigger value="mitigation" className="flex-1">Mitigation</TabsTrigger>
-              <TabsTrigger value="create_task" className="flex-1">Create Task</TabsTrigger>
-              <TabsTrigger value="history" className="flex-1">History</TabsTrigger>
+              <TabsTrigger value="edit" className="flex-1">{t('risk_form_tab_edit')}</TabsTrigger>
+              <TabsTrigger value="mitigation" className="flex-1">{t('risk_form_tab_mitigation')}</TabsTrigger>
+              <TabsTrigger value="create_task" className="flex-1">{t('risk_form_tab_create_task')}</TabsTrigger>
+              <TabsTrigger value="history" className="flex-1">{t('risk_form_tab_history')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="edit" className="flex-1 overflow-y-auto mt-0 pt-4">
@@ -197,9 +199,16 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
   );
 }
 
-const PREDEFINED_VALUES = CATEGORIES.map(c => c.value);
-
 function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs, saving, onSubmit, onCancel, isEdit }) {
+  const { t } = useLanguage();
+  const CATEGORIES = CATEGORY_KEYS.map(c => ({ value: c.value, label: t(c.key) }));
+  const SCORE_LABELS = {
+    1: t('risk_score_very_low'),
+    2: t('risk_score_low'),
+    3: t('risk_score_medium'),
+    4: t('risk_score_high'),
+    5: t('risk_score_very_high'),
+  };
   const isCustomCategory = form.category && !PREDEFINED_VALUES.includes(form.category);
   const [showCustom, setShowCustom] = useState(isCustomCategory);
 
@@ -221,31 +230,31 @@ function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs,
     <form onSubmit={onSubmit} className="space-y-4 pb-4">
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-1.5">
-          <Label>Risk ID</Label>
-          <Input value={form.risk_id} onChange={e => set('risk_id', e.target.value)} placeholder="e.g. RISK-001" />
+          <Label>{t('risk_form_risk_id')}</Label>
+          <Input value={form.risk_id} onChange={e => set('risk_id', e.target.value)} placeholder={t('risk_form_risk_id_placeholder')} />
         </div>
         <div className="col-span-2 space-y-1.5">
-          <Label>Title *</Label>
-          <Input value={form.title} onChange={e => set('title', e.target.value)} required placeholder="Brief risk description" />
+          <Label>{t('risk_form_title')}</Label>
+          <Input value={form.title} onChange={e => set('title', e.target.value)} required placeholder={t('risk_form_title_placeholder')} />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label>Description</Label>
-        <Textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2} placeholder="Detailed risk description..." />
+        <Label>{t('risk_form_description')}</Label>
+        <Textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2} placeholder={t('risk_form_description_placeholder')} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
       <div className="space-y-1.5">
-        <Label>Category</Label>
+        <Label>{t('risk_form_category')}</Label>
         <Select
           value={showCustom ? '__custom__' : (form.category || '')}
           onValueChange={handleCategoryChange}
         >
-          <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder={t('risk_form_category_placeholder')} /></SelectTrigger>
           <SelectContent>
             {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-            <SelectItem value="__custom__">Other / Custom...</SelectItem>
+            <SelectItem value="__custom__">{t('risk_form_category_custom')}</SelectItem>
           </SelectContent>
         </Select>
         {showCustom && (
@@ -253,37 +262,37 @@ function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs,
             autoFocus
             value={form.category || ''}
             onChange={e => set('category', e.target.value)}
-            placeholder="Type your custom category..."
+            placeholder={t('risk_form_category_custom_placeholder')}
             className="mt-1.5"
           />
         )}
       </div>
         <div className="space-y-1.5">
-          <Label>Status</Label>
+          <Label>{t('risk_form_status')}</Label>
           <Select value={form.status} onValueChange={v => set('status', v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="in_treatment">In Treatment</SelectItem>
-              <SelectItem value="accepted">Accepted</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
+              <SelectItem value="open">{t('risk_status_open')}</SelectItem>
+              <SelectItem value="in_treatment">{t('risk_status_in_treatment')}</SelectItem>
+              <SelectItem value="accepted">{t('risk_status_accepted')}</SelectItem>
+              <SelectItem value="closed">{t('risk_status_closed')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      <ScoreSelector label="Impact (1–5)" value={form.impact} onChange={v => set('impact', v)} />
-      <ScoreSelector label="Likelihood (1–5)" value={form.likelihood} onChange={v => set('likelihood', v)} />
+      <ScoreSelector label={t('risk_form_impact')} value={form.impact} onChange={v => set('impact', v)} scoreLabels={SCORE_LABELS} />
+      <ScoreSelector label={t('risk_form_likelihood')} value={form.likelihood} onChange={v => set('likelihood', v)} scoreLabels={SCORE_LABELS} />
 
       <ResidualRiskGauge impact={form.impact} likelihood={form.likelihood} />
 
       {isAdmin && customers?.length > 0 && (
         <div className="space-y-1.5">
-          <Label>Customer</Label>
+          <Label>{t('risk_form_customer')}</Label>
           <Select value={form.customer_id || ''} onValueChange={v => set('customer_id', v)}>
-            <SelectTrigger><SelectValue placeholder="Global / All" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={t('risk_form_customer_global')} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value={null}>Global / All</SelectItem>
+              <SelectItem value={null}>{t('risk_form_customer_global')}</SelectItem>
               {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -292,23 +301,23 @@ function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs,
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label>Owner Email</Label>
-          <Input value={form.owner_email} onChange={e => set('owner_email', e.target.value)} placeholder="risk.owner@company.com" />
+          <Label>{t('risk_form_owner_email')}</Label>
+          <Input value={form.owner_email} onChange={e => set('owner_email', e.target.value)} placeholder={t('risk_form_owner_email_placeholder')} />
         </div>
         <div className="space-y-1.5">
-          <Label>Due Date</Label>
+          <Label>{t('risk_form_due_date')}</Label>
           <Input value={form.due_date} onChange={e => set('due_date', e.target.value)} type="date" />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label>Treatment Notes</Label>
-        <Textarea value={form.treatment_notes} onChange={e => set('treatment_notes', e.target.value)} rows={2} placeholder="How is this risk being treated?" />
+        <Label>{t('risk_form_treatment_notes')}</Label>
+        <Textarea value={form.treatment_notes} onChange={e => set('treatment_notes', e.target.value)} rows={2} placeholder={t('risk_form_treatment_notes_placeholder')} />
       </div>
 
       {availableDocs.length > 0 && (
         <div className="space-y-1.5">
-          <Label>Linked Documents</Label>
+          <Label>{t('risk_form_linked_docs')}</Label>
           <div className="border rounded-lg p-2 max-h-36 overflow-y-auto space-y-1">
             {availableDocs.map(doc => {
               const linked = form.linked_document_ids?.includes(doc.id);
@@ -332,10 +341,10 @@ function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs,
       )}
 
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>{t('risk_form_cancel')}</Button>
         <Button type="submit" disabled={saving}>
           {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-          {isEdit ? 'Save Changes' : 'Create Risk'}
+          {isEdit ? t('risk_form_save') : t('risk_form_create')}
         </Button>
       </DialogFooter>
     </form>
