@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import RiskFormDialog from '@/components/risks/RiskFormDialog';
 import RiskExcelImportDialog from '@/components/risks/RiskExcelImportDialog';
-import RiskMatrix from '@/components/risks/RiskMatrix';
 import RiskHeatmap from '@/components/risks/RiskHeatmap';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -59,7 +58,7 @@ export default function RiskAssessment() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCustomer, setFilterCustomer] = useState('');
-  const [view, setView] = useState('list'); // 'list' | 'matrix' | 'heatmap'
+  const [view, setView] = useState('list'); // 'list' | 'heatmap'
 
   const { data: risks = [] } = useQuery({
     queryKey: ['riskItems'],
@@ -195,7 +194,6 @@ export default function RiskAssessment() {
         </p>
         <div className="flex items-center gap-2">
           <Button variant={view === 'list' ? 'default' : 'outline'} size="sm" onClick={() => setView('list')}>{t('risk_view_list')}</Button>
-          <Button variant={view === 'matrix' ? 'default' : 'outline'} size="sm" onClick={() => setView('matrix')}>{t('risk_view_matrix')}</Button>
           <Button variant={view === 'heatmap' ? 'default' : 'outline'} size="sm" onClick={() => setView('heatmap')}>{t('risk_view_heatmap')}</Button>
           <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
             <FileSpreadsheet className="w-4 h-4" /> {t('risk_import_excel')}
@@ -238,16 +236,6 @@ export default function RiskAssessment() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Risk Matrix view */}
-      {view === 'matrix' && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">{t('risk_matrix_title')}</CardTitle></CardHeader>
-          <CardContent>
-            <RiskMatrix risks={filtered} onEdit={handleEdit} />
-          </CardContent>
-        </Card>
-      )}
 
       {/* Heatmap view */}
       {view === 'heatmap' && (
