@@ -1,0 +1,96 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the recipient user"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "task_completed",
+        "task_assigned",
+        "risk_status",
+        "document_approved",
+        "document_review",
+        "risk_due_soon",
+        "task_due_soon",
+        "general"
+      ],
+      "description": "Notification type"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short notification title"
+    },
+    "message": {
+      "type": "string",
+      "description": "Notification body"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Related entity type (Task, RiskItem, SecurityDocument, etc.)"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of the related entity"
+    },
+    "link": {
+      "type": "string",
+      "description": "App route to navigate to on click"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    }
+  },
+  "required": [
+    "user_email",
+    "title",
+    "message"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.user_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.user_email": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.user_email": "{{user.email}}"
+        }
+      ]
+    }
+  }
+}

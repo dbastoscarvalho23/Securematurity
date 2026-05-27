@@ -25,6 +25,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import GlobalSearch from './GlobalSearch';
+import NotificationBell from './NotificationBell';
 
 const PAGE_TITLE_KEYS = {
   '/': 'page_dashboard',
@@ -110,6 +111,7 @@ export default function TopBar() {
 
         <div className="flex items-center gap-3">
           <GlobalSearch />
+          <NotificationBell />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2.5 text-sm font-medium h-9 px-3">
