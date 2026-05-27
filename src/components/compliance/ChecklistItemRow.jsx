@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 
-export default function ChecklistItemRow({ item, queryKey, displayText }) {
+export default function ChecklistItemRow({ item, queryKey, displayText, customerUsers = [] }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -77,12 +77,24 @@ export default function ChecklistItemRow({ item, queryKey, displayText }) {
                     ))}
                   </SelectContent>
                 </Select>
-                <Input
-                  className="h-8 text-xs"
-                  placeholder={t('checklist_owner_placeholder')}
-                  value={form.owner}
-                  onChange={e => setForm(p => ({ ...p, owner: e.target.value }))}
-                />
+                {customerUsers.length > 0 ? (
+                  <Select value={form.owner} onValueChange={v => setForm(p => ({ ...p, owner: v === '__none__' ? '' : v }))}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('checklist_owner_placeholder')} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__" className="text-xs text-muted-foreground">—</SelectItem>
+                      {customerUsers.map(u => (
+                        <SelectItem key={u.id} value={u.full_name || u.email} className="text-xs">{u.full_name || u.email}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    className="h-8 text-xs"
+                    placeholder={t('checklist_owner_placeholder')}
+                    value={form.owner}
+                    onChange={e => setForm(p => ({ ...p, owner: e.target.value }))}
+                  />
+                )}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Popover open={calOpen} onOpenChange={setCalOpen}>

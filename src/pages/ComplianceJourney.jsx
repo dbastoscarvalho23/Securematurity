@@ -193,7 +193,7 @@ const RJCS_TEMPLATE_PT = [
   },
 ];
 
-function SectionCard({ section, items, queryKey, template }) {
+function SectionCard({ section, items, queryKey, template, customerUsers }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(true);
   // Build a map from task_order -> translated text using the template for this section
@@ -236,7 +236,7 @@ function SectionCard({ section, items, queryKey, template }) {
       {expanded && (
         <CardContent className="pt-0 space-y-2">
           {[...items].sort((a, b) => (a.task_order ?? 0) - (b.task_order ?? 0)).map(item => (
-            <ChecklistItemRow key={item.id} item={item} queryKey={queryKey} displayText={translatedTasks[item.task_order]} />
+            <ChecklistItemRow key={item.id} item={item} queryKey={queryKey} displayText={translatedTasks[item.task_order]} customerUsers={customerUsers} />
           ))}
         </CardContent>
       )}
@@ -262,6 +262,12 @@ export default function ComplianceJourney() {
 
   const activeCustomerId = isAdmin ? selectedCustomerId : user?.customer_id;
   const queryKey = ['compliance-checklist', activeCustomerId];
+
+  const { data: customerUsers = [] } = useQuery({
+    queryKey: ['users-for-customer', activeCustomerId],
+    queryFn: () => base44.entities.User.filter({ customer_id: activeCustomerId }),
+    enabled: !!activeCustomerId,
+  });
 
   const { data: items = [], isLoading } = useQuery({
     queryKey,
@@ -376,7 +382,7 @@ export default function ComplianceJourney() {
               const secOrder = grouped[sec][0]?.section_order;
               const templateSection = RJCS_TEMPLATE.find(t => t.section_order === secOrder);
               return (
-                <SectionCard key={sec} section={templateSection?.section || sec} items={grouped[sec]} queryKey={queryKey} template={templateSection} />
+                <SectionCard key={sec} section={templateSection?.section || sec} items={grouped[sec]} queryKey={queryKey} template={templateSection} customerUsers={customerUsers} />
               );
             })}
           </div>
