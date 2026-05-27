@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Plus, ClipboardList, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useCustomerUsers } from '@/hooks/useCustomerUsers';
+import UserSelect from '@/components/shared/UserSelect';
 
 const PRIORITY_STYLES = {
   low:      'bg-chart-2/10 text-chart-2 border-chart-2/20',
@@ -22,6 +24,7 @@ const STATUS_LABELS = { todo: 'To-Do', in_progress: 'In Progress', blocked: 'Blo
 export default function CreateTaskFromRiskPanel({ risk }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const customerUsers = useCustomerUsers(risk?.customer_id);
   const [form, setForm] = useState({
     title: `Mitigate: ${risk?.title || ''}`,
     description: risk?.treatment_notes || risk?.description || '',
@@ -156,7 +159,13 @@ export default function CreateTaskFromRiskPanel({ risk }) {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Assigned To</Label>
-              <Input value={form.assigned_to} onChange={e => set('assigned_to', e.target.value)} placeholder="email@company.com" className="h-8 text-xs" />
+              <UserSelect
+                value={form.assigned_to}
+                onChange={v => set('assigned_to', v)}
+                users={customerUsers}
+                className="h-8 text-xs"
+                inputClassName="h-8 text-xs"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Due Date</Label>

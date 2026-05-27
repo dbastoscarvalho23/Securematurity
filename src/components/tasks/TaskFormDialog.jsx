@@ -10,6 +10,8 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import TaskComments from './TaskComments';
 import TaskAttachments from './TaskAttachments';
+import UserSelect from '@/components/shared/UserSelect';
+import { useCustomerUsers } from '@/hooks/useCustomerUsers';
 
 const DEFAULT_TASK = {
   title: '',
@@ -25,15 +27,12 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
   const [form, setForm] = useState(DEFAULT_TASK);
   const [saving, setSaving] = useState(false);
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
-  });
-
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
     queryFn: () => base44.entities.Customer.list(),
   });
+
+  const customerUsers = useCustomerUsers(form.customer_id);
 
   useEffect(() => {
     setForm(task ? { ...DEFAULT_TASK, ...task } : DEFAULT_TASK);
@@ -108,25 +107,13 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Assigned To</Label>
-              <Select
-                value={form.assigned_to || ''}
-                onValueChange={v => set('assigned_to', v)}
+              <UserSelect
+                value={form.assigned_to}
+                onChange={v => set('assigned_to', v)}
+                users={customerUsers}
+                placeholder={form.customer_id ? 'Select user...' : 'Select a customer first'}
                 disabled={!form.customer_id}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={form.customer_id ? "Select user..." : "Select a customer first"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {users
-                    .filter(u => u.role === 'admin' || u.customer_id === form.customer_id)
-                    .map(u => (
-                      <SelectItem key={u.id} value={u.email}>
-                        {u.display_name || u.full_name || u.email}
-                        {u.role === 'admin' && <span className="text-muted-foreground ml-1">(admin)</span>}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Due Date</Label>

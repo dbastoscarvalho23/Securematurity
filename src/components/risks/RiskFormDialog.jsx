@@ -14,6 +14,8 @@ import RiskHistoryTimeline from './RiskHistoryTimeline';
 import MitigationTasksPanel from './MitigationTasksPanel';
 import CreateTaskFromRiskPanel from './CreateTaskFromRiskPanel';
 import ResidualRiskGauge from './ResidualRiskGauge';
+import { useCustomerUsers } from '@/hooks/useCustomerUsers';
+import UserSelect from '@/components/shared/UserSelect';
 
 const CATEGORY_KEYS = [
   { value: 'access_control', key: 'risk_cat_access_control' },
@@ -164,7 +166,7 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
             </TabsList>
 
             <TabsContent value="edit" className="flex-1 overflow-y-auto mt-0 pt-4">
-              <RiskEditForm
+              <RiskEditFormWithUsers
                 form={form} set={set} toggleDoc={toggleDoc}
                 isAdmin={isAdmin} customers={customers} availableDocs={availableDocs}
                 saving={saving} onSubmit={handleSubmit} onCancel={() => onOpenChange(false)}
@@ -173,7 +175,7 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
             </TabsContent>
 
             <TabsContent value="mitigation" className="flex-1 overflow-y-auto mt-0 pt-4">
-              <MitigationTasksPanel riskId={risk.id} />
+              <MitigationTasksPanel riskId={risk.id} customerId={risk.customer_id} />
             </TabsContent>
 
             <TabsContent value="create_task" className="flex-1 overflow-y-auto mt-0 pt-4">
@@ -186,7 +188,7 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
           </Tabs>
         ) : (
           <div className="overflow-y-auto flex-1">
-            <RiskEditForm
+            <RiskEditFormWithUsers
               form={form} set={set} toggleDoc={toggleDoc}
               isAdmin={isAdmin} customers={customers} availableDocs={availableDocs}
               saving={saving} onSubmit={handleSubmit} onCancel={() => onOpenChange(false)}
@@ -199,7 +201,12 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
   );
 }
 
-function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs, saving, onSubmit, onCancel, isEdit }) {
+function RiskEditFormWithUsers(props) {
+  const customerUsers = useCustomerUsers(props.form.customer_id);
+  return <RiskEditForm {...props} customerUsers={customerUsers} />;
+}
+
+function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs, saving, onSubmit, onCancel, isEdit, customerUsers = [] }) {
   const { t } = useLanguage();
   const CATEGORIES = CATEGORY_KEYS.map(c => ({ value: c.value, label: t(c.key) }));
   const SCORE_LABELS = {
@@ -302,7 +309,12 @@ function RiskEditForm({ form, set, toggleDoc, isAdmin, customers, availableDocs,
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label>{t('risk_form_owner_email')}</Label>
-          <Input value={form.owner_email} onChange={e => set('owner_email', e.target.value)} placeholder={t('risk_form_owner_email_placeholder')} />
+          <UserSelect
+            value={form.owner_email}
+            onChange={v => set('owner_email', v)}
+            users={customerUsers}
+            placeholder={t('risk_form_owner_email_placeholder')}
+          />
         </div>
         <div className="space-y-1.5">
           <Label>{t('risk_form_due_date')}</Label>

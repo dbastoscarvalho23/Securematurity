@@ -13,6 +13,8 @@ import {
   Circle, Clock, AlertCircle, Loader2, ListChecks
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import UserSelect from '@/components/shared/UserSelect';
+import { useCustomerUsers } from '@/hooks/useCustomerUsers';
 
 const STATUS_CONFIG = {
   todo:        { label: 'To Do',       icon: Circle,       color: 'text-muted-foreground' },
@@ -39,7 +41,7 @@ const EMPTY_TASK = {
 
 // ── Single task card ──────────────────────────────────────────────────────────
 
-function TaskCard({ task, onUpdate, onDelete }) {
+function TaskCard({ task, onUpdate, onDelete, customerUsers = [] }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(task);
@@ -92,7 +94,13 @@ function TaskCard({ task, onUpdate, onDelete }) {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label className="text-xs">Assigned To</Label>
-            <Input value={form.assigned_to} onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))} placeholder="email@company.com" className="h-8 text-xs" />
+            <UserSelect
+              value={form.assigned_to}
+              onChange={v => setForm(f => ({ ...f, assigned_to: v }))}
+              users={customerUsers}
+              className="h-8 text-xs"
+              inputClassName="h-8 text-xs"
+            />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Due Date</Label>
@@ -228,7 +236,7 @@ function TaskCard({ task, onUpdate, onDelete }) {
 
 // ── New task inline form ──────────────────────────────────────────────────────
 
-function NewTaskForm({ onAdd, onCancel }) {
+function NewTaskForm({ onAdd, onCancel, customerUsers = [] }) {
   const [form, setForm] = useState(EMPTY_TASK);
 
   return (
@@ -241,11 +249,12 @@ function NewTaskForm({ onAdd, onCancel }) {
         className="font-medium"
       />
       <div className="grid grid-cols-2 gap-2">
-        <Input
+        <UserSelect
           value={form.assigned_to}
-          onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))}
-          placeholder="Assigned to (email)"
+          onChange={v => setForm(f => ({ ...f, assigned_to: v }))}
+          users={customerUsers}
           className="h-8 text-xs"
+          inputClassName="h-8 text-xs"
         />
         <Input
           type="date"
@@ -281,7 +290,7 @@ function NewTaskForm({ onAdd, onCancel }) {
 
 // ── Panel ─────────────────────────────────────────────────────────────────────
 
-export default function MitigationTasksPanel({ riskId }) {
+export default function MitigationTasksPanel({ riskId, customerId }) {
   const queryClient = useQueryClient();
   const [showNew, setShowNew] = useState(false);
 
@@ -290,6 +299,8 @@ export default function MitigationTasksPanel({ riskId }) {
     queryFn: () => base44.entities.MitigationTask.filter({ risk_id: riskId }, 'created_date', 100),
     enabled: !!riskId,
   });
+
+  const customerUsers = useCustomerUsers(customerId);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.MitigationTask.create({ ...data, risk_id: riskId }),
@@ -348,7 +359,7 @@ export default function MitigationTasksPanel({ riskId }) {
       </div>
 
       {/* New task form */}
-      {showNew && <NewTaskForm onAdd={handleAdd} onCancel={() => setShowNew(false)} />}
+      {showNew && <NewTaskForm onAdd={handleAdd} onCancel={() => setShowNew(false)} customerUsers={customerUsers} />}
 
       {/* Task list */}
       {tasks.length === 0 && !showNew ? (
@@ -367,6 +378,7 @@ export default function MitigationTasksPanel({ riskId }) {
               task={task}
               onUpdate={handleUpdate}
               onDelete={handleDelete}
+              customerUsers={customerUsers}
             />
           ))}
         </div>
