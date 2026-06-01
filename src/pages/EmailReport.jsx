@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,10 +13,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { cn } from '@/lib/utils';
 
 const EMAIL_TYPE_CONFIG = {
-  Task: { label: 'Task', icon: CheckCircle2, color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  RiskItem: { label: 'Risk', icon: ShieldAlert, color: 'bg-orange-100 text-orange-700 border-orange-200' },
-  SecurityDocument: { label: 'Document', icon: FileText, color: 'bg-green-100 text-green-700 border-green-200' },
-  default: { label: 'System', icon: Mail, color: 'bg-slate-100 text-slate-700 border-slate-200' },
+  Task: { labelKey: 'email_report_type_task', icon: CheckCircle2, color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  RiskItem: { labelKey: 'email_report_type_risk', icon: ShieldAlert, color: 'bg-orange-100 text-orange-700 border-orange-200' },
+  SecurityDocument: { labelKey: 'email_report_type_doc', icon: FileText, color: 'bg-green-100 text-green-700 border-green-200' },
+  default: { labelKey: 'email_report_type_system', icon: Mail, color: 'bg-slate-100 text-slate-700 border-slate-200' },
 };
 
 function detectEmailType(details = '') {
@@ -28,17 +29,18 @@ function detectEmailType(details = '') {
   return 'other';
 }
 
-const EMAIL_SUBTYPE_LABELS = {
-  assigned: 'Assignment',
-  status_changed: 'Status Change',
-  due_date_reminder: 'Due Date Reminder',
-  document_review: 'Document Review',
-  document_approved: 'Document Approved',
-  other: 'Other',
+const EMAIL_SUBTYPE_KEYS = {
+  assigned: 'email_report_subtype_assigned',
+  status_changed: 'email_report_subtype_status',
+  due_date_reminder: 'email_report_subtype_due',
+  document_review: 'email_report_subtype_review',
+  document_approved: 'email_report_subtype_approved',
+  other: 'email_report_subtype_other',
 };
 
 export default function EmailReport() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const isCustomerAdmin = user?.role === 'customer_admin';
 
@@ -108,7 +110,7 @@ export default function EmailReport() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center text-muted-foreground">
           <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-40" />
-          <p>You don't have permission to view this page.</p>
+          <p>{t('common_no_permission')}</p>
         </div>
       </div>
     );
@@ -118,38 +120,38 @@ export default function EmailReport() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Email Notification Report</h1>
-        <p className="text-muted-foreground text-sm mt-1">Monitor all email notifications sent by the platform</p>
+        <h1 className="text-2xl font-bold">{t('page_email_report')}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t('email_report_subtitle')}</p>
       </div>
 
       {/* Last 14 days KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard
           icon={Send}
-          label="Emails Last 14 Days"
+          label={t('email_report_last14')}
           value={last14.length}
-          sub="all types"
+          sub={t('email_report_all_types')}
           iconClass="text-primary bg-primary/10"
         />
         <KpiCard
           icon={CheckCircle2}
-          label="Task Emails"
+          label={t('email_report_task_emails')}
           value={last14ByType['Task'] || 0}
-          sub="assignments & status"
+          sub={t('email_report_task_sub')}
           iconClass="text-blue-600 bg-blue-100"
         />
         <KpiCard
           icon={ShieldAlert}
-          label="Risk Emails"
+          label={t('email_report_risk_emails')}
           value={last14ByType['RiskItem'] || 0}
-          sub="assignments & reminders"
+          sub={t('email_report_risk_sub')}
           iconClass="text-orange-600 bg-orange-100"
         />
         <KpiCard
           icon={FileText}
-          label="Document Emails"
+          label={t('email_report_doc_emails')}
           value={last14ByType['SecurityDocument'] || 0}
-          sub="reviews & approvals"
+          sub={t('email_report_doc_sub')}
           iconClass="text-green-600 bg-green-100"
         />
       </div>
@@ -159,7 +161,7 @@ export default function EmailReport() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-muted-foreground" />
-            Email Activity — Last 14 Days
+            {t('email_report_chart_title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -168,16 +170,18 @@ export default function EmailReport() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis allowDecimals={false} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-              <Tooltip
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid hsl(var(--border))' }}
-              />
-              <Bar dataKey="tasks" name="Tasks" fill="hsl(var(--chart-1))" radius={[3,3,0,0]} />
-              <Bar dataKey="risks" name="Risks" fill="hsl(var(--chart-4))" radius={[3,3,0,0]} />
-              <Bar dataKey="documents" name="Documents" fill="hsl(var(--chart-2))" radius={[3,3,0,0]} />
+              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid hsl(var(--border))' }} />
+              <Bar dataKey="tasks" name={t('email_report_legend_tasks')} fill="hsl(var(--chart-1))" radius={[3,3,0,0]} />
+              <Bar dataKey="risks" name={t('email_report_legend_risks')} fill="hsl(var(--chart-4))" radius={[3,3,0,0]} />
+              <Bar dataKey="documents" name={t('email_report_legend_docs')} fill="hsl(var(--chart-2))" radius={[3,3,0,0]} />
             </BarChart>
           </ResponsiveContainer>
           <div className="flex items-center gap-4 mt-3 justify-center">
-            {[['Tasks', 'chart-1'], ['Risks', 'chart-4'], ['Documents', 'chart-2']].map(([label, color]) => (
+            {[
+              [t('email_report_legend_tasks'), 'chart-1'],
+              [t('email_report_legend_risks'), 'chart-4'],
+              [t('email_report_legend_docs'), 'chart-2'],
+            ].map(([label, color]) => (
               <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <div className={`w-2.5 h-2.5 rounded-sm bg-${color}`} />
                 {label}
@@ -193,14 +197,14 @@ export default function EmailReport() {
           <div className="flex flex-wrap items-center gap-3 justify-between">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Mail className="w-4 h-4 text-muted-foreground" />
-              Email Log
+              {t('email_report_log_title')}
               <Badge variant="secondary" className="ml-1">{filteredLogs.length}</Badge>
             </CardTitle>
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Search recipient, details..."
+                  placeholder={t('email_report_search_placeholder')}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="pl-8 h-8 text-xs w-52"
@@ -211,11 +215,11 @@ export default function EmailReport() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="7">Last 7 days</SelectItem>
-                  <SelectItem value="14">Last 14 days</SelectItem>
-                  <SelectItem value="30">Last 30 days</SelectItem>
-                  <SelectItem value="60">Last 60 days</SelectItem>
-                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="7">{t('email_report_range_7')}</SelectItem>
+                  <SelectItem value="14">{t('email_report_range_14')}</SelectItem>
+                  <SelectItem value="30">{t('email_report_range_30')}</SelectItem>
+                  <SelectItem value="60">{t('email_report_range_60')}</SelectItem>
+                  <SelectItem value="all">{t('email_report_range_all')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={entityFilter} onValueChange={setEntityFilter}>
@@ -223,10 +227,10 @@ export default function EmailReport() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All types</SelectItem>
-                  <SelectItem value="Task">Tasks</SelectItem>
-                  <SelectItem value="RiskItem">Risks</SelectItem>
-                  <SelectItem value="SecurityDocument">Documents</SelectItem>
+                  <SelectItem value="all">{t('email_report_filter_all')}</SelectItem>
+                  <SelectItem value="Task">{t('email_report_filter_tasks')}</SelectItem>
+                  <SelectItem value="RiskItem">{t('email_report_filter_risks')}</SelectItem>
+                  <SelectItem value="SecurityDocument">{t('email_report_filter_docs')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -237,7 +241,7 @@ export default function EmailReport() {
             <div className="flex flex-wrap gap-2 mt-3">
               {Object.entries(subtypeBreakdown).map(([st, count]) => (
                 <span key={st} className="text-xs bg-muted rounded-full px-2.5 py-0.5 text-muted-foreground">
-                  {EMAIL_SUBTYPE_LABELS[st] || st}: <strong className="text-foreground">{count}</strong>
+                  {t(EMAIL_SUBTYPE_KEYS[st] || 'email_report_subtype_other')}: <strong className="text-foreground">{count}</strong>
                 </span>
               ))}
             </div>
@@ -246,17 +250,17 @@ export default function EmailReport() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-              <Clock className="w-4 h-4 animate-spin mr-2" /> Loading email logs...
+              <Clock className="w-4 h-4 animate-spin mr-2" /> {t('email_report_loading')}
             </div>
           ) : filteredLogs.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm gap-2">
               <Mail className="w-6 h-6 opacity-30" />
-              No email records found for the selected filters.
+              {t('email_report_empty')}
             </div>
           ) : (
             <div className="divide-y">
               {filteredLogs.map(log => (
-                <EmailLogRow key={log.id} log={log} />
+                <EmailLogRow key={log.id} log={log} t={t} />
               ))}
             </div>
           )}
@@ -285,12 +289,12 @@ function KpiCard({ icon: Icon, label, value, sub, iconClass }) {
   );
 }
 
-function EmailLogRow({ log }) {
+function EmailLogRow({ log, t }) {
   const entityType = log.data?.entity_type || 'default';
   const config = EMAIL_TYPE_CONFIG[entityType] || EMAIL_TYPE_CONFIG.default;
   const Icon = config.icon;
   const subtype = detectEmailType(log.data?.details);
-  const subtypeLabel = EMAIL_SUBTYPE_LABELS[subtype] || 'Other';
+  const subtypeLabel = t(EMAIL_SUBTYPE_KEYS[subtype] || 'email_report_subtype_other');
 
   // Extract recipient from details
   const details = log.data?.details || '';
@@ -304,7 +308,7 @@ function EmailLogRow({ log }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold">{config.label}</span>
+          <span className="text-xs font-semibold">{t(config.labelKey)}</span>
           <Badge variant="outline" className="text-[10px] h-4 px-1.5">{subtypeLabel}</Badge>
         </div>
         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{details}</p>
@@ -313,7 +317,7 @@ function EmailLogRow({ log }) {
             <Users className="w-3 h-3" /> {recipient}
           </span>
           <span className="text-[10px] text-muted-foreground">
-            by {log.data?.user_email || 'system'}
+            {t('email_report_by')} {log.data?.user_email || 'system'}
           </span>
         </div>
       </div>
