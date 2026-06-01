@@ -19,7 +19,8 @@ import {
   Activity,
   TriangleAlert,
   Paperclip,
-  MapPin
+  MapPin,
+  MailCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -31,6 +32,7 @@ export default function Sidebar({ collapsed, onToggle }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
+  const isCustomerAdmin = user?.role === 'customer_admin';
 
   const mainNavItems = [
     { path: '/', labelKey: 'nav_dashboard', icon: LayoutDashboard },
@@ -60,6 +62,9 @@ export default function Sidebar({ collapsed, onToggle }) {
         ...(isAdmin ? [
           { path: '/admin', labelKey: 'nav_admin', icon: ShieldCheck },
           { path: '/audit-log', labelKey: 'nav_audit_log', icon: ScrollText },
+        ] : []),
+        ...((isAdmin || isCustomerAdmin) ? [
+          { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
         ] : []),
         { path: '/settings', labelKey: 'nav_settings', icon: Settings },
       ]

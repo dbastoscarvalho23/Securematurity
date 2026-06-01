@@ -26,6 +26,7 @@ import DocumentAuditTrail from '@/pages/DocumentAuditTrail';
 import RiskAssessment from '@/pages/RiskAssessment';
 import EvidenceOverview from '@/pages/EvidenceOverview';
 import ComplianceJourney from '@/pages/ComplianceJourney';
+import EmailReport from '@/pages/EmailReport';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -75,6 +76,7 @@ const AuthenticatedApp = () => {
         <Route path="/action-plan" element={<ActionPlan />} />
         <Route path="/evidence" element={<EvidenceOverview />} />
         <Route path="/compliance-journey" element={<ComplianceJourney />} />
+        <Route path="/email-report" element={<EmailReport />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

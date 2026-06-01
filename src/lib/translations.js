@@ -20,6 +20,7 @@ export const translations = {
     nav_question_bank: 'Question DB',
     nav_admin: 'Admin',
     nav_audit_log: 'Audit Log',
+    nav_email_report: 'Email Report',
     nav_settings: 'Settings',
     // TopBar page titles
     page_dashboard: 'Dashboard',
@@ -39,6 +40,7 @@ export const translations = {
     page_document_audit_trail: 'Document Audit Trail',
     page_compliance_journey: 'Compliance Journey',
     page_evidence: 'Evidence',
+    page_email_report: 'Email Notification Report',
     // TopBar user menu
     my_profile: 'My Profile',
     settings: 'Settings',
@@ -762,6 +764,7 @@ export const translations = {
     nav_question_bank: 'BD de Perguntas',
     nav_admin: 'Administração',
     nav_audit_log: 'Registo de Auditoria',
+    nav_email_report: 'Relatório de E-mails',
     nav_settings: 'Definições',
     // TopBar page titles
     page_dashboard: 'Painel',
@@ -781,6 +784,7 @@ export const translations = {
     page_document_audit_trail: 'Auditoria de Documentos',
     page_compliance_journey: 'Jornada de Conformidade',
     page_evidence: 'Evidências',
+    page_email_report: 'Relatório de Notificações por E-mail',
     // TopBar user menu
     my_profile: 'O Meu Perfil',
     settings: 'Definições',

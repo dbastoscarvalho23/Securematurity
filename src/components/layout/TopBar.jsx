@@ -45,6 +45,7 @@ const PAGE_TITLE_KEYS = {
   '/document-audit-trail': 'page_document_audit_trail',
   '/compliance-journey': 'page_compliance_journey',
   '/evidence': 'page_evidence',
+  '/email-report': 'page_email_report',
 };
 
 export default function TopBar() {
