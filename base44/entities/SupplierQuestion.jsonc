@@ -1,0 +1,56 @@
+{
+  "name": "SupplierQuestion",
+  "type": "object",
+  "properties": {
+    "questionnaire_id": {
+      "type": "string",
+      "description": "Reference to SupplierQuestionnaire"
+    },
+    "area": {
+      "type": "string",
+      "description": "Coverage area / domain this question belongs to"
+    },
+    "question_text": {
+      "type": "string",
+      "description": "The question text"
+    },
+    "answer_type": {
+      "type": "string",
+      "enum": [
+        "yes_no",
+        "scale_1_5",
+        "text",
+        "multiple_choice"
+      ],
+      "default": "yes_no",
+      "description": "Type of answer expected"
+    },
+    "options": {
+      "type": "array",
+      "description": "Options for multiple_choice questions",
+      "items": {
+        "type": "string"
+      }
+    },
+    "is_required": {
+      "type": "boolean",
+      "default": true
+    },
+    "order_index": {
+      "type": "number",
+      "description": "Display order within the area"
+    },
+    "answer": {
+      "type": "string",
+      "description": "Supplier's answer"
+    },
+    "answer_notes": {
+      "type": "string",
+      "description": "Additional notes or evidence from supplier"
+    }
+  },
+  "required": [
+    "questionnaire_id",
+    "question_text"
+  ]
+}

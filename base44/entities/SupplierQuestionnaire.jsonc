@@ -1,0 +1,108 @@
+{
+  "name": "SupplierQuestionnaire",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Questionnaire title"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "supplier_name": {
+      "type": "string",
+      "description": "Name of the supplier being assessed"
+    },
+    "supplier_email": {
+      "type": "string",
+      "description": "Contact email for the supplier"
+    },
+    "areas": {
+      "type": "array",
+      "description": "Coverage areas selected for this questionnaire",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent",
+        "in_progress",
+        "completed",
+        "archived"
+      ],
+      "default": "draft",
+      "description": "Questionnaire status"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Deadline for supplier to complete"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "title",
+    "customer_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.customer_id}}"
+        }
+      ]
+    }
+  }
+}
