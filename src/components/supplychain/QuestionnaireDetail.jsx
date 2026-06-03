@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Plus, Trash2, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
+import AIQuestionsReviewDialog from './AIQuestionsReviewDialog';
 import { toast } from 'sonner';
 
 const ANSWER_TYPES = ['yes_no', 'scale_1_5', 'text', 'multiple_choice'];
@@ -30,12 +31,21 @@ function QuestionRow({ question, onUpdate, onDelete }) {
       {expanded && (
         <div className="px-4 pb-4 space-y-3 border-t pt-3">
           <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label className="text-xs text-muted-foreground mb-1 block">Question Text</label>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Question (EN)</label>
               <Textarea
                 value={question.question_text}
                 onChange={e => onUpdate(question.id, { question_text: e.target.value })}
                 rows={2}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Question (PT)</label>
+              <Textarea
+                value={question.question_text_pt || ''}
+                onChange={e => onUpdate(question.id, { question_text_pt: e.target.value })}
+                rows={2}
+                placeholder="Portuguese translation..."
               />
             </div>
             <div>
@@ -100,6 +110,7 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
   const queryClient = useQueryClient();
   const [newQuestion, setNewQuestion] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [reviewQuestions, setReviewQuestions] = useState(null); // null = closed, array = open
 
   // Always fetch fresh questionnaire data
   const { data: questionnaire = initialQuestionnaire } = useQuery({
@@ -157,7 +168,8 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
         prompt: `Generate a comprehensive cybersecurity supply chain questionnaire for assessing a supplier named "${questionnaire.supplier_name || 'the supplier'}".
 The questionnaire should ${areaContext}.
 For each area, generate 3-5 practical, auditable questions.
-Return a JSON object with this schema: { "questions": [{ "area": string, "question_text": string, "answer_type": "yes_no" | "scale_1_5" | "text" }] }`,
+For EVERY question provide both the English version (question_text) and the European Portuguese translation (question_text_pt).
+Return a JSON object with this schema: { "questions": [{ "area": string, "question_text": string, "question_text_pt": string, "answer_type": "yes_no" | "scale_1_5" | "text" }] }`,
         response_json_schema: {
           type: 'object',
           properties: {
@@ -168,6 +180,7 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
                 properties: {
                   area: { type: 'string' },
                   question_text: { type: 'string' },
+                  question_text_pt: { type: 'string' },
                   answer_type: { type: 'string' },
                 },
               },
@@ -178,25 +191,32 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
       const generated = (result?.questions || result?.data?.questions || []);
       if (!generated.length) {
         toast.error('No questions returned by AI');
+        setGenerating(false);
         return;
       }
-      await Promise.all(
-        generated.map((q, i) =>
-          base44.entities.SupplierQuestion.create({
-            questionnaire_id: questionnaire.id,
-            question_text: q.question_text,
-            area: q.area,
-            answer_type: q.answer_type || 'yes_no',
-            order_index: questions.length + i + 1,
-          })
-        )
-      );
-      queryClient.invalidateQueries(['supplier-questions', qid]);
-      toast.success(`Generated ${generated.length} questions`);
+      setReviewQuestions(generated);
     } catch (e) {
       toast.error('AI generation failed');
     }
     setGenerating(false);
+  };
+
+  const handleReviewConfirm = async (accepted) => {
+    await Promise.all(
+      accepted.map((q, i) =>
+        base44.entities.SupplierQuestion.create({
+          questionnaire_id: qid,
+          question_text: q.question_text,
+          question_text_pt: q.question_text_pt,
+          area: q.area,
+          answer_type: q.answer_type || 'yes_no',
+          order_index: questions.length + i + 1,
+        })
+      )
+    );
+    queryClient.invalidateQueries(['supplier-questions', qid]);
+    toast.success(`Added ${accepted.length} question${accepted.length !== 1 ? 's' : ''}`);
+    setReviewQuestions(null);
   };
 
   const answeredCount = questions.filter(q => q.answer).length;
@@ -291,6 +311,15 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
             </div>
           </div>
         ))
+      )}
+
+      {reviewQuestions && (
+        <AIQuestionsReviewDialog
+          open={true}
+          questions={reviewQuestions}
+          onConfirm={handleReviewConfirm}
+          onClose={() => setReviewQuestions(null)}
+        />
       )}
     </div>
   );
