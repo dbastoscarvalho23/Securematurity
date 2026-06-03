@@ -96,15 +96,22 @@ function QuestionRow({ question, onUpdate, onDelete }) {
   );
 }
 
-export default function QuestionnaireDetail({ questionnaire, onBack }) {
+export default function QuestionnaireDetail({ questionnaire: initialQuestionnaire, onBack }) {
   const queryClient = useQueryClient();
   const [newQuestion, setNewQuestion] = useState('');
-  const [newArea, setNewArea] = useState(questionnaire.areas?.[0] || '');
   const [generating, setGenerating] = useState(false);
 
+  // Always fetch fresh questionnaire data
+  const { data: questionnaire = initialQuestionnaire } = useQuery({
+    queryKey: ['supplier-questionnaire', initialQuestionnaire.id],
+    queryFn: () => base44.entities.SupplierQuestionnaire.filter({ id: initialQuestionnaire.id }).then(r => r[0] || initialQuestionnaire),
+  });
+
+  const [newArea, setNewArea] = useState(questionnaire.areas?.[0] || '');
+
   const { data: questions = [] } = useQuery({
-    queryKey: ['supplier-questions', questionnaire.id],
-    queryFn: () => base44.entities.SupplierQuestion.filter({ questionnaire_id: questionnaire.id }),
+    queryKey: ['supplier-questions', initialQuestionnaire.id],
+    queryFn: () => base44.entities.SupplierQuestion.filter({ questionnaire_id: initialQuestionnaire.id }),
   });
 
   const questionsByArea = (questionnaire.areas || []).reduce((acc, area) => {
@@ -114,40 +121,41 @@ export default function QuestionnaireDetail({ questionnaire, onBack }) {
   const unassigned = questions.filter(q => !(questionnaire.areas || []).includes(q.area));
   if (unassigned.length) questionsByArea['Other'] = unassigned;
 
+  const qid = initialQuestionnaire.id;
+
   const handleUpdate = async (id, data) => {
     await base44.entities.SupplierQuestion.update(id, data);
-    queryClient.invalidateQueries(['supplier-questions', questionnaire.id]);
+    queryClient.invalidateQueries(['supplier-questions', qid]);
   };
 
   const handleDelete = async (id) => {
     await base44.entities.SupplierQuestion.delete(id);
-    queryClient.invalidateQueries(['supplier-questions', questionnaire.id]);
+    queryClient.invalidateQueries(['supplier-questions', qid]);
     toast.success('Question deleted');
   };
 
   const handleAddQuestion = async () => {
     if (!newQuestion.trim()) return;
     await base44.entities.SupplierQuestion.create({
-      questionnaire_id: questionnaire.id,
+      questionnaire_id: qid,
       question_text: newQuestion.trim(),
       area: newArea || 'General',
       order_index: questions.length + 1,
     });
     setNewQuestion('');
-    queryClient.invalidateQueries(['supplier-questions', questionnaire.id]);
+    queryClient.invalidateQueries(['supplier-questions', qid]);
     toast.success('Question added');
   };
 
   const handleAIGenerate = async () => {
-    if (!questionnaire.areas?.length) {
-      toast.error('Please define coverage areas first');
-      return;
-    }
     setGenerating(true);
+    const areaContext = questionnaire.areas?.length
+      ? `covering these specific areas: ${questionnaire.areas.join(', ')}`
+      : `covering general cybersecurity topics such as Access Control, Data Protection, Incident Response, and Network Security`;
     try {
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a comprehensive cybersecurity supply chain questionnaire for assessing a supplier.
-The questionnaire should cover the following areas: ${questionnaire.areas.join(', ')}.
+        prompt: `Generate a comprehensive cybersecurity supply chain questionnaire for assessing a supplier named "${questionnaire.supplier_name || 'the supplier'}".
+The questionnaire should ${areaContext}.
 For each area, generate 3-5 practical, auditable questions.
 Return a JSON object with this schema: { "questions": [{ "area": string, "question_text": string, "answer_type": "yes_no" | "scale_1_5" | "text" }] }`,
         response_json_schema: {
@@ -183,7 +191,7 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
           })
         )
       );
-      queryClient.invalidateQueries(['supplier-questions', questionnaire.id]);
+      queryClient.invalidateQueries(['supplier-questions', qid]);
       toast.success(`Generated ${generated.length} questions`);
     } catch (e) {
       toast.error('AI generation failed');
