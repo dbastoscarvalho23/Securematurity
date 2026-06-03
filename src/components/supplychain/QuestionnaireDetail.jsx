@@ -167,15 +167,21 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
           },
         },
       });
-      const generated = result.questions || [];
-      await base44.entities.SupplierQuestion.bulkCreate(
-        generated.map((q, i) => ({
-          questionnaire_id: questionnaire.id,
-          question_text: q.question_text,
-          area: q.area,
-          answer_type: q.answer_type || 'yes_no',
-          order_index: questions.length + i + 1,
-        }))
+      const generated = (result?.questions || result?.data?.questions || []);
+      if (!generated.length) {
+        toast.error('No questions returned by AI');
+        return;
+      }
+      await Promise.all(
+        generated.map((q, i) =>
+          base44.entities.SupplierQuestion.create({
+            questionnaire_id: questionnaire.id,
+            question_text: q.question_text,
+            area: q.area,
+            answer_type: q.answer_type || 'yes_no',
+            order_index: questions.length + i + 1,
+          })
+        )
       );
       queryClient.invalidateQueries(['supplier-questions', questionnaire.id]);
       toast.success(`Generated ${generated.length} questions`);
