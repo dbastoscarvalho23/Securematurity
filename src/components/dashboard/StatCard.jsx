@@ -25,7 +25,7 @@ export default function StatCard({ title, value, subtitle, icon: Icon, trend, tr
               <p className="text-xs text-muted-foreground">{subtitle}</p>
             )}
           </div>
-          <div className={cn("p-3 rounded-xl shrink-0", isInteractive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
+          <div className="p-3 rounded-xl shrink-0 bg-primary/10 text-primary">
             {Icon && <Icon className="w-5 h-5" />}
           </div>
         </div>

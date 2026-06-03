@@ -434,7 +434,7 @@ export default function Admin() {
       </div>
 
       {/* Platform Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard
           title={t('admin_total_customers')}
           value={customers.length}
