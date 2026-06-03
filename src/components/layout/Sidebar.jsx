@@ -20,7 +20,8 @@ import {
   TriangleAlert,
   Paperclip,
   MapPin,
-  MailCheck
+  MailCheck,
+  Truck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -45,6 +46,7 @@ export default function Sidebar({ collapsed, onToggle }) {
     { path: '/risk-assessment', labelKey: 'nav_risk_assessment', icon: TriangleAlert },
     { path: '/security-documents', labelKey: 'nav_documents', icon: FolderLock },
     { path: '/document-audit-trail', labelKey: 'nav_doc_audit_trail', icon: Activity },
+    { path: '/supply-chain', labelKey: 'nav_supply_chain', icon: Truck },
     { path: '/reports', labelKey: 'nav_reports', icon: BarChart3 },
   ];
 
