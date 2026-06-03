@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCustomerUsers } from '@/hooks/useCustomerUsers';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -263,11 +264,7 @@ export default function ComplianceJourney() {
   const activeCustomerId = isAdmin ? selectedCustomerId : user?.customer_id;
   const queryKey = ['compliance-checklist', activeCustomerId];
 
-  const { data: customerUsers = [] } = useQuery({
-    queryKey: ['users-for-customer', activeCustomerId],
-    queryFn: () => base44.entities.User.filter({ customer_id: activeCustomerId }),
-    enabled: !!activeCustomerId,
-  });
+  const customerUsers = useCustomerUsers(activeCustomerId);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey,
