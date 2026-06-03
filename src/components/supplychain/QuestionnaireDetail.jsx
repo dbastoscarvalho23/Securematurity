@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Plus, Trash2, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
 import AIQuestionsReviewDialog from './AIQuestionsReviewDialog';
+import AIGenerateOptionsDialog from './AIGenerateOptionsDialog';
 import { toast } from 'sonner';
 
 const ANSWER_TYPES = ['yes_no', 'scale_1_5', 'text', 'multiple_choice'];
@@ -110,6 +111,7 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
   const queryClient = useQueryClient();
   const [newQuestion, setNewQuestion] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [showOptionsDialog, setShowOptionsDialog] = useState(false);
   const [reviewQuestions, setReviewQuestions] = useState(null); // null = closed, array = open
 
   // Always fetch fresh questionnaire data
@@ -158,16 +160,17 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
     toast.success('Question added');
   };
 
-  const handleAIGenerate = async () => {
+  const handleAIGenerate = async ({ count, areas }) => {
+    setShowOptionsDialog(false);
     setGenerating(true);
-    const areaContext = questionnaire.areas?.length
-      ? `covering these specific areas: ${questionnaire.areas.join(', ')}`
+    const areaContext = areas.length
+      ? `covering these specific subjects: ${areas.join(', ')}`
       : `covering general cybersecurity topics such as Access Control, Data Protection, Incident Response, and Network Security`;
     try {
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a comprehensive cybersecurity supply chain questionnaire for assessing a supplier named "${questionnaire.supplier_name || 'the supplier'}".
+        prompt: `Generate a cybersecurity supply chain questionnaire for assessing a supplier named "${questionnaire.supplier_name || 'the supplier'}".
 The questionnaire should ${areaContext}.
-For each area, generate 3-5 practical, auditable questions.
+For EACH subject/area, generate EXACTLY ${count} practical, auditable questions.
 For EVERY question provide both the English version (question_text) and the European Portuguese translation (question_text_pt).
 Return a JSON object with this schema: { "questions": [{ "area": string, "question_text": string, "question_text_pt": string, "answer_type": "yes_no" | "scale_1_5" | "text" }] }`,
         response_json_schema: {
@@ -264,7 +267,7 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
 
       {/* AI Generate + Add Question */}
       <div className="flex gap-2 items-end">
-        <Button variant="outline" onClick={handleAIGenerate} disabled={generating} className="gap-2">
+        <Button variant="outline" onClick={() => setShowOptionsDialog(true)} disabled={generating} className="gap-2">
           <Sparkles className="w-4 h-4" />
           {generating ? 'Generating...' : 'AI Generate Questions'}
         </Button>
@@ -312,6 +315,13 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
           </div>
         ))
       )}
+
+      <AIGenerateOptionsDialog
+        open={showOptionsDialog}
+        onClose={() => setShowOptionsDialog(false)}
+        onGenerate={handleAIGenerate}
+        preselectedAreas={questionnaire.areas || []}
+      />
 
       {reviewQuestions && (
         <AIQuestionsReviewDialog
