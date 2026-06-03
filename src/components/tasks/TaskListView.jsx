@@ -18,14 +18,16 @@ const STATUS_STYLES = {
   todo: 'bg-muted text-muted-foreground',
   in_progress: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
   done: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
+  blocked: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-const STATUS_LABELS = { todo: 'To-Do', in_progress: 'In Progress', done: 'Done' };
+const STATUS_LABELS = { todo: 'To-Do', in_progress: 'In Progress', done: 'Done', blocked: 'Blocked' };
 
 const STATUS_TRANSITIONS = {
   todo: { next: 'in_progress', label: 'Move to In Progress' },
   in_progress: { next: 'done', label: 'Mark as Done' },
   done: { next: 'todo', label: 'Reopen' },
+  blocked: { next: 'in_progress', label: 'Unblock' },
 };
 
 export default function TaskListView({ tasks, onStatusChange, onEdit, onDelete }) {
