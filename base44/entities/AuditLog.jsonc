@@ -68,23 +68,7 @@
     "user_email"
   ],
   "rls": {
-    "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.customer_id": {
-            "$exists": false
-          }
-        },
-        {
-          "data.customer_id": "{{user.customer_id}}"
-        }
-      ]
-    },
+    "create": {},
     "read": {
       "$or": [
         {

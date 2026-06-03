@@ -46,30 +46,7 @@
         }
       }
     },
-    "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.task_id": {
-            "$in": {
-              "$query": {
-                "collection": "Task",
-                "filter": {
-                  "data.customer_id": "{{user.customer_id}}"
-                },
-                "select": [
-                  "id"
-                ]
-              }
-            }
-          }
-        }
-      ]
-    },
+    "read": null,
     "update": {
       "$or": [
         {

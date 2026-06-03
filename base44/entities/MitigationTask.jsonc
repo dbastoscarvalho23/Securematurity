@@ -73,9 +73,65 @@
     "title"
   ],
   "rls": {
-    "create": null,
-    "read": null,
-    "update": null,
-    "delete": null
+    "create": {
+      "data.risk_id": {
+        "$in": {
+          "$query": {
+            "collection": "RiskItem",
+            "filter": {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            "select": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    "read": {
+      "data.risk_id": {
+        "$in": {
+          "$query": {
+            "collection": "RiskItem",
+            "filter": {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            "select": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    "update": {
+      "data.risk_id": {
+        "$in": {
+          "$query": {
+            "collection": "RiskItem",
+            "filter": {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            "select": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    "delete": {
+      "data.risk_id": {
+        "$in": {
+          "$query": {
+            "collection": "RiskItem",
+            "filter": {
+              "data.customer_id": "{{user.customer_id}}"
+            },
+            "select": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
   }
 }

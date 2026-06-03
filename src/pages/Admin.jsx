@@ -435,46 +435,50 @@ export default function Admin() {
 
       {/* Platform Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <div className="cursor-pointer" onClick={() => setDrillDown('customers')}>
-          <StatCard
-            title={t('admin_total_customers')}
-            value={customers.length}
-            subtitle={`${activeCustomers} ${t('customers_status_active').toLowerCase()}, ${onboardingCustomers} ${t('customers_status_onboarding').toLowerCase()}`}
-            icon={Building2}
-          />
-        </div>
-        <div className="cursor-pointer" onClick={() => setDrillDown('users')}>
-          <StatCard title={t('admin_total_users')} value={users.length} icon={Users} />
-        </div>
-        <div className="cursor-pointer" onClick={() => setDrillDown('assessments')}>
-          <StatCard
-            title={t('admin_completed_assessments')}
-            value={completed.length}
-            subtitle={`${inProgress.length} ${t('assessments_status_in_progress').toLowerCase()}`}
-            icon={ShieldCheck}
-          />
-        </div>
+        <StatCard
+          title={t('admin_total_customers')}
+          value={customers.length}
+          subtitle={`${activeCustomers} ${t('customers_status_active').toLowerCase()}, ${onboardingCustomers} ${t('customers_status_onboarding').toLowerCase()}`}
+          icon={Building2}
+          onClick={() => setDrillDown('customers')}
+          clickable
+        />
+        <StatCard
+          title={t('admin_total_users')}
+          value={users.length}
+          icon={Users}
+          onClick={() => setDrillDown('users')}
+          clickable
+        />
+        <StatCard
+          title={t('admin_completed_assessments')}
+          value={completed.length}
+          subtitle={`${inProgress.length} ${t('assessments_status_in_progress').toLowerCase()}`}
+          icon={ShieldCheck}
+          onClick={() => setDrillDown('assessments')}
+          clickable
+        />
         <StatCard
           title={t('admin_avg_maturity')}
           value={avgMaturity ?? '—'}
           icon={BarChart3}
         />
-        <div className="cursor-pointer" onClick={() => setDrillDown('risks')}>
-          <StatCard
-            title={t('admin_open_risks')}
-            value={openRisks.length}
-            subtitle={`${criticalRisks.length} ${t('risk_level_critical').toLowerCase()}`}
-            icon={AlertTriangle}
-          />
-        </div>
-        <div className="cursor-pointer" onClick={() => setDrillDown('tasks')}>
-          <StatCard
-            title={t('admin_open_tasks')}
-            value={openTasks.length}
-            subtitle={overdueTasks.length > 0 ? `${overdueTasks.length} ${t('admin_overdue')}` : undefined}
-            icon={ClipboardList}
-          />
-        </div>
+        <StatCard
+          title={t('admin_open_risks')}
+          value={openRisks.length}
+          subtitle={`${criticalRisks.length} ${t('risk_level_critical').toLowerCase()}`}
+          icon={AlertTriangle}
+          onClick={() => setDrillDown('risks')}
+          clickable
+        />
+        <StatCard
+          title={t('admin_open_tasks')}
+          value={openTasks.length}
+          subtitle={overdueTasks.length > 0 ? `${overdueTasks.length} ${t('admin_overdue')}` : undefined}
+          icon={ClipboardList}
+          onClick={() => setDrillDown('tasks')}
+          clickable
+        />
       </div>
 
       {/* Charts row */}
