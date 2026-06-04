@@ -14,13 +14,11 @@ export default function CustomerUsersPanel({ customer }) {
   const [role, setRole] = useState('user');
   const [inviting, setInviting] = useState(false);
 
-  // Fetch all users belonging to this customer
-  const { data: allUsers = [], isLoading } = useQuery({
+  // Fetch users belonging to this customer
+  const { data: customerUsers = [], isLoading } = useQuery({
     queryKey: ['customerUsers', customer.id],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => base44.entities.User.filter({ customer_id: customer.id }),
   });
-
-  const customerUsers = allUsers.filter(u => u.customer_id === customer.id);
 
   const handleInvite = async (e) => {
     e.preventDefault();
