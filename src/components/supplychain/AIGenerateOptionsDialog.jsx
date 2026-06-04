@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, X, Plus } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const PRESET_AREAS = [
   'Information Security',
@@ -20,6 +21,7 @@ const PRESET_AREAS = [
 ];
 
 export default function AIGenerateOptionsDialog({ open, onClose, onGenerate, preselectedAreas = [] }) {
+  const { t } = useLanguage();
   const [count, setCount] = useState(3);
   const [selectedAreas, setSelectedAreas] = useState([]);
   const [customArea, setCustomArea] = useState('');
@@ -56,15 +58,15 @@ export default function AIGenerateOptionsDialog({ open, onClose, onGenerate, pre
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
-            AI Generate Questions
+            {t('sc_ai_generate')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5 pt-1">
           {/* Number of questions per subject */}
           <div>
-            <Label>Questions per subject</Label>
-            <p className="text-xs text-muted-foreground mb-2">How many questions should be generated for each selected subject.</p>
+            <Label>{t('sc_gen_per_subject')}</Label>
+            <p className="text-xs text-muted-foreground mb-2">{t('sc_gen_per_subject_desc')}</p>
             <div className="flex items-center gap-3">
               <Button
                 type="button" variant="outline" size="icon" className="h-8 w-8"
@@ -81,15 +83,15 @@ export default function AIGenerateOptionsDialog({ open, onClose, onGenerate, pre
                 onClick={() => setCount(c => Math.min(10, c + 1))}
               >+</Button>
               <span className="text-sm text-muted-foreground">
-                = ~{count * selectedAreas.length} total questions
+                = ~{count * selectedAreas.length} {t('sc_gen_total')}
               </span>
             </div>
           </div>
 
           {/* Subjects */}
           <div>
-            <Label>Subjects</Label>
-            <p className="text-xs text-muted-foreground mb-2">Select the subjects to cover in the questionnaire.</p>
+            <Label>{t('sc_gen_subjects')}</Label>
+            <p className="text-xs text-muted-foreground mb-2">{t('sc_gen_subjects_desc')}</p>
             <div className="flex flex-wrap gap-2 mb-3">
               {PRESET_AREAS.map(area => (
                 <button
@@ -115,23 +117,23 @@ export default function AIGenerateOptionsDialog({ open, onClose, onGenerate, pre
             ))}
             <div className="flex gap-2 mt-1">
               <Input
-                placeholder="Add custom subject..."
+                placeholder={t('sc_gen_custom_placeholder')}
                 value={customArea}
                 onChange={e => setCustomArea(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomArea())}
                 className="flex-1 h-8 text-sm"
               />
               <Button type="button" variant="outline" size="sm" onClick={addCustomArea} className="gap-1">
-                <Plus className="w-3 h-3" />Add
+                <Plus className="w-3 h-3" />{t('sc_add')}
               </Button>
             </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button variant="outline" onClick={onClose}>{t('common_cancel')}</Button>
             <Button onClick={handleGenerate} disabled={selectedAreas.length === 0} className="gap-2">
               <Sparkles className="w-4 h-4" />
-              Generate Questions
+              {t('sc_gen_generate_btn')}
             </Button>
           </div>
         </div>

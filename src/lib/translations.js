@@ -879,6 +879,28 @@ export const translations = {
     sc_form_notes_placeholder: 'Internal notes...',
     sc_form_save: 'Save Changes',
     sc_form_create: 'Create',
+    // Translate existing questions
+    sc_translate_to_pt: 'Translate to PT',
+    sc_translating: 'Translating...',
+    sc_all_translated: 'All questions already have a Portuguese translation!',
+    sc_translated_success: 'question(s) translated to Portuguese',
+    // AI Review dialog
+    sc_review_title: 'Review AI-Generated Questions',
+    sc_review_generated: 'generated',
+    sc_review_desc: 'Select which questions to add. Each question is shown in English and Portuguese.',
+    sc_review_of: 'of',
+    sc_review_selected: 'selected',
+    sc_review_select_all: 'Select All',
+    sc_review_deselect_all: 'Deselect All',
+    sc_review_add: 'Add',
+    // AI Generate Options dialog
+    sc_gen_per_subject: 'Questions per subject',
+    sc_gen_per_subject_desc: 'How many questions should be generated for each selected subject.',
+    sc_gen_total: 'total questions',
+    sc_gen_subjects: 'Subjects',
+    sc_gen_subjects_desc: 'Select the subjects to cover in the questionnaire.',
+    sc_gen_custom_placeholder: 'Add custom subject...',
+    sc_gen_generate_btn: 'Generate Questions',
   },
   pt: {
     // Sidebar nav groups
@@ -1760,5 +1782,27 @@ export const translations = {
     sc_form_notes_placeholder: 'Notas internas...',
     sc_form_save: 'Guardar Alterações',
     sc_form_create: 'Criar',
+    // Translate existing questions
+    sc_translate_to_pt: 'Traduzir para PT',
+    sc_translating: 'A traduzir...',
+    sc_all_translated: 'Todas as perguntas já têm tradução em Português!',
+    sc_translated_success: 'pergunta(s) traduzida(s) para Português',
+    // AI Review dialog
+    sc_review_title: 'Rever Perguntas Geradas por IA',
+    sc_review_generated: 'geradas',
+    sc_review_desc: 'Selecione as perguntas a adicionar. Cada pergunta é apresentada em inglês e português.',
+    sc_review_of: 'de',
+    sc_review_selected: 'selecionadas',
+    sc_review_select_all: 'Selecionar Todas',
+    sc_review_deselect_all: 'Desselecionar Todas',
+    sc_review_add: 'Adicionar',
+    // AI Generate Options dialog
+    sc_gen_per_subject: 'Perguntas por assunto',
+    sc_gen_per_subject_desc: 'Quantas perguntas devem ser geradas por cada assunto selecionado.',
+    sc_gen_total: 'perguntas no total',
+    sc_gen_subjects: 'Assuntos',
+    sc_gen_subjects_desc: 'Selecione os assuntos a cobrir no questionário.',
+    sc_gen_custom_placeholder: 'Adicionar assunto personalizado...',
+    sc_gen_generate_btn: 'Gerar Perguntas',
   },
 };

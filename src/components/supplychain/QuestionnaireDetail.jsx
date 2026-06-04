@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Trash2, Sparkles, ChevronDown, ChevronRight, Send, Mail } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Sparkles, ChevronDown, ChevronRight, Send, Mail, Languages } from 'lucide-react';
 import AIQuestionsReviewDialog from './AIQuestionsReviewDialog';
 import AIGenerateOptionsDialog from './AIGenerateOptionsDialog';
 import SendQuestionnaireEmailDialog from './SendQuestionnaireEmailDialog';
@@ -120,6 +120,7 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
   const [reviewQuestions, setReviewQuestions] = useState(null);
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [showEmailImport, setShowEmailImport] = useState(false);
+  const [translating, setTranslating] = useState(false);
 
   // Always fetch fresh questionnaire data
   const { data: questionnaire = initialQuestionnaire } = useQuery({
@@ -229,6 +230,41 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
     setReviewQuestions(null);
   };
 
+  const handleTranslateToPT = async () => {
+    const untranslated = questions.filter(q => !q.question_text_pt);
+    if (!untranslated.length) {
+      toast.success(t('sc_all_translated'));
+      return;
+    }
+    setTranslating(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Translate the following cybersecurity questionnaire questions to European Portuguese.
+Return a JSON object with a "translations" array, each item having "id" and "question_text_pt".
+Questions:
+${untranslated.map(q => `{"id":"${q.id}","question_text":"${q.question_text}"}`).join('\n')}`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            translations: {
+              type: 'array',
+              items: { type: 'object', properties: { id: { type: 'string' }, question_text_pt: { type: 'string' } } },
+            },
+          },
+        },
+      });
+      const translations = result?.translations || result?.data?.translations || [];
+      await Promise.all(
+        translations.map(tr => base44.entities.SupplierQuestion.update(tr.id, { question_text_pt: tr.question_text_pt }))
+      );
+      queryClient.invalidateQueries(['supplier-questions', qid]);
+      toast.success(`${translations.length} ${t('sc_translated_success')}`);
+    } catch (e) {
+      toast.error(t('sc_ai_failed'));
+    }
+    setTranslating(false);
+  };
+
   const handleEmailImport = async (answers) => {
     await Promise.all(
       answers.map(a => base44.entities.SupplierQuestion.update(a.question_id, {
@@ -259,6 +295,11 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
         }>
           {questionnaire.status?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
         </Badge>
+        {questions.some(q => !q.question_text_pt) && (
+          <Button variant="outline" size="sm" onClick={handleTranslateToPT} disabled={translating} className="gap-2">
+            <Languages className="w-4 h-4" />{translating ? t('sc_translating') : t('sc_translate_to_pt')}
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={() => setShowSendEmail(true)} className="gap-2">
           <Send className="w-4 h-4" />{t('sc_send_to_supplier')}
         </Button>

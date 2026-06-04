@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CheckCheck, X } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function AIQuestionsReviewDialog({ open, questions, onConfirm, onClose }) {
+  const { t } = useLanguage();
   const [selected, setSelected] = useState(() => new Set(questions.map((_, i) => i)));
 
   // Reset selection when questions change
@@ -45,22 +47,22 @@ export default function AIQuestionsReviewDialog({ open, questions, onConfirm, on
       <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col gap-0 p-0">
         <DialogHeader className="px-6 pt-5 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2">
-            Review AI-Generated Questions
-            <Badge variant="secondary">{questions.length} generated</Badge>
+            {t('sc_review_title')}
+            <Badge variant="secondary">{questions.length} {t('sc_review_generated')}</Badge>
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Select which questions to add. Each question is shown in English and Portuguese.
+            {t('sc_review_desc')}
           </p>
         </DialogHeader>
 
         {/* Toolbar */}
         <div className="flex items-center gap-3 px-6 py-3 border-b bg-muted/30">
-          <span className="text-sm text-muted-foreground">{selected.size} of {questions.length} selected</span>
+          <span className="text-sm text-muted-foreground">{selected.size} {t('sc_review_of')} {questions.length} {t('sc_review_selected')}</span>
           <Button variant="ghost" size="sm" onClick={selectAll} className="h-7 text-xs gap-1">
-            <CheckCheck className="w-3 h-3" />Select All
+            <CheckCheck className="w-3 h-3" />{t('sc_review_select_all')}
           </Button>
           <Button variant="ghost" size="sm" onClick={deselectAll} className="h-7 text-xs gap-1">
-            <X className="w-3 h-3" />Deselect All
+            <X className="w-3 h-3" />{t('sc_review_deselect_all')}
           </Button>
         </div>
 
@@ -105,9 +107,9 @@ export default function AIQuestionsReviewDialog({ open, questions, onConfirm, on
 
         {/* Footer */}
         <div className="flex justify-end gap-2 px-6 py-4 border-t">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>{t('common_cancel')}</Button>
           <Button onClick={handleConfirm} disabled={selected.size === 0}>
-            Add {selected.size} Question{selected.size !== 1 ? 's' : ''}
+            {t('sc_review_add')} {selected.size}
           </Button>
         </div>
       </DialogContent>
