@@ -89,13 +89,14 @@ export default function EmailReport() {
   // Build daily chart data for last 14 days
   const dailyData = Array.from({ length: 14 }, (_, i) => {
     const date = subDays(new Date(), 13 - i);
-    const dateStr = format(date, 'MMM d');
-    const dayLogs = logs.filter(l => format(new Date(l.created_date), 'MMM d') === dateStr);
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayLogs = logs.filter(l => l.created_date && format(new Date(l.created_date), 'yyyy-MM-dd') === dateStr);
     return {
-      date: dateStr,
+      date: format(date, 'MMM d'),
       tasks: dayLogs.filter(l => l.data?.entity_type === 'Task').length,
       risks: dayLogs.filter(l => l.data?.entity_type === 'RiskItem').length,
       documents: dayLogs.filter(l => l.data?.entity_type === 'SecurityDocument').length,
+      supplychain: dayLogs.filter(l => l.data?.entity_type === 'SupplierQuestionnaire').length,
     };
   });
 
@@ -175,6 +176,7 @@ export default function EmailReport() {
               <Bar dataKey="tasks" name={t('email_report_legend_tasks')} fill="hsl(var(--chart-1))" radius={[3,3,0,0]} />
               <Bar dataKey="risks" name={t('email_report_legend_risks')} fill="hsl(var(--chart-4))" radius={[3,3,0,0]} />
               <Bar dataKey="documents" name={t('email_report_legend_docs')} fill="hsl(var(--chart-2))" radius={[3,3,0,0]} />
+              <Bar dataKey="supplychain" name={t('email_report_legend_supply_chain')} fill="hsl(var(--chart-5))" radius={[3,3,0,0]} />
             </BarChart>
           </ResponsiveContainer>
           <div className="flex items-center gap-4 mt-3 justify-center">
@@ -182,6 +184,7 @@ export default function EmailReport() {
               [t('email_report_legend_tasks'), 'chart-1'],
               [t('email_report_legend_risks'), 'chart-4'],
               [t('email_report_legend_docs'), 'chart-2'],
+              [t('email_report_legend_supply_chain'), 'chart-5'],
             ].map(([label, color]) => (
               <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <div className={`w-2.5 h-2.5 rounded-sm bg-${color}`} />
