@@ -181,13 +181,13 @@ export default function EmailReport() {
           </ResponsiveContainer>
           <div className="flex items-center gap-4 mt-3 justify-center">
             {[
-              [t('email_report_legend_tasks'), 'chart-1'],
-              [t('email_report_legend_risks'), 'chart-4'],
-              [t('email_report_legend_docs'), 'chart-2'],
-              [t('email_report_legend_supply_chain'), 'chart-5'],
+              [t('email_report_legend_tasks'), 'hsl(var(--chart-1))'],
+              [t('email_report_legend_risks'), 'hsl(var(--chart-4))'],
+              [t('email_report_legend_docs'), 'hsl(var(--chart-2))'],
+              [t('email_report_legend_supply_chain'), 'hsl(var(--chart-5))'],
             ].map(([label, color]) => (
               <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <div className={`w-2.5 h-2.5 rounded-sm bg-${color}`} />
+                <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: color }} />
                 {label}
               </div>
             ))}
