@@ -179,7 +179,7 @@ function SettingsForm({ initialData, customerId, customerName, onSaved }) {
   );
 }
 
-export default function ReminderSettingsPanel({ customers = [], isAdmin }) {
+export default function ReminderSettingsPanel({ customers = [], isAdmin, isReadOnly = false }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [selectedCustomerId, setSelectedCustomerId] = useState('__global__');
@@ -241,13 +241,20 @@ export default function ReminderSettingsPanel({ customers = [], isAdmin }) {
             </div>
           )}
 
-          <SettingsForm
-            key={selectedCustomerId}
-            initialData={activeSettings || (isGlobal ? {} : globalSettings || {})}
-            customerId={isGlobal ? null : selectedCustomerId}
-            customerName={currentCustomer?.name || null}
-            onSaved={onSaved}
-          />
+          {isReadOnly ? (
+            <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground flex items-center gap-2">
+              <Bell className="w-4 h-4 flex-shrink-0" />
+              {t('reminders_desc')}
+            </div>
+          ) : (
+            <SettingsForm
+              key={selectedCustomerId}
+              initialData={activeSettings || (isGlobal ? {} : globalSettings || {})}
+              customerId={isGlobal ? null : selectedCustomerId}
+              customerName={currentCustomer?.name || null}
+              onSaved={onSaved}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

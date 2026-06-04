@@ -26,6 +26,7 @@ export default function Settings() {
   const { t } = useLanguage();
   const isAdmin = currentUser?.role === 'admin';
   const isCustomerAdmin = currentUser?.role === 'customer_admin';
+  const isReadOnly = currentUser?.role === 'user';
 
   const [isSeeding, setIsSeeding] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -475,8 +476,8 @@ export default function Settings() {
       <Tabs defaultValue="users">
         <TabsList>
           <TabsTrigger value="users">{t('settings_tab_users')}</TabsTrigger>
-          {(isAdmin || isCustomerAdmin) && <TabsTrigger value="frameworks">{t('settings_tab_frameworks')}</TabsTrigger>}
-          {(isAdmin || isCustomerAdmin) && <TabsTrigger value="reminders" className="flex items-center gap-1.5"><Bell className="w-3.5 h-3.5" />{t('settings_tab_reminders')}</TabsTrigger>}
+          <TabsTrigger value="frameworks">{t('settings_tab_frameworks')}</TabsTrigger>
+          <TabsTrigger value="reminders" className="flex items-center gap-1.5"><Bell className="w-3.5 h-3.5" />{t('settings_tab_reminders')}</TabsTrigger>
         </TabsList>
 
         {/* Users Tab */}
@@ -701,17 +702,19 @@ export default function Settings() {
                   </CardTitle>
                   <CardDescription>{t('settings_frameworks_desc')}</CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  {frameworks.length === 0 && (
-                    <Button onClick={seedFrameworks} disabled={isSeeding} variant="outline" className="gap-2">
-                      {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <SettingsIcon className="w-4 h-4" />}
-                      {isSeeding ? t('common_seeding') : t('settings_init_defaults')}
+                {!isReadOnly && (
+                  <div className="flex gap-2">
+                    {frameworks.length === 0 && (
+                      <Button onClick={seedFrameworks} disabled={isSeeding} variant="outline" className="gap-2">
+                        {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <SettingsIcon className="w-4 h-4" />}
+                        {isSeeding ? t('common_seeding') : t('settings_init_defaults')}
+                      </Button>
+                    )}
+                    <Button onClick={() => setNewFwDialog(true)} className="gap-2">
+                      <Plus className="w-4 h-4" /> {t('settings_new_framework')}
                     </Button>
-                  )}
-                  <Button onClick={() => setNewFwDialog(true)} className="gap-2">
-                    <Plus className="w-4 h-4" /> {t('settings_new_framework')}
-                  </Button>
-                </div>
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -736,20 +739,33 @@ export default function Settings() {
                             {fw.version && <span className="text-xs text-muted-foreground">v{fw.version}</span>}
                           </div>
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleToggleFrameworkStatus(fw)}
-                              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                            {isReadOnly ? (
+                              <span className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${
                                 isActive
-                                  ? 'bg-accent/10 text-accent border-accent/20 hover:bg-accent/20'
-                                  : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
-                              }`}
-                              title={isActive ? 'Click to deactivate' : 'Click to activate'}
-                            >
-                              {isActive
-                                ? <><ToggleRight className="w-3.5 h-3.5" /> {t('settings_fw_active')}</>
-                                : <><ToggleLeft className="w-3.5 h-3.5" /> {t('settings_fw_inactive')}</>
-                              }
-                            </button>
+                                  ? 'bg-accent/10 text-accent border-accent/20'
+                                  : 'bg-muted text-muted-foreground border-border'
+                              }`}>
+                                {isActive
+                                  ? <><ToggleRight className="w-3.5 h-3.5" /> {t('settings_fw_active')}</>
+                                  : <><ToggleLeft className="w-3.5 h-3.5" /> {t('settings_fw_inactive')}</>
+                                }
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleToggleFrameworkStatus(fw)}
+                                className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                                  isActive
+                                    ? 'bg-accent/10 text-accent border-accent/20 hover:bg-accent/20'
+                                    : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                                }`}
+                                title={isActive ? 'Click to deactivate' : 'Click to activate'}
+                              >
+                                {isActive
+                                  ? <><ToggleRight className="w-3.5 h-3.5" /> {t('settings_fw_active')}</>
+                                  : <><ToggleLeft className="w-3.5 h-3.5" /> {t('settings_fw_inactive')}</>
+                                }
+                              </button>
+                            )}
                           </div>
                         </div>
                         <p className="text-sm text-muted-foreground">{fw.description}</p>
@@ -781,7 +797,7 @@ export default function Settings() {
                           {/* Reference URL */}
                           <div className="flex items-center gap-2 flex-wrap">
                             <Link className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                            {fwRefEdit[fw.id]?.editingUrl ? (
+                            {!isReadOnly && fwRefEdit[fw.id]?.editingUrl ? (
                               <form className="flex gap-2 flex-1" onSubmit={e => { e.preventDefault(); handleFwRefUrlSave(fw, fwRefEdit[fw.id]?.url ?? fw.reference_url ?? ''); }}>
                                 <Input
                                   autoFocus
@@ -798,12 +814,16 @@ export default function Settings() {
                                 <a href={fw.reference_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate flex items-center gap-1">
                                   <ExternalLink className="w-3 h-3 flex-shrink-0" />{fw.reference_url}
                                 </a>
-                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs flex-shrink-0" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: true, url: fw.reference_url } }))}>Edit</Button>
+                                {!isReadOnly && (
+                                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs flex-shrink-0" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: true, url: fw.reference_url } }))}>Edit</Button>
+                                )}
                               </div>
-                            ) : (
+                            ) : !isReadOnly ? (
                               <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: true, url: '' } }))}>
                                 {t('docs_add_ref_link')}
                               </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">—</span>
                             )}
                           </div>
 
@@ -815,12 +835,14 @@ export default function Settings() {
                                 <a href={fw.document_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate flex items-center gap-1">
                                   <ExternalLink className="w-3 h-3 flex-shrink-0" />{fw.document_name || 'Reference document'}
                                 </a>
-                                <label className="cursor-pointer">
-                                  <span className="text-xs text-muted-foreground hover:text-foreground border rounded px-2 py-0.5">{t('docs_replace')}</span>
-                                  <input type="file" className="hidden" onChange={e => e.target.files[0] && handleFwDocUpload(fw, e.target.files[0])} />
-                                </label>
+                                {!isReadOnly && (
+                                  <label className="cursor-pointer">
+                                    <span className="text-xs text-muted-foreground hover:text-foreground border rounded px-2 py-0.5">{t('docs_replace')}</span>
+                                    <input type="file" className="hidden" onChange={e => e.target.files[0] && handleFwDocUpload(fw, e.target.files[0])} />
+                                  </label>
+                                )}
                               </div>
-                            ) : (
+                            ) : !isReadOnly ? (
                               <label className="cursor-pointer flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                                 {fwRefEdit[fw.id]?.uploading
                                   ? <><Loader2 className="w-3 h-3 animate-spin" /> Uploading...</>
@@ -828,6 +850,8 @@ export default function Settings() {
                                 }
                                 <input type="file" className="hidden" disabled={fwRefEdit[fw.id]?.uploading} onChange={e => e.target.files[0] && handleFwDocUpload(fw, e.target.files[0])} />
                               </label>
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">—</span>
                             )}
                           </div>
                         </div>
@@ -927,7 +951,7 @@ export default function Settings() {
 
         {/* Reminders Tab */}
         <TabsContent value="reminders" className="space-y-4 mt-4">
-          <ReminderSettingsPanel customers={customers} isAdmin={isAdmin} />
+          <ReminderSettingsPanel customers={customers} isAdmin={isAdmin} isReadOnly={isReadOnly} />
         </TabsContent>
       </Tabs>
     </div>
