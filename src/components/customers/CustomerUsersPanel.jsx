@@ -101,8 +101,8 @@ export default function CustomerUsersPanel({ customer }) {
                   {(u.full_name || u.email)?.[0]?.toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium truncate">{u.full_name || u.email}</p>
-                  {u.full_name && <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>}
+                  <p className="text-xs font-medium truncate">{u.display_name || u.full_name || u.email}</p>
+                  {(u.display_name || u.full_name) && <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>}
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
