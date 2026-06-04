@@ -22,6 +22,17 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
   const displayText = (lang === 'pt' && question.question_text_pt) ? question.question_text_pt : question.question_text;
   const displayOptions = (lang === 'pt' && question.options_pt?.length) ? question.options_pt : (question.options || []);
 
+  // Map stored answer values to translated display labels for yes_no
+  const yesNoLabels = {
+    yes: t('sc_answer_yes'),
+    no: t('sc_answer_no'),
+    partial: t('sc_answer_partial'),
+    na: t('sc_answer_na'),
+  };
+  const displayAnswer = question.answer_type === 'yes_no' && question.answer
+    ? (yesNoLabels[question.answer] || question.answer)
+    : question.answer;
+
   return (
     <div className="border rounded-lg bg-card">
       <button
@@ -32,7 +43,7 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
         <span className="flex-1 text-sm font-medium">{displayText}</span>
         <Badge variant="outline" className="text-xs">{question.area}</Badge>
         <Badge variant="secondary" className="text-xs">{question.answer_type?.replace('_', ' ')}</Badge>
-        {question.answer && <Badge className="text-xs bg-chart-2/10 text-chart-2 border-chart-2/20">{t('sc_answered_badge')}</Badge>}
+        {question.answer && <Badge className="text-xs bg-chart-2/10 text-chart-2 border-chart-2/20">{displayAnswer || t('sc_answered_badge')}</Badge>}
       </button>
       {expanded && (
         <div className="px-4 pb-4 space-y-3 border-t pt-3">
@@ -67,7 +78,9 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
               <label className="text-xs text-muted-foreground mb-1 block">{t('sc_supplier_answer')}</label>
               {question.answer_type === 'yes_no' ? (
                 <Select value={question.answer || ''} onValueChange={v => onUpdate(question.id, { answer: v })}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('sc_answer_select')} /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs">
+                    <span>{question.answer ? yesNoLabels[question.answer] : t('sc_answer_select')}</span>
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="yes">{t('sc_answer_yes')}</SelectItem>
                     <SelectItem value="no">{t('sc_answer_no')}</SelectItem>
