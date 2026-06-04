@@ -59,7 +59,7 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
               <Select value={question.answer_type} onValueChange={v => onUpdate(question.id, { answer_type: v })}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {ANSWER_TYPES.map(t => <SelectItem key={t} value={t}>{t.replace(/_/g,' ')}</SelectItem>)}
+                  {ANSWER_TYPES.map(type => <SelectItem key={type} value={type}>{type.replace(/_/g,' ')}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
