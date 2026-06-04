@@ -912,6 +912,9 @@ export const translations = {
     sc_answer_type_scale: 'Scale 1–5',
     sc_answer_type_text: 'Text',
     sc_answer_type_multiple_choice: 'Multiple Choice',
+    sc_save: 'Save',
+    sc_cancel: 'Cancel',
+    sc_question_saved: 'Question saved',
   },
   pt: {
     // Sidebar nav groups
@@ -1826,5 +1829,8 @@ export const translations = {
     sc_answer_type_scale: 'Escala 1–5',
     sc_answer_type_text: 'Texto',
     sc_answer_type_multiple_choice: 'Escolha Múltipla',
+    sc_save: 'Guardar',
+    sc_cancel: 'Cancelar',
+    sc_question_saved: 'Pergunta guardada',
   },
 };

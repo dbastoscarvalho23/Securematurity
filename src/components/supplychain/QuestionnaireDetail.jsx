@@ -19,10 +19,12 @@ const ANSWER_TYPES = ['yes_no', 'scale_1_5', 'text', 'multiple_choice'];
 
 function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
   const [expanded, setExpanded] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const [saving, setSaving] = useState(false);
+
   const displayText = (lang === 'pt' && question.question_text_pt) ? question.question_text_pt : question.question_text;
   const displayOptions = (lang === 'pt' && question.options_pt?.length) ? question.options_pt : (question.options || []);
 
-  // Translated labels for yes_no answer values
   const yesNoLabels = {
     yes: t('sc_answer_yes'),
     no: t('sc_answer_no'),
@@ -30,7 +32,6 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
     na: t('sc_answer_na'),
   };
 
-  // Translated labels for answer types
   const answerTypeLabels = {
     yes_no: t('sc_answer_type_yes_no'),
     scale_1_5: t('sc_answer_type_scale'),
@@ -42,11 +43,41 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
     ? (yesNoLabels[question.answer] || question.answer)
     : question.answer;
 
+  const handleExpand = () => {
+    if (!expanded) {
+      setDraft({
+        question_text: question.question_text,
+        question_text_pt: question.question_text_pt || '',
+        answer_type: question.answer_type,
+        answer: question.answer || '',
+        answer_notes: question.answer_notes || '',
+      });
+    }
+    setExpanded(e => !e);
+  };
+
+  const handleCancel = () => {
+    setDraft(null);
+    setExpanded(false);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    await onUpdate(question.id, draft);
+    setSaving(false);
+    setExpanded(false);
+    setDraft(null);
+    toast.success(t('sc_question_saved'));
+  };
+
+  const d = draft || {};
+  const draftOptions = (lang === 'pt' && question.options_pt?.length) ? question.options_pt : (question.options || []);
+
   return (
     <div className="border rounded-lg bg-card">
       <button
         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/30 transition-colors"
-        onClick={() => setExpanded(e => !e)}
+        onClick={handleExpand}
       >
         {expanded ? <ChevronDown className="w-4 h-4 flex-shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 flex-shrink-0 text-muted-foreground" />}
         <span className="flex-1 text-sm font-medium">{displayText}</span>
@@ -54,29 +85,29 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
         <Badge variant="secondary" className="text-xs">{answerTypeLabels[question.answer_type] || question.answer_type?.replace(/_/g,' ')}</Badge>
         {question.answer && <Badge className="text-xs bg-chart-2/10 text-chart-2 border-chart-2/20">{displayAnswer || t('sc_answered_badge')}</Badge>}
       </button>
-      {expanded && (
+      {expanded && draft && (
         <div className="px-4 pb-4 space-y-3 border-t pt-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">{t('sc_question_en')}</label>
               <Textarea
-                value={question.question_text}
-                onChange={e => onUpdate(question.id, { question_text: e.target.value })}
+                value={d.question_text}
+                onChange={e => setDraft(prev => ({ ...prev, question_text: e.target.value }))}
                 rows={2}
               />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">{t('sc_question_pt')}</label>
               <Textarea
-                value={question.question_text_pt || ''}
-                onChange={e => onUpdate(question.id, { question_text_pt: e.target.value })}
+                value={d.question_text_pt}
+                onChange={e => setDraft(prev => ({ ...prev, question_text_pt: e.target.value }))}
                 rows={2}
                 placeholder={t('sc_question_pt_placeholder')}
               />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">{t('sc_answer_type')}</label>
-              <Select value={question.answer_type} onValueChange={v => onUpdate(question.id, { answer_type: v })}>
+              <Select value={d.answer_type} onValueChange={v => setDraft(prev => ({ ...prev, answer_type: v }))}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ANSWER_TYPES.map(type => <SelectItem key={type} value={type}>{type.replace(/_/g,' ')}</SelectItem>)}
@@ -85,10 +116,10 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">{t('sc_supplier_answer')}</label>
-              {question.answer_type === 'yes_no' ? (
-                <Select value={question.answer || ''} onValueChange={v => onUpdate(question.id, { answer: v })}>
+              {d.answer_type === 'yes_no' ? (
+                <Select value={d.answer} onValueChange={v => setDraft(prev => ({ ...prev, answer: v }))}>
                   <SelectTrigger className="h-8 text-xs">
-                    <span>{question.answer ? yesNoLabels[question.answer] : t('sc_answer_select')}</span>
+                    <span>{d.answer ? yesNoLabels[d.answer] : t('sc_answer_select')}</span>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="yes">{t('sc_answer_yes')}</SelectItem>
@@ -97,25 +128,25 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
                     <SelectItem value="na">{t('sc_answer_na')}</SelectItem>
                   </SelectContent>
                 </Select>
-              ) : question.answer_type === 'scale_1_5' ? (
-                <Select value={question.answer || ''} onValueChange={v => onUpdate(question.id, { answer: v })}>
+              ) : d.answer_type === 'scale_1_5' ? (
+                <Select value={d.answer} onValueChange={v => setDraft(prev => ({ ...prev, answer: v }))}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('sc_answer_score')} /></SelectTrigger>
                   <SelectContent>
                     {['1','2','3','4','5'].map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
                   </SelectContent>
                 </Select>
-              ) : question.answer_type === 'multiple_choice' ? (
-                <Select value={question.answer || ''} onValueChange={v => onUpdate(question.id, { answer: v })}>
+              ) : d.answer_type === 'multiple_choice' ? (
+                <Select value={d.answer} onValueChange={v => setDraft(prev => ({ ...prev, answer: v }))}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('sc_answer_select')} /></SelectTrigger>
                   <SelectContent>
-                    {displayOptions.map((opt, i) => <SelectItem key={i} value={opt}>{opt}</SelectItem>)}
+                    {draftOptions.map((opt, i) => <SelectItem key={i} value={opt}>{opt}</SelectItem>)}
                   </SelectContent>
                 </Select>
               ) : (
                 <Input
                   className="h-8 text-xs"
-                  value={question.answer || ''}
-                  onChange={e => onUpdate(question.id, { answer: e.target.value })}
+                  value={d.answer}
+                  onChange={e => setDraft(prev => ({ ...prev, answer: e.target.value }))}
                   placeholder={t('sc_answer_placeholder')}
                 />
               )}
@@ -123,17 +154,25 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
             <div className="col-span-2">
               <label className="text-xs text-muted-foreground mb-1 block">{t('sc_notes_evidence')}</label>
               <Textarea
-                value={question.answer_notes || ''}
-                onChange={e => onUpdate(question.id, { answer_notes: e.target.value })}
+                value={d.answer_notes}
+                onChange={e => setDraft(prev => ({ ...prev, answer_notes: e.target.value }))}
                 rows={2}
                 placeholder={t('sc_notes_placeholder')}
               />
             </div>
           </div>
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" onClick={() => onDelete(question.id)} className="text-destructive h-7 text-xs">
               <Trash2 className="w-3 h-3 mr-1" />{t('sc_delete')}
             </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleCancel} className="h-7 text-xs">
+                {t('sc_cancel') || 'Cancel'}
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={saving} className="h-7 text-xs">
+                {saving ? '...' : (t('sc_save') || 'Save')}
+              </Button>
+            </div>
           </div>
         </div>
       )}
