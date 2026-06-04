@@ -91,11 +91,11 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <LanguageProvider>
+        <LanguageProvider>
+          <Router>
             <AuthenticatedApp />
-          </LanguageProvider>
-        </Router>
+          </Router>
+        </LanguageProvider>
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>
