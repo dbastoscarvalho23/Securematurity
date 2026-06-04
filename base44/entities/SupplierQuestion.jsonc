@@ -12,7 +12,11 @@
     },
     "question_text": {
       "type": "string",
-      "description": "The question text"
+      "description": "The question text (English)"
+    },
+    "question_text_pt": {
+      "type": "string",
+      "description": "The question text in Portuguese"
     },
     "answer_type": {
       "type": "string",
@@ -27,7 +31,14 @@
     },
     "options": {
       "type": "array",
-      "description": "Options for multiple_choice questions",
+      "description": "Options for multiple_choice questions (English)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "options_pt": {
+      "type": "array",
+      "description": "Options for multiple_choice questions (Portuguese)",
       "items": {
         "type": "string"
       }

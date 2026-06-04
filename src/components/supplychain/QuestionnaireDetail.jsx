@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ const ANSWER_TYPES = ['yes_no', 'scale_1_5', 'text', 'multiple_choice'];
 function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
   const [expanded, setExpanded] = useState(false);
   const displayText = (lang === 'pt' && question.question_text_pt) ? question.question_text_pt : question.question_text;
+  const displayOptions = (lang === 'pt' && question.options_pt?.length) ? question.options_pt : (question.options || []);
 
   return (
     <div className="border rounded-lg bg-card">
@@ -81,6 +82,13 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
                     {['1','2','3','4','5'].map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              ) : question.answer_type === 'multiple_choice' ? (
+                <Select value={question.answer || ''} onValueChange={v => onUpdate(question.id, { answer: v })}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('sc_answer_select')} /></SelectTrigger>
+                  <SelectContent>
+                    {displayOptions.map((opt, i) => <SelectItem key={i} value={opt}>{opt}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               ) : (
                 <Input
                   className="h-8 text-xs"
@@ -134,6 +142,10 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
     queryKey: ['supplier-questions', initialQuestionnaire.id],
     queryFn: () => base44.entities.SupplierQuestion.filter({ questionnaire_id: initialQuestionnaire.id }),
   });
+
+  // Keep a ref so handlers always have the latest questions (avoids stale closure)
+  const questionsRef = useRef(questions);
+  useEffect(() => { questionsRef.current = questions; }, [questions]);
 
   const questionsByArea = (questionnaire.areas || []).reduce((acc, area) => {
     acc[area] = questions.filter(q => q.area === area);
@@ -241,18 +253,30 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
   const untranslatedQuestions = questions.filter(q => !q.question_text_pt);
 
   const handleTranslate = async () => {
-    const toTranslate = questions.filter(q => !q.question_text_pt);
+    const currentQuestions = questionsRef.current;
+    const toTranslate = currentQuestions.filter(q => !q.question_text_pt);
     if (!toTranslate.length) {
       toast.success(t('sc_all_translated'));
       return;
     }
     setTranslating(true);
     try {
+      const questionsPayload = toTranslate.map(q => ({
+        id: q.id,
+        question_text: q.question_text,
+        answer_type: q.answer_type,
+        options: q.options || [],
+      }));
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Translate the following cybersecurity questionnaire questions to European Portuguese.
-Return a JSON object with a "translations" array. Each item must have "id" and "question_text_pt".
-Questions:
-${toTranslate.map(q => `{"id":"${q.id}","question_text":"${q.question_text.replace(/"/g, "'")}"}`).join('\n')}`,
+        prompt: `You are a professional translator. Translate the following cybersecurity questionnaire questions to European Portuguese (Portugal).
+For each question, translate:
+- question_text → question_text_pt (the full question in Portuguese)
+- options → options_pt (translate each option string to Portuguese, keep same array length; empty array if no options)
+
+Return ONLY a JSON object with a "translations" array. Each item must have: "id", "question_text_pt", "options_pt".
+
+Questions to translate:
+${JSON.stringify(questionsPayload, null, 2)}`,
         response_json_schema: {
           type: 'object',
           properties: {
@@ -263,8 +287,9 @@ ${toTranslate.map(q => `{"id":"${q.id}","question_text":"${q.question_text.repla
                 properties: {
                   id: { type: 'string' },
                   question_text_pt: { type: 'string' },
+                  options_pt: { type: 'array', items: { type: 'string' } },
                 },
-                required: ['id', 'question_text_pt'],
+                required: ['id', 'question_text_pt', 'options_pt'],
               },
             },
           },
@@ -278,7 +303,12 @@ ${toTranslate.map(q => `{"id":"${q.id}","question_text":"${q.question_text.repla
         return;
       }
       await Promise.all(
-        translations.map(tr => base44.entities.SupplierQuestion.update(tr.id, { question_text_pt: tr.question_text_pt }))
+        translations.map(tr =>
+          base44.entities.SupplierQuestion.update(tr.id, {
+            question_text_pt: tr.question_text_pt,
+            ...(tr.options_pt?.length ? { options_pt: tr.options_pt } : {}),
+          })
+        )
       );
       queryClient.invalidateQueries(['supplier-questions', qid]);
       toast.success(`${translations.length} ${t('sc_translated_success')}`);
