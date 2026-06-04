@@ -69,10 +69,10 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
                 <Select value={question.answer || ''} onValueChange={v => onUpdate(question.id, { answer: v })}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('sc_answer_select')} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="yes">Yes</SelectItem>
-                    <SelectItem value="no">No</SelectItem>
-                    <SelectItem value="partial">Partial</SelectItem>
-                    <SelectItem value="na">N/A</SelectItem>
+                    <SelectItem value="yes">{t('sc_answer_yes')}</SelectItem>
+                    <SelectItem value="no">{t('sc_answer_no')}</SelectItem>
+                    <SelectItem value="partial">{t('sc_answer_partial')}</SelectItem>
+                    <SelectItem value="na">{t('sc_answer_na')}</SelectItem>
                   </SelectContent>
                 </Select>
               ) : question.answer_type === 'scale_1_5' ? (

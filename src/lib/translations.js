@@ -902,6 +902,11 @@ export const translations = {
     sc_gen_subjects_desc: 'Select the subjects to cover in the questionnaire.',
     sc_gen_custom_placeholder: 'Add custom subject...',
     sc_gen_generate_btn: 'Generate Questions',
+    // yes_no answer option labels
+    sc_answer_yes: 'Yes',
+    sc_answer_no: 'No',
+    sc_answer_partial: 'Partial',
+    sc_answer_na: 'N/A',
   },
   pt: {
     // Sidebar nav groups
@@ -1806,5 +1811,10 @@ export const translations = {
     sc_gen_subjects_desc: 'Selecione os assuntos a cobrir no questionário.',
     sc_gen_custom_placeholder: 'Adicionar assunto personalizado...',
     sc_gen_generate_btn: 'Gerar Perguntas',
+    // yes_no answer option labels
+    sc_answer_yes: 'Sim',
+    sc_answer_no: 'Não',
+    sc_answer_partial: 'Parcial',
+    sc_answer_na: 'N/D',
   },
 };
