@@ -880,6 +880,7 @@ export const translations = {
     sc_form_save: 'Save Changes',
     sc_form_create: 'Create',
     // Translate existing questions
+    sc_translate_to: 'Translate to',
     sc_translate_to_pt: 'Translate to PT',
     sc_translating: 'Translating...',
     sc_all_translated: 'All questions already have a Portuguese translation!',
@@ -1783,6 +1784,7 @@ export const translations = {
     sc_form_save: 'Guardar Alterações',
     sc_form_create: 'Criar',
     // Translate existing questions
+    sc_translate_to: 'Traduzir para',
     sc_translate_to_pt: 'Traduzir para PT',
     sc_translating: 'A traduzir...',
     sc_all_translated: 'Todas as perguntas já têm tradução em Português!',
