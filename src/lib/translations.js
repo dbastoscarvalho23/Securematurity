@@ -907,6 +907,11 @@ export const translations = {
     sc_answer_no: 'No',
     sc_answer_partial: 'Partial',
     sc_answer_na: 'N/A',
+    // answer type labels
+    sc_answer_type_yes_no: 'Yes / No',
+    sc_answer_type_scale: 'Scale 1–5',
+    sc_answer_type_text: 'Text',
+    sc_answer_type_multiple_choice: 'Multiple Choice',
   },
   pt: {
     // Sidebar nav groups
@@ -1816,5 +1821,10 @@ export const translations = {
     sc_answer_no: 'Não',
     sc_answer_partial: 'Parcial',
     sc_answer_na: 'N/D',
+    // answer type labels
+    sc_answer_type_yes_no: 'Sim / Não',
+    sc_answer_type_scale: 'Escala 1–5',
+    sc_answer_type_text: 'Texto',
+    sc_answer_type_multiple_choice: 'Escolha Múltipla',
   },
 };

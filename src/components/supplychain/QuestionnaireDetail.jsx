@@ -22,13 +22,22 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
   const displayText = (lang === 'pt' && question.question_text_pt) ? question.question_text_pt : question.question_text;
   const displayOptions = (lang === 'pt' && question.options_pt?.length) ? question.options_pt : (question.options || []);
 
-  // Map stored answer values to translated display labels for yes_no
+  // Translated labels for yes_no answer values
   const yesNoLabels = {
     yes: t('sc_answer_yes'),
     no: t('sc_answer_no'),
     partial: t('sc_answer_partial'),
     na: t('sc_answer_na'),
   };
+
+  // Translated labels for answer types
+  const answerTypeLabels = {
+    yes_no: t('sc_answer_type_yes_no'),
+    scale_1_5: t('sc_answer_type_scale'),
+    text: t('sc_answer_type_text'),
+    multiple_choice: t('sc_answer_type_multiple_choice'),
+  };
+
   const displayAnswer = question.answer_type === 'yes_no' && question.answer
     ? (yesNoLabels[question.answer] || question.answer)
     : question.answer;
@@ -42,7 +51,7 @@ function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
         {expanded ? <ChevronDown className="w-4 h-4 flex-shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 flex-shrink-0 text-muted-foreground" />}
         <span className="flex-1 text-sm font-medium">{displayText}</span>
         <Badge variant="outline" className="text-xs">{question.area}</Badge>
-        <Badge variant="secondary" className="text-xs">{question.answer_type?.replace('_', ' ')}</Badge>
+        <Badge variant="secondary" className="text-xs">{answerTypeLabels[question.answer_type] || question.answer_type?.replace(/_/g,' ')}</Badge>
         {question.answer && <Badge className="text-xs bg-chart-2/10 text-chart-2 border-chart-2/20">{displayAnswer || t('sc_answered_badge')}</Badge>}
       </button>
       {expanded && (
