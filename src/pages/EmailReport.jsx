@@ -63,7 +63,7 @@ export default function EmailReport() {
   // Filter by customer for customer_admin
   const logs = rawLogs.filter(log => {
     if (isCustomerAdmin) {
-      return log.data?.customer_id === user?.customer_id;
+      return log.customer_id === user?.customer_id;
     }
     return true;
   });
@@ -72,17 +72,17 @@ export default function EmailReport() {
   const cutoffDate = rangeFilter !== 'all' ? subDays(new Date(), parseInt(rangeFilter)) : null;
   const filteredLogs = logs.filter(log => {
     const afterCutoff = cutoffDate ? isAfter(new Date(log.created_date), cutoffDate) : true;
-    const matchesEntity = entityFilter === 'all' || log.data?.entity_type === entityFilter;
-    const matchesSearch = !search || (log.data?.details || '').toLowerCase().includes(search.toLowerCase())
-      || (log.data?.user_email || '').toLowerCase().includes(search.toLowerCase());
+    const matchesEntity = entityFilter === 'all' || log.entity_type === entityFilter;
+    const matchesSearch = !search || (log.details || '').toLowerCase().includes(search.toLowerCase())
+      || (log.user_email || '').toLowerCase().includes(search.toLowerCase());
     return afterCutoff && matchesEntity && matchesSearch;
   });
 
   // Last 2 weeks specifically for the summary header
   const last14 = logs.filter(l => isAfter(new Date(l.created_date), subDays(new Date(), 14)));
   const last14ByType = last14.reduce((acc, l) => {
-    const t = l.data?.entity_type || 'default';
-    acc[t] = (acc[t] || 0) + 1;
+    const key = l.entity_type || 'default';
+    acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
 
@@ -93,16 +93,16 @@ export default function EmailReport() {
     const dayLogs = logs.filter(l => l.created_date && format(new Date(l.created_date), 'yyyy-MM-dd') === dateStr);
     return {
       date: format(date, 'MMM d'),
-      tasks: dayLogs.filter(l => l.data?.entity_type === 'Task').length,
-      risks: dayLogs.filter(l => l.data?.entity_type === 'RiskItem').length,
-      documents: dayLogs.filter(l => l.data?.entity_type === 'SecurityDocument').length,
-      supplychain: dayLogs.filter(l => l.data?.entity_type === 'SupplierQuestionnaire').length,
+      tasks: dayLogs.filter(l => l.entity_type === 'Task').length,
+      risks: dayLogs.filter(l => l.entity_type === 'RiskItem').length,
+      documents: dayLogs.filter(l => l.entity_type === 'SecurityDocument').length,
+      supplychain: dayLogs.filter(l => l.entity_type === 'SupplierQuestionnaire').length,
     };
   });
 
   // Subtype breakdown for filtered logs
   const subtypeBreakdown = filteredLogs.reduce((acc, l) => {
-    const st = detectEmailType(l.data?.details);
+    const st = detectEmailType(l.details);
     acc[st] = (acc[st] || 0) + 1;
     return acc;
   }, {});
@@ -295,14 +295,14 @@ function KpiCard({ icon: Icon, label, value, sub, iconClass }) {
 }
 
 function EmailLogRow({ log, t }) {
-  const entityType = log.data?.entity_type || 'default';
+  const entityType = log.entity_type || 'default';
   const config = EMAIL_TYPE_CONFIG[entityType] || EMAIL_TYPE_CONFIG.default;
   const Icon = config.icon;
-  const subtype = detectEmailType(log.data?.details);
+  const subtype = detectEmailType(log.details);
   const subtypeLabel = t(EMAIL_SUBTYPE_KEYS[subtype] || 'email_report_subtype_other');
 
   // Extract recipient from details
-  const details = log.data?.details || '';
+  const details = log.details || '';
   const recipientMatch = details.match(/sent to ([^\s,]+(?:,\s*[^\s,]+)*)/i);
   const recipient = recipientMatch ? recipientMatch[1] : '—';
 
@@ -322,7 +322,7 @@ function EmailLogRow({ log, t }) {
             <Users className="w-3 h-3" /> {recipient}
           </span>
           <span className="text-[10px] text-muted-foreground">
-            {t('email_report_by')} {log.data?.user_email || 'system'}
+            {t('email_report_by')} {log.user_email || 'system'}
           </span>
         </div>
       </div>
