@@ -7,14 +7,16 @@ import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { Mail, Sparkles, Check, X } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function EmailAnswerImportDialog({ open, onClose, questions, onImport }) {
+  const { t } = useLanguage();
   const [emailText, setEmailText] = useState('');
   const [parsing, setParsing] = useState(false);
   const [parsedAnswers, setParsedAnswers] = useState(null);
 
   const handleParse = async () => {
-    if (!emailText.trim()) { toast.error('Please paste the supplier email reply'); return; }
+    if (!emailText.trim()) { toast.error(t('sc_import_no_email')); return; }
     setParsing(true);
     try {
       const qList = questions.map((q, i) => `${i + 1}. [ID:${q.id}] ${q.question_text}`).join('\n');
@@ -55,7 +57,7 @@ Return a JSON object: { "answers": [{ "question_id": string, "answer": string | 
       });
 
       const answers = result?.answers || result?.data?.answers || [];
-      if (!answers.length) { toast.error('Could not extract answers from email'); setParsing(false); return; }
+      if (!answers.length) { toast.error(t('sc_import_no_extracted')); setParsing(false); return; }
 
       const merged = answers.map(a => {
         const q = questions.find(q => q.id === a.question_id);
@@ -64,7 +66,7 @@ Return a JSON object: { "answers": [{ "question_id": string, "answer": string | 
 
       setParsedAnswers(merged);
     } catch (e) {
-      toast.error('Failed to parse email');
+      toast.error(t('sc_import_failed'));
     }
     setParsing(false);
   };
@@ -88,7 +90,7 @@ Return a JSON object: { "answers": [{ "question_id": string, "answer": string | 
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Mail className="w-4 h-4" />Import Answers from Email Reply
+            <Mail className="w-4 h-4" />{t('sc_import_dialog_title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -96,24 +98,24 @@ Return a JSON object: { "answers": [{ "question_id": string, "answer": string | 
           {!parsedAnswers ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Paste the supplier's email reply below. AI will automatically extract and map the answers to the questionnaire questions.
+                {t('sc_import_desc')}
               </p>
               <div>
-                <Label className="text-xs">Supplier Email Reply</Label>
+                <Label className="text-xs">{t('sc_import_paste_label')}</Label>
                 <Textarea
                   value={emailText}
                   onChange={e => setEmailText(e.target.value)}
                   rows={16}
                   className="mt-1 font-mono text-xs"
-                  placeholder="Paste the supplier's email reply here..."
+                  placeholder={t('sc_import_paste_placeholder')}
                 />
               </div>
             </div>
           ) : (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Badge className="bg-chart-2/10 text-chart-2 border-chart-2/20">{answeredCount} answers extracted</Badge>
-                <span className="text-xs text-muted-foreground">out of {questions.length} questions</span>
+                <Badge className="bg-chart-2/10 text-chart-2 border-chart-2/20">{answeredCount} {t('sc_import_answers_extracted')}</Badge>
+                <span className="text-xs text-muted-foreground">{t('sc_import_out_of')} {questions.length} {t('sc_import_questions')}</span>
               </div>
               <div className="space-y-2">
                 {parsedAnswers.map(a => (
@@ -127,7 +129,7 @@ Return a JSON object: { "answers": [{ "question_id": string, "answer": string | 
                         <p className="text-xs font-medium line-clamp-2">{a.question_text}</p>
                         {a.answer
                           ? <p className="text-xs text-chart-2 mt-1 font-semibold">{a.answer}</p>
-                          : <p className="text-xs text-muted-foreground mt-1 italic">No answer extracted</p>
+                          : <p className="text-xs text-muted-foreground mt-1 italic">{t('sc_import_no_answer')}</p>
                         }
                         {a.answer_notes && (
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{a.answer_notes}</p>
@@ -144,19 +146,19 @@ Return a JSON object: { "answers": [{ "question_id": string, "answer": string | 
         <DialogFooter>
           {!parsedAnswers ? (
             <>
-              <Button variant="outline" onClick={handleClose}>Cancel</Button>
+              <Button variant="outline" onClick={handleClose}>{t('sc_import_cancel')}</Button>
               <Button onClick={handleParse} disabled={parsing || !emailText.trim()} className="gap-2">
                 <Sparkles className="w-4 h-4" />
-                {parsing ? 'Extracting answers...' : 'Extract Answers with AI'}
+                {parsing ? t('sc_import_extracting') : t('sc_import_extract_btn')}
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={() => setParsedAnswers(null)}>Back</Button>
-              <Button variant="outline" onClick={handleClose}>Cancel</Button>
+              <Button variant="outline" onClick={() => setParsedAnswers(null)}>{t('sc_import_back')}</Button>
+              <Button variant="outline" onClick={handleClose}>{t('sc_import_cancel')}</Button>
               <Button onClick={handleConfirm} disabled={answeredCount === 0} className="gap-2">
                 <Check className="w-4 h-4" />
-                Import {answeredCount} Answer{answeredCount !== 1 ? 's' : ''}
+                {t('sc_import_confirm_btn')} {answeredCount}
               </Button>
             </>
           )}

@@ -13,10 +13,11 @@ import AIGenerateOptionsDialog from './AIGenerateOptionsDialog';
 import SendQuestionnaireEmailDialog from './SendQuestionnaireEmailDialog';
 import EmailAnswerImportDialog from './EmailAnswerImportDialog';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const ANSWER_TYPES = ['yes_no', 'scale_1_5', 'text', 'multiple_choice'];
 
-function QuestionRow({ question, onUpdate, onDelete }) {
+function QuestionRow({ question, onUpdate, onDelete, t }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -29,13 +30,13 @@ function QuestionRow({ question, onUpdate, onDelete }) {
         <span className="flex-1 text-sm font-medium">{question.question_text}</span>
         <Badge variant="outline" className="text-xs">{question.area}</Badge>
         <Badge variant="secondary" className="text-xs">{question.answer_type?.replace('_', ' ')}</Badge>
-        {question.answer && <Badge className="text-xs bg-chart-2/10 text-chart-2 border-chart-2/20">Answered</Badge>}
+        {question.answer && <Badge className="text-xs bg-chart-2/10 text-chart-2 border-chart-2/20">{t('sc_answered_badge')}</Badge>}
       </button>
       {expanded && (
         <div className="px-4 pb-4 space-y-3 border-t pt-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Question (EN)</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{t('sc_question_en')}</label>
               <Textarea
                 value={question.question_text}
                 onChange={e => onUpdate(question.id, { question_text: e.target.value })}
@@ -43,16 +44,16 @@ function QuestionRow({ question, onUpdate, onDelete }) {
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Question (PT)</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{t('sc_question_pt')}</label>
               <Textarea
                 value={question.question_text_pt || ''}
                 onChange={e => onUpdate(question.id, { question_text_pt: e.target.value })}
                 rows={2}
-                placeholder="Portuguese translation..."
+                placeholder={t('sc_question_pt_placeholder')}
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Answer Type</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{t('sc_answer_type')}</label>
               <Select value={question.answer_type} onValueChange={v => onUpdate(question.id, { answer_type: v })}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -61,10 +62,10 @@ function QuestionRow({ question, onUpdate, onDelete }) {
               </Select>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Supplier Answer</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{t('sc_supplier_answer')}</label>
               {question.answer_type === 'yes_no' ? (
                 <Select value={question.answer || ''} onValueChange={v => onUpdate(question.id, { answer: v })}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select..." /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('sc_answer_select')} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="yes">Yes</SelectItem>
                     <SelectItem value="no">No</SelectItem>
@@ -74,7 +75,7 @@ function QuestionRow({ question, onUpdate, onDelete }) {
                 </Select>
               ) : question.answer_type === 'scale_1_5' ? (
                 <Select value={question.answer || ''} onValueChange={v => onUpdate(question.id, { answer: v })}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Score..." /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t('sc_answer_score')} /></SelectTrigger>
                   <SelectContent>
                     {['1','2','3','4','5'].map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
                   </SelectContent>
@@ -84,23 +85,23 @@ function QuestionRow({ question, onUpdate, onDelete }) {
                   className="h-8 text-xs"
                   value={question.answer || ''}
                   onChange={e => onUpdate(question.id, { answer: e.target.value })}
-                  placeholder="Answer..."
+                  placeholder={t('sc_answer_placeholder')}
                 />
               )}
             </div>
             <div className="col-span-2">
-              <label className="text-xs text-muted-foreground mb-1 block">Notes / Evidence</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{t('sc_notes_evidence')}</label>
               <Textarea
                 value={question.answer_notes || ''}
                 onChange={e => onUpdate(question.id, { answer_notes: e.target.value })}
                 rows={2}
-                placeholder="Evidence or additional context..."
+                placeholder={t('sc_notes_placeholder')}
               />
             </div>
           </div>
           <div className="flex justify-end">
             <Button variant="ghost" size="sm" onClick={() => onDelete(question.id)} className="text-destructive h-7 text-xs">
-              <Trash2 className="w-3 h-3 mr-1" />Delete
+              <Trash2 className="w-3 h-3 mr-1" />{t('sc_delete')}
             </Button>
           </div>
         </div>
@@ -111,6 +112,7 @@ function QuestionRow({ question, onUpdate, onDelete }) {
 
 export default function QuestionnaireDetail({ questionnaire: initialQuestionnaire, onBack }) {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [newQuestion, setNewQuestion] = useState('');
   const [generating, setGenerating] = useState(false);
   const [showOptionsDialog, setShowOptionsDialog] = useState(false);
@@ -148,7 +150,7 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
   const handleDelete = async (id) => {
     await base44.entities.SupplierQuestion.delete(id);
     queryClient.invalidateQueries(['supplier-questions', qid]);
-    toast.success('Question deleted');
+    toast.success(t('sc_question_deleted'));
   };
 
   const handleAddQuestion = async () => {
@@ -161,7 +163,7 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
     });
     setNewQuestion('');
     queryClient.invalidateQueries(['supplier-questions', qid]);
-    toast.success('Question added');
+    toast.success(t('sc_question_added'));
   };
 
   const handleAIGenerate = async ({ count, areas }) => {
@@ -197,13 +199,13 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
       });
       const generated = (result?.questions || result?.data?.questions || []);
       if (!generated.length) {
-        toast.error('No questions returned by AI');
+        toast.error(t('sc_ai_no_questions'));
         setGenerating(false);
         return;
       }
       setReviewQuestions(generated);
     } catch (e) {
-      toast.error('AI generation failed');
+      toast.error(t('sc_ai_failed'));
     }
     setGenerating(false);
   };
@@ -222,7 +224,7 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
       )
     );
     queryClient.invalidateQueries(['supplier-questions', qid]);
-    toast.success(`Added ${accepted.length} question${accepted.length !== 1 ? 's' : ''}`);
+    toast.success(`${accepted.length} ${t('sc_questions_added')}`);
     setReviewQuestions(null);
   };
 
@@ -234,7 +236,7 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
       }))
     );
     queryClient.invalidateQueries(['supplier-questions', qid]);
-    toast.success(`${answers.length} answer${answers.length !== 1 ? 's' : ''} imported`);
+    toast.success(`${answers.length} ${t('sc_answers_imported')}`);
   };
 
   const answeredCount = questions.filter(q => q.answer).length;
@@ -243,11 +245,11 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
-          <ArrowLeft className="w-4 h-4" />Back
+          <ArrowLeft className="w-4 h-4" />{t('sc_back')}
         </Button>
         <div className="flex-1">
           <h2 className="text-xl font-semibold">{questionnaire.title}</h2>
-          <p className="text-sm text-muted-foreground">{questionnaire.supplier_name || 'No supplier set'} · {questionnaire.customer_name}</p>
+          <p className="text-sm text-muted-foreground">{questionnaire.supplier_name || t('sc_no_supplier')} · {questionnaire.customer_name}</p>
         </div>
         <Badge className={
           questionnaire.status === 'completed' ? 'bg-chart-2/10 text-chart-2 border-chart-2/20' :
@@ -257,10 +259,10 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
           {questionnaire.status?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
         </Badge>
         <Button variant="outline" size="sm" onClick={() => setShowSendEmail(true)} className="gap-2">
-          <Send className="w-4 h-4" />Send to Supplier
+          <Send className="w-4 h-4" />{t('sc_send_to_supplier')}
         </Button>
         <Button variant="outline" size="sm" onClick={() => setShowEmailImport(true)} className="gap-2">
-          <Mail className="w-4 h-4" />Import Email Reply
+          <Mail className="w-4 h-4" />{t('sc_import_email_reply')}
         </Button>
       </div>
 
@@ -269,19 +271,19 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{questions.length}</p>
-            <p className="text-xs text-muted-foreground">Total Questions</p>
+            <p className="text-xs text-muted-foreground">{t('sc_total_questions')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{answeredCount}</p>
-            <p className="text-xs text-muted-foreground">Answered</p>
+            <p className="text-xs text-muted-foreground">{t('sc_answered')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{questions.length ? Math.round((answeredCount / questions.length) * 100) : 0}%</p>
-            <p className="text-xs text-muted-foreground">Completion</p>
+            <p className="text-xs text-muted-foreground">{t('sc_completion')}</p>
           </CardContent>
         </Card>
       </div>
@@ -290,12 +292,12 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
       <div className="flex gap-2 items-end">
         <Button variant="outline" onClick={() => setShowOptionsDialog(true)} disabled={generating} className="gap-2">
           <Sparkles className="w-4 h-4" />
-          {generating ? 'Generating...' : 'AI Generate Questions'}
+          {generating ? t('sc_generating') : t('sc_ai_generate')}
         </Button>
         <div className="flex gap-2 flex-1">
           {questionnaire.areas?.length > 0 && (
             <Select value={newArea} onValueChange={setNewArea}>
-              <SelectTrigger className="w-44"><SelectValue placeholder="Area..." /></SelectTrigger>
+              <SelectTrigger className="w-44"><SelectValue placeholder={t('sc_area_placeholder')} /></SelectTrigger>
               <SelectContent>
                 {questionnaire.areas.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
               </SelectContent>
@@ -305,11 +307,11 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
             className="flex-1"
             value={newQuestion}
             onChange={e => setNewQuestion(e.target.value)}
-            placeholder="Type a question and press Enter..."
+            placeholder={t('sc_question_placeholder')}
             onKeyDown={e => e.key === 'Enter' && handleAddQuestion()}
           />
           <Button onClick={handleAddQuestion} disabled={!newQuestion.trim()} className="gap-1">
-            <Plus className="w-4 h-4" />Add
+            <Plus className="w-4 h-4" />{t('sc_add')}
           </Button>
         </div>
       </div>
@@ -318,7 +320,7 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
       {Object.keys(questionsByArea).length === 0 && questions.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground text-sm">
-            No questions yet. Use AI Generate or add questions manually above.
+            {t('sc_no_questions')}
           </CardContent>
         </Card>
       ) : (
@@ -327,10 +329,10 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">{area}</h3>
             <div className="space-y-2">
               {areaQuestions.map(q => (
-                <QuestionRow key={q.id} question={q} onUpdate={handleUpdate} onDelete={handleDelete} />
+                <QuestionRow key={q.id} question={q} onUpdate={handleUpdate} onDelete={handleDelete} t={t} />
               ))}
               {areaQuestions.length === 0 && (
-                <p className="text-xs text-muted-foreground pl-2">No questions in this area yet.</p>
+                <p className="text-xs text-muted-foreground pl-2">{t('sc_no_questions_in_area')}</p>
               )}
             </div>
           </div>
