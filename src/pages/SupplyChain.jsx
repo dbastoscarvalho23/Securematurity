@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ const STATUS_STYLES = {
 
 export default function SupplyChain() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const queryClient = useQueryClient();
 
@@ -45,10 +47,10 @@ export default function SupplyChain() {
   });
 
   const handleDelete = async (q) => {
-    if (!confirm(`Delete "${q.title}"?`)) return;
+    if (!confirm(`${t('sc_delete_confirm')} "${q.title}"?`)) return;
     await base44.entities.SupplierQuestionnaire.delete(q.id);
     queryClient.invalidateQueries(['supplier-questionnaires']);
-    toast.success('Questionnaire deleted');
+    toast.success(t('sc_questionnaire_deleted'));
   };
 
   const filtered = questionnaires.filter(q => {
@@ -79,21 +81,21 @@ export default function SupplyChain() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Supply Chain</h1>
-          <p className="text-sm text-muted-foreground">Supplier security questionnaires and assessments</p>
+          <h1 className="text-2xl font-bold">{t('nav_supply_chain')}</h1>
+          <p className="text-sm text-muted-foreground">{t('sc_page_subtitle')}</p>
         </div>
         <Button onClick={() => { setEditing(null); setDialogOpen(true); }} className="gap-2">
-          <Plus className="w-4 h-4" />New Questionnaire
+          <Plus className="w-4 h-4" />{t('sc_new_questionnaire')}
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total Questionnaires', value: totalQ },
-          { label: 'Completed', value: completedQ },
-          { label: 'In Progress / Sent', value: inProgressQ },
-          { label: 'Unique Suppliers', value: suppliersCount },
+          { label: t('sc_stat_total'), value: totalQ },
+          { label: t('sc_stat_completed'), value: completedQ },
+          { label: t('sc_stat_in_progress'), value: inProgressQ },
+          { label: t('sc_stat_suppliers'), value: suppliersCount },
         ].map(s => (
           <Card key={s.label}>
             <CardContent className="p-4">
@@ -110,7 +112,7 @@ export default function SupplyChain() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             className="pl-9"
-            placeholder="Search questionnaires or suppliers..."
+            placeholder={t('sc_search_placeholder')}
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -118,9 +120,9 @@ export default function SupplyChain() {
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="all">{t('sc_all_statuses')}</SelectItem>
             {['draft','sent','in_progress','completed','archived'].map(s => (
-              <SelectItem key={s} value={s}>{s.replace('_',' ').replace(/\b\w/g, c => c.toUpperCase())}</SelectItem>
+              <SelectItem key={s} value={s}>{t(`sc_status_${s}`) || s.replace('_',' ').replace(/\b\w/g, c => c.toUpperCase())}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -128,7 +130,7 @@ export default function SupplyChain() {
           <Select value={customerFilter} onValueChange={setCustomerFilter}>
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Customers</SelectItem>
+              <SelectItem value="all">{t('sc_all_customers')}</SelectItem>
               {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -139,7 +141,7 @@ export default function SupplyChain() {
       {filtered.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center text-muted-foreground">
-            <p className="text-sm">No questionnaires found. Create your first supplier questionnaire.</p>
+            <p className="text-sm">{t('sc_empty')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -152,7 +154,7 @@ export default function SupplyChain() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold text-sm">{q.title}</p>
                       <Badge variant="outline" className={STATUS_STYLES[q.status]}>
-                        {q.status?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                        {t(`sc_status_${q.status}`) || q.status?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
@@ -166,12 +168,12 @@ export default function SupplyChain() {
                       )}
                       {q.areas?.length > 0 && (
                         <span className="flex items-center gap-1">
-                          <Layers className="w-3 h-3" />{q.areas.length} area{q.areas.length !== 1 ? 's' : ''}
+                          <Layers className="w-3 h-3" />{q.areas.length} {t('sc_areas')}
                         </span>
                       )}
                       {q.due_date && (
                         <span className="flex items-center gap-1">
-                          <CalendarDays className="w-3 h-3" />Due {format(parseISO(q.due_date), 'MMM d, yyyy')}
+                          <CalendarDays className="w-3 h-3" />{t('sc_due')} {format(parseISO(q.due_date), 'MMM d, yyyy')}
                         </span>
                       )}
                     </div>
@@ -181,7 +183,7 @@ export default function SupplyChain() {
                           <span key={a} className="px-2 py-0.5 bg-muted text-muted-foreground rounded text-xs">{a}</span>
                         ))}
                         {q.areas.length > 5 && (
-                          <span className="px-2 py-0.5 bg-muted text-muted-foreground rounded text-xs">+{q.areas.length - 5} more</span>
+                          <span className="px-2 py-0.5 bg-muted text-muted-foreground rounded text-xs">+{q.areas.length - 5} {t('sc_more')}</span>
                         )}
                       </div>
                     )}
@@ -195,10 +197,10 @@ export default function SupplyChain() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => { setEditing(q); setDialogOpen(true); }}>
-                          <Pencil className="w-4 h-4 mr-2" />Edit
+                          <Pencil className="w-4 h-4 mr-2" />{t('common_edit')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDelete(q)} className="text-destructive">
-                          <Trash2 className="w-4 h-4 mr-2" />Delete
+                          <Trash2 className="w-4 h-4 mr-2" />{t('common_delete')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

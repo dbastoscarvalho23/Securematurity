@@ -17,8 +17,9 @@ import { useLanguage } from '@/lib/LanguageContext';
 
 const ANSWER_TYPES = ['yes_no', 'scale_1_5', 'text', 'multiple_choice'];
 
-function QuestionRow({ question, onUpdate, onDelete, t }) {
+function QuestionRow({ question, onUpdate, onDelete, t, lang }) {
   const [expanded, setExpanded] = useState(false);
+  const displayText = (lang === 'pt' && question.question_text_pt) ? question.question_text_pt : question.question_text;
 
   return (
     <div className="border rounded-lg bg-card">
@@ -27,7 +28,7 @@ function QuestionRow({ question, onUpdate, onDelete, t }) {
         onClick={() => setExpanded(e => !e)}
       >
         {expanded ? <ChevronDown className="w-4 h-4 flex-shrink-0 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 flex-shrink-0 text-muted-foreground" />}
-        <span className="flex-1 text-sm font-medium">{question.question_text}</span>
+        <span className="flex-1 text-sm font-medium">{displayText}</span>
         <Badge variant="outline" className="text-xs">{question.area}</Badge>
         <Badge variant="secondary" className="text-xs">{question.answer_type?.replace('_', ' ')}</Badge>
         {question.answer && <Badge className="text-xs bg-chart-2/10 text-chart-2 border-chart-2/20">{t('sc_answered_badge')}</Badge>}
@@ -112,7 +113,7 @@ function QuestionRow({ question, onUpdate, onDelete, t }) {
 
 export default function QuestionnaireDetail({ questionnaire: initialQuestionnaire, onBack }) {
   const queryClient = useQueryClient();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [newQuestion, setNewQuestion] = useState('');
   const [generating, setGenerating] = useState(false);
   const [showOptionsDialog, setShowOptionsDialog] = useState(false);
@@ -329,7 +330,7 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">{area}</h3>
             <div className="space-y-2">
               {areaQuestions.map(q => (
-                <QuestionRow key={q.id} question={q} onUpdate={handleUpdate} onDelete={handleDelete} t={t} />
+                <QuestionRow key={q.id} question={q} onUpdate={handleUpdate} onDelete={handleDelete} t={t} lang={language} />
               ))}
               {areaQuestions.length === 0 && (
                 <p className="text-xs text-muted-foreground pl-2">{t('sc_no_questions_in_area')}</p>
