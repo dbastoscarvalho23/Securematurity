@@ -230,11 +230,14 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
     setReviewQuestions(null);
   };
 
-  // When language is 'en', we translate missing PT. When 'pt', we translate missing EN.
-  const targetLang = language === 'en' ? 'pt' : 'en';
-  const untranslatedQuestions = targetLang === 'pt'
-    ? questions.filter(q => !q.question_text_pt)
-    : questions.filter(q => !q.question_text);
+  // Always translate to the language that is NOT currently selected
+  // Questions are always authored in EN (question_text), so:
+  // - If current language is 'en' → missing target is PT (question_text_pt)
+  // - If current language is 'pt' → missing target is EN (question_text) — but EN is always present,
+  //   so we instead translate missing PT so the user can switch languages freely
+  // In both cases we fill in missing PT translations from the English source.
+  const untranslatedQuestions = questions.filter(q => !q.question_text_pt);
+  const translateButtonLabel = language === 'en' ? 'PT' : 'EN';
 
   const handleTranslate = async () => {
     if (!untranslatedQuestions.length) {
@@ -243,27 +246,24 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
     }
     setTranslating(true);
     try {
-      const targetLabel = targetLang === 'pt' ? 'European Portuguese' : 'English';
-      const sourceField = targetLang === 'pt' ? 'question_text' : 'question_text_pt';
-      const targetField = targetLang === 'pt' ? 'question_text_pt' : 'question_text';
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Translate the following cybersecurity questionnaire questions to ${targetLabel}.
-Return a JSON object with a "translations" array, each item having "id" and "${targetField}".
+        prompt: `Translate the following cybersecurity questionnaire questions to European Portuguese.
+Return a JSON object with a "translations" array, each item having "id" and "question_text_pt".
 Questions:
-${untranslatedQuestions.map(q => `{"id":"${q.id}","source":"${q[sourceField]}"}`).join('\n')}`,
+${untranslatedQuestions.map(q => `{"id":"${q.id}","source":"${q.question_text}"}`).join('\n')}`,
         response_json_schema: {
           type: 'object',
           properties: {
             translations: {
               type: 'array',
-              items: { type: 'object', properties: { id: { type: 'string' }, [targetField]: { type: 'string' } } },
+              items: { type: 'object', properties: { id: { type: 'string' }, question_text_pt: { type: 'string' } } },
             },
           },
         },
       });
       const translations = result?.translations || result?.data?.translations || [];
       await Promise.all(
-        translations.map(tr => base44.entities.SupplierQuestion.update(tr.id, { [targetField]: tr[targetField] }))
+        translations.map(tr => base44.entities.SupplierQuestion.update(tr.id, { question_text_pt: tr.question_text_pt }))
       );
       queryClient.invalidateQueries(['supplier-questions', qid]);
       toast.success(`${translations.length} ${t('sc_translated_success')}`);
@@ -306,7 +306,7 @@ ${untranslatedQuestions.map(q => `{"id":"${q.id}","source":"${q[sourceField]}"}`
         {untranslatedQuestions.length > 0 && (
           <Button variant="outline" size="sm" onClick={handleTranslate} disabled={translating} className="gap-2">
             <Languages className="w-4 h-4" />
-            {translating ? t('sc_translating') : `${t('sc_translate_to')} ${targetLang.toUpperCase()}`}
+            {translating ? t('sc_translating') : `${t('sc_translate_to')} ${translateButtonLabel}`}
           </Button>
         )}
         <Button variant="outline" size="sm" onClick={() => setShowSendEmail(true)} className="gap-2">
