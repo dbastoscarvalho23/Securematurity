@@ -181,7 +181,7 @@ export default function Customers() {
                     {!selectedCustomer && <TableCell className="text-sm">{c.num_employees}</TableCell>}
                     <TableCell>
                       <Badge variant="outline" className={cn("text-xs border", statusStyles[c.status])}>
-                        {c.status}
+                        {t(`customers_status_${c.status}`) || c.status}
                       </Badge>
                     </TableCell>
                     <TableCell onClick={e => e.stopPropagation()}>

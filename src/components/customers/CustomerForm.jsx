@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const FRAMEWORKS = [
   { code: 'NIS2', name: 'NIS2 / DL 125/2025' },
@@ -34,6 +35,7 @@ const SECTORS = [
 const EMPLOYEE_RANGES = ['1-50', '51-250', '251-1000', '1001-5000', '5000+'];
 
 export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }) {
+  const { t } = useLanguage();
   const [form, setForm] = useState({
     nif: customer?.nif || '',
     name: customer?.name || '',
@@ -70,7 +72,7 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{customer ? 'Edit Customer' : 'New Customer'}</CardTitle>
+        <CardTitle className="text-lg">{customer ? t('customers_form_edit') : t('customers_form_new')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -80,68 +82,68 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
               <Input value={form.nif} onChange={e => set('nif', e.target.value)} required placeholder="Tax ID" />
             </div>
             <div className="space-y-1.5 md:col-span-2">
-              <Label>Organization Name *</Label>
-              <Input value={form.name} onChange={e => set('name', e.target.value)} required placeholder="Company name" />
+              <Label>{t('customers_form_org_name')} *</Label>
+              <Input value={form.name} onChange={e => set('name', e.target.value)} required placeholder={t('customers_form_org_name_placeholder')} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <Label>Sector *</Label>
+              <Label>{t('customers_col_sector')} *</Label>
               <Select value={form.sector} onValueChange={v => set('sector', v)}>
-                <SelectTrigger><SelectValue placeholder="Select sector" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('customers_form_select_sector')} /></SelectTrigger>
                 <SelectContent>
                   {SECTORS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Employees</Label>
+              <Label>{t('customers_col_employees')}</Label>
               <Select value={form.num_employees} onValueChange={v => set('num_employees', v)}>
-                <SelectTrigger><SelectValue placeholder="Select range" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('customers_form_select_range')} /></SelectTrigger>
                 <SelectContent>
                   {EMPLOYEE_RANGES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Website</Label>
+              <Label>{t('customers_detail_website')}</Label>
               <Input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://..." />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <Label>Contact Name</Label>
+              <Label>{t('customers_detail_contact_name')}</Label>
               <Input value={form.contact_name} onChange={e => set('contact_name', e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label>Contact Email</Label>
+              <Label>{t('customers_detail_contact_email')}</Label>
               <Input type="email" value={form.contact_email} onChange={e => set('contact_email', e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label>Contact Phone</Label>
+              <Label>{t('customers_detail_contact_phone')}</Label>
               <Input value={form.contact_phone} onChange={e => set('contact_phone', e.target.value)} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <Label>Cybersecurity Manager</Label>
-              <Input value={form.cybersecurity_manager} onChange={e => set('cybersecurity_manager', e.target.value)} placeholder="Full name" />
+              <Label>{t('customers_col_csm')}</Label>
+              <Input value={form.cybersecurity_manager} onChange={e => set('cybersecurity_manager', e.target.value)} placeholder={t('customers_form_csm_placeholder')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Manager Email</Label>
+              <Label>{t('customers_detail_csm_email')}</Label>
               <Input type="email" value={form.cybersecurity_manager_email} onChange={e => set('cybersecurity_manager_email', e.target.value)} placeholder="manager@company.com" />
             </div>
             <div className="space-y-1.5">
-              <Label>Manager Phone</Label>
+              <Label>{t('customers_detail_csm_phone')}</Label>
               <Input value={form.cybersecurity_manager_phone} onChange={e => set('cybersecurity_manager_phone', e.target.value)} placeholder="+351 900 000 000" />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Allowed Frameworks</Label>
+            <Label>{t('customers_detail_frameworks')}</Label>
             <div className="flex flex-wrap gap-4">
               {FRAMEWORKS.map(fw => (
                 <div key={fw.code} className="flex items-center gap-2">
@@ -157,26 +159,26 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Status</Label>
+              <Label>{t('common_status')}</Label>
               <Select value={form.status} onValueChange={v => set('status', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="onboarding">Onboarding</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="onboarding">{t('customers_status_onboarding')}</SelectItem>
+                  <SelectItem value="active">{t('customers_status_active')}</SelectItem>
+                  <SelectItem value="inactive">{t('customers_status_inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Notes</Label>
+              <Label>{t('common_notes')}</Label>
               <Textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} />
             </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={onCancel}>{t('common_cancel')}</Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : customer ? 'Update' : 'Create Customer'}
+              {isLoading ? t('common_loading') : customer ? t('customers_form_update') : t('customers_form_create')}
             </Button>
           </div>
         </form>

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Building2, Mail, Phone, Globe, Users, Briefcase, Hash, Pencil, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import CustomerUsersPanel from './CustomerUsersPanel';
 
 const statusStyles = {
@@ -45,6 +46,7 @@ function Section({ title, defaultOpen = false, children }) {
 
 export default function CustomerDetailPanel({ customer, onEdit }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const canManageUsers = user?.role === 'admin' || user?.role === 'customer_admin';
 
   if (!customer) return null;
@@ -59,36 +61,36 @@ export default function CustomerDetailPanel({ customer, onEdit }) {
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-base leading-tight truncate">{customer.name}</p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <Badge variant="outline" className={cn("text-xs border capitalize", statusStyles[customer.status])}>
-              {customer.status}
+            <Badge variant="outline" className={cn("text-xs border", statusStyles[customer.status])}>
+              {t(`customers_status_${customer.status}`) || customer.status}
             </Badge>
             {customer.sector && (
               <span className="text-xs text-muted-foreground capitalize">{customer.sector.replace(/_/g, ' ')}</span>
             )}
             {customer.num_employees && (
-              <span className="text-xs text-muted-foreground">{customer.num_employees} employees</span>
+              <span className="text-xs text-muted-foreground">{customer.num_employees} {t('customers_col_employees').toLowerCase()}</span>
             )}
           </div>
         </div>
         <Button size="sm" variant="outline" className="gap-1.5 flex-shrink-0" onClick={() => onEdit(customer)}>
-          <Pencil className="w-3.5 h-3.5" /> Edit
+          <Pencil className="w-3.5 h-3.5" /> {t('customers_menu_edit')}
         </Button>
       </div>
 
       {/* Collapsible Sections */}
       <div className="p-4 space-y-2">
 
-        <Section title="General Information" defaultOpen={true}>
+        <Section title={t('customers_detail_general')} defaultOpen={true}>
           <InfoRow icon={Hash} label="NIF" value={customer.nif} />
-          <InfoRow icon={Building2} label="Sector" value={customer.sector?.replace(/_/g, ' ')} />
-          <InfoRow icon={Briefcase} label="Employees" value={customer.num_employees} />
+          <InfoRow icon={Building2} label={t('customers_col_sector')} value={customer.sector?.replace(/_/g, ' ')} />
+          <InfoRow icon={Briefcase} label={t('customers_col_employees')} value={customer.num_employees} />
           {customer.website && (
             <div className="flex items-start gap-3 py-2 border-b last:border-0">
               <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Globe className="w-3 h-3 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Website</p>
+                <p className="text-xs text-muted-foreground">{t('customers_detail_website')}</p>
                 <a href={customer.website} target="_blank" rel="noreferrer"
                   className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
                   {customer.website} <ExternalLink className="w-3 h-3" />
@@ -98,20 +100,20 @@ export default function CustomerDetailPanel({ customer, onEdit }) {
           )}
         </Section>
 
-        <Section title="Primary Contact" defaultOpen={true}>
-          <InfoRow icon={Users} label="Contact Name" value={customer.contact_name} />
-          <InfoRow icon={Mail} label="Contact Email" value={customer.contact_email} />
-          <InfoRow icon={Phone} label="Contact Phone" value={customer.contact_phone} />
+        <Section title={t('customers_detail_contact')} defaultOpen={true}>
+          <InfoRow icon={Users} label={t('customers_detail_contact_name')} value={customer.contact_name} />
+          <InfoRow icon={Mail} label={t('customers_detail_contact_email')} value={customer.contact_email} />
+          <InfoRow icon={Phone} label={t('customers_detail_contact_phone')} value={customer.contact_phone} />
         </Section>
 
-        <Section title="Cybersecurity Manager" defaultOpen={true}>
-          <InfoRow icon={ShieldCheck} label="Name" value={customer.cybersecurity_manager} />
-          <InfoRow icon={Mail} label="Email" value={customer.cybersecurity_manager_email} />
-          <InfoRow icon={Phone} label="Phone" value={customer.cybersecurity_manager_phone} />
+        <Section title={t('customers_col_csm')} defaultOpen={true}>
+          <InfoRow icon={ShieldCheck} label={t('customers_detail_csm_name')} value={customer.cybersecurity_manager} />
+          <InfoRow icon={Mail} label={t('customers_detail_csm_email')} value={customer.cybersecurity_manager_email} />
+          <InfoRow icon={Phone} label={t('customers_detail_csm_phone')} value={customer.cybersecurity_manager_phone} />
         </Section>
 
         {customer.allowed_frameworks?.length > 0 && (
-          <Section title="Allowed Frameworks" defaultOpen={false}>
+          <Section title={t('customers_detail_frameworks')} defaultOpen={false}>
             <div className="flex flex-wrap gap-1.5 py-2">
               {customer.allowed_frameworks.map(f => (
                 <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>
@@ -121,13 +123,13 @@ export default function CustomerDetailPanel({ customer, onEdit }) {
         )}
 
         {customer.notes && (
-          <Section title="Notes" defaultOpen={false}>
+          <Section title={t('common_notes')} defaultOpen={false}>
             <p className="text-sm text-foreground py-2">{customer.notes}</p>
           </Section>
         )}
 
         {canManageUsers && (
-          <Section title="Users" defaultOpen={false}>
+          <Section title={t('settings_all_users')} defaultOpen={false}>
             <div className="py-2">
               <CustomerUsersPanel customer={customer} />
             </div>
