@@ -475,8 +475,8 @@ export default function Settings() {
       <Tabs defaultValue="users">
         <TabsList>
           <TabsTrigger value="users">{t('settings_tab_users')}</TabsTrigger>
-          <TabsTrigger value="frameworks">{t('settings_tab_frameworks')}</TabsTrigger>
-          <TabsTrigger value="reminders" className="flex items-center gap-1.5"><Bell className="w-3.5 h-3.5" />{t('settings_tab_reminders')}</TabsTrigger>
+          {(isAdmin || isCustomerAdmin) && <TabsTrigger value="frameworks">{t('settings_tab_frameworks')}</TabsTrigger>}
+          {(isAdmin || isCustomerAdmin) && <TabsTrigger value="reminders" className="flex items-center gap-1.5"><Bell className="w-3.5 h-3.5" />{t('settings_tab_reminders')}</TabsTrigger>}
         </TabsList>
 
         {/* Users Tab */}

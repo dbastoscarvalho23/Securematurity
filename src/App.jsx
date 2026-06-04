@@ -28,6 +28,7 @@ import EvidenceOverview from '@/pages/EvidenceOverview';
 import ComplianceJourney from '@/pages/ComplianceJourney';
 import EmailReport from '@/pages/EmailReport';
 import SupplyChain from '@/pages/SupplyChain';
+import RouteGuard from '@/components/layout/RouteGuard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -59,26 +60,26 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/customers" element={<Customers />} />
-        <Route path="/assessments" element={<Assessments />} />
-        <Route path="/assessments/:id" element={<AssessmentDetail />} />
-        <Route path="/recommendations" element={<Recommendations />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/audit-log" element={<AuditLog />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/question-bank" element={<QuestionBank />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/task-analytics" element={<TaskAnalytics />} />
-        <Route path="/risk-assessment" element={<RiskAssessment />} />
-        <Route path="/security-documents" element={<SecurityDocuments />} />
-        <Route path="/document-audit-trail" element={<DocumentAuditTrail />} />
-        <Route path="/action-plan" element={<ActionPlan />} />
-        <Route path="/evidence" element={<EvidenceOverview />} />
-        <Route path="/compliance-journey" element={<ComplianceJourney />} />
-        <Route path="/supply-chain" element={<SupplyChain />} />
-        <Route path="/email-report" element={<EmailReport />} />
+        <Route path="/" element={<RouteGuard path="/"><Dashboard /></RouteGuard>} />
+        <Route path="/customers" element={<RouteGuard path="/customers"><Customers /></RouteGuard>} />
+        <Route path="/assessments" element={<RouteGuard path="/assessments"><Assessments /></RouteGuard>} />
+        <Route path="/assessments/:id" element={<RouteGuard path="/assessments"><AssessmentDetail /></RouteGuard>} />
+        <Route path="/recommendations" element={<RouteGuard path="/recommendations"><Recommendations /></RouteGuard>} />
+        <Route path="/reports" element={<RouteGuard path="/reports"><Reports /></RouteGuard>} />
+        <Route path="/admin" element={<RouteGuard path="/admin"><Admin /></RouteGuard>} />
+        <Route path="/audit-log" element={<RouteGuard path="/audit-log"><AuditLog /></RouteGuard>} />
+        <Route path="/settings" element={<RouteGuard path="/settings"><Settings /></RouteGuard>} />
+        <Route path="/question-bank" element={<RouteGuard path="/question-bank"><QuestionBank /></RouteGuard>} />
+        <Route path="/tasks" element={<RouteGuard path="/tasks"><Tasks /></RouteGuard>} />
+        <Route path="/task-analytics" element={<RouteGuard path="/task-analytics"><TaskAnalytics /></RouteGuard>} />
+        <Route path="/risk-assessment" element={<RouteGuard path="/risk-assessment"><RiskAssessment /></RouteGuard>} />
+        <Route path="/security-documents" element={<RouteGuard path="/security-documents"><SecurityDocuments /></RouteGuard>} />
+        <Route path="/document-audit-trail" element={<RouteGuard path="/document-audit-trail"><DocumentAuditTrail /></RouteGuard>} />
+        <Route path="/action-plan" element={<RouteGuard path="/action-plan"><ActionPlan /></RouteGuard>} />
+        <Route path="/evidence" element={<RouteGuard path="/evidence"><EvidenceOverview /></RouteGuard>} />
+        <Route path="/compliance-journey" element={<RouteGuard path="/compliance-journey"><ComplianceJourney /></RouteGuard>} />
+        <Route path="/supply-chain" element={<RouteGuard path="/supply-chain"><SupplyChain /></RouteGuard>} />
+        <Route path="/email-report" element={<RouteGuard path="/email-report"><EmailReport /></RouteGuard>} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

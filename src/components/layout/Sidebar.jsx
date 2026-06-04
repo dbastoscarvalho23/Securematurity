@@ -35,9 +35,14 @@ export default function Sidebar({ collapsed, onToggle }) {
   const isAdmin = user?.role === 'admin';
   const isCustomerAdmin = user?.role === 'customer_admin';
 
+  const isUser = user?.role === 'user';
+  const hasCustomer = !!user?.customer_id;
+
+  // "Principal" nav items — visible to all roles (user needs customer assigned)
   const mainNavItems = [
     { path: '/', labelKey: 'nav_dashboard', icon: LayoutDashboard },
-    { path: '/customers', labelKey: 'nav_customers', icon: Building2 },
+    // Customers list only for admin
+    ...(isAdmin ? [{ path: '/customers', labelKey: 'nav_customers', icon: Building2 }] : []),
     { path: '/compliance-journey', labelKey: 'nav_compliance_journey', icon: MapPin },
     { path: '/assessments', labelKey: 'nav_assessments', icon: ClipboardCheck },
     { path: '/evidence', labelKey: 'nav_evidence', icon: Paperclip },
@@ -50,27 +55,32 @@ export default function Sidebar({ collapsed, onToggle }) {
     { path: '/reports', labelKey: 'nav_reports', icon: BarChart3 },
   ];
 
+  // For plain 'user' with no customer, only show dashboard
+  const visibleMainItems = (isUser && !hasCustomer)
+    ? mainNavItems.filter(i => i.path === '/')
+    : mainNavItems;
+
   const toolsNavItems = [
     { path: '/action-plan', labelKey: 'nav_action_plan', icon: Target },
     { path: '/question-bank', labelKey: 'nav_question_bank', icon: BookOpen },
   ];
 
+  const systemItems = [
+    ...(isAdmin ? [
+      { path: '/admin', labelKey: 'nav_admin', icon: ShieldCheck },
+      { path: '/audit-log', labelKey: 'nav_audit_log', icon: ScrollText },
+      { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
+    ] : []),
+    ...(isCustomerAdmin ? [
+      { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
+    ] : []),
+    { path: '/settings', labelKey: 'nav_settings', icon: Settings },
+  ];
+
   const navGroups = [
-    { labelKey: 'nav_main', items: mainNavItems },
+    { labelKey: 'nav_main', items: visibleMainItems },
     ...(isAdmin ? [{ labelKey: 'nav_tools', items: toolsNavItems }] : []),
-    {
-      labelKey: 'nav_system',
-      items: [
-        ...(isAdmin ? [
-          { path: '/admin', labelKey: 'nav_admin', icon: ShieldCheck },
-          { path: '/audit-log', labelKey: 'nav_audit_log', icon: ScrollText },
-        ] : []),
-        ...((isAdmin || isCustomerAdmin) ? [
-          { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
-        ] : []),
-        { path: '/settings', labelKey: 'nav_settings', icon: Settings },
-      ]
-    }
+    { labelKey: 'nav_system', items: systemItems },
   ];
 
   return (
