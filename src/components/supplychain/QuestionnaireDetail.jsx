@@ -7,9 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Trash2, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Sparkles, ChevronDown, ChevronRight, Send, Mail } from 'lucide-react';
 import AIQuestionsReviewDialog from './AIQuestionsReviewDialog';
 import AIGenerateOptionsDialog from './AIGenerateOptionsDialog';
+import SendQuestionnaireEmailDialog from './SendQuestionnaireEmailDialog';
+import EmailAnswerImportDialog from './EmailAnswerImportDialog';
 import { toast } from 'sonner';
 
 const ANSWER_TYPES = ['yes_no', 'scale_1_5', 'text', 'multiple_choice'];
@@ -112,7 +114,9 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
   const [newQuestion, setNewQuestion] = useState('');
   const [generating, setGenerating] = useState(false);
   const [showOptionsDialog, setShowOptionsDialog] = useState(false);
-  const [reviewQuestions, setReviewQuestions] = useState(null); // null = closed, array = open
+  const [reviewQuestions, setReviewQuestions] = useState(null);
+  const [showSendEmail, setShowSendEmail] = useState(false);
+  const [showEmailImport, setShowEmailImport] = useState(false);
 
   // Always fetch fresh questionnaire data
   const { data: questionnaire = initialQuestionnaire } = useQuery({
@@ -222,6 +226,17 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
     setReviewQuestions(null);
   };
 
+  const handleEmailImport = async (answers) => {
+    await Promise.all(
+      answers.map(a => base44.entities.SupplierQuestion.update(a.question_id, {
+        answer: a.answer,
+        answer_notes: a.answer_notes || '',
+      }))
+    );
+    queryClient.invalidateQueries(['supplier-questions', qid]);
+    toast.success(`${answers.length} answer${answers.length !== 1 ? 's' : ''} imported`);
+  };
+
   const answeredCount = questions.filter(q => q.answer).length;
 
   return (
@@ -241,6 +256,12 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
         }>
           {questionnaire.status?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
         </Badge>
+        <Button variant="outline" size="sm" onClick={() => setShowSendEmail(true)} className="gap-2">
+          <Send className="w-4 h-4" />Send to Supplier
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setShowEmailImport(true)} className="gap-2">
+          <Mail className="w-4 h-4" />Import Email Reply
+        </Button>
       </div>
 
       {/* Stats */}
@@ -315,6 +336,20 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
           </div>
         ))
       )}
+
+      <SendQuestionnaireEmailDialog
+        open={showSendEmail}
+        onClose={() => setShowSendEmail(false)}
+        questionnaire={questionnaire}
+        questions={questions}
+      />
+
+      <EmailAnswerImportDialog
+        open={showEmailImport}
+        onClose={() => setShowEmailImport(false)}
+        questions={questions}
+        onImport={handleEmailImport}
+      />
 
       <AIGenerateOptionsDialog
         open={showOptionsDialog}
