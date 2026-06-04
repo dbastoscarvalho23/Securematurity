@@ -10,7 +10,7 @@ import { Send } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function SendQuestionnaireEmailDialog({ open, onClose, questionnaire, questions }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [to, setTo] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
@@ -19,23 +19,40 @@ export default function SendQuestionnaireEmailDialog({ open, onClose, questionna
   useEffect(() => {
     if (open) {
       setTo(questionnaire?.supplier_email || '');
-      setSubject(`Security Questionnaire – ${questionnaire?.title || ''}`);
+      const isPt = language === 'pt';
 
-      const intro = `Dear ${questionnaire?.supplier_name || 'Supplier'},\n\nPlease find below the security questionnaire we would like you to complete. For each question, please provide your answer and any relevant notes or evidence.\n\nReply to this email with your answers in the same format.\n\n---\n\n`;
+      setSubject(isPt
+        ? `Questionário de Segurança – ${questionnaire?.title || ''}`
+        : `Security Questionnaire – ${questionnaire?.title || ''}`
+      );
+
+      const intro = isPt
+        ? `Caro/a ${questionnaire?.supplier_name || 'Fornecedor'},\n\nSegue em anexo o questionário de segurança que gostaríamos que preenchesse. Para cada pergunta, indique a sua resposta e quaisquer notas ou evidências relevantes.\n\nResponda a este e-mail com as suas respostas no mesmo formato.\n\n---\n\n`
+        : `Dear ${questionnaire?.supplier_name || 'Supplier'},\n\nPlease find below the security questionnaire we would like you to complete. For each question, please provide your answer and any relevant notes or evidence.\n\nReply to this email with your answers in the same format.\n\n---\n\n`;
 
       const questionLines = questions.map((q, i) => {
-        const answerGuide =
-          q.answer_type === 'yes_no' ? '[ Yes / No / Partial / N/A ]' :
-          q.answer_type === 'scale_1_5' ? '[ Score 1–5 ]' :
-          '[ Your answer ]';
-        return `${i + 1}. ${q.question_text}\n${q.question_text_pt ? `   (PT) ${q.question_text_pt}\n` : ''}   Answer: ${answerGuide}\n   Notes: `;
+        const questionText = (isPt && q.question_text_pt) ? q.question_text_pt : q.question_text;
+        const answerGuide = isPt
+          ? (q.answer_type === 'yes_no' ? '[ Sim / Não / Parcial / N/D ]' :
+             q.answer_type === 'scale_1_5' ? '[ Pontuação 1–5 ]' :
+             q.answer_type === 'multiple_choice' ? `[ ${((q.options_pt?.length ? q.options_pt : q.options) || []).join(' / ')} ]` :
+             '[ A sua resposta ]')
+          : (q.answer_type === 'yes_no' ? '[ Yes / No / Partial / N/A ]' :
+             q.answer_type === 'scale_1_5' ? '[ Score 1–5 ]' :
+             q.answer_type === 'multiple_choice' ? `[ ${(q.options || []).join(' / ')} ]` :
+             '[ Your answer ]');
+        const answerLabel = isPt ? 'Resposta' : 'Answer';
+        const notesLabel = isPt ? 'Notas' : 'Notes';
+        return `${i + 1}. ${questionText}\n   ${answerLabel}: ${answerGuide}\n   ${notesLabel}: `;
       }).join('\n\n');
 
-      const footer = `\n\n---\nPlease reply with your answers filled in above.\n\nThank you,\n${questionnaire?.customer_name || ''}`;
+      const footer = isPt
+        ? `\n\n---\nPor favor responda com as suas respostas preenchidas acima.\n\nObrigado/a,\n${questionnaire?.customer_name || ''}`
+        : `\n\n---\nPlease reply with your answers filled in above.\n\nThank you,\n${questionnaire?.customer_name || ''}`;
 
       setBody(intro + questionLines + footer);
     }
-  }, [open, questions]);
+  }, [open, questions, language]);
 
   const handleSend = async () => {
     if (!to.trim()) { toast.error(t('sc_send_no_recipient')); return; }

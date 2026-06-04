@@ -10,7 +10,7 @@ import { Mail, Sparkles, Check, X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function EmailAnswerImportDialog({ open, onClose, questions, onImport }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [emailText, setEmailText] = useState('');
   const [parsing, setParsing] = useState(false);
   const [parsedAnswers, setParsedAnswers] = useState(null);
@@ -19,7 +19,11 @@ export default function EmailAnswerImportDialog({ open, onClose, questions, onIm
     if (!emailText.trim()) { toast.error(t('sc_import_no_email')); return; }
     setParsing(true);
     try {
-      const qList = questions.map((q, i) => `${i + 1}. [ID:${q.id}] ${q.question_text}`).join('\n');
+      const isPt = language === 'pt';
+      const qList = questions.map((q, i) => {
+        const qText = (isPt && q.question_text_pt) ? q.question_text_pt : q.question_text;
+        return `${i + 1}. [ID:${q.id}] ${qText}`;
+      }).join('\n');
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `You are extracting supplier answers from an email reply to a security questionnaire.
 
@@ -61,7 +65,8 @@ Return a JSON object: { "answers": [{ "question_id": string, "answer": string | 
 
       const merged = answers.map(a => {
         const q = questions.find(q => q.id === a.question_id);
-        return { ...a, question_text: q?.question_text || '', answer_type: q?.answer_type };
+        const questionText = (isPt && q?.question_text_pt) ? q.question_text_pt : (q?.question_text || '');
+        return { ...a, question_text: questionText, answer_type: q?.answer_type };
       }).filter(a => a.question_text);
 
       setParsedAnswers(merged);
