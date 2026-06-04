@@ -79,6 +79,8 @@ export const translations = {
     email_report_legend_tasks: 'Tasks',
     email_report_legend_risks: 'Risks',
     email_report_legend_docs: 'Documents',
+    email_report_type_supply_chain: 'Supply Chain',
+    email_report_filter_supply_chain: 'Supply Chain',
     // TopBar user menu
     my_profile: 'My Profile',
     settings: 'Settings',
@@ -996,6 +998,8 @@ export const translations = {
     email_report_legend_tasks: 'Tarefas',
     email_report_legend_risks: 'Riscos',
     email_report_legend_docs: 'Documentos',
+    email_report_type_supply_chain: 'Cadeia de Fornecimento',
+    email_report_filter_supply_chain: 'Cadeia de Fornecimento',
     // TopBar user menu
     my_profile: 'O Meu Perfil',
     settings: 'Definições',

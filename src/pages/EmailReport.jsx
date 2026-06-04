@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Mail, Send, AlertCircle, CheckCircle2, Clock, Search, TrendingUp, Users, FileText, ShieldAlert } from 'lucide-react';
+import { Mail, Send, AlertCircle, CheckCircle2, Clock, Search, TrendingUp, Users, FileText, ShieldAlert, Link } from 'lucide-react';
 import { format, subDays, isAfter } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,7 @@ const EMAIL_TYPE_CONFIG = {
   Task: { labelKey: 'email_report_type_task', icon: CheckCircle2, color: 'bg-blue-100 text-blue-700 border-blue-200' },
   RiskItem: { labelKey: 'email_report_type_risk', icon: ShieldAlert, color: 'bg-orange-100 text-orange-700 border-orange-200' },
   SecurityDocument: { labelKey: 'email_report_type_doc', icon: FileText, color: 'bg-green-100 text-green-700 border-green-200' },
+  SupplierQuestionnaire: { labelKey: 'email_report_type_supply_chain', icon: Link, color: 'bg-purple-100 text-purple-700 border-purple-200' },
   default: { labelKey: 'email_report_type_system', icon: Mail, color: 'bg-slate-100 text-slate-700 border-slate-200' },
 };
 
@@ -231,6 +232,7 @@ export default function EmailReport() {
                   <SelectItem value="Task">{t('email_report_filter_tasks')}</SelectItem>
                   <SelectItem value="RiskItem">{t('email_report_filter_risks')}</SelectItem>
                   <SelectItem value="SecurityDocument">{t('email_report_filter_docs')}</SelectItem>
+                  <SelectItem value="SupplierQuestionnaire">{t('email_report_filter_supply_chain')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -7,6 +7,7 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { Send } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { writeAuditLog } from '@/lib/auditLog';
 
 function buildHtmlEmail({ questionnaire, questions, isPt }) {
   const supplierName = questionnaire?.supplier_name || (isPt ? 'Fornecedor' : 'Supplier');
@@ -156,6 +157,12 @@ export default function SendQuestionnaireEmailDialog({ open, onClose, questionna
     setSending(true);
     try {
       await base44.integrations.Core.SendEmail({ to: to.trim(), subject, body: htmlBody });
+      await writeAuditLog({
+        action: 'email_sent',
+        entity_type: 'SupplierQuestionnaire',
+        entity_id: questionnaire?.id,
+        details: `Questionnaire "${questionnaire?.title}" sent to ${to.trim()} (supplier: ${questionnaire?.supplier_name || '—'})`,
+      });
       toast.success(t('sc_sent_success'));
       onClose();
     } catch (e) {
