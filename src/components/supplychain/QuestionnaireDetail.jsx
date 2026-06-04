@@ -241,7 +241,8 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
   const untranslatedQuestions = questions.filter(q => !q.question_text_pt);
 
   const handleTranslate = async () => {
-    if (!untranslatedQuestions.length) {
+    const toTranslate = questions.filter(q => !q.question_text_pt);
+    if (!toTranslate.length) {
       toast.success(t('sc_all_translated'));
       return;
     }
@@ -251,7 +252,7 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
         prompt: `Translate the following cybersecurity questionnaire questions to European Portuguese.
 Return a JSON object with a "translations" array. Each item must have "id" and "question_text_pt".
 Questions:
-${untranslatedQuestions.map(q => `{"id":"${q.id}","question_text":"${q.question_text.replace(/"/g, "'")}"}`).join('\n')}`,
+${toTranslate.map(q => `{"id":"${q.id}","question_text":"${q.question_text.replace(/"/g, "'")}"}`).join('\n')}`,
         response_json_schema: {
           type: 'object',
           properties: {
@@ -317,12 +318,10 @@ ${untranslatedQuestions.map(q => `{"id":"${q.id}","question_text":"${q.question_
         }>
           {questionnaire.status?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
         </Badge>
-        {untranslatedQuestions.length > 0 && (
-          <Button variant="outline" size="sm" onClick={handleTranslate} disabled={translating} className="gap-2">
-            <Languages className="w-4 h-4" />
-            {translating ? t('sc_translating') : `${t('sc_translate_to')} ${targetLang.toUpperCase()}`}
-          </Button>
-        )}
+        <Button variant="outline" size="sm" onClick={handleTranslate} disabled={translating || questions.length === 0} className="gap-2">
+          <Languages className="w-4 h-4" />
+          {translating ? t('sc_translating') : `${t('sc_translate_to')} ${targetLang.toUpperCase()}`}
+        </Button>
         <Button variant="outline" size="sm" onClick={() => setShowSendEmail(true)} className="gap-2">
           <Send className="w-4 h-4" />{t('sc_send_to_supplier')}
         </Button>
