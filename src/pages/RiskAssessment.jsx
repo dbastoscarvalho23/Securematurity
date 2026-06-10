@@ -16,6 +16,7 @@ import {
 import RiskFormDialog from '@/components/risks/RiskFormDialog';
 import RiskExcelImportDialog from '@/components/risks/RiskExcelImportDialog';
 import RiskHeatmap from '@/components/risks/RiskHeatmap';
+import TaskHeatmap from '@/components/risks/TaskHeatmap';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -215,6 +216,16 @@ export default function RiskAssessment() {
             >
               {t('risk_view_heatmap')}
             </button>
+            <button
+              onClick={() => setView('task_heatmap')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                view === 'task_heatmap'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Task Heatmap
+            </button>
           </div>
 
           {/* Action buttons */}
@@ -259,6 +270,19 @@ export default function RiskAssessment() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Task Heatmap view */}
+      {view === 'task_heatmap' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Task Heatmap</CardTitle>
+            <p className="text-xs text-muted-foreground">Visualize tasks by the risk severity level they address.</p>
+          </CardHeader>
+          <CardContent>
+            <TaskHeatmap risks={filtered} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Heatmap view */}
       {view === 'heatmap' && (
