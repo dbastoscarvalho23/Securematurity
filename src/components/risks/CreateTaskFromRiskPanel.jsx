@@ -113,7 +113,7 @@ export default function CreateTaskFromRiskPanel({ risk }) {
       {!showForm ? (
         <div className="flex flex-col items-center justify-center py-8 border border-dashed rounded-lg gap-3 text-muted-foreground">
           <ClipboardList className="w-6 h-6 opacity-30" />
-          <p className="text-sm">Create a task to remediate this risk.</p>
+          <p className="text-sm">Create task</p>
           <Button type="button" size="sm" onClick={() => setShowForm(true)} className="gap-1.5">
             <Plus className="w-3.5 h-3.5" /> New Task
           </Button>
