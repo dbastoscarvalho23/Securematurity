@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, ShieldAlert, FileText, TrendingUp, FileSpreadsheet, ClipboardList, ShieldCheck } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, ShieldAlert, FileText, TrendingUp, FileSpreadsheet, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -375,12 +375,7 @@ export default function RiskAssessment() {
                           <ClipboardList className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">{t('risk_create_task')}</span>
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-accent hover:text-accent"
-                          title="Add Mitigation Procedure"
-                          onClick={() => handleEdit(risk, 'mitigation')}>
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">{t('risk_mitigate')}</span>
-                        </Button>
+
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(risk)}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
