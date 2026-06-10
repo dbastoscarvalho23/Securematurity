@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { X, Pencil, ShieldCheck, ClipboardList, ChevronRight, AlertTriangle } from 'lucide-react';
+import { X, Pencil, ShieldCheck, ClipboardList, ChevronRight, AlertTriangle, Plus } from 'lucide-react';
 
 const CELL_BG = (score) => {
   if (score >= 20) return '#dc2626'; // red-600
@@ -72,7 +72,8 @@ function ScoreZoneLegend() {
 
 export default function RiskHeatmap({ risks, onEdit }) {
   const [selected, setSelected] = useState(null); // { impact, likelihood }
-  const [activeTab, setActiveTab] = useState('risks'); // 'risks' | 'tasks' | 'mitigation'
+  const [activeTab, setActiveTab] = useState('risks'); // 'risks' | 'tasks'
+  const [taskSubTab, setTaskSubTab] = useState('general'); // 'general' | 'mitigation'
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
@@ -291,9 +292,8 @@ export default function RiskHeatmap({ risks, onEdit }) {
           {/* Tabs */}
           <div className="flex border-b">
             {[
-              { id: 'risks',      label: 'Risks',      Icon: AlertTriangle },
-              { id: 'tasks',      label: `Tasks (${linkedTasks.length})`, Icon: ClipboardList },
-              { id: 'mitigation', label: `Mitigation (${mitigationItems.length})`, Icon: ShieldCheck },
+              { id: 'risks', label: 'Risks', Icon: AlertTriangle },
+              { id: 'tasks', label: `Tasks`, Icon: ClipboardList },
             ].map(({ id, label, Icon }) => (
               <button
                 key={id}
@@ -348,71 +348,111 @@ export default function RiskHeatmap({ risks, onEdit }) {
 
             {/* Tasks tab */}
             {activeTab === 'tasks' && (
-              linkedTasks.length === 0
-                ? (
-                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    <ClipboardList className="w-6 h-6 mx-auto mb-2 opacity-30" />
-                    No linked tasks found for these risks.
+              <div>
+                {/* Sub-toggle + Create Task button */}
+                <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/20">
+                  <div className="flex items-center rounded-md border border-border bg-background p-0.5 gap-0.5">
+                    <button
+                      onClick={() => setTaskSubTab('general')}
+                      className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded transition-all ${
+                        taskSubTab === 'general' ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <ClipboardList className="w-3 h-3" /> General Tasks
+                    </button>
+                    <button
+                      onClick={() => setTaskSubTab('mitigation')}
+                      className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded transition-all ${
+                        taskSubTab === 'mitigation' ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <ShieldCheck className="w-3 h-3" /> Mitigation
+                    </button>
                   </div>
-                )
-                : linkedTasks.map(task => (
-                  <div key={task.id} className="px-4 py-3 hover:bg-muted/30 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-medium">{task.title}</p>
-                          <Badge variant="outline" className={`text-xs border ${TASK_STATUS_STYLES[task.status]}`}>
-                            {TASK_STATUS_LABELS[task.status]}
-                          </Badge>
-                        </div>
-                        {task.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{task.description}</p>
-                        )}
-                        <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
-                          {task.assigned_to && <span>Assigned: {task.assigned_to}</span>}
-                          {task.due_date && <span>· Due: {task.due_date}</span>}
-                          {task.customer_name && <span>· {task.customer_name}</span>}
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                    </div>
-                  </div>
-                ))
-            )}
+                  {onEdit && selectedRisks.length === 1 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs gap-1"
+                      onClick={() => onEdit(selectedRisks[0], taskSubTab === 'mitigation' ? 'mitigation' : 'create_task')}
+                    >
+                      <Plus className="w-3 h-3" /> Create Task
+                    </Button>
+                  )}
+                  {onEdit && selectedRisks.length > 1 && (
+                    <span className="text-xs text-muted-foreground italic">Select a single risk to create a task</span>
+                  )}
+                </div>
 
-            {/* Mitigation tab */}
-            {activeTab === 'mitigation' && (
-              mitigationItems.length === 0
-                ? (
-                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    <ShieldCheck className="w-6 h-6 mx-auto mb-2 opacity-30" />
-                    No mitigation notes recorded for these risks.
-                  </div>
-                )
-                : mitigationItems.map(risk => (
-                  <div key={risk.id} className="px-4 py-3 hover:bg-muted/30 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className="p-1.5 rounded-md bg-chart-2/10 flex-shrink-0">
-                        <ShieldCheck className="w-3.5 h-3.5 text-chart-2" />
+                {/* General tasks sub-tab */}
+                {taskSubTab === 'general' && (
+                  linkedTasks.length === 0
+                    ? (
+                      <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                        <ClipboardList className="w-6 h-6 mx-auto mb-2 opacity-30" />
+                        No linked tasks found for these risks.
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {risk.risk_id && (
-                            <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{risk.risk_id}</span>
-                          )}
-                          <p className="text-xs font-semibold">{risk.title}</p>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{risk.treatment_notes}</p>
-                        <div className="flex gap-2 mt-1.5 text-xs text-muted-foreground">
-                          <Badge variant="outline" className={`text-xs border ${STATUS_STYLES[risk.status]}`}>
-                            {STATUS_LABELS[risk.status]}
-                          </Badge>
-                          {risk.due_date && <span className="self-center">Target: {risk.due_date}</span>}
+                    )
+                    : linkedTasks.map(task => (
+                      <div key={task.id} className="px-4 py-3 hover:bg-muted/30 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-medium">{task.title}</p>
+                              <Badge variant="outline" className={`text-xs border ${TASK_STATUS_STYLES[task.status]}`}>
+                                {TASK_STATUS_LABELS[task.status]}
+                              </Badge>
+                            </div>
+                            {task.description && (
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{task.description}</p>
+                            )}
+                            <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
+                              {task.assigned_to && <span>Assigned: {task.assigned_to}</span>}
+                              {task.due_date && <span>· Due: {task.due_date}</span>}
+                              {task.customer_name && <span>· {task.customer_name}</span>}
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                         </div>
                       </div>
-                    </div>
-                  </div>
-                ))
+                    ))
+                )}
+
+                {/* Mitigation sub-tab */}
+                {taskSubTab === 'mitigation' && (
+                  mitigationItems.length === 0
+                    ? (
+                      <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                        <ShieldCheck className="w-6 h-6 mx-auto mb-2 opacity-30" />
+                        No mitigation notes recorded for these risks.
+                      </div>
+                    )
+                    : mitigationItems.map(risk => (
+                      <div key={risk.id} className="px-4 py-3 hover:bg-muted/30 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className="p-1.5 rounded-md bg-chart-2/10 flex-shrink-0">
+                            <ShieldCheck className="w-3.5 h-3.5 text-chart-2" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {risk.risk_id && (
+                                <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{risk.risk_id}</span>
+                              )}
+                              <p className="text-xs font-semibold">{risk.title}</p>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{risk.treatment_notes}</p>
+                            <div className="flex gap-2 mt-1.5 text-xs text-muted-foreground">
+                              <Badge variant="outline" className={`text-xs border ${STATUS_STYLES[risk.status]}`}>
+                                {STATUS_LABELS[risk.status]}
+                              </Badge>
+                              {risk.due_date && <span className="self-center">Target: {risk.due_date}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
             )}
           </div>
         </div>

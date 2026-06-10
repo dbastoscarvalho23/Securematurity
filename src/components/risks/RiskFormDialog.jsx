@@ -13,6 +13,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import RiskHistoryTimeline from './RiskHistoryTimeline';
 import MitigationTasksPanel from './MitigationTasksPanel';
 import CreateTaskFromRiskPanel from './CreateTaskFromRiskPanel';
+import { ShieldCheck, ClipboardList } from 'lucide-react';
 import ResidualRiskGauge from './ResidualRiskGauge';
 import { useCustomerUsers } from '@/hooks/useCustomerUsers';
 import UserSelect from '@/components/shared/UserSelect';
@@ -72,7 +73,10 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
   useEffect(() => {
     if (risk) setForm({ ...DEFAULT, ...risk });
     else setForm(DEFAULT);
-    setActiveTab(risk?.id ? initialTab : 'edit');
+    // Map legacy tab names to new unified tabs
+    const tabMap = { mitigation: 'tasks', create_task: 'tasks' };
+    const resolvedTab = tabMap[initialTab] || initialTab;
+    setActiveTab(risk?.id ? resolvedTab : 'edit');
   }, [risk, open, initialTab]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -160,8 +164,7 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <TabsList className="w-full flex-shrink-0">
               <TabsTrigger value="edit" className="flex-1">{t('risk_form_tab_edit')}</TabsTrigger>
-              <TabsTrigger value="mitigation" className="flex-1">{t('risk_form_tab_mitigation')}</TabsTrigger>
-              <TabsTrigger value="create_task" className="flex-1">{t('risk_form_tab_create_task')}</TabsTrigger>
+              <TabsTrigger value="tasks" className="flex-1">Tasks</TabsTrigger>
               <TabsTrigger value="history" className="flex-1">{t('risk_form_tab_history')}</TabsTrigger>
             </TabsList>
 
@@ -174,12 +177,8 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
               />
             </TabsContent>
 
-            <TabsContent value="mitigation" className="flex-1 overflow-y-auto mt-0 pt-4">
-              <MitigationTasksPanel riskId={risk.id} customerId={risk.customer_id} />
-            </TabsContent>
-
-            <TabsContent value="create_task" className="flex-1 overflow-y-auto mt-0 pt-4">
-              <CreateTaskFromRiskPanel risk={risk} />
+            <TabsContent value="tasks" className="flex-1 overflow-y-auto mt-0 pt-4">
+              <RiskTasksPanel risk={risk} initialSubTab={initialTab === 'mitigation' ? 'mitigation' : 'general'} />
             </TabsContent>
 
             <TabsContent value="history" className="flex-1 overflow-y-auto mt-0 pt-4">
@@ -198,6 +197,37 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function RiskTasksPanel({ risk, initialSubTab = 'general' }) {
+  const [subTab, setSubTab] = useState(initialSubTab);
+
+  return (
+    <div className="space-y-4">
+      {/* Sub-toggle */}
+      <div className="flex items-center rounded-lg border border-border bg-muted p-0.5 gap-0.5 w-fit">
+        <button
+          onClick={() => setSubTab('general')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+            subTab === 'general' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <ClipboardList className="w-3.5 h-3.5" /> General Tasks
+        </button>
+        <button
+          onClick={() => setSubTab('mitigation')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+            subTab === 'mitigation' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5" /> Mitigation Tasks
+        </button>
+      </div>
+
+      {subTab === 'general' && <CreateTaskFromRiskPanel risk={risk} />}
+      {subTab === 'mitigation' && <MitigationTasksPanel riskId={risk.id} customerId={risk.customer_id} />}
+    </div>
   );
 }
 
