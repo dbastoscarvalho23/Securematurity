@@ -213,7 +213,7 @@ function RiskTasksPanel({ risk, initialSubTab = 'general' }) {
             subTab === 'general' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <ClipboardList className="w-3.5 h-3.5" /> Create Task
+          <ClipboardList className="w-3.5 h-3.5" /> General Tasks
         </button>
         <button
           onClick={() => setSubTab('mitigation')}
