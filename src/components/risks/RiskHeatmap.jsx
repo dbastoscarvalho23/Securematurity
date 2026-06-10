@@ -358,7 +358,7 @@ export default function RiskHeatmap({ risks, onEdit }) {
                         taskSubTab === 'general' ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      <ClipboardList className="w-3 h-3" /> General Tasks
+                      <ClipboardList className="w-3 h-3" /> General
                     </button>
                     <button
                       onClick={() => setTaskSubTab('mitigation')}
