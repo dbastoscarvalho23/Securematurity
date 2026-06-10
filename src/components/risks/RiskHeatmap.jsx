@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { X, Pencil, ShieldCheck, ClipboardList, ChevronRight, AlertTriangle, Plus } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const CELL_BG = (score) => {
   if (score >= 20) return '#dc2626'; // red-600
@@ -71,6 +72,7 @@ function ScoreZoneLegend() {
 }
 
 export default function RiskHeatmap({ risks, onEdit }) {
+  const { t } = useLanguage();
   const [selected, setSelected] = useState(null); // { impact, likelihood }
   const [activeTab, setActiveTab] = useState('risks'); // 'risks' | 'tasks'
   const [taskSubTab, setTaskSubTab] = useState('general'); // 'general' | 'mitigation'
@@ -358,7 +360,7 @@ export default function RiskHeatmap({ risks, onEdit }) {
                         taskSubTab === 'general' ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      <ClipboardList className="w-3 h-3" /> General Tasks
+                      <ClipboardList className="w-3 h-3" /> {t('risk_tasks_general')}
                     </button>
                     <button
                       onClick={() => setTaskSubTab('mitigation')}
@@ -366,7 +368,7 @@ export default function RiskHeatmap({ risks, onEdit }) {
                         taskSubTab === 'mitigation' ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      <ShieldCheck className="w-3 h-3" /> Mitigation
+                      <ShieldCheck className="w-3 h-3" /> {t('risk_tasks_mitigation')}
                     </button>
                   </div>
                   {onEdit && selectedRisks.length === 1 && (
@@ -376,11 +378,11 @@ export default function RiskHeatmap({ risks, onEdit }) {
                       className="h-7 text-xs gap-1"
                       onClick={() => onEdit(selectedRisks[0], taskSubTab === 'mitigation' ? 'mitigation' : 'create_task')}
                     >
-                      <Plus className="w-3 h-3" /> Create Task
+                      <Plus className="w-3 h-3" /> {t('risk_tasks_create')}
                     </Button>
                   )}
                   {onEdit && selectedRisks.length > 1 && (
-                    <span className="text-xs text-muted-foreground italic">Select a single risk to create a task</span>
+                    <span className="text-xs text-muted-foreground italic">{t('risk_tasks_select_single')}</span>
                   )}
                 </div>
 
@@ -390,7 +392,7 @@ export default function RiskHeatmap({ risks, onEdit }) {
                     ? (
                       <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                         <ClipboardList className="w-6 h-6 mx-auto mb-2 opacity-30" />
-                        No linked tasks found for these risks.
+                        {t('risk_tasks_no_linked')}
                       </div>
                     )
                     : linkedTasks.map(task => (
@@ -424,7 +426,7 @@ export default function RiskHeatmap({ risks, onEdit }) {
                     ? (
                       <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                         <ShieldCheck className="w-6 h-6 mx-auto mb-2 opacity-30" />
-                        No mitigation notes recorded for these risks.
+                        {t('risk_tasks_no_mitigation')}
                       </div>
                     )
                     : mitigationItems.map(risk => (

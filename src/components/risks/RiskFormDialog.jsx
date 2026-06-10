@@ -164,7 +164,7 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <TabsList className="w-full flex-shrink-0">
               <TabsTrigger value="edit" className="flex-1">{t('risk_form_tab_edit')}</TabsTrigger>
-              <TabsTrigger value="tasks" className="flex-1">Tasks</TabsTrigger>
+              <TabsTrigger value="tasks" className="flex-1">{t('risk_form_tab_tasks')}</TabsTrigger>
               <TabsTrigger value="history" className="flex-1">{t('risk_form_tab_history')}</TabsTrigger>
             </TabsList>
 
@@ -201,6 +201,7 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
 }
 
 function RiskTasksPanel({ risk, initialSubTab = 'general' }) {
+  const { t } = useLanguage();
   const [subTab, setSubTab] = useState(initialSubTab);
 
   return (
@@ -213,7 +214,7 @@ function RiskTasksPanel({ risk, initialSubTab = 'general' }) {
             subTab === 'general' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <ClipboardList className="w-3.5 h-3.5" /> General Tasks
+          <ClipboardList className="w-3.5 h-3.5" /> {t('risk_tasks_general')}
         </button>
         <button
           onClick={() => setSubTab('mitigation')}
@@ -221,7 +222,7 @@ function RiskTasksPanel({ risk, initialSubTab = 'general' }) {
             subTab === 'mitigation' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <ShieldCheck className="w-3.5 h-3.5" /> Mitigation Tasks
+          <ShieldCheck className="w-3.5 h-3.5" /> {t('risk_tasks_mitigation')}
         </button>
       </div>
 

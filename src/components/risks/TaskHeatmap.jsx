@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Badge } from '@/components/ui/badge';
 import { X, ClipboardList } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const CELL_BG = (score) => {
   if (score >= 20) return '#dc2626';
@@ -62,6 +63,7 @@ function ScoreZoneLegend() {
 }
 
 export default function TaskHeatmap({ risks }) {
+  const { t } = useLanguage();
   const [selected, setSelected] = useState(null); // { impact, likelihood }
 
   const { data: allTasks = [] } = useQuery({
@@ -135,9 +137,7 @@ export default function TaskHeatmap({ risks }) {
   return (
     <div className="space-y-5">
       {/* Intro text */}
-      <p className="text-xs text-muted-foreground">
-        Tasks are plotted by the <strong>impact × likelihood</strong> score of their linked risk. Each cell shows how many tasks are associated with risks at that severity level.
-      </p>
+      <p className="text-xs text-muted-foreground">{t('risk_task_heatmap_intro')}</p>
 
       {/* Heatmap grid */}
       <div className="overflow-x-auto">
@@ -232,7 +232,7 @@ export default function TaskHeatmap({ risks }) {
           return (
             <div key={zone.label} className={`rounded-lg border px-3 py-2.5 ${zone.bg} ${zone.border}`}>
               <p className={`text-xl font-bold ${zone.text}`}>{count}</p>
-              <p className={`text-xs font-medium ${zone.text}`}>{zone.label} zone tasks</p>
+              <p className={`text-xs font-medium ${zone.text}`}>{zone.label} {t('risk_task_heatmap_zone_tasks')}</p>
             </div>
           );
         })}
@@ -282,7 +282,7 @@ export default function TaskHeatmap({ risks }) {
                         </Badge>
                       )}
                       <Badge variant="outline" className="text-xs border bg-muted text-muted-foreground border-border capitalize">
-                        {task._type === 'mitigation' ? 'Mitigation' : 'General'}
+                        {task._type === 'mitigation' ? t('risk_tasks_type_mitigation') : t('risk_tasks_type_general')}
                       </Badge>
                     </div>
                     {task.description && (
@@ -304,7 +304,7 @@ export default function TaskHeatmap({ risks }) {
       {totalTaskCount === 0 && (
         <div className="text-center py-12 text-muted-foreground">
           <ClipboardList className="w-8 h-8 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">No tasks linked to risks yet. Create tasks from the risk edit dialog to see them here.</p>
+          <p className="text-sm">{t('risk_tasks_no_linked_any')}</p>
         </div>
       )}
     </div>

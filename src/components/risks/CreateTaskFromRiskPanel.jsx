@@ -11,6 +11,7 @@ import { Loader2, Plus, ClipboardList, ExternalLink, CheckCircle2 } from 'lucide
 import { toast } from 'sonner';
 import { useCustomerUsers } from '@/hooks/useCustomerUsers';
 import UserSelect from '@/components/shared/UserSelect';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const PRIORITY_STYLES = {
   low:      'bg-chart-2/10 text-chart-2 border-chart-2/20',
@@ -22,6 +23,7 @@ const PRIORITY_STYLES = {
 const STATUS_LABELS = { todo: 'To-Do', in_progress: 'In Progress', blocked: 'Blocked', done: 'Done' };
 
 export default function CreateTaskFromRiskPanel({ risk }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const customerUsers = useCustomerUsers(risk?.customer_id);
@@ -113,7 +115,7 @@ export default function CreateTaskFromRiskPanel({ risk }) {
       {!showForm ? (
         <div className="flex flex-col items-center justify-center py-8 border border-dashed rounded-lg gap-3 text-muted-foreground">
           <ClipboardList className="w-6 h-6 opacity-30" />
-          <p className="text-sm">Create task</p>
+          <p className="text-sm">{t('risk_tasks_empty_create')}</p>
           <Button type="button" size="sm" onClick={() => setShowForm(true)} className="gap-1.5">
             <Plus className="w-3.5 h-3.5" /> New Task
           </Button>

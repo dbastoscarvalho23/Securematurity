@@ -224,7 +224,7 @@ export default function RiskAssessment() {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Task Heatmap
+              {t('risk_view_task_heatmap')}
             </button>
           </div>
 
@@ -275,8 +275,8 @@ export default function RiskAssessment() {
       {view === 'task_heatmap' && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Task Heatmap</CardTitle>
-            <p className="text-xs text-muted-foreground">Visualize tasks by the risk severity level they address.</p>
+            <CardTitle className="text-base">{t('risk_task_heatmap_title')}</CardTitle>
+            <p className="text-xs text-muted-foreground">{t('risk_task_heatmap_desc')}</p>
           </CardHeader>
           <CardContent>
             <TaskHeatmap risks={filtered} />
@@ -394,10 +394,10 @@ export default function RiskAssessment() {
 
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-primary hover:text-primary"
-                          title="Tasks for this risk"
+                          title={t('risk_tasks_button_title')}
                           onClick={() => handleEdit(risk, 'create_task')}>
                           <ClipboardList className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Tasks</span>
+                          <span className="hidden sm:inline">{t('risk_tasks_button')}</span>
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(risk)}>
                           <Pencil className="w-3.5 h-3.5" />
