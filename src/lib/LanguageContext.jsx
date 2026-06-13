@@ -6,22 +6,25 @@ const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguageState] = useState(() => {
-    return localStorage.getItem('app_language') || 'en';
+    try { return localStorage.getItem('app_language') || 'en'; }
+    catch { return 'en'; }
   });
 
   // Sync from user profile when user loads (without depending on useAuth)
   useEffect(() => {
-    base44.auth.me().then(user => {
-      if (user?.language) {
-        setLanguageState(user.language);
-        localStorage.setItem('app_language', user.language);
-      }
-    }).catch(() => {});
+    try {
+      base44.auth.me().then(user => {
+        if (user?.language) {
+          setLanguageState(user.language);
+          try { localStorage.setItem('app_language', user.language); } catch {}
+        }
+      }).catch(() => {});
+    } catch {}
   }, []);
 
   const setLanguage = (lang) => {
     setLanguageState(lang);
-    localStorage.setItem('app_language', lang);
+    try { localStorage.setItem('app_language', lang); } catch {}
   };
 
   const t = (key) => {
