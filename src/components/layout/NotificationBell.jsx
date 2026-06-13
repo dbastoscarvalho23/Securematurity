@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Bell, Check, CheckCheck, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,20 +27,30 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const fetchRef = React.useRef(false);
+
   const fetchNotifications = useCallback(async () => {
     if (!user?.email) return;
-    const data = await base44.entities.Notification.filter(
-      { user_email: user.email },
-      '-created_date',
-      50
-    );
-    setNotifications(data);
+    if (fetchRef.current) return;
+    fetchRef.current = true;
+    try {
+      const data = await base44.entities.Notification.filter(
+        { user_email: user.email },
+        '-created_date',
+        50
+      );
+      setNotifications(data);
+    } catch (err) {
+      console.warn('Failed to fetch notifications:', err);
+    } finally {
+      fetchRef.current = false;
+    }
   }, [user?.email]);
 
   useEffect(() => {
     fetchNotifications();
-    // Poll every 30s for new notifications
-    const interval = setInterval(fetchNotifications, 30000);
+    // Poll every 60s for new notifications (reduced from 30s)
+    const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
@@ -68,7 +78,10 @@ export default function NotificationBell() {
   const markAllRead = async () => {
     setLoading(true);
     const unread = notifications.filter(n => !n.is_read);
-    await Promise.all(unread.map(n => base44.entities.Notification.update(n.id, { is_read: true })));
+    // Update sequentially to avoid rate limiting
+    for (const n of unread) {
+      await base44.entities.Notification.update(n.id, { is_read: true });
+    }
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     setLoading(false);
   };
