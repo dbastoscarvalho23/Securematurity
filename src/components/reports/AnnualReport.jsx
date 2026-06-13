@@ -27,41 +27,45 @@ const PRIORITY_COLORS = {
   low: 'bg-chart-2/10 text-chart-2',
 };
 
-export default function AnnualReport() {
+export default function AnnualReport({ selectedCustomer = 'all' }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
   const customerId = user?.customer_id;
 
+  // For admins: if a specific customer is selected, filter by it; otherwise fetch all
+  const effectiveCustomerId = isAdmin && selectedCustomer !== 'all' ? selectedCustomer : customerId;
+  const queryKeySuffix = isAdmin ? selectedCustomer : customerId;
+
   const { data: risks = [] } = useQuery({
-    queryKey: ['annual-report-risks', customerId],
-    queryFn: () => isAdmin
+    queryKey: ['annual-report-risks', queryKeySuffix],
+    queryFn: () => (isAdmin && selectedCustomer === 'all')
       ? base44.entities.RiskItem.list('-created_date', 500)
-      : base44.entities.RiskItem.filter({ customer_id: customerId }, '-created_date', 500),
+      : base44.entities.RiskItem.filter({ customer_id: effectiveCustomerId }, '-created_date', 500),
     enabled: isAdmin || !!customerId,
   });
 
   const { data: tasks = [] } = useQuery({
-    queryKey: ['annual-report-tasks', customerId],
-    queryFn: () => isAdmin
+    queryKey: ['annual-report-tasks', queryKeySuffix],
+    queryFn: () => (isAdmin && selectedCustomer === 'all')
       ? base44.entities.Task.list('-created_date', 500)
-      : base44.entities.Task.filter({ customer_id: customerId }, '-created_date', 500),
+      : base44.entities.Task.filter({ customer_id: effectiveCustomerId }, '-created_date', 500),
     enabled: isAdmin || !!customerId,
   });
 
   const { data: recommendations = [] } = useQuery({
-    queryKey: ['annual-report-recs', customerId],
-    queryFn: () => isAdmin
+    queryKey: ['annual-report-recs', queryKeySuffix],
+    queryFn: () => (isAdmin && selectedCustomer === 'all')
       ? base44.entities.Recommendation.list('-created_date', 500)
-      : base44.entities.Recommendation.filter({ customer_id: customerId }, '-created_date', 500),
+      : base44.entities.Recommendation.filter({ customer_id: effectiveCustomerId }, '-created_date', 500),
     enabled: isAdmin || !!customerId,
   });
 
   const { data: assessments = [] } = useQuery({
-    queryKey: ['annual-report-assessments', customerId],
-    queryFn: () => isAdmin
+    queryKey: ['annual-report-assessments', queryKeySuffix],
+    queryFn: () => (isAdmin && selectedCustomer === 'all')
       ? base44.entities.Assessment.list('-created_date', 50)
-      : base44.entities.Assessment.filter({ customer_id: customerId }, '-created_date', 50),
+      : base44.entities.Assessment.filter({ customer_id: effectiveCustomerId }, '-created_date', 50),
     enabled: isAdmin || !!customerId,
   });
 

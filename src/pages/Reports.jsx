@@ -285,7 +285,7 @@ export default function Reports() {
         </Card>
 
         {/* Annual Report */}
-        <AnnualReport />
+        <AnnualReport selectedCustomer={selectedCustomer} />
         </div>
         );
         }
