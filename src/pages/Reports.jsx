@@ -13,6 +13,7 @@ import FrameworkScoreCard from '@/components/dashboard/FrameworkScoreCard';
 import { Button } from '@/components/ui/button';
 import { BarChart3, TrendingUp, ChevronDown, ChevronUp, Loader2, Download } from 'lucide-react';
 import { exportReportPdf } from '@/lib/exportReportPdf';
+import AnnualReport from '@/components/reports/AnnualReport';
 
 const FRAMEWORK_NAMES = {
   NIS2: 'NIS2 / DL 125/2025',
@@ -221,6 +222,9 @@ export default function Reports() {
         <MaturityRadar data={radarData} title={t('reports_domain_coverage')} />
         <TrendChart data={trendData} frameworks={Object.keys(FRAMEWORK_NAMES)} title={t('reports_maturity_evolution')} />
       </div>
+
+      {/* Annual Report */}
+      <AnnualReport />
 
       {/* Assessment History */}
       <Card>
