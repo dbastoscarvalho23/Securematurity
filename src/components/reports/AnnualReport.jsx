@@ -33,41 +33,42 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
   const isAdmin = user?.role === 'admin';
   const customerId = user?.customer_id;
 
-  // For admins: if a specific customer is selected, filter by it; otherwise fetch all
-  const effectiveCustomerId = isAdmin && selectedCustomer !== 'all' ? selectedCustomer : customerId;
-  const queryKeySuffix = isAdmin ? selectedCustomer : customerId;
-
-  const { data: risks = [] } = useQuery({
-    queryKey: ['annual-report-risks', queryKeySuffix],
-    queryFn: () => (isAdmin && selectedCustomer === 'all')
-      ? base44.entities.RiskItem.list('-created_date', 500)
-      : base44.entities.RiskItem.filter({ customer_id: effectiveCustomerId }, '-created_date', 500),
+  // Fetch all records from all customers, then filter client-side for consistency with Risk Assessment page
+  const { data: allRisks = [] } = useQuery({
+    queryKey: ['annual-report-risks'],
+    queryFn: () => base44.entities.RiskItem.list('-created_date', 5000),
     enabled: isAdmin || !!customerId,
   });
 
-  const { data: tasks = [] } = useQuery({
-    queryKey: ['annual-report-tasks', queryKeySuffix],
-    queryFn: () => (isAdmin && selectedCustomer === 'all')
-      ? base44.entities.Task.list('-created_date', 500)
-      : base44.entities.Task.filter({ customer_id: effectiveCustomerId }, '-created_date', 500),
+  const { data: allTasks = [] } = useQuery({
+    queryKey: ['annual-report-tasks'],
+    queryFn: () => base44.entities.Task.list('-created_date', 5000),
     enabled: isAdmin || !!customerId,
   });
 
-  const { data: recommendations = [] } = useQuery({
-    queryKey: ['annual-report-recs', queryKeySuffix],
-    queryFn: () => (isAdmin && selectedCustomer === 'all')
-      ? base44.entities.Recommendation.list('-created_date', 500)
-      : base44.entities.Recommendation.filter({ customer_id: effectiveCustomerId }, '-created_date', 500),
+  const { data: allRecommendations = [] } = useQuery({
+    queryKey: ['annual-report-recs'],
+    queryFn: () => base44.entities.Recommendation.list('-created_date', 5000),
     enabled: isAdmin || !!customerId,
   });
 
-  const { data: assessments = [] } = useQuery({
-    queryKey: ['annual-report-assessments', queryKeySuffix],
-    queryFn: () => (isAdmin && selectedCustomer === 'all')
-      ? base44.entities.Assessment.list('-created_date', 50)
-      : base44.entities.Assessment.filter({ customer_id: effectiveCustomerId }, '-created_date', 50),
+  const { data: allAssessments = [] } = useQuery({
+    queryKey: ['annual-report-assessments'],
+    queryFn: () => base44.entities.Assessment.list('-created_date', 500),
     enabled: isAdmin || !!customerId,
   });
+
+  // Client-side scope by selected customer (matching Risk Assessment page behavior)
+  const scopeByCustomer = (items) => {
+    if (!isAdmin) return items.filter(r => !r.customer_id || r.customer_id === customerId);
+    if (selectedCustomer === 'all') return items;
+    return items.filter(r => r.customer_id === selectedCustomer);
+  };
+
+  const risks = useMemo(() => scopeByCustomer(allRisks), [allRisks, isAdmin, customerId, selectedCustomer]);
+  const tasks = useMemo(() => scopeByCustomer(allTasks), [allTasks, isAdmin, customerId, selectedCustomer]);
+  const recommendations = useMemo(() => scopeByCustomer(allRecommendations), [allRecommendations, isAdmin, customerId, selectedCustomer]);
+  const assessments = useMemo(() => scopeByCustomer(allAssessments), [allAssessments, isAdmin, customerId, selectedCustomer]);
 
   // --- Drill-down state ---
   const [drillDown, setDrillDown] = useState(null); // { section, filter }
