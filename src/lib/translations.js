@@ -368,6 +368,11 @@ export const translations = {
     annual_report_upcoming_tasks: 'Upcoming Tasks with Deadlines',
     annual_report_no_upcoming_tasks: 'No upcoming tasks with deadlines.',
     annual_report_more: 'more',
+    annual_report_close: 'Close',
+    annual_report_no_results: 'No matching items found.',
+    annual_report_show_less: 'Show less',
+    annual_report_all_incidents: 'All Active High/Critical Risks',
+    risks: 'Risks',
     // Security Documents page
     docs_new: 'New Document',
     docs_search_placeholder: 'Search documents...',
@@ -1352,6 +1357,11 @@ export const translations = {
     annual_report_upcoming_tasks: 'Próximas Tarefas com Prazos',
     annual_report_no_upcoming_tasks: 'Sem tarefas futuras com prazos definidos.',
     annual_report_more: 'mais',
+    annual_report_close: 'Fechar',
+    annual_report_no_results: 'Nenhum item correspondente encontrado.',
+    annual_report_show_less: 'Mostrar menos',
+    annual_report_all_incidents: 'Todos os Riscos Ativos Elevados/Críticos',
+    risks: 'Riscos',
     // Security Documents page
     docs_new: 'Novo Documento',
     docs_search_placeholder: 'Pesquisar documentos...',
