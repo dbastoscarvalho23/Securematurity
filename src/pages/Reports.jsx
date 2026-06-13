@@ -223,9 +223,6 @@ export default function Reports() {
         <TrendChart data={trendData} frameworks={Object.keys(FRAMEWORK_NAMES)} title={t('reports_maturity_evolution')} />
       </div>
 
-      {/* Annual Report */}
-      <AnnualReport />
-
       {/* Assessment History */}
       <Card>
         <CardHeader>
@@ -285,7 +282,10 @@ export default function Reports() {
             </div>
           )}
         </CardContent>
-      </Card>
-    </div>
-  );
-}
+        </Card>
+
+        {/* Annual Report */}
+        <AnnualReport />
+        </div>
+        );
+        }
