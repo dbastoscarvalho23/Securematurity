@@ -108,6 +108,35 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
     return [];
   }, [drillDown, recommendations]);
 
+  // --- Helpers ---
+  const statusLabel = (s) => ({
+    open: t('risk_status_open'),
+    in_treatment: t('risk_status_in_treatment'),
+    accepted: t('risk_status_accepted'),
+    closed: t('risk_status_closed'),
+  })[s] || s;
+
+  const priorityLabel = (p) => ({
+    critical: t('tasks_priority_critical'),
+    high: t('tasks_priority_high'),
+    medium: t('tasks_priority_medium'),
+    low: t('tasks_priority_low'),
+  })[p] || p;
+
+  const catLabel = (cat) => {
+    const map = {
+      access_control: t('risk_cat_access_control'),
+      data_protection: t('risk_cat_data_protection'),
+      network_security: t('risk_cat_network_security'),
+      physical_security: t('risk_cat_physical_security'),
+      third_party: t('risk_cat_third_party'),
+      compliance: t('risk_cat_compliance'),
+      operational: t('risk_cat_operational'),
+      other: t('risk_cat_other'),
+    };
+    return map[cat] || cat;
+  };
+
   const drillLabel = useMemo(() => {
     if (!drillDown) return '';
     const { section, filter } = drillDown;
@@ -235,35 +264,6 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
   }, [assessments, recommendations, tasks]);
 
   const yearLabel = new Date().getFullYear();
-
-  // --- Helpers ---
-  const statusLabel = (s) => ({
-    open: t('risk_status_open'),
-    in_treatment: t('risk_status_in_treatment'),
-    accepted: t('risk_status_accepted'),
-    closed: t('risk_status_closed'),
-  })[s] || s;
-
-  const priorityLabel = (p) => ({
-    critical: t('tasks_priority_critical'),
-    high: t('tasks_priority_high'),
-    medium: t('tasks_priority_medium'),
-    low: t('tasks_priority_low'),
-  })[p] || p;
-
-  const catLabel = (cat) => {
-    const map = {
-      access_control: t('risk_cat_access_control'),
-      data_protection: t('risk_cat_data_protection'),
-      network_security: t('risk_cat_network_security'),
-      physical_security: t('risk_cat_physical_security'),
-      third_party: t('risk_cat_third_party'),
-      compliance: t('risk_cat_compliance'),
-      operational: t('risk_cat_operational'),
-      other: t('risk_cat_other'),
-    };
-    return map[cat] || cat;
-  };
 
   return (
     <div className="space-y-6">
