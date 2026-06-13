@@ -61,7 +61,7 @@ export default function RiskMatrixWidget() {
   }, [manualRisks, isAdmin, customerId]);
 
   const allRisks = useMemo(() => mergeRisks(scopedManual, derivedRisks), [scopedManual, derivedRisks]);
-  const summary = useMemo(() => summariseRisks(allRisks), [allRisks]);
+  const summary = useMemo(() => summariseRisks(scopedManual), [scopedManual]);
 
   const getCell = (impact, likelihood) =>
     allRisks.filter(r => r.impact === impact && r.likelihood === likelihood);
@@ -73,7 +73,7 @@ export default function RiskMatrixWidget() {
     [allRisks]
   );
 
-  const total = allRisks.length;
+  const total = scopedManual.length;
   const distPct = {
     critical: total ? Math.round((summary.critical / total) * 100) : 0,
     high:     total ? Math.round((summary.high     / total) * 100) : 0,
@@ -229,9 +229,9 @@ export default function RiskMatrixWidget() {
               );
             })}
 
-            {allRisks.length > 5 && (
+            {scopedManual.length > 5 && (
               <Link to="/risk-assessment" className="text-xs text-primary hover:underline block text-center pt-1">
-                {t('dashboard_view_all_risks')} {allRisks.length} {t('dashboard_risks')} →
+                {t('dashboard_view_all_risks')} {scopedManual.length} {t('dashboard_risks')} →
               </Link>
             )}
           </div>
