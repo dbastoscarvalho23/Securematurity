@@ -63,7 +63,7 @@ export default function RiskAssessment() {
 
   const { data: risks = [] } = useQuery({
     queryKey: ['riskItems'],
-    queryFn: () => base44.entities.RiskItem.list('-created_date', 500),
+    queryFn: () => base44.entities.RiskItem.list('-created_date', 5000),
   });
 
   const { data: documents = [] } = useQuery({
@@ -133,9 +133,8 @@ export default function RiskAssessment() {
   }, [risks, isAdmin, customerId]);
 
   const filtered = useMemo(() => {
-    return scoped.filter(r => {
+    return customerScoped.filter(r => {
       if (filterStatus !== 'all' && r.status !== filterStatus) return false;
-      if (isAdmin && filterCustomer && r.customer_id !== filterCustomer) return false;
       if (search) {
         const q = search.toLowerCase();
         return r.title?.toLowerCase().includes(q) || r.description?.toLowerCase().includes(q) ||
@@ -143,25 +142,31 @@ export default function RiskAssessment() {
       }
       return true;
     });
-  }, [scoped, filterStatus, filterCustomer, search, isAdmin]);
+  }, [customerScoped, filterStatus, search]);
 
-  // KPIs
-  const critical = scoped.filter(r => riskScore(r) >= 16).length;
-  const high = scoped.filter(r => riskScore(r) >= 9 && riskScore(r) < 16).length;
-  const openCount = scoped.filter(r => r.status === 'open').length;
+  // Scope by customer filter only (not search/status) for KPI cards
+  const customerScoped = useMemo(() => {
+    if (isAdmin && filterCustomer) return scoped.filter(r => r.customer_id === filterCustomer);
+    return scoped;
+  }, [scoped, isAdmin, filterCustomer]);
+
+  // KPIs — reflect customer filter so they match the list below
+  const critical = customerScoped.filter(r => riskScore(r) >= 16).length;
+  const high = customerScoped.filter(r => riskScore(r) >= 9 && riskScore(r) < 16).length;
+  const openCount = customerScoped.filter(r => r.status === 'open').length;
 
   const [initialTab, setInitialTab] = useState('edit');
   const handleNew = () => { setEditingRisk(null); setInitialTab('edit'); setDialogOpen(true); };
   const handleEdit = (r, tab = 'edit') => { setEditingRisk(r); setInitialTab(tab); setDialogOpen(true); };
 
   const handleBulkDelete = async () => {
-    for (const r of scoped) {
+    for (const r of customerScoped) {
       await base44.entities.RiskItem.delete(r.id);
     }
-    await writeAuditLog({ action: 'risk_deleted', entity_type: 'RiskItem', details: `Bulk deleted ${scoped.length} risks` });
+    await writeAuditLog({ action: 'risk_deleted', entity_type: 'RiskItem', details: `Bulk deleted ${customerScoped.length} risks` });
     queryClient.invalidateQueries({ queryKey: ['riskItems'] });
     setBulkDeleteOpen(false);
-    toast.success(`${scoped.length} risk${scoped.length !== 1 ? 's' : ''} deleted`);
+    toast.success(`${customerScoped.length} risk${customerScoped.length !== 1 ? 's' : ''} deleted`);
   };
 
   const handleExcelImport = async (risks) => {
@@ -191,7 +196,7 @@ export default function RiskAssessment() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          {t('risk_subtitle')} · <span className="text-foreground font-medium">{scoped.length}</span> {t('common_total')}
+          {t('risk_subtitle')} · <span className="text-foreground font-medium">{customerScoped.length}</span> {t('common_total')}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           {/* View toggle — segmented style */}
@@ -232,7 +237,7 @@ export default function RiskAssessment() {
           <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="gap-2">
             <FileSpreadsheet className="w-4 h-4" /> {t('risk_import_excel')}
           </Button>
-          {scoped.length > 0 && (
+          {customerScoped.length > 0 && (
             <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(true)} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10">
               <Trash2 className="w-4 h-4" /> {t('risk_delete_all')}
             </Button>
@@ -266,7 +271,7 @@ export default function RiskAssessment() {
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-chart-2/10"><FileText className="w-4 h-4 text-chart-2" /></div>
-            <div><p className="text-2xl font-bold">{scoped.length}</p><p className="text-xs text-muted-foreground">{t('risk_card_total')}</p></div>
+            <div><p className="text-2xl font-bold">{customerScoped.length}</p><p className="text-xs text-muted-foreground">{t('risk_card_total')}</p></div>
           </CardContent>
         </Card>
       </div>
@@ -421,7 +426,7 @@ export default function RiskAssessment() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('risk_bulk_delete_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('risk_bulk_delete_desc')} <strong>{scoped.length}</strong> {scoped.length !== 1 ? 'risks' : 'risk'}. {t('risk_bulk_delete_desc2')}
+              {t('risk_bulk_delete_desc')} <strong>{customerScoped.length}</strong> {customerScoped.length !== 1 ? 'risks' : 'risk'}. {t('risk_bulk_delete_desc2')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
