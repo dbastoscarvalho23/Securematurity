@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { BarChart3, TrendingUp, ChevronDown, ChevronUp, Loader2, Download } from 'lucide-react';
 import { exportReportPdf } from '@/lib/exportReportPdf';
 import AnnualReport from '@/components/reports/AnnualReport';
+import RecordDetailDialog from '@/components/reports/RecordDetailDialog';
 
 const FRAMEWORK_NAMES = {
   NIS2: 'NIS2 / DL 125/2025',
@@ -37,6 +38,7 @@ const MATURITY_COLORS = [
 
 function AssessmentAnswersPanel({ assessmentId }) {
   const { t } = useLanguage();
+  const [detail, setDetail] = useState(null);
   const { data: responses = [], isLoading } = useQuery({
     queryKey: ['responses', assessmentId],
     queryFn: () => base44.entities.AssessmentResponse.filter({ assessment_id: assessmentId }),
@@ -85,7 +87,7 @@ function AssessmentAnswersPanel({ assessmentId }) {
                     const question = questions.find(q => q.id === r.question_id);
                     const level = r.maturity_level ?? null;
                     return (
-                      <div key={r.id} className="flex items-start gap-3 p-3 rounded-md bg-muted/40 border text-sm">
+                      <div key={r.id} className="flex items-start gap-3 p-3 rounded-md bg-muted/40 border text-sm cursor-pointer hover:bg-muted/60 transition-colors" onClick={() => setDetail({ type: 'assessment_response', record: r })}>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium leading-snug">
                             {question?.question_text || r.control_id || 'Question'}
@@ -113,6 +115,13 @@ function AssessmentAnswersPanel({ assessmentId }) {
           </div>
         </div>
       ))}
+
+      <RecordDetailDialog
+        record={detail?.record}
+        type={detail?.type}
+        open={!!detail}
+        onOpenChange={(o) => !o && setDetail(null)}
+      />
     </div>
   );
 }

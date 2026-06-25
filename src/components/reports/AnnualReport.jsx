@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { riskScore } from '@/lib/riskEngine';
+import RecordDetailDialog from '@/components/reports/RecordDetailDialog';
 
 const RISK_STATUS_COLORS = {
   open: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -72,6 +73,7 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
 
   // --- Drill-down state ---
   const [drillDown, setDrillDown] = useState(null); // { section, filter }
+  const [detail, setDetail] = useState(null); // { type, record }
 
   const clearDrillDown = () => setDrillDown(null);
   const isDrillActive = (section, filter) =>
@@ -168,7 +170,7 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
             const score = riskScore(r.impact, r.likelihood);
             const level = score >= 16 ? 'critical' : score >= 9 ? 'high' : score >= 4 ? 'medium' : 'low';
             return (
-              <div key={r.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/30 text-sm">
+              <div key={r.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/30 text-sm cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setDetail({ type: 'risk', record: r })}>
                 <span className={cn('w-8 h-6 rounded text-[10px] font-bold flex items-center justify-center flex-shrink-0',
                   level === 'critical' ? 'bg-destructive/15 text-destructive' :
                   level === 'high' ? 'bg-chart-4/15 text-chart-4' :
@@ -198,7 +200,7 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
       ) : (
         <div className="space-y-1.5 max-h-64 overflow-y-auto">
           {items.map(item => (
-            <div key={item.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/30 text-sm">
+            <div key={item.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/30 text-sm cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setDetail({ type: type === 'tasks' ? 'task' : 'recommendation', record: item })}>
               <span className="font-medium text-xs flex-1 truncate">{item.title}</span>
               {item.priority && (
                 <Badge className={cn('text-[10px] py-0', PRIORITY_COLORS[item.priority] || '')}>
@@ -462,7 +464,7 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
                   const score = riskScore(r.impact, r.likelihood);
                   const level = score >= 16 ? 'critical' : 'high';
                   return (
-                    <div key={r.id} className="flex items-center gap-3 p-2.5 rounded-lg border bg-muted/20 text-sm">
+                    <div key={r.id} className="flex items-center gap-3 p-2.5 rounded-lg border bg-muted/20 text-sm cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => setDetail({ type: 'risk', record: r })}>
                       <div className={cn('w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs flex-shrink-0',
                         level === 'critical' ? 'bg-destructive/15 text-destructive' : 'bg-chart-4/15 text-chart-4')}>
                         {score}
@@ -496,7 +498,7 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
                       const score = riskScore(r.impact, r.likelihood);
                       const level = score >= 16 ? 'critical' : 'high';
                       return (
-                        <div key={r.id} className="flex items-center gap-3 p-2.5 rounded-lg border bg-muted/20 text-sm">
+                        <div key={r.id} className="flex items-center gap-3 p-2.5 rounded-lg border bg-muted/20 text-sm cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => setDetail({ type: 'risk', record: r })}>
                           <div className={cn('w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs flex-shrink-0',
                             level === 'critical' ? 'bg-destructive/15 text-destructive' : 'bg-chart-4/15 text-chart-4')}>
                             {score}
@@ -539,7 +541,7 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
             ) : (
               <div className="space-y-1.5">
                 {futurePlans.upcomingAssessments.slice(0, isDrillActive('future', { type: 'assessments' }) ? undefined : 4).map(a => (
-                  <div key={a.id} className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/30">
+                  <div key={a.id} className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setDetail({ type: 'assessment', record: a })}>
                     <ArrowRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                     <span className="font-medium flex-1">{a.title}</span>
                     <span className="text-xs text-muted-foreground">{a.customer_name} · {a.period}</span>
@@ -570,7 +572,7 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
             ) : (
               <div className="space-y-1.5">
                 {futurePlans.pendingHighRecs.slice(0, isDrillActive('future', { type: 'recommendations' }) ? undefined : 4).map(rec => (
-                  <div key={rec.id} className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/30">
+                  <div key={rec.id} className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setDetail({ type: 'recommendation', record: rec })}>
                     <Badge className={cn('text-[10px] py-0', PRIORITY_COLORS[rec.priority] || '')}>
                       {priorityLabel(rec.priority)}
                     </Badge>
@@ -602,7 +604,7 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
             ) : (
               <div className="space-y-1.5">
                 {futurePlans.upcomingTasks.slice(0, isDrillActive('future', { type: 'tasks' }) ? undefined : 4).map(task => (
-                  <div key={task.id} className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/30">
+                  <div key={task.id} className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setDetail({ type: 'task', record: task })}>
                     <ArrowRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                     <span className="font-medium text-xs flex-1 truncate">{task.title}</span>
                     {task.due_date && <span className="text-[10px] text-muted-foreground">{task.due_date}</span>}
@@ -625,6 +627,13 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
           </div>
         </CardContent>
       </Card>
+
+      <RecordDetailDialog
+        record={detail?.record}
+        type={detail?.type}
+        open={!!detail}
+        onOpenChange={(o) => !o && setDetail(null)}
+      />
     </div>
   );
 }
