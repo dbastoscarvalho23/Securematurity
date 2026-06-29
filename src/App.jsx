@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/lib/LanguageContext';
+import { ThemeProvider } from '@/lib/ThemeContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Landing from '@/pages/Landing';
 import AppLayout from '@/components/layout/AppLayout';
@@ -91,6 +92,7 @@ function App() {
 
   return (
     <AuthProvider>
+      <ThemeProvider>
       <LanguageProvider>
         <QueryClientProvider client={queryClientInstance}>
           <Router>
@@ -99,6 +101,7 @@ function App() {
           <Toaster />
         </QueryClientProvider>
       </LanguageProvider>
+      </ThemeProvider>
     </AuthProvider>
   )
 }

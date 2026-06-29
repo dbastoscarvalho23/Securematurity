@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Settings, Building2, Loader2, Clock } from 'lucide-react';
+import { User, LogOut, Settings, Building2, Loader2, Clock, Sun, Moon, Monitor } from 'lucide-react';
+import { useTheme } from '@/lib/ThemeContext';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -51,10 +52,12 @@ const PAGE_TITLE_KEYS = {
 export default function TopBar() {
   const { user, refreshUser } = useAuth();
   const { t, language, setLanguage } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
   const [name, setName] = useState('');
   const [selectedLang, setSelectedLang] = useState(language);
+  const [selectedTheme, setSelectedTheme] = useState(theme);
   const [saving, setSaving] = useState(false);
 
   const pageTitleKey = Object.entries(PAGE_TITLE_KEYS).find(([path]) =>
@@ -84,6 +87,7 @@ export default function TopBar() {
   const openProfile = () => {
     setName(user?.display_name || user?.full_name || user?.email || '');
     setSelectedLang(language);
+    setSelectedTheme(theme);
     setProfileOpen(true);
   };
 
@@ -91,8 +95,9 @@ export default function TopBar() {
     e.preventDefault();
     setSaving(true);
     try {
-      await base44.auth.updateMe({ display_name: name, language: selectedLang });
+      await base44.auth.updateMe({ display_name: name, language: selectedLang, theme: selectedTheme });
       setLanguage(selectedLang);
+      setTheme(selectedTheme);
       await refreshUser();
       toast.success(t('profile_updated'));
       setProfileOpen(false);
@@ -164,6 +169,24 @@ export default function TopBar() {
                   <span className={`relative z-10 w-1/2 text-center text-[10px] font-bold transition-colors duration-200 ${language === 'pt' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>PT</span>
                 </button>
               </div>
+              <div className="flex items-center gap-2 px-2 py-1.5">
+                <span className="text-sm text-muted-foreground flex-1">{t('profile_theme')}</span>
+                <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5 border border-border">
+                  {[
+                    { value: 'light', icon: Sun },
+                    { value: 'system', icon: Monitor },
+                    { value: 'dark', icon: Moon },
+                  ].map(({ value, icon: Icon }) => (
+                    <button
+                      key={value}
+                      onClick={e => { e.stopPropagation(); setTheme(value); base44.auth.updateMe({ theme: value }); }}
+                      className={`p-1 rounded transition-colors ${theme === value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      <Icon className="w-3 h-3" />
+                    </button>
+                  ))}
+                </div>
+              </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={openProfile}>
                 <User className="w-4 h-4 mr-2" />
@@ -225,6 +248,30 @@ export default function TopBar() {
                   <SelectItem value="pt">🇵🇹 PT — Português (Portugal)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('profile_theme')}</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: 'light', icon: Sun, label: t('profile_theme_light') },
+                  { value: 'system', icon: Monitor, label: t('profile_theme_system') },
+                  { value: 'dark', icon: Moon, label: t('profile_theme_dark') },
+                ].map(({ value, icon: Icon, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSelectedTheme(value)}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-colors text-sm font-medium ${
+                      selectedTheme === value
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-muted/30 text-muted-foreground hover:border-primary/40'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="text-xs">{label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>{t('profile_local_time')}</Label>

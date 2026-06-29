@@ -97,6 +97,10 @@ export const translations = {
     profile_language: 'Language',
     profile_cancel: 'Cancel',
     profile_save: 'Save',
+    profile_theme: 'Appearance',
+    profile_theme_light: 'Light',
+    profile_theme_dark: 'Dark',
+    profile_theme_system: 'System',
     profile_updated: 'Profile updated',
     profile_update_failed: 'Failed to update profile',
     // Roles
@@ -1086,6 +1090,10 @@ export const translations = {
     profile_language: 'Idioma',
     profile_cancel: 'Cancelar',
     profile_save: 'Guardar',
+    profile_theme: 'Aparência',
+    profile_theme_light: 'Claro',
+    profile_theme_dark: 'Escuro',
+    profile_theme_system: 'Sistema',
     profile_updated: 'Perfil atualizado',
     profile_update_failed: 'Erro ao atualizar perfil',
     // Roles
