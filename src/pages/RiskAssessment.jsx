@@ -132,6 +132,12 @@ export default function RiskAssessment() {
     return risks.filter(r => !r.customer_id || r.customer_id === customerId);
   }, [risks, isAdmin, customerId]);
 
+  // Scope by customer filter only (not search/status) for KPI cards
+  const customerScoped = useMemo(() => {
+    if (isAdmin && filterCustomer) return scoped.filter(r => r.customer_id === filterCustomer);
+    return scoped;
+  }, [scoped, isAdmin, filterCustomer]);
+
   const filtered = useMemo(() => {
     return customerScoped.filter(r => {
       if (filterStatus !== 'all' && r.status !== filterStatus) return false;
@@ -143,12 +149,6 @@ export default function RiskAssessment() {
       return true;
     });
   }, [customerScoped, filterStatus, search]);
-
-  // Scope by customer filter only (not search/status) for KPI cards
-  const customerScoped = useMemo(() => {
-    if (isAdmin && filterCustomer) return scoped.filter(r => r.customer_id === filterCustomer);
-    return scoped;
-  }, [scoped, isAdmin, filterCustomer]);
 
   // KPIs — reflect customer filter so they match the list below
   const critical = customerScoped.filter(r => riskScore(r) >= 16).length;
