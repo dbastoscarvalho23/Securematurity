@@ -1,0 +1,393 @@
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  UserPlus, Trash2, Loader2, Users, AlertTriangle, Send,
+  Mail, ShieldCheck, User, ChevronRight, Plus, Minus,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
+import { useQueryClient as useQC } from '@tanstack/react-query';
+
+const DEFAULT_SEAT_LIMIT = 5;
+
+const ROLE_STYLES = {
+  admin:          'bg-red-100 text-red-700 border-red-200',
+  customer_admin: 'bg-purple-100 text-purple-700 border-purple-200',
+  user:           'bg-blue-100 text-blue-700 border-blue-200',
+};
+
+const ROLE_LABELS = {
+  admin:          'Admin',
+  customer_admin: 'Customer Admin',
+  user:           'User',
+};
+
+function SeatBar({ used, total }) {
+  const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+  const atLimit = used >= total;
+  const nearLimit = pct >= 80;
+
+  return (
+    <div className="space-y-2">
+      {/* Visual counter pills */}
+      <div className="flex items-center gap-1 flex-wrap">
+        {Array.from({ length: total }).map((_, i) => (
+          <div
+            key={i}
+            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[9px] font-bold transition-colors ${
+              i < used
+                ? atLimit ? 'bg-destructive border-destructive text-destructive-foreground'
+                  : nearLimit ? 'bg-orange-400 border-orange-400 text-white'
+                  : 'bg-primary border-primary text-primary-foreground'
+                : 'bg-muted border-muted-foreground/20 text-muted-foreground'
+            }`}
+          >
+            {i < used ? <Users className="w-2.5 h-2.5" /> : ''}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{used} of {total} seats used</span>
+        {atLimit && (
+          <span className="text-destructive font-semibold flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" /> At limit
+          </span>
+        )}
+        {!atLimit && nearLimit && (
+          <span className="text-orange-500 font-medium">{total - used} remaining</span>
+        )}
+        {!atLimit && !nearLimit && (
+          <span className="text-muted-foreground">{total - used} available</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
+  const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('user');
+  const [inviting, setInviting] = useState(false);
+  const [requestingSeat, setRequestingSeat] = useState(false);
+  const [removingId, setRemovingId] = useState(null);
+  const [updatingRoleId, setUpdatingRoleId] = useState(null);
+  const [savingSeats, setSavingSeats] = useState(false);
+
+  const isAdmin = currentUser?.role === 'admin';
+  const isCustomerAdmin = currentUser?.role === 'customer_admin';
+  const canManage = isAdmin || isCustomerAdmin;
+
+  const baseLimit = customer.user_seat_limit ?? DEFAULT_SEAT_LIMIT;
+  const addonSeats = customer.user_seat_addon_count ?? 0;
+  const totalSeats = baseLimit + addonSeats;
+
+  const { data: customerUsers = [], isLoading: loadingUsers } = useQuery({
+    queryKey: ['customerUsers', customer.id],
+    queryFn: () => base44.entities.User.filter({ customer_id: customer.id }),
+  });
+
+  const { data: pendingInvites = [], isLoading: loadingInvites } = useQuery({
+    queryKey: ['pendingInvites', customer.id],
+    queryFn: () => base44.entities.InvitedUser.filter({ customer_id: customer.id, status: 'inactive' }),
+  });
+
+  const usedSeats = customerUsers.length + pendingInvites.length;
+  const atLimit = usedSeats >= totalSeats;
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['customerUsers', customer.id] });
+    queryClient.invalidateQueries({ queryKey: ['pendingInvites', customer.id] });
+    queryClient.invalidateQueries({ queryKey: ['allInvitedUsers'] });
+  };
+
+  const handleInvite = async (e) => {
+    e.preventDefault();
+    if (!inviteEmail.trim() || atLimit) return;
+    setInviting(true);
+    try {
+      await base44.users.inviteUser(inviteEmail.trim(), inviteRole);
+      await base44.entities.InvitedUser.create({
+        email: inviteEmail.trim(),
+        role: inviteRole,
+        invited_by: currentUser?.email || 'admin',
+        customer_id: customer.id,
+        customer_name: customer.name,
+        status: 'inactive',
+      });
+      toast.success(`Invitation sent to ${inviteEmail.trim()}`);
+      setInviteEmail('');
+      setInviteRole('user');
+      invalidate();
+    } catch (err) {
+      toast.error(err?.message || 'Failed to invite user');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleRemoveUser = async (userId, userName) => {
+    setRemovingId(userId);
+    try {
+      await base44.entities.User.update(userId, { customer_id: null });
+      toast.success(`${userName} removed from ${customer.name}`);
+      invalidate();
+    } catch {
+      toast.error('Failed to remove user');
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  const handleRemoveInvite = async (inviteId, email) => {
+    setRemovingId(inviteId);
+    try {
+      await base44.entities.InvitedUser.delete(inviteId);
+      toast.success(`Invite for ${email} cancelled`);
+      invalidate();
+    } catch {
+      toast.error('Failed to cancel invite');
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  const handleRoleChange = async (userId, newRole) => {
+    setUpdatingRoleId(userId);
+    try {
+      await base44.entities.User.update(userId, { role: newRole });
+      toast.success('Role updated');
+      invalidate();
+    } catch {
+      toast.error('Failed to update role');
+    } finally {
+      setUpdatingRoleId(null);
+    }
+  };
+
+  const handleSeatLimitChange = async (delta) => {
+    if (!isAdmin) return;
+    const newLimit = Math.max(1, baseLimit + delta);
+    setSavingSeats(true);
+    try {
+      await base44.entities.Customer.update(customer.id, { user_seat_limit: newLimit });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      if (onCustomerUpdated) onCustomerUpdated({ ...customer, user_seat_limit: newLimit });
+      toast.success(`Seat limit updated to ${newLimit + addonSeats}`);
+    } catch {
+      toast.error('Failed to update seat limit');
+    } finally {
+      setSavingSeats(false);
+    }
+  };
+
+  const handleRequestMoreSeats = async () => {
+    setRequestingSeat(true);
+    try {
+      const admins = await base44.entities.User.filter({ role: 'admin' });
+      await Promise.all(
+        admins.filter(a => a.email).map(a =>
+          base44.integrations.Core.SendEmail({
+            to: a.email,
+            subject: `[Seat Request] ${customer.name} needs more user seats`,
+            body: `Hello,\n\nThe customer "${customer.name}" has reached their user seat limit.\n\nCurrent usage: ${usedSeats} / ${totalSeats} seats.\n\nPlease review and adjust the seat limit in the Admin panel > Seat Management section.\n\nRequested by: ${currentUser?.email || 'unknown'}\n\nBest regards,\nCyberGovern Platform`,
+          })
+        )
+      );
+      toast.success('Seat request sent to platform administrators.');
+    } catch (err) {
+      toast.error('Failed to send request');
+    } finally {
+      setRequestingSeat(false);
+    }
+  };
+
+  if (loadingUsers || loadingInvites) {
+    return <div className="py-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>;
+  }
+
+  return (
+    <div className="space-y-4 py-2">
+
+      {/* Seat usage + admin controls */}
+      <div className="rounded-lg border bg-muted/20 p-3 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Seat Usage</p>
+          {isAdmin && (
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground mr-1">Base limit:</span>
+              <button
+                onClick={() => handleSeatLimitChange(-1)}
+                disabled={savingSeats || baseLimit <= 1}
+                className="w-5 h-5 rounded border bg-background hover:bg-muted flex items-center justify-center disabled:opacity-40"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <span className="text-sm font-mono font-bold w-6 text-center">{baseLimit}</span>
+              <button
+                onClick={() => handleSeatLimitChange(+1)}
+                disabled={savingSeats}
+                className="w-5 h-5 rounded border bg-background hover:bg-muted flex items-center justify-center disabled:opacity-40"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+              {addonSeats > 0 && (
+                <span className="text-xs text-muted-foreground ml-1">+{addonSeats} add-on</span>
+              )}
+              {savingSeats && <Loader2 className="w-3 h-3 animate-spin ml-1 text-muted-foreground" />}
+            </div>
+          )}
+        </div>
+        <SeatBar used={usedSeats} total={totalSeats} />
+      </div>
+
+      {/* At-limit warning */}
+      {atLimit && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800 px-3 py-2">
+          <p className="text-xs text-orange-700 dark:text-orange-400 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+            Seat limit reached. {isAdmin ? 'Adjust the base limit above.' : 'Contact your platform admin to get more seats.'}
+          </p>
+          {!isAdmin && (
+            <Button
+              size="sm" variant="outline"
+              className="h-7 text-xs gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-100 flex-shrink-0"
+              onClick={handleRequestMoreSeats}
+              disabled={requestingSeat}
+            >
+              {requestingSeat ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+              Request Seats
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Invite form */}
+      {canManage && !atLimit && (
+        <form onSubmit={handleInvite} className="flex gap-2 flex-wrap items-end">
+          <div className="flex-1 min-w-[180px] space-y-1">
+            <p className="text-xs text-muted-foreground">Email address</p>
+            <Input
+              type="email"
+              placeholder="user@company.com"
+              value={inviteEmail}
+              onChange={e => setInviteEmail(e.target.value)}
+              className="h-8 text-xs"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Role</p>
+            <Select value={inviteRole} onValueChange={setInviteRole}>
+              <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="customer_admin">Customer Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button type="submit" size="sm" className="h-8 gap-1.5 text-xs" disabled={inviting}>
+            {inviting ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
+            Invite User
+          </Button>
+        </form>
+      )}
+
+      {/* User table */}
+      {customerUsers.length === 0 && pendingInvites.length === 0 ? (
+        <div className="py-6 flex flex-col items-center gap-2 text-muted-foreground border-2 border-dashed rounded-lg">
+          <Users className="w-8 h-8 opacity-30" />
+          <p className="text-sm">No users assigned yet.</p>
+          {canManage && !atLimit && <p className="text-xs opacity-60">Use the invite form above to add the first user.</p>}
+        </div>
+      ) : (
+        <div className="rounded-lg border overflow-hidden">
+          {/* Active users */}
+          {customerUsers.map(u => (
+            <div key={u.id} className="flex items-center gap-3 px-3 py-2.5 border-b last:border-0 hover:bg-muted/30 transition-colors">
+              <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
+                {(u.full_name || u.email)?.[0]?.toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium leading-tight truncate">{u.display_name || u.full_name || u.email}</p>
+                {(u.display_name || u.full_name) && (
+                  <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {isAdmin ? (
+                  <div className="relative">
+                    {updatingRoleId === u.id
+                      ? <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                      : (
+                        <Select
+                          value={u.role || 'user'}
+                          onValueChange={val => handleRoleChange(u.id, val)}
+                        >
+                          <SelectTrigger className={`h-6 text-[10px] px-2 border font-semibold rounded-md ${ROLE_STYLES[u.role] || ROLE_STYLES.user}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="customer_admin">Customer Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                  </div>
+                ) : (
+                  <Badge variant="outline" className={`text-[10px] px-1.5 capitalize ${ROLE_STYLES[u.role] || ''}`}>
+                    {ROLE_LABELS[u.role] || u.role}
+                  </Badge>
+                )}
+                {canManage && (
+                  <button
+                    onClick={() => handleRemoveUser(u.id, u.display_name || u.full_name || u.email)}
+                    disabled={removingId === u.id}
+                    className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
+                    title="Remove from customer"
+                  >
+                    {removingId === u.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {/* Pending invites */}
+          {pendingInvites.map(inv => (
+            <div key={inv.id} className="flex items-center gap-3 px-3 py-2.5 border-b last:border-0 bg-muted/10">
+              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-bold flex-shrink-0">
+                <Mail className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm truncate text-muted-foreground">{inv.email}</p>
+                <p className="text-[10px] text-muted-foreground">Invited by {inv.invited_by || 'admin'}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Badge variant="outline" className="text-[10px] px-1.5 border-dashed text-muted-foreground">
+                  Pending
+                </Badge>
+                {canManage && (
+                  <button
+                    onClick={() => handleRemoveInvite(inv.id, inv.email)}
+                    disabled={removingId === inv.id}
+                    className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
+                    title="Cancel invite"
+                  >
+                    {removingId === inv.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

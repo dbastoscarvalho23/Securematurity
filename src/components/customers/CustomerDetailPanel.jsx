@@ -5,7 +5,7 @@ import { Building2, Mail, Phone, Globe, Users, Briefcase, Hash, Pencil, External
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import CustomerUsersPanel from './CustomerUsersPanel';
+import CustomerSeatSection from './CustomerSeatSection';
 
 const statusStyles = {
   active: 'bg-accent/10 text-accent border-accent/20',
@@ -129,10 +129,8 @@ export default function CustomerDetailPanel({ customer, onEdit }) {
         )}
 
         {canManageUsers && (
-          <Section title={t('settings_all_users')} defaultOpen={false}>
-            <div className="py-2">
-              <CustomerUsersPanel customer={customer} />
-            </div>
+          <Section title="User Seats & Access" defaultOpen={true}>
+            <CustomerSeatSection customer={customer} onCustomerUpdated={() => {}} />
           </Section>
         )}
       </div>
