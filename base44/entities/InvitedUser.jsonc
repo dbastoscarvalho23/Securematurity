@@ -10,7 +10,8 @@
       "type": "string",
       "enum": [
         "user",
-        "admin"
+        "admin",
+        "customer_admin"
       ],
       "default": "user",
       "description": "Assigned role"
@@ -27,6 +28,14 @@
     "invited_by": {
       "type": "string",
       "description": "Email of the admin who sent the invite"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to the Customer this user belongs to"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
     }
   },
   "required": [

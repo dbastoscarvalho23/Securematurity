@@ -87,6 +87,16 @@
     "notes": {
       "type": "string",
       "description": "Additional notes"
+    },
+    "user_seat_limit": {
+      "type": "number",
+      "default": 5,
+      "description": "Number of included user seats for this customer"
+    },
+    "user_seat_addon_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Additional paid seats granted by platform admin"
     }
   },
   "required": [

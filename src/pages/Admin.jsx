@@ -18,6 +18,7 @@ import {
   FileText,
 } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
+import SeatManagementPanel from '@/components/customers/SeatManagementPanel';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { format } from 'date-fns';
@@ -687,6 +688,9 @@ export default function Admin() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Seat Management */}
+      <SeatManagementPanel />
 
       {/* Drill-down dialogs */}
       <DrillDownDialog title={drillDownTitles[drillDown] || ''} open={!!drillDown} onClose={() => setDrillDown(null)}>

@@ -51,6 +51,8 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
     status: customer?.status || 'onboarding',
     allowed_frameworks: customer?.allowed_frameworks || ['NIS2', 'ISO27001', 'NIST_CSF', 'CIS_V8', 'QNRC', 'GDPR'],
     notes: customer?.notes || '',
+    user_seat_limit: customer?.user_seat_limit ?? 5,
+    user_seat_addon_count: customer?.user_seat_addon_count ?? 0,
   });
 
   const toggleFramework = (code) => {
@@ -157,7 +159,7 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>{t('common_status')}</Label>
               <Select value={form.status} onValueChange={v => set('status', v)}>
@@ -168,6 +170,15 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
                   <SelectItem value="inactive">{t('customers_status_inactive')}</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>User Seat Limit</Label>
+              <Input
+                type="number"
+                min={1}
+                value={form.user_seat_limit}
+                onChange={e => set('user_seat_limit', parseInt(e.target.value) || 5)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>{t('common_notes')}</Label>
