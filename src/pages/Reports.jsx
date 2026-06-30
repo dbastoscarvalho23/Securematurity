@@ -15,15 +15,7 @@ import { BarChart3, TrendingUp, ChevronDown, ChevronUp, Loader2, Download } from
 import { exportReportPdf } from '@/lib/exportReportPdf';
 import AnnualReport from '@/components/reports/AnnualReport';
 import RecordDetailDialog from '@/components/reports/RecordDetailDialog';
-
-const FRAMEWORK_NAMES = {
-  NIS2: 'NIS2 / DL 125/2025',
-  ISO27001: 'ISO/IEC 27001',
-  NIST_CSF: 'NIST CSF',
-  CIS_V8: 'CIS Controls v8',
-  QNRC: 'QNRC',
-  GDPR: 'GDPR',
-};
+import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
 
 const MATURITY_LABELS = ['Not Implemented', 'Initial', 'Developing', 'Defined', 'Managed', 'Optimizing'];
 

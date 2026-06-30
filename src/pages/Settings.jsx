@@ -65,7 +65,9 @@ export default function Settings() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId) => {
-      await base44.asServiceRole.entities.User.delete(userId);
+      const res = await base44.functions.invoke('adminDeleteUser', { userId });
+      if (res.data?.error) throw new Error(res.data.error);
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });

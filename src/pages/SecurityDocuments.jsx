@@ -149,6 +149,7 @@ export default function SecurityDocuments() {
         toast.success(isEdit ? 'Document updated' : 'Document created');
       }
     },
+    onError: (err) => toast.error(err?.message || 'Failed to save document'),
   });
 
   const approveMutation = useMutation({
@@ -195,6 +196,7 @@ export default function SecurityDocuments() {
       setApprovalDoc(null);
       toast.success('Document approved and signed off');
     },
+    onError: (err) => toast.error(err?.message || 'Failed to approve document'),
   });
 
   const handleApproveClick = (doc) => {
@@ -211,6 +213,7 @@ export default function SecurityDocuments() {
       queryClient.invalidateQueries({ queryKey: ['securityDocuments'] });
       toast.success('Document deleted');
     },
+    onError: (err) => toast.error(err?.message || 'Failed to delete document'),
   });
 
   const toggleCollapse = (id) => setCollapsed(c => ({ ...c, [id]: !c[id] }));

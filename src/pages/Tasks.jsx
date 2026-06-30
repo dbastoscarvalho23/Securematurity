@@ -64,6 +64,7 @@ export default function Tasks() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success(editingTask ? t('tasks_updated') : t('tasks_created'));
     },
+    onError: (err) => toast.error(err?.message || 'Failed to save task'),
   });
 
   const statusMutation = useMutation({
@@ -76,6 +77,7 @@ export default function Tasks() {
       }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+    onError: (err) => toast.error(err?.message || 'Failed to update task status'),
   });
 
   const deleteMutation = useMutation({
@@ -87,6 +89,7 @@ export default function Tasks() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success(t('tasks_deleted'));
     },
+    onError: (err) => toast.error(err?.message || 'Failed to delete task'),
   });
 
   const handleEdit = (task) => {

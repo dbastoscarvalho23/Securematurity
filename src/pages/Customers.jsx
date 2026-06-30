@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { writeAuditLog } from '@/lib/auditLog';
+import { toast } from 'sonner';
 
 const statusStyles = {
   active: 'bg-accent/10 text-accent border-accent/20',
@@ -49,6 +50,7 @@ export default function Customers() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setShowForm(false);
     },
+    onError: (err) => toast.error(err?.message || 'Failed to create customer'),
   });
 
   const updateMutation = useMutation({
@@ -62,6 +64,7 @@ export default function Customers() {
       setShowForm(false);
       setEditingCustomer(null);
     },
+    onError: (err) => toast.error(err?.message || 'Failed to update customer'),
   });
 
   const deleteMutation = useMutation({
@@ -73,6 +76,7 @@ export default function Customers() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setSelectedCustomer(null);
     },
+    onError: (err) => toast.error(err?.message || 'Failed to delete customer'),
   });
 
   const filtered = customers.filter(c =>

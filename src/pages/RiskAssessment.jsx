@@ -113,6 +113,7 @@ export default function RiskAssessment() {
       setEditingRisk(null);
       toast.success(variables?.id ? t('risk_updated') : t('risk_created'));
     },
+    onError: (err) => toast.error(err?.message || 'Failed to save risk'),
   });
 
   const deleteMutation = useMutation({
@@ -124,6 +125,7 @@ export default function RiskAssessment() {
       queryClient.invalidateQueries({ queryKey: ['riskItems'] });
       toast.success(t('risk_deleted'));
     },
+    onError: (err) => toast.error(err?.message || 'Failed to delete risk'),
   });
 
   // Scope by role

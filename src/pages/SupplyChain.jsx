@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, ChevronRight, Building2, CalendarDays, Layers } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, ChevronRight, Building2, CalendarDays, Layers, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import QuestionnaireFormDialog from '@/components/supplychain/QuestionnaireFormDialog';
 import QuestionnaireDetail from '@/components/supplychain/QuestionnaireDetail';
@@ -36,9 +36,14 @@ export default function SupplyChain() {
   const [editing, setEditing] = useState(null);
   const [selected, setSelected] = useState(null);
 
-  const { data: questionnaires = [] } = useQuery({
-    queryKey: ['supplier-questionnaires'],
-    queryFn: () => base44.entities.SupplierQuestionnaire.list('-created_date'),
+  const customerId = user?.customer_id;
+
+  const { data: questionnaires = [], isLoading: loadingQuestionnaires } = useQuery({
+    queryKey: ['supplier-questionnaires', customerId],
+    queryFn: () => isAdmin
+      ? base44.entities.SupplierQuestionnaire.list('-created_date')
+      : base44.entities.SupplierQuestionnaire.filter({ customer_id: customerId }, '-created_date'),
+    enabled: isAdmin || !!customerId,
   });
 
   const { data: customers = [] } = useQuery({
@@ -138,7 +143,14 @@ export default function SupplyChain() {
       </div>
 
       {/* List */}
-      {filtered.length === 0 ? (
+      {loadingQuestionnaires ? (
+        <Card>
+          <CardContent className="py-16 text-center text-muted-foreground">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+            <p className="text-sm">{t('common_loading')}</p>
+          </CardContent>
+        </Card>
+      ) : filtered.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center text-muted-foreground">
             <p className="text-sm">{t('sc_empty')}</p>

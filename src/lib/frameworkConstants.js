@@ -1,0 +1,9 @@
+export const FRAMEWORK_NAMES = {
+  NIS2: 'NIS2 / DL 125/2025',
+  ISO27001: 'ISO/IEC 27001',
+  NIST_CSF: 'NIST CSF',
+  CIS_V8: 'CIS Controls v8',
+  QNRC: 'QNRC',
+  GDPR: 'GDPR',
+  ENISA: 'ENISA',
+};

@@ -14,14 +14,7 @@ import RiskMatrixWidget from '@/components/dashboard/RiskMatrixWidget';
 import RiskExposureTrend from '@/components/dashboard/RiskExposureTrend';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-
-const FRAMEWORK_NAMES = {
-  NIS2: 'NIS2 / DL 125/2025',
-  ISO27001: 'ISO/IEC 27001',
-  NIST_CSF: 'NIST CSF',
-  CIS_V8: 'CIS Controls v8',
-  QNRC: 'QNRC',
-};
+import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
 
 export default function Dashboard() {
   const { user } = useAuth();

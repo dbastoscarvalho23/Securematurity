@@ -341,8 +341,10 @@ Return only valid JSON with the translations.`,
     .sort();
 
   const filtered = recommendations.filter(r => {
-    if (!r.title?.toLowerCase().includes(search.toLowerCase()) &&
-        !r.description?.toLowerCase().includes(search.toLowerCase())) return !search || false;
+    if (search) {
+      const q = search.toLowerCase();
+      if (!r.title?.toLowerCase().includes(q) && !r.description?.toLowerCase().includes(q)) return false;
+    }
     if (filterPriority !== 'all' && r.priority !== filterPriority) return false;
     if (filterStatus !== 'all' && r.status !== filterStatus) return false;
     if (filterFramework !== 'all' && r.framework_code !== filterFramework) return false;
