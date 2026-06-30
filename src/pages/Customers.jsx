@@ -16,6 +16,8 @@ import CustomerForm from '@/components/customers/CustomerForm';
 import CustomerDetailPanel from '@/components/customers/CustomerDetailPanel';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
+import { writeAuditLog } from '@/lib/auditLog';
 
 const statusStyles = {
   active: 'bg-accent/10 text-accent border-accent/20',
@@ -25,6 +27,7 @@ const statusStyles = {
 
 export default function Customers() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -37,16 +40,23 @@ export default function Customers() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Customer.create(data),
+    mutationFn: async (data) => {
+      const result = await base44.entities.Customer.create(data);
+      await writeAuditLog({ action: 'customer_created', entity_type: 'Customer', entity_id: result?.id, details: `Created customer: ${data.name}` });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setShowForm(false);
-      base44.entities.AuditLog.create({ action: 'customer_created', user_email: 'current', entity_type: 'Customer' });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Customer.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const result = await base44.entities.Customer.update(id, data);
+      await writeAuditLog({ action: 'customer_updated', entity_type: 'Customer', entity_id: id, details: `Updated customer: ${data.name}` });
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setShowForm(false);
@@ -55,7 +65,10 @@ export default function Customers() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Customer.delete(id),
+    mutationFn: async (id) => {
+      await base44.entities.Customer.delete(id);
+      await writeAuditLog({ action: 'customer_deleted', entity_type: 'Customer', entity_id: id, details: `Deleted customer` });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setSelectedCustomer(null);

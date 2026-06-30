@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
-import { useQueryClient as useQC } from '@tanstack/react-query';
 
 const DEFAULT_SEAT_LIMIT = 5;
 

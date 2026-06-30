@@ -49,7 +49,7 @@ export default function SupplyChain() {
   const handleDelete = async (q) => {
     if (!confirm(`${t('sc_delete_confirm')} "${q.title}"?`)) return;
     await base44.entities.SupplierQuestionnaire.delete(q.id);
-    queryClient.invalidateQueries(['supplier-questionnaires']);
+    queryClient.invalidateQueries({ queryKey: ['supplier-questionnaires'] });
     toast.success(t('sc_questionnaire_deleted'));
   };
 
@@ -218,7 +218,7 @@ export default function SupplyChain() {
         onClose={() => setDialogOpen(false)}
         questionnaire={editing}
         customers={customers}
-        onSaved={() => queryClient.invalidateQueries(['supplier-questionnaires'])}
+        onSaved={() => queryClient.invalidateQueries({ queryKey: ['supplier-questionnaires'] })}
       />
     </div>
   );

@@ -124,7 +124,7 @@ export default function Settings() {
   };
 
   const handleToggleFrameworkStatus = async (fw) => {
-    const newStatus = fw.status === 'active' ? 'inactive' : 'active';
+    const newStatus = fw.status === 'active' ? 'deprecated' : 'active';
     await base44.entities.Framework.update(fw.id, { status: newStatus });
     await writeAuditLog({ action: 'framework_status_changed', entity_type: 'Framework', entity_id: fw.id, details: `Framework ${fw.code} (${fw.name}) set to ${newStatus}` });
     queryClient.invalidateQueries({ queryKey: ['frameworks'] });
