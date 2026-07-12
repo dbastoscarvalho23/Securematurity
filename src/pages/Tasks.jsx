@@ -9,6 +9,7 @@ import { Plus, Search, LayoutGrid, List } from 'lucide-react';
 import TaskBoard from '@/components/tasks/TaskBoard';
 import TaskFormDialog from '@/components/tasks/TaskFormDialog';
 import TaskListView from '@/components/tasks/TaskListView';
+import BulkActionBar from '@/components/tasks/BulkActionBar';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -24,6 +25,7 @@ export default function Tasks() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
+  const canBulkEdit = user?.role === 'admin' || user?.role === 'customer_admin';
   const customerId = user?.customer_id;
 
   const { data: tasks = [] } = useQuery({
@@ -90,6 +92,47 @@ export default function Tasks() {
       toast.success(t('tasks_deleted'));
     },
     onError: (err) => toast.error(err?.message || 'Failed to delete task'),
+  });
+
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (visibleTasks) => {
+    setSelectedIds(prev => {
+      const allVisible = visibleTasks.every(t => prev.has(t.id));
+      const next = new Set(prev);
+      if (allVisible) {
+        visibleTasks.forEach(t => next.delete(t.id));
+      } else {
+        visibleTasks.forEach(t => next.add(t.id));
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async ({ ids, updates }) => {
+      const payload = ids.map(id => ({ id, ...updates }));
+      await base44.entities.Task.bulkUpdate(payload);
+      const desc = Object.entries(updates).map(([k, v]) => `${k} → ${v}`).join(', ');
+      await writeAuditLog({ action: 'task_updated', entity_type: 'Task', details: `Bulk updated ${ids.length} tasks (${desc})` });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success(`${selectedIds.size} tasks updated`);
+      clearSelection();
+    },
+    onError: (err) => toast.error(err?.message || 'Failed to bulk update tasks'),
   });
 
   const handleEdit = (task) => {
@@ -181,6 +224,14 @@ export default function Tasks() {
         </div>
       </div>
 
+      {selectedIds.size > 0 && canBulkEdit && (
+        <BulkActionBar
+          selectedCount={selectedIds.size}
+          onBulkUpdate={(updates) => bulkUpdateMutation.mutate({ ids: [...selectedIds], updates })}
+          onClear={clearSelection}
+        />
+      )}
+
       {view === 'board' ? (
         <TaskBoard
           tasks={filteredTasks}
@@ -194,6 +245,10 @@ export default function Tasks() {
           onStatusChange={(id, status, title) => statusMutation.mutate({ id, status, title })}
           onEdit={handleEdit}
           onDelete={(task) => deleteMutation.mutate(task)}
+          selectionEnabled={canBulkEdit}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
         />
       )}
 

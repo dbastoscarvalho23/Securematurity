@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2, ArrowRight, CalendarDays, User } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
@@ -30,7 +31,7 @@ const STATUS_TRANSITIONS = {
   blocked: { next: 'in_progress', label: 'Unblock' },
 };
 
-export default function TaskListView({ tasks, onStatusChange, onEdit, onDelete }) {
+export default function TaskListView({ tasks, onStatusChange, onEdit, onDelete, selectionEnabled, selectedIds, onToggleSelect, onToggleSelectAll }) {
   if (tasks.length === 0) {
     return (
       <Card>
@@ -41,15 +42,36 @@ export default function TaskListView({ tasks, onStatusChange, onEdit, onDelete }
     );
   }
 
+  const allSelected = selectionEnabled && tasks.length > 0 && tasks.every(t => selectedIds.has(t.id));
+  const someSelected = selectionEnabled && tasks.some(t => selectedIds.has(t.id));
+
   return (
     <Card>
       <CardContent className="p-0">
+        {selectionEnabled && (
+          <div className="flex items-center gap-4 px-4 py-2 border-b bg-muted/30">
+            <Checkbox
+              checked={allSelected ? true : (someSelected ? 'indeterminate' : false)}
+              onCheckedChange={() => onToggleSelectAll(tasks)}
+            />
+            <span className="text-xs font-medium text-muted-foreground">
+              {allSelected ? 'All selected' : 'Select all'}
+            </span>
+          </div>
+        )}
         <div className="divide-y">
           {tasks.map(task => {
             const isOverdue = task.due_date && task.status !== 'done' && isPast(parseISO(task.due_date));
             const transition = STATUS_TRANSITIONS[task.status];
+            const isSelected = selectionEnabled && selectedIds.has(task.id);
             return (
-              <div key={task.id} className="flex items-center gap-4 px-4 py-3 hover:bg-muted/30 transition-colors">
+              <div key={task.id} className={cn("flex items-center gap-4 px-4 py-3 hover:bg-muted/30 transition-colors", isSelected && "bg-primary/5")}>
+                {selectionEnabled && (
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => onToggleSelect(task.id)}
+                  />
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{task.title}</p>
                   {task.description && (
