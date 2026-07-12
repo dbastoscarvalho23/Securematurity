@@ -482,16 +482,16 @@ export default function Admin() {
         />
       </div>
 
-      {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Charts grid — all cards same size and aspect */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Sector Benchmark */}
-        <Card className="lg:col-span-2">
+        <Card className="h-full flex flex-col">
           <CardHeader>
             <CardTitle className="text-base">{t('admin_maturity_by_sector')}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex items-center justify-center">
             {benchmarkData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={260}>
+              <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={benchmarkData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="sector" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
@@ -514,13 +514,13 @@ export default function Admin() {
         </Card>
 
         {/* Customer Status Pie */}
-        <Card>
+        <Card className="h-full flex flex-col">
           <CardHeader>
             <CardTitle className="text-base">{t('admin_customer_status')}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex items-center justify-center">
             {customerStatusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={260}>
+              <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
                   <Pie
                     data={customerStatusData}
@@ -544,18 +544,15 @@ export default function Admin() {
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* Framework usage + Risk status row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Framework usage */}
-        <Card>
+        <Card className="h-full flex flex-col">
           <CardHeader>
             <CardTitle className="text-base">{t('admin_framework_usage')}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex items-center justify-center">
             {frameworkData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={frameworkData} layout="vertical" margin={{ left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
@@ -575,7 +572,7 @@ export default function Admin() {
         </Card>
 
         {/* Risk status breakdown */}
-        <Card>
+        <Card className="h-full flex flex-col">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">{t('admin_risk_breakdown')}</CardTitle>
@@ -584,7 +581,7 @@ export default function Admin() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex items-center justify-center">
             {risks.length > 0 ? (() => {
               const riskStatusData = [
                 { name: t('risk_status_open'), value: risks.filter(r => r.status === 'open').length, color: COLORS[0] },
@@ -593,7 +590,7 @@ export default function Admin() {
                 { name: t('risk_status_closed'), value: risks.filter(r => r.status === 'closed').length, color: COLORS[2] },
               ].filter(d => d.value > 0);
               return (
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={240}>
                   <PieChart>
                     <Pie data={riskStatusData} cx="50%" cy="45%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
                       {riskStatusData.map((d, i) => <Cell key={i} fill={d.color} />)}
