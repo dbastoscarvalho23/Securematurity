@@ -133,7 +133,7 @@ export default function RiskExposureTrend({ customerId, isAdmin }) {
   };
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div>
@@ -160,13 +160,13 @@ export default function RiskExposureTrend({ customerId, isAdmin }) {
         )}
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col items-center justify-center">
         {noData ? (
-          <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
+          <div className="flex items-center justify-center text-muted-foreground text-sm">
             {t('dashboard_no_open_risks')}
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="riskGradient" x1="0" y1="0" x2="0" y2="1">

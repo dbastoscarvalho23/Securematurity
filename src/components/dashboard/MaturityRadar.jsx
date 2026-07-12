@@ -9,9 +9,9 @@ export default function MaturityRadar({ data }) {
 
   if (!data || data.length === 0) {
     return (
-      <Card>
+      <Card className="h-full flex flex-col">
         <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
-        <CardContent className="flex items-center justify-center h-64 text-muted-foreground text-sm">
+        <CardContent className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
           {t('dashboard_radar_empty')}
         </CardContent>
       </Card>
@@ -19,12 +19,12 @@ export default function MaturityRadar({ data }) {
   }
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={320}>
+      <CardContent className="flex-1 flex items-center justify-center">
+        <ResponsiveContainer width="100%" height={240}>
           <RadarChart data={data}>
             <PolarGrid stroke="hsl(var(--border))" />
             <PolarAngleAxis

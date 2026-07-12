@@ -16,9 +16,9 @@ export default function TrendChart({ data, frameworks }) {
 
   if (!data || data.length === 0) {
     return (
-      <Card>
+      <Card className="h-full flex flex-col">
         <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
-        <CardContent className="flex items-center justify-center h-64 text-muted-foreground text-sm">
+        <CardContent className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
           {t('dashboard_trends_empty')}
         </CardContent>
       </Card>
@@ -26,12 +26,12 @@ export default function TrendChart({ data, frameworks }) {
   }
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
+      <CardContent className="flex-1 flex items-center justify-center">
+        <ResponsiveContainer width="100%" height={240}>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="period" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />

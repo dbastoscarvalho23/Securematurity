@@ -217,14 +217,14 @@ export default function TaskAnalytics() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="h-full flex flex-col">
           <CardHeader>
             <CardTitle className="text-base">{t('analytics_status_distribution')}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex items-center justify-center">
             {analytics.statusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
                   <Pie
                     data={analytics.statusData}
@@ -243,18 +243,18 @@ export default function TaskAnalytics() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-sm text-muted-foreground py-8 text-center">No tasks to display</p>
+              <p className="text-sm text-muted-foreground text-center">No tasks to display</p>
             )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="h-full flex flex-col">
           <CardHeader>
             <CardTitle className="text-base">{t('analytics_by_priority')}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex items-center justify-center">
             {analytics.priorityData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={analytics.priorityData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="priority" />
@@ -264,7 +264,7 @@ export default function TaskAnalytics() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-sm text-muted-foreground py-8 text-center">No tasks to display</p>
+              <p className="text-sm text-muted-foreground text-center">No tasks to display</p>
             )}
           </CardContent>
         </Card>
