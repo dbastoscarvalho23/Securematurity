@@ -54,6 +54,10 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isAdmin && !form.customer_id) {
+      toast.error('Please assign a customer to this document');
+      return;
+    }
     setSaving(true);
     const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
     const framework_codes = frameworksInput.split(',').map(f => f.trim()).filter(Boolean);
@@ -160,11 +164,10 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
 
           {isAdmin && customers.length > 0 && (
             <div className="space-y-1.5">
-              <Label>Customer (optional)</Label>
-              <Select value={form.customer_id || ''} onValueChange={handleCustomerChange}>
-                <SelectTrigger><SelectValue placeholder="Global (all customers)" /></SelectTrigger>
+              <Label>Customer *</Label>
+              <Select value={form.customer_id || ''} onValueChange={handleCustomerChange} required>
+                <SelectTrigger><SelectValue placeholder="Select a customer" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>Global (all customers)</SelectItem>
                   {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
