@@ -172,12 +172,12 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>User Seat Limit</Label>
+              <Label>User Seat Limit (min. 5)</Label>
               <Input
                 type="number"
-                min={1}
+                min={5}
                 value={form.user_seat_limit}
-                onChange={e => set('user_seat_limit', parseInt(e.target.value) || 5)}
+                onChange={e => set('user_seat_limit', Math.max(5, parseInt(e.target.value) || 5))}
               />
             </div>
             <div className="space-y-1.5">

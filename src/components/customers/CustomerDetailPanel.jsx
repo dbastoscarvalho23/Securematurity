@@ -44,7 +44,7 @@ function Section({ title, defaultOpen = false, children }) {
   );
 }
 
-export default function CustomerDetailPanel({ customer, onEdit }) {
+export default function CustomerDetailPanel({ customer, onEdit, onCustomerUpdated }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const canManageUsers = user?.role === 'admin' || user?.role === 'customer_admin';
@@ -130,7 +130,7 @@ export default function CustomerDetailPanel({ customer, onEdit }) {
 
         {canManageUsers && (
           <Section title="User Seats & Access" defaultOpen={true}>
-            <CustomerSeatSection customer={customer} onCustomerUpdated={() => {}} />
+            <CustomerSeatSection customer={customer} onCustomerUpdated={onCustomerUpdated} />
           </Section>
         )}
       </div>

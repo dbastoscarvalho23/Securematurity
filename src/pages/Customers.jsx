@@ -245,6 +245,7 @@ export default function Customers() {
             <CustomerDetailPanel
               customer={selectedCustomer}
               onEdit={(c) => { handleEdit(c); }}
+              onCustomerUpdated={(updated) => setSelectedCustomer(updated)}
             />
           </div>
         )}
