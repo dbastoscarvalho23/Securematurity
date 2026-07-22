@@ -77,6 +77,20 @@ CyberGovern Platform`;
         base44.integrations.Core.SendEmail({ to: email, subject, body })
       )
     );
+
+    // Log each email to the audit trail so it appears in the Email Report
+    try {
+      await base44.entities.AuditLog.create({
+        action: 'email_sent',
+        user_email: changedBy || 'unknown',
+        entity_type: 'Customer',
+        entity_id: customer.id,
+        customer_id: customer.id,
+        details: `Seat adjustment notification sent to ${recipients.join(', ')} for customer: ${customer.name} (${fieldLabel} ${direction} from ${oldValue} to ${newValue})`,
+      });
+    } catch (e) {
+      console.warn('Seat-change email_sent audit log failed:', e);
+    }
   } catch (e) {
     console.warn('Seat-change email notification failed:', e);
   }
