@@ -5,11 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import SeatAdjustDialog from '@/components/customers/SeatAdjustDialog';
 import {
   UserPlus, Trash2, Loader2, Users, AlertTriangle,
   Mail, ShieldCheck, User, ChevronRight, Plus, Minus,
@@ -81,7 +77,7 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
   const [removingId, setRemovingId] = useState(null);
   const [updatingRoleId, setUpdatingRoleId] = useState(null);
   const [savingSeats, setSavingSeats] = useState(false);
-  const [pendingDelta, setPendingDelta] = useState(null);
+  const [showSeatDialog, setShowSeatDialog] = useState(false);
 
   const isAdmin = currentUser?.role === 'admin';
   const isCustomerAdmin = currentUser?.role === 'customer_admin';
@@ -174,24 +170,27 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
     }
   };
 
-  const handleSeatLimitChange = async (delta) => {
+  const handleSeatLimitChange = async (newLimit) => {
     if (!canManage) return;
-    const newLimit = Math.max(MIN_SEAT_LIMIT, baseLimit + delta);
-    if (newLimit === baseLimit) return;
-    setPendingDelta(null);
+    const clamped = Math.max(MIN_SEAT_LIMIT, newLimit);
+    if (clamped === baseLimit) {
+      setShowSeatDialog(false);
+      return;
+    }
     setSavingSeats(true);
     try {
-      await base44.entities.Customer.update(customer.id, { user_seat_limit: newLimit });
+      await base44.entities.Customer.update(customer.id, { user_seat_limit: clamped });
       await notifySeatChange({
         customer,
         field: 'user_seat_limit',
         oldValue: baseLimit,
-        newValue: newLimit,
+        newValue: clamped,
         changedBy: currentUser?.email,
       });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
-      if (onCustomerUpdated) onCustomerUpdated({ ...customer, user_seat_limit: newLimit });
-      toast.success(`Seat limit updated to ${newLimit + addonSeats}`);
+      if (onCustomerUpdated) onCustomerUpdated({ ...customer, user_seat_limit: clamped });
+      toast.success(`Seat limit updated to ${clamped + addonSeats}`);
+      setShowSeatDialog(false);
     } catch {
       toast.error('Failed to update seat limit');
     } finally {
@@ -211,27 +210,21 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Seat Usage</p>
           {canManage && (
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground mr-1">Base limit:</span>
-              <button
-                onClick={() => setPendingDelta(-1)}
-                disabled={savingSeats || baseLimit <= MIN_SEAT_LIMIT}
-                className="w-5 h-5 rounded border bg-background hover:bg-muted flex items-center justify-center disabled:opacity-40"
-              >
-                <Minus className="w-3 h-3" />
-              </button>
-              <span className="text-sm font-mono font-bold w-6 text-center">{baseLimit}</span>
-              <button
-                onClick={() => setPendingDelta(+1)}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                Base limit: <span className="font-mono font-bold text-foreground">{baseLimit}</span>
+                {addonSeats > 0 && <span className="ml-1">+{addonSeats} add-on</span>}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1.5 text-xs"
+                onClick={() => setShowSeatDialog(true)}
                 disabled={savingSeats}
-                className="w-5 h-5 rounded border bg-background hover:bg-muted flex items-center justify-center disabled:opacity-40"
               >
-                <Plus className="w-3 h-3" />
-              </button>
-              {addonSeats > 0 && (
-                <span className="text-xs text-muted-foreground ml-1">+{addonSeats} add-on</span>
-              )}
-              {savingSeats && <Loader2 className="w-3 h-3 animate-spin ml-1 text-muted-foreground" />}
+                {savingSeats ? <Loader2 className="w-3 h-3 animate-spin" /> : <Users className="w-3 h-3" />}
+                Adjust Seats
+              </Button>
             </div>
           )}
         </div>
@@ -369,52 +362,16 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
         </div>
       )}
 
-      {/* Seat change confirmation */}
-      <AlertDialog open={pendingDelta !== null} onOpenChange={v => !v && setPendingDelta(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm seat change</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-2">
-                <p>
-                  You are about to <strong>{pendingDelta > 0 ? 'increase' : 'decrease'}</strong> the base seat limit
-                  for <strong>{customer.name}</strong>.
-                </p>
-                <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Current base limit:</span>
-                    <span className="font-mono font-semibold">{baseLimit}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">New base limit:</span>
-                    <span className="font-mono font-semibold">{Math.max(MIN_SEAT_LIMIT, baseLimit + (pendingDelta || 0))}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Add-on seats:</span>
-                    <span className="font-mono font-semibold">{addonSeats}</span>
-                  </div>
-                  <div className="flex justify-between border-t pt-1">
-                    <span className="text-muted-foreground">Total seats after change:</span>
-                    <span className="font-mono font-bold">{Math.max(MIN_SEAT_LIMIT, baseLimit + (pendingDelta || 0)) + addonSeats}</span>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  This action will trigger a notification to platform and customer admins for billing reconciliation.
-                </p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => pendingDelta !== null && handleSeatLimitChange(pendingDelta)}
-              disabled={savingSeats}
-            >
-              {savingSeats ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm change'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Seat adjust dialog */}
+      <SeatAdjustDialog
+        open={showSeatDialog}
+        customer={customer}
+        currentLimit={baseLimit}
+        addonSeats={addonSeats}
+        saving={savingSeats}
+        onConfirm={handleSeatLimitChange}
+        onCancel={() => setShowSeatDialog(false)}
+      />
     </div>
   );
 }
