@@ -8,6 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Users, Plus, Minus, Loader2, Search } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { notifySeatChange, MIN_SEAT_LIMIT } from '@/lib/seatManagement';
@@ -18,6 +23,7 @@ export default function SeatManagementPanel() {
   const [search, setSearch] = useState('');
   const [savingId, setSavingId] = useState(null);
   const [addonEdits, setAddonEdits] = useState({});
+  const [pendingChange, setPendingChange] = useState(null);
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -85,6 +91,7 @@ export default function SeatManagementPanel() {
     const current = customer.user_seat_limit ?? MIN_SEAT_LIMIT;
     const next = Math.max(MIN_SEAT_LIMIT, current + delta);
     if (next === current) return;
+    setPendingChange(null);
     setSavingId(customer.id + '_limit');
     try {
       await base44.entities.Customer.update(customer.id, { user_seat_limit: next });
@@ -165,7 +172,7 @@ export default function SeatManagementPanel() {
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button
-                        onClick={() => handleSeatLimitChange(c, -1)}
+                        onClick={() => setPendingChange({ customer: c, delta: -1 })}
                         disabled={savingId === c.id + '_limit' || base <= MIN_SEAT_LIMIT}
                         className="w-5 h-5 rounded border flex items-center justify-center hover:bg-muted disabled:opacity-40"
                       >
@@ -173,7 +180,7 @@ export default function SeatManagementPanel() {
                       </button>
                       <span className="text-sm font-mono w-6 text-center">{base}</span>
                       <button
-                        onClick={() => handleSeatLimitChange(c, +1)}
+                        onClick={() => setPendingChange({ customer: c, delta: +1 })}
                         disabled={savingId === c.id + '_limit'}
                         className="w-5 h-5 rounded border flex items-center justify-center hover:bg-muted disabled:opacity-40"
                       >
@@ -215,6 +222,53 @@ export default function SeatManagementPanel() {
           </TableBody>
         </Table>
       </CardContent>
+
+      {/* Seat change confirmation */}
+      <AlertDialog open={pendingChange !== null} onOpenChange={v => !v && setPendingChange(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm seat change</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  You are about to <strong>{pendingChange?.delta > 0 ? 'increase' : 'decrease'}</strong> the base seat limit
+                  for <strong>{pendingChange?.customer.name}</strong>.
+                </p>
+                <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Current base limit:</span>
+                    <span className="font-mono font-semibold">{pendingChange?.customer.user_seat_limit ?? MIN_SEAT_LIMIT}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">New base limit:</span>
+                    <span className="font-mono font-semibold">{pendingChange ? Math.max(MIN_SEAT_LIMIT, (pendingChange.customer.user_seat_limit ?? MIN_SEAT_LIMIT) + pendingChange.delta) : 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Add-on seats:</span>
+                    <span className="font-mono font-semibold">{pendingChange?.customer.user_seat_addon_count ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1">
+                    <span className="text-muted-foreground">Total seats after change:</span>
+                    <span className="font-mono font-bold">{pendingChange ? Math.max(MIN_SEAT_LIMIT, (pendingChange.customer.user_seat_limit ?? MIN_SEAT_LIMIT) + pendingChange.delta) + (pendingChange.customer.user_seat_addon_count ?? 0) : 0}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  This action will trigger a notification to platform and customer admins for billing reconciliation.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => pendingChange && handleSeatLimitChange(pendingChange.customer, pendingChange.delta)}
+              disabled={savingId !== null}
+            >
+              {savingId !== null ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm change'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
