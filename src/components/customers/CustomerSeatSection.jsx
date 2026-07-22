@@ -6,13 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  UserPlus, Trash2, Loader2, Users, AlertTriangle, Send,
+  UserPlus, Trash2, Loader2, Users, AlertTriangle,
   Mail, ShieldCheck, User, ChevronRight, Plus, Minus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
-
-const DEFAULT_SEAT_LIMIT = 5;
+import { notifySeatChange, MIN_SEAT_LIMIT } from '@/lib/seatManagement';
 
 const ROLE_STYLES = {
   admin:          'bg-red-100 text-red-700 border-red-200',
@@ -74,7 +73,6 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
   const [inviting, setInviting] = useState(false);
-  const [requestingSeat, setRequestingSeat] = useState(false);
   const [removingId, setRemovingId] = useState(null);
   const [updatingRoleId, setUpdatingRoleId] = useState(null);
   const [savingSeats, setSavingSeats] = useState(false);
@@ -83,7 +81,7 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
   const isCustomerAdmin = currentUser?.role === 'customer_admin';
   const canManage = isAdmin || isCustomerAdmin;
 
-  const baseLimit = customer.user_seat_limit ?? DEFAULT_SEAT_LIMIT;
+  const baseLimit = customer.user_seat_limit ?? MIN_SEAT_LIMIT;
   const addonSeats = customer.user_seat_addon_count ?? 0;
   const totalSeats = baseLimit + addonSeats;
 
@@ -171,11 +169,19 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
   };
 
   const handleSeatLimitChange = async (delta) => {
-    if (!isAdmin) return;
-    const newLimit = Math.max(1, baseLimit + delta);
+    if (!canManage) return;
+    const newLimit = Math.max(MIN_SEAT_LIMIT, baseLimit + delta);
+    if (newLimit === baseLimit) return;
     setSavingSeats(true);
     try {
       await base44.entities.Customer.update(customer.id, { user_seat_limit: newLimit });
+      await notifySeatChange({
+        customer,
+        field: 'user_seat_limit',
+        oldValue: baseLimit,
+        newValue: newLimit,
+        changedBy: currentUser?.email,
+      });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       if (onCustomerUpdated) onCustomerUpdated({ ...customer, user_seat_limit: newLimit });
       toast.success(`Seat limit updated to ${newLimit + addonSeats}`);
@@ -183,27 +189,6 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
       toast.error('Failed to update seat limit');
     } finally {
       setSavingSeats(false);
-    }
-  };
-
-  const handleRequestMoreSeats = async () => {
-    setRequestingSeat(true);
-    try {
-      const admins = await base44.entities.User.filter({ role: 'admin' });
-      await Promise.all(
-        admins.filter(a => a.email).map(a =>
-          base44.integrations.Core.SendEmail({
-            to: a.email,
-            subject: `[Seat Request] ${customer.name} needs more user seats`,
-            body: `Hello,\n\nThe customer "${customer.name}" has reached their user seat limit.\n\nCurrent usage: ${usedSeats} / ${totalSeats} seats.\n\nPlease review and adjust the seat limit in the Admin panel > Seat Management section.\n\nRequested by: ${currentUser?.email || 'unknown'}\n\nBest regards,\nCyberGovern Platform`,
-          })
-        )
-      );
-      toast.success('Seat request sent to platform administrators.');
-    } catch (err) {
-      toast.error('Failed to send request');
-    } finally {
-      setRequestingSeat(false);
     }
   };
 
@@ -218,12 +203,12 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
       <div className="rounded-lg border bg-muted/20 p-3 space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Seat Usage</p>
-          {isAdmin && (
+          {canManage && (
             <div className="flex items-center gap-1">
               <span className="text-xs text-muted-foreground mr-1">Base limit:</span>
               <button
                 onClick={() => handleSeatLimitChange(-1)}
-                disabled={savingSeats || baseLimit <= 1}
+                disabled={savingSeats || baseLimit <= MIN_SEAT_LIMIT}
                 className="w-5 h-5 rounded border bg-background hover:bg-muted flex items-center justify-center disabled:opacity-40"
               >
                 <Minus className="w-3 h-3" />
@@ -248,22 +233,11 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
 
       {/* At-limit warning */}
       {atLimit && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800 px-3 py-2">
+        <div className="flex items-center gap-3 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800 px-3 py-2">
           <p className="text-xs text-orange-700 dark:text-orange-400 flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-            Seat limit reached. {isAdmin ? 'Adjust the base limit above.' : 'Contact your platform admin to get more seats.'}
+            Seat limit reached. Adjust the base limit above to add more users.
           </p>
-          {!isAdmin && (
-            <Button
-              size="sm" variant="outline"
-              className="h-7 text-xs gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-100 flex-shrink-0"
-              onClick={handleRequestMoreSeats}
-              disabled={requestingSeat}
-            >
-              {requestingSeat ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-              Request Seats
-            </Button>
-          )}
         </div>
       )}
 

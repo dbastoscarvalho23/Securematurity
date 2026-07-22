@@ -9,9 +9,12 @@ import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Users, Plus, Minus, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
+import { notifySeatChange, MIN_SEAT_LIMIT } from '@/lib/seatManagement';
 
 export default function SeatManagementPanel() {
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
   const [search, setSearch] = useState('');
   const [savingId, setSavingId] = useState(null);
   const [addonEdits, setAddonEdits] = useState({});
@@ -53,9 +56,21 @@ export default function SeatManagementPanel() {
       toast.error('Invalid value');
       return;
     }
+    const oldAddon = customer.user_seat_addon_count ?? 0;
+    if (newAddon === oldAddon) {
+      setAddonEdits(prev => { const n = { ...prev }; delete n[customer.id]; return n; });
+      return;
+    }
     setSavingId(customer.id);
     try {
       await base44.entities.Customer.update(customer.id, { user_seat_addon_count: newAddon });
+      await notifySeatChange({
+        customer,
+        field: 'user_seat_addon_count',
+        oldValue: oldAddon,
+        newValue: newAddon,
+        changedBy: currentUser?.email,
+      });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast.success(`Add-on seats updated for ${customer.name}`);
       setAddonEdits(prev => { const n = { ...prev }; delete n[customer.id]; return n; });
@@ -67,11 +82,19 @@ export default function SeatManagementPanel() {
   };
 
   const handleSeatLimitChange = async (customer, delta) => {
-    const current = customer.user_seat_limit ?? 5;
-    const next = Math.max(1, current + delta);
+    const current = customer.user_seat_limit ?? MIN_SEAT_LIMIT;
+    const next = Math.max(MIN_SEAT_LIMIT, current + delta);
+    if (next === current) return;
     setSavingId(customer.id + '_limit');
     try {
       await base44.entities.Customer.update(customer.id, { user_seat_limit: next });
+      await notifySeatChange({
+        customer,
+        field: 'user_seat_limit',
+        oldValue: current,
+        newValue: next,
+        changedBy: currentUser?.email,
+      });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast.success(`Base seat limit updated for ${customer.name}`);
     } catch {
@@ -143,7 +166,7 @@ export default function SeatManagementPanel() {
                     <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={() => handleSeatLimitChange(c, -1)}
-                        disabled={savingId === c.id + '_limit' || base <= 1}
+                        disabled={savingId === c.id + '_limit' || base <= MIN_SEAT_LIMIT}
                         className="w-5 h-5 rounded border flex items-center justify-center hover:bg-muted disabled:opacity-40"
                       >
                         <Minus className="w-3 h-3" />
