@@ -509,17 +509,50 @@ export default function Settings() {
                       placeholder={t('settings_full_name_placeholder')}
                     />
                   </div>
-                  {currentUser?.role !== 'admin' && (
-                    <div className="space-y-1.5">
-                      <Label>{t('settings_associated_customer')}</Label>
-                      <Input
-                        value={currentUser?.customer_name || '—'}
-                        disabled
-                        className="bg-muted/50 text-muted-foreground"
-                      />
-                      <p className="text-xs text-muted-foreground">{t('settings_customer_contact_admin')}</p>
+                  <div className="space-y-1.5">
+                    <Label>{t('settings_email')}</Label>
+                    <Input
+                      value={currentUser?.email || '—'}
+                      disabled
+                      className="bg-muted/50 text-muted-foreground"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t('settings_role')}</Label>
+                    <div className="flex items-center gap-2 h-9">
+                      <Badge variant={currentUser?.role === 'admin' ? 'default' : 'secondary'}>
+                        {currentUser?.role === 'customer_admin' ? t('settings_role_customer_admin') : currentUser?.role === 'admin' ? t('settings_role_admin') : t('settings_role_user')}
+                      </Badge>
+                      <Badge className="bg-accent/10 text-accent border-accent/20">{t('settings_user_active')}</Badge>
                     </div>
-                  )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t('settings_associated_customer')}</Label>
+                    <Input
+                      value={currentUser?.customer_name || '—'}
+                      disabled
+                      className="bg-muted/50 text-muted-foreground"
+                    />
+                    {currentUser?.role !== 'admin' && (
+                      <p className="text-xs text-muted-foreground">{t('settings_customer_contact_admin')}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t('settings_col_joined')}</Label>
+                    <Input
+                      value={currentUser?.created_date ? new Date(currentUser.created_date).toLocaleDateString() : '—'}
+                      disabled
+                      className="bg-muted/50 text-muted-foreground"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t('settings_user_id')}</Label>
+                    <Input
+                      value={currentUser?.id || '—'}
+                      disabled
+                      className="bg-muted/50 text-muted-foreground font-mono text-xs"
+                    />
+                  </div>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t gap-4">
                   <Button type="submit" disabled={isSavingProfile} size="sm" className="gap-2">
