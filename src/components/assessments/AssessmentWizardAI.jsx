@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Loader2, CheckSquare, Square, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const SECTOR_LABELS = {
   financial_services: 'Financial Services',
@@ -35,6 +36,7 @@ const FRAMEWORK_COLORS = {
 };
 
 export default function AssessmentWizardAI({ meta, selectedCustomer, onBack, onFinish, isSaving }) {
+  const { language } = useLanguage();
   const [numQuestions, setNumQuestions] = useState(20);
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggested, setSuggested] = useState([]);
@@ -222,8 +224,8 @@ ${JSON.stringify(questionList)}`,
                         </Badge>
                         {q.control_id && <span className="text-xs font-mono text-muted-foreground">{q.control_id}</span>}
                       </div>
-                      <p className="leading-snug">{q.question_text}</p>
-                      {q.guidance && <p className="text-xs text-muted-foreground mt-1 italic">{q.guidance}</p>}
+                      <p className="leading-snug">{language === 'pt' && q.question_text_pt ? q.question_text_pt : q.question_text}</p>
+                      {q.guidance && <p className="text-xs text-muted-foreground mt-1 italic">{language === 'pt' && q.guidance_pt ? q.guidance_pt : q.guidance}</p>}
                     </div>
                   </div>
                 ))}

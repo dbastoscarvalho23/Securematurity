@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import QuestionCard from '@/components/assessments/QuestionCard';
 import AssessmentResults from '@/components/assessments/AssessmentResults';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function AssessmentDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -19,7 +20,13 @@ export default function AssessmentDetail() {
   const [activeFramework, setActiveFramework] = useState(null);
   const [activeDomain, setActiveDomain] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [language, setLanguage] = useState('en');
+  const { language: globalLanguage } = useLanguage();
+  const [language, setLanguage] = useState(globalLanguage);
+
+  // Sync local language with global language setting
+  useEffect(() => {
+    setLanguage(globalLanguage);
+  }, [globalLanguage]);
 
   const { data: assessment } = useQuery({
     queryKey: ['assessment', assessmentId],

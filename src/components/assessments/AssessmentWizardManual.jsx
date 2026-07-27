@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Loader2, Plus, Search, Trash2, CheckSquare, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const FRAMEWORK_COLORS = {
   NIS2: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
@@ -22,6 +23,7 @@ const FRAMEWORK_COLORS = {
 };
 
 export default function AssessmentWizardManual({ meta, selectedCustomer, onBack, onFinish, isSaving }) {
+  const { language } = useLanguage();
   const [search, setSearch] = useState('');
   const [filterFw, setFilterFw] = useState('all');
   const [filterDomain, setFilterDomain] = useState('all');
@@ -182,7 +184,7 @@ export default function AssessmentWizardManual({ meta, selectedCustomer, onBack,
                     <span className="text-xs text-muted-foreground">{q.domain}</span>
                     {q.control_id && <span className="text-xs font-mono text-muted-foreground">{q.control_id}</span>}
                   </div>
-                  <p className="leading-snug line-clamp-2">{q.question_text}</p>
+                  <p className="leading-snug line-clamp-2">{language === 'pt' && q.question_text_pt ? q.question_text_pt : q.question_text}</p>
                 </div>
               </div>
             ))}
@@ -201,7 +203,7 @@ export default function AssessmentWizardManual({ meta, selectedCustomer, onBack,
                       <span className="text-xs text-muted-foreground">{q.domain}</span>
                       {q.control_id && <span className="text-xs font-mono text-muted-foreground">{q.control_id}</span>}
                     </div>
-                    <p className="leading-snug">{q.question_text}</p>
+                    <p className="leading-snug">{language === 'pt' && q.question_text_pt ? q.question_text_pt : q.question_text}</p>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive flex-shrink-0" onClick={() => removeNew(q._tempId)}>
                     <Trash2 className="w-3.5 h-3.5" />
