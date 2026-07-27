@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useAuth } from '@/lib/AuthContext';
@@ -43,6 +44,9 @@ export default function Settings() {
   const [fwUrlConfirm, setFwUrlConfirm] = useState(null);
   const [fwDocConfirm, setFwDocConfirm] = useState(null);
   const [fwCreateConfirm, setFwCreateConfirm] = useState(false);
+  const [selectedFwIds, setSelectedFwIds] = useState([]);
+  const [fwBulkConfirm, setFwBulkConfirm] = useState(null);
+  const [isBulkFwAction, setIsBulkFwAction] = useState(false);
 
   const handleFwRefUrlSave = async (fw, url) => {
     await base44.entities.Framework.update(fw.id, { reference_url: url });
@@ -135,6 +139,34 @@ export default function Settings() {
     await writeAuditLog({ action: 'framework_status_changed', entity_type: 'Framework', entity_id: fw.id, details: `Framework ${fw.code} (${fw.name}) set to ${newStatus}` });
     queryClient.invalidateQueries({ queryKey: ['frameworks'] });
     toast.success(`${t('settings_fw_framework')} ${newStatus === 'active' ? t('settings_fw_activated') : t('settings_fw_deactivated')}`);
+  };
+
+  const handleBulkFwAction = async () => {
+    if (!fwBulkConfirm) return;
+    setIsBulkFwAction(true);
+    try {
+      const { action, ids } = fwBulkConfirm;
+      if (action === 'delete') {
+        for (const id of ids) {
+          await base44.entities.Framework.delete(id);
+        }
+        await writeAuditLog({ action: 'framework_status_changed', entity_type: 'Framework', details: `Bulk deleted ${ids.length} frameworks` });
+        toast.success(`${ids.length} ${t('settings_fw_bulk_deleted')}`);
+      } else {
+        const newStatus = action === 'activate' ? 'active' : 'deprecated';
+        for (const id of ids) {
+          await base44.entities.Framework.update(id, { status: newStatus });
+        }
+        await writeAuditLog({ action: 'framework_status_changed', entity_type: 'Framework', details: `Bulk set ${ids.length} frameworks to ${newStatus}` });
+        toast.success(`${ids.length} ${newStatus === 'active' ? t('settings_fw_activated') : t('settings_fw_deactivated')}`);
+      }
+      setSelectedFwIds([]);
+      queryClient.invalidateQueries({ queryKey: ['frameworks'] });
+    } catch {
+      toast.error(t('settings_fw_bulk_error'));
+    }
+    setIsBulkFwAction(false);
+    setFwBulkConfirm(null);
   };
 
   const { data: customers = [] } = useQuery({
@@ -773,6 +805,34 @@ export default function Settings() {
                 </div>
               ) : (
                 <div className="space-y-3">
+                  {/* Bulk action bar — admin only */}
+                  {isAdmin && (
+                    <div className="flex items-center gap-3 pb-3 border-b flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={frameworks.length > 0 && selectedFwIds.length === frameworks.length}
+                          onCheckedChange={(checked) => setSelectedFwIds(checked ? frameworks.map(f => f.id) : [])}
+                        />
+                        <span className="text-xs text-muted-foreground">{t('settings_fw_select_all')}</span>
+                      </div>
+                      {selectedFwIds.length > 0 && (
+                        <>
+                          <span className="text-xs font-medium">{selectedFwIds.length} {t('settings_fw_selected')}</span>
+                          <div className="flex gap-2 ml-auto">
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={() => setFwBulkConfirm({ action: 'activate', ids: [...selectedFwIds] })}>
+                              <ToggleRight className="w-3.5 h-3.5" /> {t('settings_fw_bulk_activate')}
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={() => setFwBulkConfirm({ action: 'deactivate', ids: [...selectedFwIds] })}>
+                              <ToggleLeft className="w-3.5 h-3.5" /> {t('settings_fw_bulk_deactivate')}
+                            </Button>
+                            <Button size="sm" variant="destructive" className="h-7 text-xs gap-1.5" onClick={() => setFwBulkConfirm({ action: 'delete', ids: [...selectedFwIds] })}>
+                              <Trash2 className="w-3.5 h-3.5" /> {t('settings_fw_bulk_delete')}
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                   {frameworks.map(fw => {
                     const fwQuestions = questions.filter(q => q.framework_code === fw.code);
                     const domains = [...new Set(fwQuestions.map(q => q.domain))];
@@ -783,6 +843,12 @@ export default function Settings() {
                       <div key={fw.id} className={`p-4 rounded-lg border transition-opacity ${isActive ? '' : 'opacity-60'}`}>
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
+                            {isAdmin && (
+                              <Checkbox
+                                checked={selectedFwIds.includes(fw.id)}
+                                onCheckedChange={(checked) => setSelectedFwIds(prev => checked ? [...prev, fw.id] : prev.filter(id => id !== fw.id))}
+                              />
+                            )}
                             <p className="font-medium">{fw.name}</p>
                             <Badge variant="outline" className="text-xs font-mono">{fw.code}</Badge>
                             {fw.version && <span className="text-xs text-muted-foreground">v{fw.version}</span>}
@@ -988,6 +1054,30 @@ export default function Settings() {
               <div className="flex gap-2 justify-end">
                 <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
                 <AlertDialogAction onClick={() => { setFwCreateConfirm(false); handleCreateFramework(); }}>
+                  {t('common_confirm')}
+                </AlertDialogAction>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Bulk Framework Action Confirmation */}
+          <AlertDialog open={!!fwBulkConfirm} onOpenChange={(open) => !isBulkFwAction && !open && setFwBulkConfirm(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {fwBulkConfirm?.action === 'delete' ? t('settings_fw_bulk_confirm_delete_title') : t('settings_fw_bulk_confirm_toggle_title')}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {fwBulkConfirm?.action === 'delete'
+                    ? `${t('settings_fw_bulk_confirm_delete_desc')} ${fwBulkConfirm?.ids.length}? ${t('settings_fw_bulk_cannot_undo')}`
+                    : `${t('settings_fw_bulk_confirm_toggle_desc')} ${fwBulkConfirm?.ids.length}?`
+                  }
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex gap-2 justify-end">
+                <AlertDialogCancel disabled={isBulkFwAction}>{t('common_cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleBulkFwAction} disabled={isBulkFwAction} className="gap-1.5">
+                  {isBulkFwAction && <Loader2 className="w-4 h-4 animate-spin" />}
                   {t('common_confirm')}
                 </AlertDialogAction>
               </div>
