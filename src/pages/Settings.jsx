@@ -760,7 +760,7 @@ export default function Settings() {
                                     ? 'bg-accent/10 text-accent border-accent/20 hover:bg-accent/20'
                                     : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
                                 }`}
-                                title={isActive ? 'Click to deactivate' : 'Click to activate'}
+                                title={isActive ? t('settings_fw_click_deactivate') : t('settings_fw_click_activate')}
                               >
                                 {isActive
                                   ? <><ToggleRight className="w-3.5 h-3.5" /> {t('settings_fw_active')}</>
@@ -817,7 +817,7 @@ export default function Settings() {
                                   <ExternalLink className="w-3 h-3 flex-shrink-0" />{fw.reference_url}
                                 </a>
                                 {!isReadOnly && (
-                                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs flex-shrink-0" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: true, url: fw.reference_url } }))}>Edit</Button>
+                                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs flex-shrink-0" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: true, url: fw.reference_url } }))}>{t('common_edit')}</Button>
                                 )}
                               </div>
                             ) : !isReadOnly ? (
@@ -835,7 +835,7 @@ export default function Settings() {
                             {fw.document_url ? (
                               <div className="flex items-center gap-2 flex-1 min-w-0">
                                 <a href={fw.document_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate flex items-center gap-1">
-                                  <ExternalLink className="w-3 h-3 flex-shrink-0" />{fw.document_name || 'Reference document'}
+                                  <ExternalLink className="w-3 h-3 flex-shrink-0" />{fw.document_name || t('settings_fw_ref_doc_fallback')}
                                 </a>
                                 {!isReadOnly && (
                                   <label className="cursor-pointer">
@@ -847,8 +847,8 @@ export default function Settings() {
                             ) : !isReadOnly ? (
                               <label className="cursor-pointer flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                                 {fwRefEdit[fw.id]?.uploading
-                                  ? <><Loader2 className="w-3 h-3 animate-spin" /> Uploading...</>
-                                  : <><Upload className="w-3 h-3" /> Upload reference document</>
+                                  ? <><Loader2 className="w-3 h-3 animate-spin" /> {t('common_uploading')}</>
+                                  : <><Upload className="w-3 h-3" /> {t('docs_upload_doc')}</>
                                 }
                                 <input type="file" className="hidden" disabled={fwRefEdit[fw.id]?.uploading} onChange={e => e.target.files[0] && handleFwDocUpload(fw, e.target.files[0])} />
                               </label>
@@ -903,7 +903,7 @@ export default function Settings() {
                   <Textarea
                     value={newFwForm.description}
                     onChange={e => setNewFwForm(p => ({ ...p, description: e.target.value }))}
-                    placeholder="Brief description of the framework"
+                    placeholder={t('settings_fw_desc_placeholder')}
                     rows={3}
                   />
                 </div>
@@ -926,7 +926,7 @@ export default function Settings() {
                   ) : (
                     <label className="flex items-center gap-2 cursor-pointer border border-dashed rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:border-primary transition-colors">
                       {newFwForm.uploadingDoc
-                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('common_uploading')}</>
                         : <><Upload className="w-4 h-4" /> {t('docs_upload_doc')}</>
                       }
                       <input type="file" className="hidden" disabled={newFwForm.uploadingDoc} onChange={async e => {
