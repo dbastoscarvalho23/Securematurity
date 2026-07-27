@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Pencil, Trash2, ArrowRight, CalendarDays, User, Paperclip } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const PRIORITY_STYLES = {
   critical: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -15,13 +16,14 @@ const PRIORITY_STYLES = {
 };
 
 const STATUS_TRANSITIONS = {
-  todo:        { next: 'in_progress', label: 'Move to In Progress' },
-  in_progress: { next: 'done',        label: 'Mark as Done' },
-  blocked:     { next: 'in_progress', label: 'Unblock → In Progress' },
-  done:        { next: 'todo',        label: 'Reopen' },
+  todo:        { next: 'in_progress', labelKey: 'tasks_move_to_in_progress' },
+  in_progress: { next: 'done',        labelKey: 'tasks_mark_done' },
+  blocked:     { next: 'in_progress', labelKey: 'tasks_unblock' },
+  done:        { next: 'todo',        labelKey: 'tasks_reopen' },
 };
 
 export default function TaskCard({ task, onStatusChange, onEdit, onDelete }) {
+  const { t } = useLanguage();
   const transition = STATUS_TRANSITIONS[task.status];
   const isOverdue = task.due_date && task.status !== 'done' && isPast(parseISO(task.due_date));
 
@@ -39,16 +41,16 @@ export default function TaskCard({ task, onStatusChange, onEdit, onDelete }) {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onStatusChange(task.id, transition.next, task.title)}>
                 <ArrowRight className="w-4 h-4 mr-2" />
-                {transition.label}
+                {t(transition.labelKey)}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onEdit(task)}>
                 <Pencil className="w-4 h-4 mr-2" />
-                Edit
+                {t('common_edit')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onDelete(task)} className="text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" />
-                Delete
+                {t('common_delete')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -77,7 +79,7 @@ export default function TaskCard({ task, onStatusChange, onEdit, onDelete }) {
           {task.due_date && (
             <div className={cn('flex items-center gap-1.5 text-xs', isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground')}>
               <CalendarDays className="w-3 h-3" />
-              <span>{isOverdue ? 'Overdue · ' : ''}{format(parseISO(task.due_date), 'MMM d, yyyy')}</span>
+              <span>{isOverdue ? `${t('tasks_overdue')} · ` : ''}{format(parseISO(task.due_date), 'MMM d, yyyy')}</span>
             </div>
           )}
         </div>
