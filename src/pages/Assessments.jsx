@@ -8,13 +8,26 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import NewAssessmentDialog from '@/components/assessments/NewAssessmentDialog';
+import BulkActionBar from '@/components/shared/BulkActionBar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { exportReportPdf } from '@/lib/exportReportPdf';
+import { toast } from 'sonner';
+import { writeAuditLog } from '@/lib/auditLog';
 
 const statusStyles = {
   draft: 'bg-muted text-muted-foreground',
@@ -23,10 +36,20 @@ const statusStyles = {
   archived: 'bg-muted text-muted-foreground',
 };
 
+const assessmentStatusOptions = [
+  { value: 'draft', labelKey: 'assessments_status_draft' },
+  { value: 'in_progress', labelKey: 'assessments_status_in_progress' },
+  { value: 'completed', labelKey: 'assessments_status_completed' },
+  { value: 'archived', labelKey: 'assessments_status_archived' },
+];
+
 export default function Assessments() {
   const [showNew, setShowNew] = useState(false);
   const [search, setSearch] = useState('');
   const [exportingId, setExportingId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [isBulkAction, setIsBulkAction] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -61,6 +84,44 @@ export default function Assessments() {
     a.customer_name?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const toggleSelect = (id) =>
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const allFilteredSelected = filtered.length > 0 && selectedIds.length === filtered.length;
+  const toggleSelectAll = () =>
+    setSelectedIds(allFilteredSelected ? [] : filtered.map(a => a.id));
+
+  const handleBulkStatus = async (status) => {
+    setIsBulkAction(true);
+    try {
+      await base44.entities.Assessment.bulkUpdate(selectedIds.map(id => ({ id, status })));
+      await writeAuditLog({ action: 'assessment_completed', entity_type: 'Assessment', details: `Bulk updated ${selectedIds.length} assessments → status: ${status}` });
+      toast.success(`${selectedIds.length} ${t('bulk_updated')}`);
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ['assessments'] });
+    } catch {
+      toast.error(t('bulk_error'));
+    }
+    setIsBulkAction(false);
+  };
+
+  const handleBulkDelete = async () => {
+    setIsBulkAction(true);
+    try {
+      for (const id of selectedIds) {
+        await base44.entities.Assessment.delete(id);
+      }
+      await writeAuditLog({ action: 'assessment_deleted', entity_type: 'Assessment', details: `Bulk deleted ${selectedIds.length} assessments` });
+      toast.success(`${selectedIds.length} ${t('bulk_deleted')}`);
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ['assessments'] });
+    } catch {
+      toast.error(t('bulk_error'));
+    }
+    setIsBulkAction(false);
+    setBulkDeleteConfirm(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -76,7 +137,7 @@ export default function Assessments() {
 
       <Card>
         <CardContent className="p-0">
-          <div className="p-4 border-b">
+          <div className="p-4 border-b space-y-3">
             <div className="relative max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -86,10 +147,25 @@ export default function Assessments() {
                 className="pl-10"
               />
             </div>
+            <BulkActionBar
+              selectedCount={selectedIds.length}
+              statusOptions={assessmentStatusOptions}
+              onBulkStatus={handleBulkStatus}
+              onBulkDelete={isAdmin ? () => setBulkDeleteConfirm(true) : undefined}
+              onClear={() => setSelectedIds([])}
+              isProcessing={isBulkAction}
+            />
           </div>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={allFilteredSelected}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label={t('bulk_select_all')}
+                  />
+                </TableHead>
                 <TableHead>{t('assessments_col_assessment')}</TableHead>
                 <TableHead>{t('assessments_col_customer')}</TableHead>
                 <TableHead>{t('assessments_col_period')}</TableHead>
@@ -102,16 +178,23 @@ export default function Assessments() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('common_loading')}</TableCell>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('common_loading')}</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     {search ? t('assessments_no_results') : t('assessments_empty')}
                   </TableCell>
                 </TableRow>
               ) : filtered.map(a => (
                 <TableRow key={a.id} className="group cursor-pointer hover:bg-muted/30">
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selectedIds.includes(a.id)}
+                      onCheckedChange={() => toggleSelect(a.id)}
+                      aria-label="select"
+                    />
+                  </TableCell>
                   <TableCell>
                     <Link to={`/assessments/${a.id}`} className="font-medium text-sm hover:text-primary transition-colors">
                       {a.title}
@@ -183,6 +266,24 @@ export default function Assessments() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={bulkDeleteConfirm} onOpenChange={(open) => !isBulkAction && setBulkDeleteConfirm(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('bulk_confirm_delete_title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('bulk_confirm_delete_desc')} {selectedIds.length}? {t('bulk_cannot_undo')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel disabled={isBulkAction}>{t('common_cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} disabled={isBulkAction} className="gap-1.5">
+              {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t('common_confirm')}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

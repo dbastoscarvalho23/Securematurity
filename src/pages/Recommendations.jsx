@@ -10,10 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import TaskFormDialog from '@/components/tasks/TaskFormDialog';
 import AIRecommendationDialog from '@/components/recommendations/AIRecommendationDialog';
+import BulkActionBar from '@/components/shared/BulkActionBar';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -37,6 +39,8 @@ export default function Recommendations() {
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
   const [newRecDialog, setNewRecDialog] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isBulkAction, setIsBulkAction] = useState(false);
   const [newRecForm, setNewRecForm] = useState({
     title: '',
     description: '',
@@ -185,6 +189,59 @@ export default function Recommendations() {
     groupedByFramework[key].push(r);
   });
 
+  const toggleSelect = (id) =>
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const allFilteredSelected = filtered.length > 0 && selectedIds.length === filtered.length;
+  const toggleSelectAll = () =>
+    setSelectedIds(allFilteredSelected ? [] : filtered.map(r => r.id));
+
+  const handleBulkStatus = async (status) => {
+    setIsBulkAction(true);
+    try {
+      await base44.entities.Recommendation.bulkUpdate(
+        selectedIds.map(id => ({ id, status }))
+      );
+      await writeAuditLog({ action: 'recommendation_updated', entity_type: 'Recommendation', details: `Bulk updated ${selectedIds.length} recommendations → status: ${status}` });
+      toast.success(`${selectedIds.length} ${t('bulk_updated')}`);
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+    } catch {
+      toast.error(t('bulk_error'));
+    }
+    setIsBulkAction(false);
+  };
+
+  const handleBulkConvertToTasks = async () => {
+    setIsBulkAction(true);
+    try {
+      const selected = filtered.filter(r => selectedIds.includes(r.id));
+      const tasks = selected.map(rec => ({
+        title: rec.title,
+        description: rec.description,
+        priority: rec.priority,
+        framework_code: rec.framework_code,
+        domain: rec.domain,
+        recommendation_id: rec.id,
+        assessment_id: rec.assessment_id,
+        customer_id: rec.customer_id,
+        status: 'todo',
+      }));
+      const results = await base44.entities.Task.bulkCreate(tasks);
+      await writeAuditLog({ action: 'task_created', entity_type: 'Task', details: `Bulk created ${results.length} tasks from recommendations` });
+      // Mark recommendations as in_progress
+      await base44.entities.Recommendation.bulkUpdate(
+        selected.map(rec => ({ id: rec.id, status: 'in_progress' }))
+      );
+      toast.success(`${results.length} ${t('bulk_tasks_created')}`);
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+    } catch {
+      toast.error(t('bulk_error'));
+    }
+    setIsBulkAction(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -236,8 +293,26 @@ export default function Recommendations() {
             ))}
           </SelectContent>
         </Select>
-        <span className="text-sm text-muted-foreground ml-auto">{filtered.length} {t('recs_count')}</span>
+        <div className="flex items-center gap-2 ml-auto">
+          <Checkbox
+            checked={allFilteredSelected}
+            onCheckedChange={toggleSelectAll}
+            aria-label={t('bulk_select_all')}
+          />
+          <span className="text-sm text-muted-foreground">{t('bulk_select_all')}</span>
+          <span className="text-sm text-muted-foreground">{filtered.length} {t('recs_count')}</span>
+        </div>
       </div>
+
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        statusOptions={statusOptions.map(s => ({ value: s, labelKey: `recs_status_${s}` }))}
+        statusLabelKey="bulk_set_status"
+        onBulkStatus={handleBulkStatus}
+        onBulkConvert={handleBulkConvertToTasks}
+        onClear={() => setSelectedIds([])}
+        isProcessing={isBulkAction}
+      />
 
       {/* Recommendations by Framework */}
       {Object.entries(groupedByFramework).map(([fw, recs]) => (
@@ -252,10 +327,17 @@ export default function Recommendations() {
           </button>
           {!collapsedFrameworks[fw] && <div className="space-y-3">
             {recs.map(rec => (
-              <Card key={rec.id} className="hover:shadow-sm transition-shadow">
+              <Card key={rec.id} className={cn("hover:shadow-sm transition-shadow", selectedIds.includes(rec.id) && "ring-1 ring-primary/40")}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
+                    <div className="flex items-start gap-3 flex-1">
+                      <Checkbox
+                        checked={selectedIds.includes(rec.id)}
+                        onCheckedChange={() => toggleSelect(rec.id)}
+                        aria-label="select"
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1.5">
                         <Badge variant="outline" className={cn("text-xs border", priorityColors[rec.priority])}>
                           {rec.priority}
@@ -267,6 +349,7 @@ export default function Recommendations() {
                       </div>
                       <p className="text-sm font-medium">{rec.title}</p>
                       <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
