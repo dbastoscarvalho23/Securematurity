@@ -2,8 +2,10 @@ import React, { useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Paperclip, X, Loader2, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function EvidenceUploader({ attachments = [], onAttachmentsChange }) {
+  const { t } = useLanguage();
   const inputRef = useRef();
   const [uploading, setUploading] = useState(false);
 
@@ -66,7 +68,7 @@ export default function EvidenceUploader({ attachments = [], onAttachmentsChange
         ) : (
           <Paperclip className="w-3.5 h-3.5" />
         )}
-        {uploading ? 'Uploading...' : '+ Attach evidence file'}
+        {uploading ? t('common_uploading') : t('evidence_attach_file')}
       </button>
       <input
         ref={inputRef}

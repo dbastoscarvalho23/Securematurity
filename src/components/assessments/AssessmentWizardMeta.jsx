@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function AssessmentWizardMeta({ customers, allFrameworks, initialMeta, onBack, onNext }) {
+  const { t } = useLanguage();
   const [form, setForm] = useState(initialMeta);
 
   const selectedCustomer = customers.find(c => c.id === form.customer_id);
@@ -36,9 +38,9 @@ export default function AssessmentWizardMeta({ customers, allFrameworks, initial
   return (
     <div className="space-y-4 py-2">
       <div className="space-y-1.5">
-        <Label>Customer *</Label>
+        <Label>{t('common_customer')} *</Label>
         <Select value={form.customer_id} onValueChange={handleCustomerChange}>
-          <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder={t('assessment_wizard_select_customer')} /></SelectTrigger>
           <SelectContent>
             {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
           </SelectContent>
@@ -46,27 +48,27 @@ export default function AssessmentWizardMeta({ customers, allFrameworks, initial
       </div>
 
       <div className="space-y-1.5">
-        <Label>Title *</Label>
+        <Label>{t('assessment_wizard_title_label')}</Label>
         <Input
           value={form.title}
           onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
-          placeholder="e.g. Q1 2025 Assessment"
+          placeholder={t('assessment_wizard_title_ph')}
         />
       </div>
 
       <div className="space-y-1.5">
-        <Label>Period *</Label>
+        <Label>{t('assessment_wizard_period_label')}</Label>
         <Input
           value={form.period}
           onChange={e => setForm(prev => ({ ...prev, period: e.target.value }))}
-          placeholder="e.g. 2025-Q1"
+          placeholder={t('assessment_wizard_period_ph')}
         />
       </div>
 
       <div className="space-y-2">
-        <Label>Frameworks *</Label>
+        <Label>{t('assessment_wizard_frameworks_label')}</Label>
         {!form.customer_id && (
-          <p className="text-xs text-muted-foreground">Select a customer first to see their allowed frameworks.</p>
+          <p className="text-xs text-muted-foreground">{t('assessment_wizard_customer_first')}</p>
         )}
         <div className="space-y-2">
           {availableFrameworks.map(fw => (
@@ -82,9 +84,9 @@ export default function AssessmentWizardMeta({ customers, allFrameworks, initial
       </div>
 
       <div className="flex justify-between pt-4 border-t">
-        <Button variant="outline" onClick={onBack}>Back</Button>
+        <Button variant="outline" onClick={onBack}>{t('common_back')}</Button>
         <Button onClick={() => onNext(form)} disabled={!canProceed}>
-          Next: Build Questionnaire →
+          {t('assessment_wizard_next_build')}
         </Button>
       </div>
     </div>

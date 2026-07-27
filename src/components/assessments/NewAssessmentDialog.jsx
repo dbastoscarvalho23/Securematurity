@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Sparkles, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/LanguageContext';
 import AssessmentWizardMeta from './AssessmentWizardMeta';
 import AssessmentWizardAI from './AssessmentWizardAI';
 import AssessmentWizardManual from './AssessmentWizardManual';
@@ -20,6 +21,7 @@ const DEFAULT_META = {
 };
 
 export default function NewAssessmentDialog({ open, onOpenChange }) {
+  const { t } = useLanguage();
   const [step, setStep] = useState('mode');
   const [mode, setMode] = useState(null); // 'ai' | 'manual'
   const [meta, setMeta] = useState(DEFAULT_META);
@@ -99,7 +101,7 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
     queryClient.invalidateQueries({ queryKey: ['assessments'] });
     queryClient.invalidateQueries({ queryKey: ['questions'] });
     queryClient.invalidateQueries({ queryKey: ['questions-global'] });
-    toast.success('Assessment created successfully');
+    toast.success(t('assessment_wizard_created'));
     setIsSaving(false);
     handleClose();
   };
@@ -109,9 +111,9 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
       <DialogContent className={cn("max-w-2xl flex flex-col max-h-[90vh]", step === 'build' && "max-w-3xl")}>
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
-            {step === 'mode' && 'New Assessment'}
-            {step === 'meta' && 'Assessment Details'}
-            {step === 'build' && (mode === 'ai' ? 'AI-Generated Questionnaire' : 'Build Questionnaire')}
+            {step === 'mode' && t('assessments_new')}
+            {step === 'meta' && t('assessment_wizard_details')}
+            {step === 'build' && (mode === 'ai' ? t('assessment_wizard_ai_questionnaire') : t('assessment_wizard_build'))}
           </DialogTitle>
         </DialogHeader>
 
@@ -120,7 +122,7 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
         {/* Step: Mode selection */}
         {step === 'mode' && (
           <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground">How would you like to build the questionnaire for this assessment?</p>
+            <p className="text-sm text-muted-foreground">{t('assessment_wizard_how_build')}</p>
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => handleSelectMode('ai')}
@@ -128,8 +130,8 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
               >
                 <Sparkles className="w-8 h-8 text-primary" />
                 <div>
-                  <p className="font-semibold text-sm">AI-Generated</p>
-                  <p className="text-xs text-muted-foreground mt-1">Let AI create a tailored questionnaire based on the customer's sector and selected frameworks.</p>
+                  <p className="font-semibold text-sm">{t('assessment_wizard_ai_gen')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('assessment_wizard_ai_gen_desc')}</p>
                 </div>
               </button>
               <button
@@ -138,8 +140,8 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
               >
                 <ListChecks className="w-8 h-8 text-primary" />
                 <div>
-                  <p className="font-semibold text-sm">Manual</p>
-                  <p className="text-xs text-muted-foreground mt-1">Pick questions from the question bank or write your own custom questions for this assessment.</p>
+                  <p className="font-semibold text-sm">{t('assessment_wizard_manual')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('assessment_wizard_manual_desc')}</p>
                 </div>
               </button>
             </div>

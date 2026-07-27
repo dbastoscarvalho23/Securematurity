@@ -7,17 +7,19 @@ import { Check, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import EvidenceUploader from '@/components/assessments/EvidenceUploader';
 import CrossMappingSuggestions from '@/components/assessments/CrossMappingSuggestions';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const MATURITY_LEVELS = [
-  { level: 0, label: 'Non-existent', color: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20' },
-  { level: 1, label: 'Initial', color: 'bg-chart-4/10 text-chart-4 border-chart-4/20 hover:bg-chart-4/20' },
-  { level: 2, label: 'Developing', color: 'bg-chart-3/10 text-chart-3 border-chart-3/20 hover:bg-chart-3/20' },
-  { level: 3, label: 'Defined', color: 'bg-chart-1/10 text-chart-1 border-chart-1/20 hover:bg-chart-1/20' },
-  { level: 4, label: 'Managed', color: 'bg-chart-2/10 text-chart-2 border-chart-2/20 hover:bg-chart-2/20' },
-  { level: 5, label: 'Optimizing', color: 'bg-accent/10 text-accent border-accent/20 hover:bg-accent/20' },
+  { level: 0, labelKey: 'maturity_non_existent', color: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20' },
+  { level: 1, labelKey: 'maturity_initial', color: 'bg-chart-4/10 text-chart-4 border-chart-4/20 hover:bg-chart-4/20' },
+  { level: 2, labelKey: 'maturity_developing', color: 'bg-chart-3/10 text-chart-3 border-chart-3/20 hover:bg-chart-3/20' },
+  { level: 3, labelKey: 'maturity_defined', color: 'bg-chart-1/10 text-chart-1 border-chart-1/20 hover:bg-chart-1/20' },
+  { level: 4, labelKey: 'maturity_managed', color: 'bg-chart-2/10 text-chart-2 border-chart-2/20 hover:bg-chart-2/20' },
+  { level: 5, labelKey: 'maturity_optimized', color: 'bg-accent/10 text-accent border-accent/20 hover:bg-accent/20' },
 ];
 
 export default function QuestionCard({ question, index, response, onSave, language = 'en', currentFramework, allQuestions = [], responseMap = {} }) {
+  const { t } = useLanguage();
   const [notes, setNotes] = useState(response?.evidence_notes || '');
   const [showNotes, setShowNotes] = useState(!!response?.evidence_notes);
   const selectedLevel = response?.maturity_level;
@@ -81,7 +83,7 @@ export default function QuestionCard({ question, index, response, onSave, langua
                   : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20"
               )}
             >
-              {ml.level} — {ml.label}
+              {ml.level} — {t(ml.labelKey)}
             </button>
           ))}
         </div>
@@ -92,7 +94,7 @@ export default function QuestionCard({ question, index, response, onSave, langua
             onClick={() => setShowNotes(!showNotes)}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            {showNotes ? 'Hide notes' : '+ Add evidence / notes'}
+            {showNotes ? t('question_hide_notes') : t('question_add_evidence')}
           </button>
         </div>
         {showNotes && (
@@ -100,7 +102,7 @@ export default function QuestionCard({ question, index, response, onSave, langua
             value={notes}
             onChange={e => setNotes(e.target.value)}
             onBlur={handleNotesBlur}
-            placeholder="Add evidence, notes, or observations..."
+            placeholder={t('question_evidence_ph')}
             className="mt-2 text-sm"
             rows={2}
           />

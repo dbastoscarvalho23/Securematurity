@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { GitCompare, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const MATURITY_COLORS = [
   'text-muted-foreground',
@@ -14,7 +15,14 @@ const MATURITY_COLORS = [
   'text-accent',
 ];
 
-const MATURITY_LABELS = ['Non-existent', 'Initial', 'Developing', 'Defined', 'Managed', 'Optimizing'];
+const MATURITY_KEYS = [
+  'maturity_non_existent',
+  'maturity_initial',
+  'maturity_developing',
+  'maturity_defined',
+  'maturity_managed',
+  'maturity_optimized',
+];
 
 /**
  * Shows cross-framework mapping suggestions on a QuestionCard.
@@ -33,6 +41,7 @@ export default function CrossMappingSuggestions({
   responseMap,
   onApplySuggestion,
 }) {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [applied, setApplied] = useState(false);
 
@@ -73,7 +82,7 @@ export default function CrossMappingSuggestions({
       >
         <GitCompare className="w-3.5 h-3.5 flex-shrink-0" />
         <span className="flex-1 text-left">
-          {answeredPeers.length} cross-framework match{answeredPeers.length > 1 ? 'es' : ''} · {mapping.group}
+          {answeredPeers.length} {answeredPeers.length > 1 ? t('cross_map_matches') : t('cross_map_match')} · {mapping.group}
         </span>
         {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
       </button>
@@ -90,7 +99,7 @@ export default function CrossMappingSuggestions({
                   </Badge>
                   <span className="text-xs font-mono text-muted-foreground">{peer.id}</span>
                   <span className={cn('text-xs font-semibold ml-auto', MATURITY_COLORS[level] || '')}>
-                    Level {level} — {MATURITY_LABELS[level]}
+                    {t('cross_map_level')} {level} — {t(MATURITY_KEYS[level] || '')}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground line-clamp-2">{peerQ.question_text}</p>
@@ -106,9 +115,9 @@ export default function CrossMappingSuggestions({
                   onClick={() => handleApply({ peer, question: peerQ, response: peerResp })}
                 >
                   {applied ? (
-                    <><Check className="w-3 h-3" /> Applied</>
+                    <><Check className="w-3 h-3" /> {t('cross_map_applied')}</>
                   ) : (
-                    <><Copy className="w-3 h-3" /> Apply this answer</>
+                    <><Copy className="w-3 h-3" /> {t('cross_map_apply')}</>
                   )}
                 </Button>
               </div>

@@ -36,7 +36,7 @@ const FRAMEWORK_COLORS = {
 };
 
 export default function AssessmentWizardAI({ meta, selectedCustomer, onBack, onFinish, isSaving }) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [numQuestions, setNumQuestions] = useState(20);
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggested, setSuggested] = useState([]);
@@ -138,7 +138,7 @@ ${JSON.stringify(questionList)}`,
     <div className="space-y-4 py-2">
       <div className="flex gap-4 items-end flex-wrap">
         <div className="space-y-1.5">
-          <Label>Number of questions</Label>
+          <Label>{t('assessment_wizard_num_questions')}</Label>
           <Input
             type="number"
             min={5}
@@ -149,10 +149,10 @@ ${JSON.stringify(questionList)}`,
           />
         </div>
         <div className="text-sm text-muted-foreground space-y-1 flex-1">
-          <p><span className="font-medium">Frameworks:</span> {meta.frameworks.join(', ')}</p>
-          <p><span className="font-medium">Sector:</span> {SECTOR_LABELS[selectedCustomer?.sector] || '—'}</p>
+          <p><span className="font-medium">{t('assessment_wizard_frameworks_colon')}:</span> {meta.frameworks.join(', ')}</p>
+          <p><span className="font-medium">{t('assessment_wizard_sector_colon')}:</span> {t('sector_' + (selectedCustomer?.sector || 'other')) || '—'}</p>
           {!loadingQuestions && (
-            <p><span className="font-medium">Available in DB:</span> {dbQuestions.length} questions</p>
+            <p><span className="font-medium">{t('assessment_wizard_available_db')}:</span> {dbQuestions.length} {t('assessment_wizard_questions_word')}</p>
           )}
         </div>
         <Button
@@ -162,8 +162,8 @@ ${JSON.stringify(questionList)}`,
           className="gap-2"
         >
           {isGenerating
-            ? <><Loader2 className="w-4 h-4 animate-spin" /> Selecting...</>
-            : <><Sparkles className="w-4 h-4" /> AI Select</>
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('assessment_wizard_selecting')}</>
+            : <><Sparkles className="w-4 h-4" /> {t('assessment_wizard_ai_select')}</>
           }
         </Button>
       </div>
@@ -171,28 +171,28 @@ ${JSON.stringify(questionList)}`,
       {dbQuestions.length === 0 && !loadingQuestions && (
         <div className="flex items-center gap-2 p-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          No questions found in the Question Bank for the selected frameworks ({meta.frameworks.join(', ')}). Please add questions first.
+          {t('assessment_wizard_no_qs_warning')} ({meta.frameworks.join(', ')}). {t('assessment_wizard_add_questions_first')}
         </div>
       )}
 
       {isGenerating && (
         <div className="text-center py-10 text-muted-foreground text-sm">
           <Loader2 className="w-6 h-6 animate-spin mx-auto mb-3 text-primary" />
-          AI is selecting the most relevant questions from your Question Bank...
+          {t('assessment_wizard_ai_selecting')}
         </div>
       )}
 
       {suggested.length > 0 && !isGenerating && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">{suggested.length} questions suggested by AI</p>
+            <p className="text-sm font-medium">{suggested.length} {t('assessment_wizard_qs_suggested')}</p>
             <button
               type="button"
               onClick={toggleAll}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               {suggested.every(id => selectedIds.has(id)) ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-              {suggested.every(id => selectedIds.has(id)) ? 'Deselect all' : 'Select all'}
+              {suggested.every(id => selectedIds.has(id)) ? t('assessment_wizard_deselect_all') : t('assessment_wizard_select_all')}
             </button>
           </div>
 
@@ -237,18 +237,18 @@ ${JSON.stringify(questionList)}`,
 
       {!isGenerating && suggested.length === 0 && dbQuestions.length > 0 && (
         <div className="text-center py-10 text-muted-foreground text-sm">
-          Click <strong>AI Select</strong> to have the AI pick the most relevant questions from your Question Bank.
+          {t('assessment_wizard_click_ai')} <strong>{t('assessment_wizard_ai_select')}</strong> {t('assessment_wizard_to_pick')}
         </div>
       )}
 
       <div className="flex items-center justify-between pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onBack}>Back</Button>
+        <Button type="button" variant="outline" onClick={onBack}>{t('common_back')}</Button>
         {suggested.length > 0 && (
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">{selectedCount} questions selected</span>
+            <span className="text-sm text-muted-foreground">{selectedCount} {t('assessment_wizard_qs_selected')}</span>
             <Button onClick={handleFinish} disabled={isSaving || selectedCount === 0} className="gap-2">
               {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Create Assessment
+              {t('assessment_wizard_create')}
             </Button>
           </div>
         )}

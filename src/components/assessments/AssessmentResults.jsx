@@ -10,6 +10,7 @@ import FrameworkScoreCard from '@/components/dashboard/FrameworkScoreCard';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { exportReportPdf } from '@/lib/exportReportPdf';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const FRAMEWORK_NAMES = {
   NIS2: 'NIS2 / DL 125/2025',
@@ -19,7 +20,20 @@ const FRAMEWORK_NAMES = {
   GDPR: 'GDPR',
 };
 
+const PRIORITY_KEYS = {
+  critical: 'tasks_priority_critical',
+  high: 'tasks_priority_high',
+  medium: 'tasks_priority_medium',
+  low: 'tasks_priority_low',
+};
+
+function timelineKey(timeline) {
+  if (!timeline) return null;
+  return 'recs_timeline_' + timeline.replace('_term', '');
+}
+
 export default function AssessmentResults({ assessment, responses }) {
+  const { t } = useLanguage();
   const [isExporting, setIsExporting] = useState(false);
   const { data: recommendations = [] } = useQuery({
     queryKey: ['recommendations', assessment.id],
@@ -70,10 +84,10 @@ export default function AssessmentResults({ assessment, responses }) {
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">{assessment.title}</h1>
-            <Badge className="bg-accent/10 text-accent border-accent/20">Completed</Badge>
+            <Badge className="bg-accent/10 text-accent border-accent/20">{t('assessment_results_completed')}</Badge>
           </div>
           <p className="text-muted-foreground text-sm mt-0.5">
-            {assessment.customer_name} · {assessment.period} · Score: {assessment.overall_score?.toFixed(1)}/5.0
+            {assessment.customer_name} · {assessment.period} · {t('assessment_results_score')}: {assessment.overall_score?.toFixed(1)}/5.0
           </p>
         </div>
         <Button
@@ -86,7 +100,7 @@ export default function AssessmentResults({ assessment, responses }) {
           }}
         >
           <Download className="w-4 h-4" />
-          {isExporting ? 'Exporting...' : 'Export PDF'}
+          {isExporting ? t('assessment_results_exporting') : t('assessment_results_export_pdf')}
         </Button>
       </div>
 
@@ -95,9 +109,9 @@ export default function AssessmentResults({ assessment, responses }) {
         <CardContent className="p-6">
           <div className="flex items-center gap-8">
             <div>
-              <p className="text-sm text-muted-foreground">Overall Maturity Score</p>
+              <p className="text-sm text-muted-foreground">{t('assessment_results_overall_maturity')}</p>
               <p className="text-5xl font-bold mt-1">{assessment.overall_score?.toFixed(1)}</p>
-              <p className="text-sm text-muted-foreground mt-1">out of 5.0</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('assessment_results_out_of')}</p>
             </div>
             <div className="flex-1">
               <Progress value={(assessment.overall_score / 5) * 100} className="h-3" />
@@ -119,22 +133,22 @@ export default function AssessmentResults({ assessment, responses }) {
       </div>
 
       {/* Radar Chart */}
-      <MaturityRadar data={radarData} title="Domain Maturity Analysis" />
+      <MaturityRadar data={radarData} title={t('assessment_results_domain_analysis')} />
 
       {/* Evidence Review */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Paperclip className="w-4 h-4 text-primary" />
-            Evidence Review
+            {t('assessment_results_evidence_review')}
             {evidenceItems.length > 0 && (
-              <Badge variant="secondary" className="ml-1">{evidenceItems.reduce((acc, e) => acc + e.response.attachments.length, 0)} files</Badge>
+              <Badge variant="secondary" className="ml-1">{evidenceItems.reduce((acc, e) => acc + e.response.attachments.length, 0)} {t('assessment_results_files')}</Badge>
             )}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {evidenceItems.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No evidence files attached to this assessment.</p>
+            <p className="text-sm text-muted-foreground text-center py-6">{t('assessment_results_no_evidence')}</p>
           ) : (
             <div className="space-y-4">
               {evidenceItems.map(({ response: r, question: q }) => (
@@ -175,7 +189,7 @@ export default function AssessmentResults({ assessment, responses }) {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
-              AI-Generated Recommendations
+              {t('assessment_results_ai_recs')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -185,14 +199,14 @@ export default function AssessmentResults({ assessment, responses }) {
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={priorityColors[rec.priority]}>
-                        {rec.priority}
+                        {t(PRIORITY_KEYS[rec.priority]) || rec.priority}
                       </Badge>
                       {rec.framework_code && (
                         <Badge variant="outline" className="text-xs">{rec.framework_code}</Badge>
                       )}
                       {rec.timeline && (
-                        <span className="text-xs text-muted-foreground capitalize">
-                          {rec.timeline.replace('_', ' ')}
+                        <span className="text-xs text-muted-foreground">
+                          {t(timelineKey(rec.timeline)) || rec.timeline.replace('_', ' ')}
                         </span>
                       )}
                     </div>

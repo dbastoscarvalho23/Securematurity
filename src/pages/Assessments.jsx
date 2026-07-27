@@ -239,8 +239,8 @@ export default function Assessments() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={cn("text-xs border capitalize", statusStyles[a.status])}>
-                      {a.status?.replace('_', ' ')}
+                    <Badge variant="outline" className={cn("text-xs border", statusStyles[a.status])}>
+                      {t('assessments_status_' + a.status)}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -306,7 +306,7 @@ export default function Assessments() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('bulk_confirm_status_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('bulk_confirm_status_desc')} {selectedIds.length} {t('bulk_selected')} → {pendingStatus?.replace('_', ' ')}
+              {t('bulk_confirm_status_desc')} {selectedIds.length} {t('bulk_selected')} → {t('assessments_status_' + pendingStatus)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-2 justify-end">

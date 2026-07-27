@@ -1,3 +1,5 @@
+import { assessmentEn, assessmentPt } from './translations-assessments';
+
 export const translations = {
   en: {
     // Sidebar nav groups
@@ -2414,3 +2416,6 @@ export const translations = {
     docs_version_history: 'Histórico de versões',
   },
 };
+
+Object.assign(translations.en, assessmentEn);
+Object.assign(translations.pt, assessmentPt);

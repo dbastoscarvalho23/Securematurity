@@ -23,7 +23,7 @@ const FRAMEWORK_COLORS = {
 };
 
 export default function AssessmentWizardManual({ meta, selectedCustomer, onBack, onFinish, isSaving }) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [search, setSearch] = useState('');
   const [filterFw, setFilterFw] = useState('all');
   const [filterDomain, setFilterDomain] = useState('all');
@@ -112,8 +112,8 @@ export default function AssessmentWizardManual({ meta, selectedCustomer, onBack,
     <div className="space-y-4 py-2">
       <Tabs defaultValue="pick">
         <TabsList>
-          <TabsTrigger value="pick">Pick from Question Bank</TabsTrigger>
-          <TabsTrigger value="new">Write New Questions</TabsTrigger>
+          <TabsTrigger value="pick">{t('assessment_wizard_pick_bank')}</TabsTrigger>
+          <TabsTrigger value="new">{t('assessment_wizard_write_new')}</TabsTrigger>
         </TabsList>
 
         {/* ---- PICK FROM BANK ---- */}
@@ -122,42 +122,42 @@ export default function AssessmentWizardManual({ meta, selectedCustomer, onBack,
             <div className="relative flex-1 min-w-40">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
-                placeholder="Search questions..."
+                placeholder={t('assessment_wizard_search_qs')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-8 h-8 text-sm"
               />
             </div>
             <Select value={filterFw} onValueChange={v => { setFilterFw(v); setFilterDomain('all'); }}>
-              <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="Framework" /></SelectTrigger>
+              <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder={t('assessments_col_frameworks')} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Frameworks</SelectItem>
+                <SelectItem value="all">{t('assessment_wizard_all_frameworks')}</SelectItem>
                 {meta.frameworks.map(fw => <SelectItem key={fw} value={fw}>{fw}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterDomain} onValueChange={setFilterDomain}>
-              <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="Domain" /></SelectTrigger>
+              <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder={t('assessment_detail_domains')} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Domains</SelectItem>
+                <SelectItem value="all">{t('assessment_wizard_all_domains')}</SelectItem>
                 {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">{filtered.length} questions · {selectedIds.size} selected</span>
+            <span className="text-xs text-muted-foreground">{filtered.length} {t('assessment_wizard_questions_word')} · {selectedIds.size} {t('assessment_wizard_selected_word')}</span>
             <button
               onClick={toggleAll}
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               {filtered.every(q => selectedIds.has(q.id)) ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
-              {filtered.every(q => selectedIds.has(q.id)) ? 'Deselect all' : 'Select all shown'}
+              {filtered.every(q => selectedIds.has(q.id)) ? t('assessment_wizard_deselect_all') : t('assessment_wizard_select_all_shown')}
             </button>
           </div>
 
           <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
             {filtered.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-8">No questions found for these frameworks. Add questions in the Question Bank.</p>
+              <p className="text-sm text-muted-foreground text-center py-8">{t('assessment_wizard_no_qs_frameworks')}</p>
             )}
             {filtered.map(q => (
               <div
@@ -215,33 +215,33 @@ export default function AssessmentWizardManual({ meta, selectedCustomer, onBack,
 
           {!showNewForm ? (
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowNewForm(true)}>
-              <Plus className="w-4 h-4" /> Add New Question
+              <Plus className="w-4 h-4" /> {t('assessment_wizard_add_new_q')}
             </Button>
           ) : (
             <div className="space-y-3 p-4 rounded-lg border bg-muted/20">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Framework *</Label>
+                  <Label className="text-xs">{t('assessment_wizard_framework_req')}</Label>
                   <Select value={newQForm.framework_code} onValueChange={v => setNewQForm(p => ({ ...p, framework_code: v }))}>
-                    <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue placeholder={t('common_select')} /></SelectTrigger>
                     <SelectContent>
                       {meta.frameworks.map(fw => <SelectItem key={fw} value={fw}>{fw}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Domain *</Label>
+                  <Label className="text-xs">{t('assessment_wizard_domain_req')}</Label>
                   <Input
                     value={newQForm.domain}
                     onChange={e => setNewQForm(p => ({ ...p, domain: e.target.value }))}
-                    placeholder="e.g. Access Control"
+                    placeholder={t('assessment_wizard_domain_ph')}
                     className="h-8 text-sm"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Control ID</Label>
+                  <Label className="text-xs">{t('assessment_wizard_control_id')}</Label>
                   <Input
                     value={newQForm.control_id}
                     onChange={e => setNewQForm(p => ({ ...p, control_id: e.target.value }))}
@@ -250,7 +250,7 @@ export default function AssessmentWizardManual({ meta, selectedCustomer, onBack,
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Weight (1–5)</Label>
+                  <Label className="text-xs">{t('assessment_wizard_weight')}</Label>
                   <Input
                     type="number"
                     min={1}
@@ -262,32 +262,32 @@ export default function AssessmentWizardManual({ meta, selectedCustomer, onBack,
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Question Text *</Label>
+                <Label className="text-xs">{t('assessment_wizard_q_text')}</Label>
                 <Textarea
                   value={newQForm.question_text}
                   onChange={e => setNewQForm(p => ({ ...p, question_text: e.target.value }))}
-                  placeholder="Write your question here..."
+                  placeholder={t('assessment_wizard_q_ph')}
                   rows={2}
                   className="text-sm"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Guidance (optional)</Label>
+                <Label className="text-xs">{t('assessment_wizard_guidance_opt')}</Label>
                 <Input
                   value={newQForm.guidance}
                   onChange={e => setNewQForm(p => ({ ...p, guidance: e.target.value }))}
-                  placeholder="Brief assessor guidance..."
+                  placeholder={t('assessment_wizard_guidance_ph')}
                   className="h-8 text-sm"
                 />
               </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="ghost" size="sm" onClick={() => setShowNewForm(false)}>Cancel</Button>
+                <Button variant="ghost" size="sm" onClick={() => setShowNewForm(false)}>{t('common_cancel')}</Button>
                 <Button
                   size="sm"
                   onClick={handleAddNew}
                   disabled={!newQForm.question_text || !newQForm.framework_code || !newQForm.domain}
                 >
-                  Add Question
+                  {t('assessment_wizard_add_q')}
                 </Button>
               </div>
             </div>
@@ -296,12 +296,12 @@ export default function AssessmentWizardManual({ meta, selectedCustomer, onBack,
       </Tabs>
 
       <div className="flex items-center justify-between pt-4 border-t">
-        <Button variant="outline" onClick={onBack}>Back</Button>
+        <Button variant="outline" onClick={onBack}>{t('common_back')}</Button>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">{totalCount} question{totalCount !== 1 ? 's' : ''} selected</span>
+          <span className="text-sm text-muted-foreground">{totalCount} {totalCount !== 1 ? t('assessment_wizard_question_plural') : t('assessment_wizard_question_singular')} {t('assessment_wizard_selected_word')}</span>
           <Button onClick={handleFinish} disabled={isSaving || totalCount === 0} className="gap-2">
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-            Create Assessment
+            {t('assessment_wizard_create')}
           </Button>
         </div>
       </div>

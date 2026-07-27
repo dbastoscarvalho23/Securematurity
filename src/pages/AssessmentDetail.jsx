@@ -20,7 +20,7 @@ export default function AssessmentDetail() {
   const [activeFramework, setActiveFramework] = useState(null);
   const [activeDomain, setActiveDomain] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const { language: globalLanguage } = useLanguage();
+  const { language: globalLanguage, t } = useLanguage();
   const [language, setLanguage] = useState(globalLanguage);
 
   // Sync local language with global language setting
@@ -200,7 +200,7 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
   }, [responses]);
 
   if (!assessment) {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
+    return <div className="flex items-center justify-center h-64 text-muted-foreground">{t('common_loading')}</div>;
   }
 
   const currentFw = activeFramework || assessment.frameworks?.[0];
@@ -232,7 +232,7 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex rounded-md border border-border overflow-hidden text-sm" title={!hasPtTranslations ? "Portuguese translations not available for these questions" : undefined}>
+          <div className="flex rounded-md border border-border overflow-hidden text-sm" title={!hasPtTranslations ? t('assessment_detail_pt_unavailable') : undefined}>
             <button
               type="button"
               onClick={() => setLanguage('en')}
@@ -250,7 +250,7 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
             >PT</button>
           </div>
           <div className="text-right mr-2">
-            <p className="text-xs text-muted-foreground">Progress</p>
+            <p className="text-xs text-muted-foreground">{t('assessment_detail_progress')}</p>
             <p className="text-sm font-semibold">{answeredQuestions}/{totalQuestions}</p>
           </div>
           <div className="w-32">
@@ -262,7 +262,7 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
             className="gap-2"
           >
             {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {isAnalyzing ? 'Analyzing...' : 'Complete & Analyze'}
+            {isAnalyzing ? t('assessment_detail_analyzing') : t('assessment_detail_complete')}
           </Button>
         </div>
       </div>
@@ -281,7 +281,7 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
         {/* Domain list */}
         <div className="col-span-3">
           <Card className="p-4 sticky top-20">
-            <h3 className="font-semibold text-sm mb-3 text-foreground">Domains</h3>
+            <h3 className="font-semibold text-sm mb-3 text-foreground">{t('assessment_detail_domains')}</h3>
             <div className="space-y-1.5">
               {domainKeys.map(d => {
                 const domainQs = domains[d] || [];
@@ -341,7 +341,7 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
           ))}
           {(!domains[currentDomain] || domains[currentDomain].length === 0) && (
             <div className="text-center py-12 text-muted-foreground">
-              No questions available for this domain. Add questions in Settings.
+              {t('assessment_detail_no_questions')}
             </div>
           )}
         </div>
