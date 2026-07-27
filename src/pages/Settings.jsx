@@ -821,6 +821,14 @@ export default function Settings() {
                         <p className="text-xs text-muted-foreground mt-2">
                           {fwQuestions.length} {t('settings_fw_questions')} · {domains.length} {t('settings_fw_domains')}
                         </p>
+                        {fw.created_date && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t('settings_fw_created_on')} {new Date(fw.created_date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            {fw.updated_date && fw.updated_date !== fw.created_date && (
+                              <> · {t('settings_fw_modified_on')} {new Date(fw.updated_date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}</>
+                            )}
+                          </p>
+                        )}
                         {/* Risk Score */}
                         {isActive && (
                           <div className="mt-3 pt-3 border-t">
@@ -841,14 +849,13 @@ export default function Settings() {
                           </div>
                         )}
 
-                        {/* Reference Link & Document — admin only */}
-                        {isAdmin && (
+                        {/* Reference Link & Document — visible to all, editable by admin */}
                         <div className="mt-3 pt-3 border-t space-y-2">
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('settings_fw_docs_section')}</p>
                           {/* Reference URL */}
                           <div className="flex items-center gap-2 flex-wrap">
                             <Link className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                            {!isReadOnly && fwRefEdit[fw.id]?.editingUrl ? (
+                            {isAdmin && fwRefEdit[fw.id]?.editingUrl ? (
                               <form className="flex gap-2 flex-1" onSubmit={e => { e.preventDefault(); setFwUrlConfirm({ fw, url: fwRefEdit[fw.id]?.url ?? fw.reference_url ?? '' }); }}>
                                 <Input
                                   autoFocus
@@ -869,12 +876,12 @@ export default function Settings() {
                                   <Button variant="ghost" size="sm" className="h-6 px-2 text-xs flex-shrink-0" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: true, url: fw.reference_url } }))}>{t('common_edit')}</Button>
                                 )}
                               </div>
-                            ) : !isReadOnly ? (
+                            ) : isAdmin ? (
                               <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], editingUrl: true, url: '' } }))}>
                                 {t('docs_add_ref_link')}
                               </Button>
                             ) : (
-                              <span className="text-xs text-muted-foreground italic">—</span>
+                              <span className="text-xs text-muted-foreground italic">{t('settings_fw_no_link')}</span>
                             )}
                           </div>
 
@@ -886,14 +893,14 @@ export default function Settings() {
                                 <a href={fw.document_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate flex items-center gap-1">
                                   <ExternalLink className="w-3 h-3 flex-shrink-0" />{fw.document_name || t('settings_fw_ref_doc_fallback')}
                                 </a>
-                                {!isReadOnly && (
+                                {isAdmin && (
                                   <label className="cursor-pointer">
                                     <span className="text-xs text-muted-foreground hover:text-foreground border rounded px-2 py-0.5">{t('docs_replace')}</span>
                                     <input type="file" className="hidden" onChange={e => { if (e.target.files[0]) setFwDocConfirm({ fw, file: e.target.files[0] }); e.target.value = ''; }} />
                                   </label>
                                 )}
                               </div>
-                            ) : !isReadOnly ? (
+                            ) : isAdmin ? (
                               <label className="cursor-pointer flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                                 {fwRefEdit[fw.id]?.uploading
                                   ? <><Loader2 className="w-3 h-3 animate-spin" /> {t('common_uploading')}</>
@@ -902,11 +909,10 @@ export default function Settings() {
                                 <input type="file" className="hidden" disabled={fwRefEdit[fw.id]?.uploading} onChange={e => { if (e.target.files[0]) setFwDocConfirm({ fw, file: e.target.files[0] }); e.target.value = ''; }} />
                               </label>
                             ) : (
-                              <span className="text-xs text-muted-foreground italic">—</span>
+                              <span className="text-xs text-muted-foreground italic">{t('settings_fw_no_doc')}</span>
                             )}
                           </div>
                         </div>
-                        )}
                       </div>
                     );
                   })}
