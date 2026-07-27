@@ -223,6 +223,10 @@ export const translations = {
     bulk_cannot_undo: 'This action cannot be undone.',
     bulk_convert_tasks: 'Convert to Tasks',
     bulk_tasks_created: 'tasks created',
+    bulk_confirm_status_title: 'Update Status of Selected Items?',
+    bulk_confirm_status_desc: 'This will change the status of',
+    bulk_confirm_convert_title: 'Convert Selected Recommendations to Tasks?',
+    bulk_confirm_convert_desc: 'This will create tasks from',
     // Tasks page
     tasks_new: 'New Task',
     tasks_search_placeholder: 'Search tasks...',
@@ -1341,6 +1345,10 @@ export const translations = {
     bulk_cannot_undo: 'Esta ação não pode ser desfeita.',
     bulk_convert_tasks: 'Converter em Tarefas',
     bulk_tasks_created: 'tarefas criadas',
+    bulk_confirm_status_title: 'Atualizar Estado dos Itens Selecionados?',
+    bulk_confirm_status_desc: 'Isto irá alterar o estado de',
+    bulk_confirm_convert_title: 'Converter Recomendações Selecionadas em Tarefas?',
+    bulk_confirm_convert_desc: 'Isto irá criar tarefas a partir de',
     // Tasks page
     tasks_new: 'Nova Tarefa',
     tasks_search_placeholder: 'Pesquisar tarefas...',

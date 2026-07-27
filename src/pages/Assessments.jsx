@@ -49,6 +49,8 @@ export default function Assessments() {
   const [exportingId, setExportingId] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [bulkStatusConfirm, setBulkStatusConfirm] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -91,11 +93,16 @@ export default function Assessments() {
   const toggleSelectAll = () =>
     setSelectedIds(allFilteredSelected ? [] : filtered.map(a => a.id));
 
-  const handleBulkStatus = async (status) => {
+  const handleBulkStatus = (status) => {
+    setPendingStatus(status);
+    setBulkStatusConfirm(true);
+  };
+
+  const executeBulkStatus = async () => {
     setIsBulkAction(true);
     try {
-      await base44.entities.Assessment.bulkUpdate(selectedIds.map(id => ({ id, status })));
-      await writeAuditLog({ action: 'assessment_completed', entity_type: 'Assessment', details: `Bulk updated ${selectedIds.length} assessments → status: ${status}` });
+      await base44.entities.Assessment.bulkUpdate(selectedIds.map(id => ({ id, status: pendingStatus })));
+      await writeAuditLog({ action: 'assessment_completed', entity_type: 'Assessment', details: `Bulk updated ${selectedIds.length} assessments → status: ${pendingStatus}` });
       toast.success(`${selectedIds.length} ${t('bulk_updated')}`);
       setSelectedIds([]);
       queryClient.invalidateQueries({ queryKey: ['assessments'] });
@@ -103,6 +110,8 @@ export default function Assessments() {
       toast.error(t('bulk_error'));
     }
     setIsBulkAction(false);
+    setBulkStatusConfirm(false);
+    setPendingStatus(null);
   };
 
   const handleBulkDelete = async () => {
@@ -278,6 +287,24 @@ export default function Assessments() {
           <div className="flex gap-2 justify-end">
             <AlertDialogCancel disabled={isBulkAction}>{t('common_cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleBulkDelete} disabled={isBulkAction} className="gap-1.5">
+              {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t('common_confirm')}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkStatusConfirm} onOpenChange={(open) => !isBulkAction && setBulkStatusConfirm(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('bulk_confirm_status_title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('bulk_confirm_status_desc')} {selectedIds.length} {t('bulk_selected')} → {pendingStatus?.replace('_', ' ')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel disabled={isBulkAction}>{t('common_cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={executeBulkStatus} disabled={isBulkAction} className="gap-1.5">
               {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
               {t('common_confirm')}
             </AlertDialogAction>

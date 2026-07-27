@@ -7,6 +7,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -41,6 +50,9 @@ export default function Recommendations() {
   const [newRecDialog, setNewRecDialog] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isBulkAction, setIsBulkAction] = useState(false);
+  const [bulkStatusConfirm, setBulkStatusConfirm] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
+  const [bulkConvertConfirm, setBulkConvertConfirm] = useState(false);
   const [newRecForm, setNewRecForm] = useState({
     title: '',
     description: '',
@@ -195,13 +207,18 @@ export default function Recommendations() {
   const toggleSelectAll = () =>
     setSelectedIds(allFilteredSelected ? [] : filtered.map(r => r.id));
 
-  const handleBulkStatus = async (status) => {
+  const handleBulkStatus = (status) => {
+    setPendingStatus(status);
+    setBulkStatusConfirm(true);
+  };
+
+  const executeBulkStatus = async () => {
     setIsBulkAction(true);
     try {
       await base44.entities.Recommendation.bulkUpdate(
-        selectedIds.map(id => ({ id, status }))
+        selectedIds.map(id => ({ id, status: pendingStatus }))
       );
-      await writeAuditLog({ action: 'recommendation_updated', entity_type: 'Recommendation', details: `Bulk updated ${selectedIds.length} recommendations → status: ${status}` });
+      await writeAuditLog({ action: 'recommendation_updated', entity_type: 'Recommendation', details: `Bulk updated ${selectedIds.length} recommendations → status: ${pendingStatus}` });
       toast.success(`${selectedIds.length} ${t('bulk_updated')}`);
       setSelectedIds([]);
       queryClient.invalidateQueries({ queryKey: ['recommendations'] });
@@ -209,9 +226,15 @@ export default function Recommendations() {
       toast.error(t('bulk_error'));
     }
     setIsBulkAction(false);
+    setBulkStatusConfirm(false);
+    setPendingStatus(null);
   };
 
-  const handleBulkConvertToTasks = async () => {
+  const handleBulkConvertToTasks = () => {
+    setBulkConvertConfirm(true);
+  };
+
+  const executeBulkConvertToTasks = async () => {
     setIsBulkAction(true);
     try {
       const selected = filtered.filter(r => selectedIds.includes(r.id));
@@ -240,6 +263,7 @@ export default function Recommendations() {
       toast.error(t('bulk_error'));
     }
     setIsBulkAction(false);
+    setBulkConvertConfirm(false);
   };
 
   return (
@@ -528,6 +552,42 @@ export default function Recommendations() {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={bulkStatusConfirm} onOpenChange={(open) => !isBulkAction && setBulkStatusConfirm(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('bulk_confirm_status_title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('bulk_confirm_status_desc')} {selectedIds.length} {t('bulk_selected')} → {pendingStatus?.replace('_', ' ')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel disabled={isBulkAction}>{t('common_cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={executeBulkStatus} disabled={isBulkAction} className="gap-1.5">
+              {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t('common_confirm')}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkConvertConfirm} onOpenChange={(open) => !isBulkAction && setBulkConvertConfirm(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('bulk_confirm_convert_title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('bulk_confirm_convert_desc')} {selectedIds.length} {t('bulk_selected')}. {t('bulk_cannot_undo')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel disabled={isBulkAction}>{t('common_cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={executeBulkConvertToTasks} disabled={isBulkAction} className="gap-1.5">
+              {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t('common_confirm')}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
