@@ -154,7 +154,11 @@ export default function Settings() {
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listUsers', {});
+      return res.data?.users || [];
+    },
+    enabled: isAdmin || isCustomerAdmin,
   });
 
   // Pre-populate profile fields directly from the auth context user
@@ -465,7 +469,7 @@ export default function Settings() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Edit User Dialog (admin only) */}
+      {/* Edit User Dialog */}
       <EditUserDialog
         open={!!userToEdit}
         onOpenChange={(open) => !open && setUserToEdit(null)}
@@ -545,14 +549,6 @@ export default function Settings() {
                       className="bg-muted/50 text-muted-foreground"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>{t('settings_user_id')}</Label>
-                    <Input
-                      value={currentUser?.id || '—'}
-                      disabled
-                      className="bg-muted/50 text-muted-foreground font-mono text-xs"
-                    />
-                  </div>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t gap-4">
                   <Button type="submit" disabled={isSavingProfile} size="sm" className="gap-2">
@@ -622,8 +618,8 @@ export default function Settings() {
             </>
           )}
 
-          {/* All Users table — admin only */}
-          {isAdmin && (
+          {/* All Users table — admin and customer_admin */}
+          {(isAdmin || isCustomerAdmin) && (
             <>
               <Card>
                 <CardHeader>

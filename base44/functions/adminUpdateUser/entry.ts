@@ -15,8 +15,8 @@ Deno.serve(async (req) => {
   const user = await safeUpdate(() => base44.auth.me());
   const currentUser = await base44.auth.me().catch(() => null);
 
-  if (!currentUser || currentUser.role !== 'admin') {
-    return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'customer_admin')) {
+    return Response.json({ error: 'Forbidden: Admin or Customer Admin access required' }, { status: 403 });
   }
 
   let body;
@@ -31,7 +31,22 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'userId is required' }, { status: 400 });
   }
 
-  const { role, full_name, ...restData } = data;
+  const isPlatformAdmin = currentUser.role === 'admin';
+
+  // For customer_admin: verify target user belongs to their customer
+  if (!isPlatformAdmin) {
+    const targetUser = await base44.asServiceRole.entities.User.get(userId).catch(() => null);
+    if (!targetUser || targetUser.customer_id !== currentUser.customer_id) {
+      return Response.json({ error: 'Forbidden: You can only edit users in your customer' }, { status: 403 });
+    }
+  }
+
+  let { role, full_name, ...restData } = data;
+
+  // For customer_admin: only allow name change
+  if (!isPlatformAdmin) {
+    restData = {};
+  }
 
   // Build profile update (no role)
   const profileUpdate = { ...restData };
@@ -51,7 +66,7 @@ Deno.serve(async (req) => {
   }
 
   // Step 2: update role separately (platform blocks for app owner — we ignore gracefully)
-  if (role !== undefined) {
+  if (role !== undefined && isPlatformAdmin) {
     const result = await safeUpdate(() =>
       base44.asServiceRole.entities.User.update(userId, { role })
     );

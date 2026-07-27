@@ -4,8 +4,8 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user || user.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+    if (!user || (user.role !== 'admin' && user.role !== 'customer_admin')) {
+      return Response.json({ error: 'Forbidden: Admin or Customer Admin access required' }, { status: 403 });
     }
 
     let body;
@@ -18,6 +18,14 @@ Deno.serve(async (req) => {
     const { userId } = body;
     if (!userId) {
       return Response.json({ error: 'userId is required' }, { status: 400 });
+    }
+
+    // For customer_admin: verify target user belongs to their customer
+    if (user.role === 'customer_admin') {
+      const targetUser = await base44.asServiceRole.entities.User.get(userId).catch(() => null);
+      if (!targetUser || targetUser.customer_id !== user.customer_id) {
+        return Response.json({ error: 'Forbidden: You can only delete users in your customer' }, { status: 403 });
+      }
     }
 
     await base44.asServiceRole.entities.User.delete(userId);
