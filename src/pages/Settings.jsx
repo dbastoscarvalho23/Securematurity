@@ -39,6 +39,9 @@ export default function Settings() {
   const [newFwForm, setNewFwForm] = useState({ code: '', name: '', version: '', description: '', reference_url: '' });
   const [isSavingFw, setIsSavingFw] = useState(false);
   const [fwRefEdit, setFwRefEdit] = useState({}); // { [fw.id]: { url: '', uploading: false } }
+  const [fwStatusConfirm, setFwStatusConfirm] = useState(null);
+  const [fwUrlConfirm, setFwUrlConfirm] = useState(null);
+  const [fwDocConfirm, setFwDocConfirm] = useState(null);
 
   const handleFwRefUrlSave = async (fw, url) => {
     await base44.entities.Framework.update(fw.id, { reference_url: url });
@@ -754,7 +757,7 @@ export default function Settings() {
                               </span>
                             ) : (
                               <button
-                                onClick={() => handleToggleFrameworkStatus(fw)}
+                                onClick={() => setFwStatusConfirm(fw)}
                                 className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
                                   isActive
                                     ? 'bg-accent/10 text-accent border-accent/20 hover:bg-accent/20'
@@ -794,13 +797,15 @@ export default function Settings() {
                           </div>
                         )}
 
-                        {/* Reference Link & Document */}
+                        {/* Reference Link & Document — admin only */}
+                        {isAdmin && (
                         <div className="mt-3 pt-3 border-t space-y-2">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('settings_fw_docs_section')}</p>
                           {/* Reference URL */}
                           <div className="flex items-center gap-2 flex-wrap">
                             <Link className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                             {!isReadOnly && fwRefEdit[fw.id]?.editingUrl ? (
-                              <form className="flex gap-2 flex-1" onSubmit={e => { e.preventDefault(); handleFwRefUrlSave(fw, fwRefEdit[fw.id]?.url ?? fw.reference_url ?? ''); }}>
+                              <form className="flex gap-2 flex-1" onSubmit={e => { e.preventDefault(); setFwUrlConfirm({ fw, url: fwRefEdit[fw.id]?.url ?? fw.reference_url ?? '' }); }}>
                                 <Input
                                   autoFocus
                                   className="h-7 text-xs flex-1"
@@ -840,7 +845,7 @@ export default function Settings() {
                                 {!isReadOnly && (
                                   <label className="cursor-pointer">
                                     <span className="text-xs text-muted-foreground hover:text-foreground border rounded px-2 py-0.5">{t('docs_replace')}</span>
-                                    <input type="file" className="hidden" onChange={e => e.target.files[0] && handleFwDocUpload(fw, e.target.files[0])} />
+                                    <input type="file" className="hidden" onChange={e => { if (e.target.files[0]) setFwDocConfirm({ fw, file: e.target.files[0] }); e.target.value = ''; }} />
                                   </label>
                                 )}
                               </div>
@@ -850,13 +855,14 @@ export default function Settings() {
                                   ? <><Loader2 className="w-3 h-3 animate-spin" /> {t('common_uploading')}</>
                                   : <><Upload className="w-3 h-3" /> {t('docs_upload_doc')}</>
                                 }
-                                <input type="file" className="hidden" disabled={fwRefEdit[fw.id]?.uploading} onChange={e => e.target.files[0] && handleFwDocUpload(fw, e.target.files[0])} />
+                                <input type="file" className="hidden" disabled={fwRefEdit[fw.id]?.uploading} onChange={e => { if (e.target.files[0]) setFwDocConfirm({ fw, file: e.target.files[0] }); e.target.value = ''; }} />
                               </label>
                             ) : (
                               <span className="text-xs text-muted-foreground italic">—</span>
                             )}
                           </div>
                         </div>
+                        )}
                       </div>
                     );
                   })}
@@ -864,6 +870,61 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+
+          {/* Framework Status Toggle Confirmation */}
+          <AlertDialog open={!!fwStatusConfirm} onOpenChange={() => setFwStatusConfirm(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('settings_fw_confirm_status')}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t('settings_fw_confirm_status_desc')} <strong>{fwStatusConfirm?.status === 'active' ? t('settings_fw_deactivate') : t('settings_fw_activate')}</strong> {t('settings_fw_framework').toLowerCase()} <strong>{fwStatusConfirm?.name}</strong>?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex gap-2 justify-end">
+                <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={() => { handleToggleFrameworkStatus(fwStatusConfirm); setFwStatusConfirm(null); }}>
+                  {t('common_confirm')}
+                </AlertDialogAction>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Framework URL Save Confirmation */}
+          <AlertDialog open={!!fwUrlConfirm} onOpenChange={() => setFwUrlConfirm(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('settings_fw_confirm_url')}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t('settings_fw_confirm_url_desc')} <strong>{fwUrlConfirm?.fw?.name}</strong>?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex gap-2 justify-end">
+                <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={() => { handleFwRefUrlSave(fwUrlConfirm.fw, fwUrlConfirm.url); setFwUrlConfirm(null); }}>
+                  {t('common_confirm')}
+                </AlertDialogAction>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Framework Document Upload Confirmation */}
+          <AlertDialog open={!!fwDocConfirm} onOpenChange={() => setFwDocConfirm(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('settings_fw_confirm_doc')}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t('settings_fw_confirm_doc_desc')} <strong>{fwDocConfirm?.fw?.name}</strong>?
+                  {fwDocConfirm?.fw?.document_url && <><br />{t('settings_fw_confirm_doc_replace')}</>}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex gap-2 justify-end">
+                <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={() => { handleFwDocUpload(fwDocConfirm.fw, fwDocConfirm.file); setFwDocConfirm(null); }}>
+                  {t('common_confirm')}
+                </AlertDialogAction>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* New Framework Dialog */}
           <Dialog open={newFwDialog} onOpenChange={setNewFwDialog}>
