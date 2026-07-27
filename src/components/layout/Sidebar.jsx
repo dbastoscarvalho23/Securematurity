@@ -57,11 +57,6 @@ export default function Sidebar({ collapsed, onToggle }) {
     { path: '/security-documents', labelKey: 'nav_documents', icon: FolderLock },
     { path: '/document-audit-trail', labelKey: 'nav_doc_audit_trail', icon: Activity },
     { path: '/supply-chain', labelKey: 'nav_supply_chain', icon: Truck },
-    { path: '/ropa', labelKey: 'nav_ropa', icon: Database },
-    { path: '/incidents', labelKey: 'nav_incidents', icon: Siren },
-    { path: '/dsr', labelKey: 'nav_dsr', icon: Users },
-    { path: '/vulnerabilities', labelKey: 'nav_vulnerabilities', icon: Bug },
-    { path: '/compliance-metrics', labelKey: 'nav_compliance_metrics', icon: Gauge },
     { path: '/reports', labelKey: 'nav_reports', icon: BarChart3 },
   ];
 
@@ -85,6 +80,11 @@ export default function Sidebar({ collapsed, onToggle }) {
       { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
     ] : []),
     { path: '/settings', labelKey: 'nav_settings', icon: Settings },
+    { path: '/ropa', labelKey: 'nav_ropa', icon: Database },
+    { path: '/incidents', labelKey: 'nav_incidents', icon: Siren },
+    { path: '/dsr', labelKey: 'nav_dsr', icon: Users },
+    { path: '/vulnerabilities', labelKey: 'nav_vulnerabilities', icon: Bug },
+    { path: '/compliance-metrics', labelKey: 'nav_compliance_metrics', icon: Gauge },
   ];
 
   const navGroups = [
