@@ -180,18 +180,19 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
   const frameworkQuestions = useMemo(() => {
     if (!assessment?.frameworks) return {};
     const map = {};
+    const generalLabel = language === 'pt' ? t('common_general') : 'General';
     assessment.frameworks.forEach(fc => {
       const fqs = questions.filter(q => q.framework_code === fc);
       const domains = {};
       fqs.forEach(q => {
-        const d = q.domain || 'General';
+        const d = (language === 'pt' && q.domain_pt) ? q.domain_pt : (q.domain || generalLabel);
         if (!domains[d]) domains[d] = [];
         domains[d].push(q);
       });
       map[fc] = domains;
     });
     return map;
-  }, [questions, assessment]);
+  }, [questions, assessment, language, t]);
 
   const responseMap = useMemo(() => {
     const map = {};

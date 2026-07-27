@@ -12,7 +12,11 @@
     },
     "domain": {
       "type": "string",
-      "description": "Domain/category of the question"
+      "description": "Domain/category of the question (English)"
+    },
+    "domain_pt": {
+      "type": "string",
+      "description": "Domain/category of the question in Portuguese"
     },
     "question_text": {
       "type": "string",

@@ -22,6 +22,7 @@ const FRAMEWORKS = [
 const EMPTY_FORM = {
   framework_code: '',
   domain: '',
+  domain_pt: '',
   control_id: '',
   question_text: '',
   question_text_pt: '',
@@ -91,7 +92,7 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Domain *</Label>
+              <Label>Domain (EN) *</Label>
               <Input
                 list={`domains-${form.framework_code}`}
                 value={form.domain}
@@ -105,6 +106,15 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
                 </datalist>
               )}
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Domain (PT)</Label>
+            <Input
+              value={form.domain_pt}
+              onChange={e => set('domain_pt', e.target.value)}
+              placeholder="Domínio em Português..."
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

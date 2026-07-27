@@ -3,6 +3,7 @@
 
 export const assessmentEn = {
   common_back: 'Back',
+  common_general: 'General',
   maturity_non_existent: 'Non-existent',
 
   // Sector labels
@@ -119,6 +120,7 @@ export const assessmentEn = {
 
 export const assessmentPt = {
   common_back: 'Voltar',
+  common_general: 'Geral',
   maturity_non_existent: 'Inexistente',
 
   sector_financial_services: 'Serviços Financeiros',
