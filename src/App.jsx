@@ -29,6 +29,11 @@ import EvidenceOverview from '@/pages/EvidenceOverview';
 import ComplianceJourney from '@/pages/ComplianceJourney';
 import EmailReport from '@/pages/EmailReport';
 import SupplyChain from '@/pages/SupplyChain';
+import RoPA from '@/pages/RoPA';
+import IncidentManagement from '@/pages/IncidentManagement';
+import DSRManagement from '@/pages/DSRManagement';
+import VulnerabilityManagement from '@/pages/VulnerabilityManagement';
+import ComplianceMetrics from '@/pages/ComplianceMetrics';
 import RouteGuard from '@/components/layout/RouteGuard';
 
 const AuthenticatedApp = () => {
@@ -80,6 +85,11 @@ const AuthenticatedApp = () => {
         <Route path="/evidence" element={<RouteGuard path="/evidence"><EvidenceOverview /></RouteGuard>} />
         <Route path="/compliance-journey" element={<RouteGuard path="/compliance-journey"><ComplianceJourney /></RouteGuard>} />
         <Route path="/supply-chain" element={<RouteGuard path="/supply-chain"><SupplyChain /></RouteGuard>} />
+        <Route path="/ropa" element={<RouteGuard path="/ropa"><RoPA /></RouteGuard>} />
+        <Route path="/incidents" element={<RouteGuard path="/incidents"><IncidentManagement /></RouteGuard>} />
+        <Route path="/dsr" element={<RouteGuard path="/dsr"><DSRManagement /></RouteGuard>} />
+        <Route path="/vulnerabilities" element={<RouteGuard path="/vulnerabilities"><VulnerabilityManagement /></RouteGuard>} />
+        <Route path="/compliance-metrics" element={<RouteGuard path="/compliance-metrics"><ComplianceMetrics /></RouteGuard>} />
         <Route path="/email-report" element={<RouteGuard path="/email-report"><EmailReport /></RouteGuard>} />
       </Route>
       <Route path="*" element={<PageNotFound />} />

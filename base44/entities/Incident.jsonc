@@ -1,0 +1,245 @@
+{
+  "name": "Incident",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "incident_id": {
+      "type": "string",
+      "description": "Custom Incident ID (e.g. INC-001)"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short incident title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed incident description"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "malware_ransomware",
+        "data_breach",
+        "ddos",
+        "phishing",
+        "unauthorized_access",
+        "insider_threat",
+        "system_failure",
+        "physical_security",
+        "supply_chain",
+        "other"
+      ],
+      "description": "Incident category/type"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ],
+      "default": "medium",
+      "description": "Incident severity level"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "detected",
+        "investigating",
+        "contained",
+        "resolved",
+        "closed"
+      ],
+      "default": "detected",
+      "description": "Incident lifecycle status"
+    },
+    "detected_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the incident was detected"
+    },
+    "contained_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the incident was contained"
+    },
+    "resolved_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the incident was resolved"
+    },
+    "closed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the incident was formally closed"
+    },
+    "data_breach": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this incident involves a personal data breach"
+    },
+    "personal_data_affected": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether personal data was affected"
+    },
+    "affected_systems": {
+      "type": "array",
+      "description": "Systems or assets affected",
+      "items": {
+        "type": "string"
+      }
+    },
+    "affected_data_description": {
+      "type": "string",
+      "description": "Description of affected data (categories, volume, etc.)"
+    },
+    "affected_individuals_count": {
+      "type": "number",
+      "description": "Estimated number of affected individuals"
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "Email of the incident responder assigned"
+    },
+    "impact_assessment": {
+      "type": "string",
+      "description": "Assessment of the incident impact"
+    },
+    "root_cause": {
+      "type": "string",
+      "description": "Root cause analysis findings"
+    },
+    "lessons_learned": {
+      "type": "string",
+      "description": "Lessons learned and improvement actions"
+    },
+    "remediation_actions": {
+      "type": "string",
+      "description": "Actions taken to remediate and prevent recurrence"
+    },
+    "early_warning_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "NIS2 early warning to CSIRT sent (within 24h of detection)"
+    },
+    "early_warning_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the early warning was sent"
+    },
+    "notification_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "NIS2 full notification to CSIRT sent (within 72h of detection)"
+    },
+    "notification_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the full notification was sent"
+    },
+    "final_report_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "NIS2 final report to CSIRT sent (within 1 month of detection)"
+    },
+    "final_report_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the final report was sent"
+    },
+    "individuals_notified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether affected individuals were notified (GDPR Art. 34)"
+    },
+    "individuals_notified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When individuals were notified"
+    },
+    "supervisor_authority_notified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the supervisory authority was notified (GDPR Art. 33, within 72h)"
+    },
+    "supervisor_authority_notified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the supervisory authority was notified"
+    }
+  },
+  "required": [
+    "title",
+    "severity",
+    "status",
+    "detected_at"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

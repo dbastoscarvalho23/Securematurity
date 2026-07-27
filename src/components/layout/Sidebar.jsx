@@ -21,7 +21,12 @@ import {
   Paperclip,
   MapPin,
   MailCheck,
-  Truck
+  Truck,
+  Database,
+  Siren,
+  Users,
+  Bug,
+  Gauge
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -52,6 +57,11 @@ export default function Sidebar({ collapsed, onToggle }) {
     { path: '/security-documents', labelKey: 'nav_documents', icon: FolderLock },
     { path: '/document-audit-trail', labelKey: 'nav_doc_audit_trail', icon: Activity },
     { path: '/supply-chain', labelKey: 'nav_supply_chain', icon: Truck },
+    { path: '/ropa', labelKey: 'nav_ropa', icon: Database },
+    { path: '/incidents', labelKey: 'nav_incidents', icon: Siren },
+    { path: '/dsr', labelKey: 'nav_dsr', icon: Users },
+    { path: '/vulnerabilities', labelKey: 'nav_vulnerabilities', icon: Bug },
+    { path: '/compliance-metrics', labelKey: 'nav_compliance_metrics', icon: Gauge },
     { path: '/reports', labelKey: 'nav_reports', icon: BarChart3 },
   ];
 

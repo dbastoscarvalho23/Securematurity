@@ -1,0 +1,191 @@
+{
+  "name": "DataProcessingActivity",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "activity_name": {
+      "type": "string",
+      "description": "Name of the processing activity"
+    },
+    "purpose": {
+      "type": "string",
+      "description": "Purpose of the data processing"
+    },
+    "legal_basis": {
+      "type": "string",
+      "enum": [
+        "consent",
+        "contract",
+        "legal_obligation",
+        "vital_interests",
+        "public_task",
+        "legitimate_interests"
+      ],
+      "description": "GDPR Article 6 legal basis for processing"
+    },
+    "data_subjects": {
+      "type": "array",
+      "description": "Categories of data subjects (e.g. employees, customers)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "data_categories": {
+      "type": "array",
+      "description": "Categories of personal data (e.g. identification, financial, health)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "special_categories": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether special category data (Article 9) is processed"
+    },
+    "recipients": {
+      "type": "string",
+      "description": "Third parties or recipients of the data"
+    },
+    "third_country_transfers": {
+      "type": "array",
+      "description": "Countries outside the EU/EEA where data is transferred",
+      "items": {
+        "type": "string"
+      }
+    },
+    "transfer_safeguards": {
+      "type": "string",
+      "description": "Safeguards for international transfers (SCCs, BCRs, adequacy decision)"
+    },
+    "retention_period": {
+      "type": "string",
+      "description": "Data retention period (e.g. '5 years', 'until contract ends')"
+    },
+    "retention_action": {
+      "type": "string",
+      "enum": [
+        "delete",
+        "anonymize",
+        "archive"
+      ],
+      "default": "delete",
+      "description": "Action taken when retention period expires"
+    },
+    "retention_expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Calculated date when data should be purged/archived"
+    },
+    "processor_name": {
+      "type": "string",
+      "description": "Name of the data processor (if applicable)"
+    },
+    "processor_contact": {
+      "type": "string",
+      "description": "Contact details for the data processor"
+    },
+    "dpo_name": {
+      "type": "string",
+      "description": "Data Protection Officer name"
+    },
+    "dpo_contact": {
+      "type": "string",
+      "description": "DPO contact email or phone"
+    },
+    "security_measures": {
+      "type": "string",
+      "description": "Description of technical and organisational security measures"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "draft"
+      ],
+      "default": "draft",
+      "description": "Processing activity status"
+    },
+    "last_reviewed": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of last review"
+    },
+    "next_review": {
+      "type": "string",
+      "format": "date",
+      "description": "Next scheduled review date"
+    }
+  },
+  "required": [
+    "activity_name",
+    "purpose",
+    "legal_basis"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

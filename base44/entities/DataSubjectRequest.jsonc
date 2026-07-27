@@ -1,0 +1,190 @@
+{
+  "name": "DataSubjectRequest",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "request_id": {
+      "type": "string",
+      "description": "Custom DSR ID (e.g. DSR-001)"
+    },
+    "request_type": {
+      "type": "string",
+      "enum": [
+        "access",
+        "rectification",
+        "erasure",
+        "restriction",
+        "portability",
+        "objection",
+        "automated_decision"
+      ],
+      "description": "GDPR Article 15-21 data subject right exercised"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "received",
+        "identity_verification",
+        "in_progress",
+        "completed",
+        "rejected",
+        "withdrawn"
+      ],
+      "default": "received",
+      "description": "DSR processing status"
+    },
+    "data_subject_name": {
+      "type": "string",
+      "description": "Name of the individual making the request"
+    },
+    "data_subject_email": {
+      "type": "string",
+      "description": "Email of the data subject"
+    },
+    "data_subject_phone": {
+      "type": "string",
+      "description": "Phone number of the data subject"
+    },
+    "received_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the request was received"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "SLA deadline (1 month from receipt, extendable by 2 months with reason)"
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the request was completed"
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "Email of the handler assigned to this request"
+    },
+    "description": {
+      "type": "string",
+      "description": "Details of the request from the data subject"
+    },
+    "identity_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the data subject's identity has been verified"
+    },
+    "identity_verified_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date identity verification was completed"
+    },
+    "third_party_consultation": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether third parties were consulted (allows 2-month extension)"
+    },
+    "extension_reason": {
+      "type": "string",
+      "description": "Reason for SLA extension (if third_party_consultation is true)"
+    },
+    "extended_due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Extended deadline if a 2-month extension was applied"
+    },
+    "response_summary": {
+      "type": "string",
+      "description": "Summary of actions taken and response provided to the data subject"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Reason for rejection (if status is rejected)"
+    },
+    "data_exported": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether personal data was exported as part of the request"
+    },
+    "data_deleted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether personal data was deleted as part of the request (erasure)"
+    },
+    "retention_purge_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date after which this DSR record itself should be purged from the system"
+    }
+  },
+  "required": [
+    "request_type",
+    "data_subject_name",
+    "received_date"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

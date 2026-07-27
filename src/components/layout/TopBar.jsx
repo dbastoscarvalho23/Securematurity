@@ -47,6 +47,11 @@ const PAGE_TITLE_KEYS = {
   '/compliance-journey': 'page_compliance_journey',
   '/evidence': 'page_evidence',
   '/email-report': 'page_email_report',
+  '/ropa': 'page_ropa',
+  '/incidents': 'page_incidents',
+  '/dsr': 'page_dsr',
+  '/vulnerabilities': 'page_vulnerabilities',
+  '/compliance-metrics': 'page_compliance_metrics',
 };
 
 export default function TopBar() {
