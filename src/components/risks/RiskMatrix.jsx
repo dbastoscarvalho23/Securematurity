@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { X, Pencil } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const CELL_COLOR = (impact, likelihood) => {
   const score = impact * likelihood;
@@ -17,16 +18,25 @@ const STATUS_STYLES = {
   accepted: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
   closed: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
 };
-const STATUS_LABELS = { open: 'Open', in_treatment: 'In Treatment', accepted: 'Accepted', closed: 'Closed' };
-
-const CATEGORY_LABELS = {
-  access_control: 'Access Control', data_protection: 'Data Protection',
-  network_security: 'Network Security', physical_security: 'Physical Security',
-  third_party: 'Third Party', compliance: 'Compliance', operational: 'Operational', other: 'Other',
-};
-
 export default function RiskMatrix({ risks, onEdit }) {
+  const { t } = useLanguage();
   const [selected, setSelected] = useState(null); // { impact, likelihood }
+  const STATUS_LABELS = {
+    open: t('risk_status_open'),
+    in_treatment: t('risk_status_in_treatment'),
+    accepted: t('risk_status_accepted'),
+    closed: t('risk_status_closed'),
+  };
+  const CATEGORY_LABELS = {
+    access_control: t('risk_cat_access_control'),
+    data_protection: t('risk_cat_data_protection'),
+    network_security: t('risk_cat_network_security'),
+    physical_security: t('risk_cat_physical_security'),
+    third_party: t('risk_cat_third_party'),
+    compliance: t('risk_cat_compliance'),
+    operational: t('risk_cat_operational'),
+    other: t('risk_cat_other'),
+  };
 
   const getCell = (impact, likelihood) =>
     risks.filter(r => r.impact === impact && r.likelihood === likelihood);
@@ -48,8 +58,8 @@ export default function RiskMatrix({ risks, onEdit }) {
       <div className="overflow-x-auto">
         <div className="min-w-[360px]">
           <div className="flex items-center mb-1">
-            <div className="w-16 text-xs text-muted-foreground text-right pr-2">Impact ↑</div>
-            <div className="flex-1 text-center text-xs text-muted-foreground">Likelihood →</div>
+            <div className="w-16 text-xs text-muted-foreground text-right pr-2">{t('risk_impact')} ↑</div>
+            <div className="flex-1 text-center text-xs text-muted-foreground">{t('risk_likelihood')} →</div>
           </div>
           <div className="flex">
             {/* Y axis labels */}
@@ -79,7 +89,7 @@ export default function RiskMatrix({ risks, onEdit }) {
                           ${cell.length > 0 ? 'cursor-pointer hover:opacity-80 hover:scale-105' : ''}
                           ${isSelected ? 'ring-2 ring-offset-1 ring-foreground/60 scale-105' : ''}
                         `}
-                        title={cell.length > 0 ? `${cell.length} risk${cell.length !== 1 ? 's' : ''} · click to view` : `Impact ${impact} × Likelihood ${likelihood}`}
+                        title={cell.length > 0 ? `${cell.length} ${cell.length !== 1 ? t('risk_plural') : t('risk_singular')} · ${t('risk_matrix_click_to_view')}` : `${t('risk_impact')} ${impact} × ${t('risk_likelihood')} ${likelihood}`}
                       >
                         {cell.length > 0 ? cell.length : ''}
                       </div>
@@ -90,10 +100,10 @@ export default function RiskMatrix({ risks, onEdit }) {
             </div>
           </div>
           <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground flex-wrap">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-chart-2/30 inline-block" /> Low (1–3)</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-chart-3/60 inline-block" /> Medium (4–8)</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-chart-4/70 inline-block" /> High (9–15)</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-destructive/80 inline-block" /> Critical (16–25)</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-chart-2/30 inline-block" /> {t('risk_level_low')} (1–3)</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-chart-3/60 inline-block" /> {t('risk_level_medium')} (4–8)</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-chart-4/70 inline-block" /> {t('risk_level_high')} (9–15)</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-destructive/80 inline-block" /> {t('risk_level_critical')} (16–25)</span>
           </div>
         </div>
       </div>
@@ -103,16 +113,16 @@ export default function RiskMatrix({ risks, onEdit }) {
         <div className="border rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 bg-muted/50 border-b">
             <div className="flex items-center gap-2 text-sm font-medium">
-              <span>Risks at Impact <strong>{selected.impact}</strong> × Likelihood <strong>{selected.likelihood}</strong></span>
+              <span>{t('risk_matrix_risks_at')} {t('risk_impact')} <strong>{selected.impact}</strong> × {t('risk_likelihood')} <strong>{selected.likelihood}</strong></span>
               <Badge variant="outline" className={`border text-xs ${
                 selectedScore >= 16 ? 'bg-destructive/10 text-destructive border-destructive/20' :
                 selectedScore >= 9  ? 'bg-chart-4/10 text-chart-4 border-chart-4/20' :
                 selectedScore >= 4  ? 'bg-chart-3/10 text-chart-3 border-chart-3/20' :
                                       'bg-chart-2/10 text-chart-2 border-chart-2/20'
               }`}>
-                Score {selectedScore}
+                {t('risk_score')} {selectedScore}
               </Badge>
-              <span className="text-muted-foreground text-xs">· {selectedRisks.length} risk{selectedRisks.length !== 1 ? 's' : ''}</span>
+              <span className="text-muted-foreground text-xs">· {selectedRisks.length} {selectedRisks.length !== 1 ? t('risk_plural') : t('risk_singular')}</span>
             </div>
             <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground transition-colors">
               <X className="w-4 h-4" />
@@ -138,7 +148,7 @@ export default function RiskMatrix({ risks, onEdit }) {
                         {STATUS_LABELS[risk.status] || risk.status}
                       </Badge>
                       {risk.owner_email && <span>{risk.owner_email}</span>}
-                      {risk.due_date && <span>Due: {risk.due_date}</span>}
+                      {risk.due_date && <span>{t('risk_due')}: {risk.due_date}</span>}
                       {risk.customer_name && <span>· {risk.customer_name}</span>}
                     </div>
                     {risk.treatment_notes && (
