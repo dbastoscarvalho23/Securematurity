@@ -42,6 +42,7 @@ export default function Settings() {
   const [fwStatusConfirm, setFwStatusConfirm] = useState(null);
   const [fwUrlConfirm, setFwUrlConfirm] = useState(null);
   const [fwDocConfirm, setFwDocConfirm] = useState(null);
+  const [fwCreateConfirm, setFwCreateConfirm] = useState(false);
 
   const handleFwRefUrlSave = async (fw, url) => {
     await base44.entities.Framework.update(fw.id, { reference_url: url });
@@ -926,6 +927,24 @@ export default function Settings() {
             </AlertDialogContent>
           </AlertDialog>
 
+          {/* Framework Create Confirmation */}
+          <AlertDialog open={fwCreateConfirm} onOpenChange={setFwCreateConfirm}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('settings_fw_confirm_create')}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t('settings_fw_confirm_create_desc')} <strong>{newFwForm.name}</strong> (<strong>{newFwForm.code}</strong>)?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex gap-2 justify-end">
+                <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={() => { setFwCreateConfirm(false); handleCreateFramework(); }}>
+                  {t('common_confirm')}
+                </AlertDialogAction>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
+
           {/* New Framework Dialog */}
           <Dialog open={newFwDialog} onOpenChange={setNewFwDialog}>
             <DialogContent className="max-w-md">
@@ -1003,7 +1022,7 @@ export default function Settings() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setNewFwDialog(false)}>{t('common_cancel')}</Button>
-                <Button onClick={handleCreateFramework} disabled={isSavingFw || !newFwForm.code || !newFwForm.name}>
+                <Button onClick={() => setFwCreateConfirm(true)} disabled={isSavingFw || !newFwForm.code || !newFwForm.name}>
                   {isSavingFw ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   {t('settings_fw_create')}
                 </Button>
