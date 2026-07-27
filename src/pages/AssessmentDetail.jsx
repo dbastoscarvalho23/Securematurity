@@ -284,17 +284,38 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
         <div className="col-span-3">
           <Card className="p-4 sticky top-20">
             <h3 className="font-semibold text-sm mb-3 text-foreground">{t('assessment_detail_domains')}</h3>
+            {/* Overall framework progress */}
+            {domainKeys.length > 0 && (
+              <div className="mb-4 pb-3 border-b border-border">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-muted-foreground font-medium">{currentFw?.replace('_', ' ')}</span>
+                  <span className="text-xs font-semibold">
+                    {domainKeys.reduce((s, d) => s + (domains[d] || []).filter(q => responseMap[q.id]).length, 0)}
+                    /
+                    {domainKeys.reduce((s, d) => s + (domains[d] || []).length, 0)}
+                  </span>
+                </div>
+                <Progress
+                  value={
+                    domainKeys.reduce((s, d) => s + (domains[d] || []).filter(q => responseMap[q.id]).length, 0) /
+                    Math.max(1, domainKeys.reduce((s, d) => s + (domains[d] || []).length, 0)) * 100
+                  }
+                  className="h-1.5"
+                />
+              </div>
+            )}
             <div className="space-y-1.5">
               {domainKeys.map(d => {
                 const domainQs = domains[d] || [];
                 const answered = domainQs.filter(q => responseMap[q.id]).length;
                 const isComplete = answered === domainQs.length && domainQs.length > 0;
+                const domainPct = domainQs.length > 0 ? (answered / domainQs.length) * 100 : 0;
                 return (
                   <button
                     key={d}
                     onClick={() => setActiveDomain(d)}
                     className={cn(
-                      "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between border",
+                      "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border",
                       d === currentDomain
                         ? "bg-primary text-primary-foreground border-primary shadow-sm"
                         : isComplete
@@ -302,19 +323,35 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
                         : "border-muted text-muted-foreground hover:text-foreground hover:border-muted-foreground/40 hover:bg-muted/30"
                     )}
                   >
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      {isComplete && <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-accent" />}
-                      <span className="truncate">{d}</span>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {isComplete && <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-accent" />}
+                        <span className="truncate">{d}</span>
+                      </div>
+                      <Badge
+                        variant={d === currentDomain ? "secondary" : "outline"}
+                        className={cn(
+                          "text-xs flex-shrink-0 ml-2",
+                          d === currentDomain && "bg-primary-foreground text-primary"
+                        )}
+                      >
+                        {answered}/{domainQs.length}
+                      </Badge>
                     </div>
-                    <Badge 
-                      variant={d === currentDomain ? "secondary" : "outline"}
-                      className={cn(
-                        "text-xs flex-shrink-0 ml-2",
-                        d === currentDomain && "bg-primary-foreground text-primary"
-                      )}
-                    >
-                      {answered}/{domainQs.length}
-                    </Badge>
+                    {/* Per-domain progress bar */}
+                    <div className="h-1 w-full rounded-full bg-muted/50 overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all duration-300",
+                          d === currentDomain
+                            ? "bg-primary-foreground/70"
+                            : isComplete
+                            ? "bg-accent"
+                            : "bg-primary/60"
+                        )}
+                        style={{ width: `${domainPct}%` }}
+                      />
+                    </div>
                   </button>
                 );
               })}
