@@ -12,6 +12,7 @@ import QuestionCard from '@/components/assessments/QuestionCard';
 import AssessmentResults from '@/components/assessments/AssessmentResults';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { translateDomain } from '@/lib/domainTranslations';
 
 export default function AssessmentDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -185,7 +186,7 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
       const fqs = questions.filter(q => q.framework_code === fc);
       const domains = {};
       fqs.forEach(q => {
-        const d = (language === 'pt' && q.domain_pt) ? q.domain_pt : (q.domain || generalLabel);
+        const d = (language === 'pt') ? (q.domain_pt || translateDomain(q.domain, 'pt') || generalLabel) : (q.domain || generalLabel);
         if (!domains[d]) domains[d] = [];
         domains[d].push(q);
       });
