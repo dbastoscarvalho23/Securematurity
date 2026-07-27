@@ -26,28 +26,37 @@ const STATUS_STYLES = {
   accepted: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
   closed: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
 };
-const STATUS_LABELS = { open: 'Open', in_treatment: 'In Treatment', accepted: 'Accepted', closed: 'Closed' };
-
-const CATEGORY_LABELS = {
-  access_control: 'Access Control', data_protection: 'Data Protection',
-  network_security: 'Network Security', physical_security: 'Physical Security',
-  third_party: 'Third Party', compliance: 'Compliance', operational: 'Operational', other: 'Other',
-};
-
 function riskScore(r) { return (r.impact || 0) * (r.likelihood || 0); }
 
 function RiskLevelBadge({ risk }) {
+  const { t } = useLanguage();
   const score = riskScore(risk);
-  if (score >= 16) return <Badge className="bg-destructive/10 text-destructive border-destructive/20 border text-xs">Critical</Badge>;
-  if (score >= 9) return <Badge className="bg-chart-4/10 text-chart-4 border-chart-4/20 border text-xs">High</Badge>;
-  if (score >= 4) return <Badge className="bg-chart-3/10 text-chart-3 border-chart-3/20 border text-xs">Medium</Badge>;
-  return <Badge className="bg-chart-2/10 text-chart-2 border-chart-2/20 border text-xs">Low</Badge>;
+  if (score >= 16) return <Badge className="bg-destructive/10 text-destructive border-destructive/20 border text-xs">{t('risk_level_critical')}</Badge>;
+  if (score >= 9) return <Badge className="bg-chart-4/10 text-chart-4 border-chart-4/20 border text-xs">{t('risk_level_high')}</Badge>;
+  if (score >= 4) return <Badge className="bg-chart-3/10 text-chart-3 border-chart-3/20 border text-xs">{t('risk_level_medium')}</Badge>;
+  return <Badge className="bg-chart-2/10 text-chart-2 border-chart-2/20 border text-xs">{t('risk_level_low')}</Badge>;
 }
 
 export default function RiskAssessment() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
+  const STATUS_LABELS = {
+    open: t('risk_status_open'),
+    in_treatment: t('risk_status_in_treatment'),
+    accepted: t('risk_status_accepted'),
+    closed: t('risk_status_closed'),
+  };
+  const CATEGORY_LABELS = {
+    access_control: t('risk_cat_access_control'),
+    data_protection: t('risk_cat_data_protection'),
+    network_security: t('risk_cat_network_security'),
+    physical_security: t('risk_cat_physical_security'),
+    third_party: t('risk_cat_third_party'),
+    compliance: t('risk_cat_compliance'),
+    operational: t('risk_cat_operational'),
+    other: t('risk_cat_other'),
+  };
   const isAdmin = user?.role === 'admin';
   const isCustomerAdmin = user?.role === 'customer_admin';
   const customerId = user?.customer_id;
@@ -113,7 +122,7 @@ export default function RiskAssessment() {
       setEditingRisk(null);
       toast.success(variables?.id ? t('risk_updated') : t('risk_created'));
     },
-    onError: (err) => toast.error(err?.message || 'Failed to save risk'),
+    onError: (err) => toast.error(err?.message || t('risk_save_error')),
   });
 
   const deleteMutation = useMutation({
@@ -125,7 +134,7 @@ export default function RiskAssessment() {
       queryClient.invalidateQueries({ queryKey: ['riskItems'] });
       toast.success(t('risk_deleted'));
     },
-    onError: (err) => toast.error(err?.message || 'Failed to delete risk'),
+    onError: (err) => toast.error(err?.message || t('risk_delete_error')),
   });
 
   // Scope by role
@@ -168,7 +177,7 @@ export default function RiskAssessment() {
     await writeAuditLog({ action: 'risk_deleted', entity_type: 'RiskItem', details: `Bulk deleted ${customerScoped.length} risks` });
     queryClient.invalidateQueries({ queryKey: ['riskItems'] });
     setBulkDeleteOpen(false);
-    toast.success(`${customerScoped.length} risk${customerScoped.length !== 1 ? 's' : ''} deleted`);
+    toast.success(`${customerScoped.length} ${customerScoped.length !== 1 ? t('risk_risk_plural') : t('risk_risk_singular')} ${t('risk_bulk_deleted')}`);
   };
 
   const handleExcelImport = async (risks) => {
@@ -187,7 +196,7 @@ export default function RiskAssessment() {
     }
     await writeAuditLog({ action: 'risk_created', entity_type: 'RiskItem', details: `Bulk imported ${created} risks from Excel` });
     queryClient.invalidateQueries({ queryKey: ['riskItems'] });
-    toast.success(`${created} risk${created !== 1 ? 's' : ''} imported successfully`);
+    toast.success(`${created} ${created !== 1 ? t('risk_risk_plural') : t('risk_risk_singular')} ${t('risk_imported')}`);
   };
 
   const getLinkedDocs = (risk) =>
@@ -325,9 +334,9 @@ export default function RiskAssessment() {
             </Select>
             {isAdmin && (
               <Select value={filterCustomer} onValueChange={setFilterCustomer}>
-                <SelectTrigger className="w-44"><SelectValue placeholder="All Customers" /></SelectTrigger>
+                <SelectTrigger className="w-44"><SelectValue placeholder={t('risk_filter_all_customers')} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>All Customers</SelectItem>
+                  <SelectItem value={null}>{t('risk_filter_all_customers')}</SelectItem>
                   {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -428,7 +437,7 @@ export default function RiskAssessment() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('risk_bulk_delete_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('risk_bulk_delete_desc')} <strong>{customerScoped.length}</strong> {customerScoped.length !== 1 ? 'risks' : 'risk'}. {t('risk_bulk_delete_desc2')}
+              {t('risk_bulk_delete_desc')} <strong>{customerScoped.length}</strong> {customerScoped.length !== 1 ? t('risk_risk_plural') : t('risk_risk_singular')}. {t('risk_bulk_delete_desc2')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

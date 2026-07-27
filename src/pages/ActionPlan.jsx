@@ -93,7 +93,7 @@ function RecommendationRow({ rec, tasks, onAddTask, onEditTask, onStatusChange, 
             </SelectTrigger>
             <SelectContent>
               {REC_STATUS_OPTIONS.map(s => (
-                <SelectItem key={s} value={s} className="capitalize text-xs">{s.replace('_', ' ')}</SelectItem>
+                <SelectItem key={s} value={s} className="capitalize text-xs">{t(`recs_status_${s}`)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -438,7 +438,7 @@ Return only valid JSON with the translations.`,
           <SelectContent>
             <SelectItem value="all">{t('action_plan_all_statuses')}</SelectItem>
             {REC_STATUS_OPTIONS.map(s => (
-              <SelectItem key={s} value={s} className="capitalize">{s.replace('_', ' ')}</SelectItem>
+              <SelectItem key={s} value={s} className="capitalize">{t(`recs_status_${s}`)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -504,7 +504,7 @@ Return only valid JSON with the translations.`,
         onSave={async (recs) => {
           await base44.entities.Recommendation.bulkCreate(recs);
           queryClient.invalidateQueries({ queryKey: ['recommendations'] });
-          toast.success(`${recs.length} ${t('action_plan_recommendations')} added`);
+          toast.success(`${recs.length} ${t('recs_added')}`);
         }}
       />
 

@@ -17,7 +17,7 @@ import AnnualReport from '@/components/reports/AnnualReport';
 import RecordDetailDialog from '@/components/reports/RecordDetailDialog';
 import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
 
-const MATURITY_LABELS = ['Not Implemented', 'Initial', 'Developing', 'Defined', 'Managed', 'Optimizing'];
+const MATURITY_LABEL_KEYS = ['maturity_not_implemented', 'maturity_initial', 'maturity_developing', 'maturity_defined', 'maturity_managed', 'maturity_optimized'];
 
 const MATURITY_COLORS = [
   'bg-destructive/10 text-destructive',
@@ -30,6 +30,7 @@ const MATURITY_COLORS = [
 
 function AssessmentAnswersPanel({ assessmentId }) {
   const { t } = useLanguage();
+  const MATURITY_LABELS = MATURITY_LABEL_KEYS.map(k => t(k));
   const [detail, setDetail] = useState(null);
   const { data: responses = [], isLoading } = useQuery({
     queryKey: ['responses', assessmentId],
@@ -82,7 +83,7 @@ function AssessmentAnswersPanel({ assessmentId }) {
                       <div key={r.id} className="flex items-start gap-3 p-3 rounded-md bg-muted/40 border text-sm cursor-pointer hover:bg-muted/60 transition-colors" onClick={() => setDetail({ type: 'assessment_response', record: r })}>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium leading-snug">
-                            {question?.question_text || r.control_id || 'Question'}
+                            {question?.question_text || r.control_id || t('reports_question')}
                           </p>
                           {r.evidence_notes && (
                             <p className="text-xs text-muted-foreground mt-1 italic">"{r.evidence_notes}"</p>

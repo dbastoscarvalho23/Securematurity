@@ -66,7 +66,7 @@ export default function Tasks() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success(editingTask ? t('tasks_updated') : t('tasks_created'));
     },
-    onError: (err) => toast.error(err?.message || 'Failed to save task'),
+    onError: (err) => toast.error(err?.message || t('tasks_save_error')),
   });
 
   const statusMutation = useMutation({
@@ -79,7 +79,7 @@ export default function Tasks() {
       }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-    onError: (err) => toast.error(err?.message || 'Failed to update task status'),
+    onError: (err) => toast.error(err?.message || t('tasks_status_error')),
   });
 
   const deleteMutation = useMutation({
@@ -91,7 +91,7 @@ export default function Tasks() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success(t('tasks_deleted'));
     },
-    onError: (err) => toast.error(err?.message || 'Failed to delete task'),
+    onError: (err) => toast.error(err?.message || t('tasks_delete_error')),
   });
 
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -129,10 +129,10 @@ export default function Tasks() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success(`${selectedIds.size} tasks updated`);
+      toast.success(`${selectedIds.size} ${t('tasks_bulk_updated')}`);
       clearSelection();
     },
-    onError: (err) => toast.error(err?.message || 'Failed to bulk update tasks'),
+    onError: (err) => toast.error(err?.message || t('tasks_bulk_error')),
   });
 
   const handleEdit = (task) => {

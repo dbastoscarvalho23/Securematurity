@@ -171,7 +171,7 @@ export default function Assessments() {
                         )}
                         {isAdmin && (
                           <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(a.id)}>
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            <Trash2 className="w-4 h-4 mr-2" /> {t('common_delete')}
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>

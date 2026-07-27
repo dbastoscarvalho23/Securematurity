@@ -144,12 +144,12 @@ export default function SecurityDocuments() {
       queryClient.invalidateQueries({ queryKey: ['securityDocuments'] });
       const isEdit = !!variables.id;
       if (isUser) {
-        toast.success(isEdit ? 'Document submitted for re-approval' : 'Document submitted for approval by Customer Admin');
+        toast.success(isEdit ? t('docs_submitted_reapproval') : t('docs_submitted_approval'));
       } else {
-        toast.success(isEdit ? 'Document updated' : 'Document created');
+        toast.success(isEdit ? t('docs_doc_updated') : t('docs_doc_created'));
       }
     },
-    onError: (err) => toast.error(err?.message || 'Failed to save document'),
+    onError: (err) => toast.error(err?.message || t('docs_save_error')),
   });
 
   const approveMutation = useMutation({
@@ -194,9 +194,9 @@ export default function SecurityDocuments() {
       queryClient.invalidateQueries({ queryKey: ['documentVersionsAll'] });
       setApprovalOpen(false);
       setApprovalDoc(null);
-      toast.success('Document approved and signed off');
+      toast.success(t('docs_approved_signed'));
     },
-    onError: (err) => toast.error(err?.message || 'Failed to approve document'),
+    onError: (err) => toast.error(err?.message || t('docs_approve_error')),
   });
 
   const handleApproveClick = (doc) => {
@@ -211,9 +211,9 @@ export default function SecurityDocuments() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['securityDocuments'] });
-      toast.success('Document deleted');
+      toast.success(t('docs_doc_deleted'));
     },
-    onError: (err) => toast.error(err?.message || 'Failed to delete document'),
+    onError: (err) => toast.error(err?.message || t('docs_delete_error')),
   });
 
   const toggleCollapse = (id) => setCollapsed(c => ({ ...c, [id]: !c[id] }));
@@ -327,7 +327,7 @@ export default function SecurityDocuments() {
                       <p className="text-sm font-medium">{doc.title}</p>
                       <Badge variant="secondary" className="text-xs capitalize">{doc.level}</Badge>
                       <Badge variant="outline" className={`text-xs ${STATUS_STYLES[doc.status]}`}>{STATUS_LABELS[doc.status]}</Badge>
-                      <span className="text-xs text-primary font-medium">{doc.relevance_score}% match</span>
+                      <span className="text-xs text-primary font-medium">{doc.relevance_score}% {t('docs_match')}</span>
                     </div>
                     {doc.match_reason && <p className="text-xs text-muted-foreground mt-0.5">{doc.match_reason}</p>}
                   </div>
@@ -462,7 +462,7 @@ export default function SecurityDocuments() {
                               </a>
                             </Button>
                           )}
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title="Version history"
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title={t('docs_version_history')}
                             onClick={() => { setHistoryDoc(doc); setHistoryOpen(true); }}>
                             <History className="w-3.5 h-3.5" />
                           </Button>

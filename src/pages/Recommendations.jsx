@@ -16,6 +16,7 @@ import TaskFormDialog from '@/components/tasks/TaskFormDialog';
 import AIRecommendationDialog from '@/components/recommendations/AIRecommendationDialog';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const priorityColors = {
   critical: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -27,6 +28,7 @@ const priorityColors = {
 const statusOptions = ['pending', 'in_progress', 'completed', 'dismissed'];
 
 export default function Recommendations() {
+  const { t } = useLanguage();
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterFramework, setFilterFramework] = useState('all');
@@ -89,7 +91,7 @@ export default function Recommendations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('Task created from recommendation');
+      toast.success(t('recs_task_created'));
     },
   });
 
@@ -118,7 +120,7 @@ export default function Recommendations() {
         current_level: 0,
         target_level: 4,
       });
-      toast.success('Recommendation created');
+      toast.success(t('recs_created'));
     },
   });
 
@@ -155,9 +157,9 @@ export default function Recommendations() {
     setIsCheckingDuplicates(false);
 
     if (duplicates.length === 0) {
-      toast.success('No duplicates found — your recommendations are clean!');
+      toast.success(t('recs_no_dupes'));
     } else {
-      toast.info(`Found ${duplicates.length} potential duplicate${duplicates.length !== 1 ? 's' : ''}`);
+      toast.info(`${duplicates.length} ${duplicates.length !== 1 ? t('recs_dupes_found_plural') : t('recs_dupes_found')}`);
     }
   };
 
@@ -186,19 +188,19 @@ export default function Recommendations() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">AI-generated improvement recommendations · <span className="text-foreground font-medium">{recommendations.length}</span> total</p>
+        <p className="text-muted-foreground text-sm">{t('recs_subtitle')} · <span className="text-foreground font-medium">{recommendations.length}</span> {t('recs_count')}</p>
         <div className="flex gap-2 items-center">
           <Button onClick={handleCheckDuplicates} variant="outline" disabled={isCheckingDuplicates} className="gap-2">
             {isCheckingDuplicates ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-            Check Duplicates
+            {t('recs_check_duplicates')}
           </Button>
           <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
             <Sparkles className="w-4 h-4" />
-            AI Generate
+            {t('recs_ai_generate')}
           </Button>
           <Button onClick={() => setNewRecDialog(true)} className="gap-2">
             <Plus className="w-4 h-4" />
-            New Recommendation
+            {t('recs_new')}
           </Button>
         </div>
       </div>
@@ -209,32 +211,32 @@ export default function Recommendations() {
         <Select value={filterPriority} onValueChange={setFilterPriority}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="all">{t('recs_all_priorities')}</SelectItem>
+            <SelectItem value="critical">{t('tasks_priority_critical')}</SelectItem>
+            <SelectItem value="high">{t('tasks_priority_high')}</SelectItem>
+            <SelectItem value="medium">{t('tasks_priority_medium')}</SelectItem>
+            <SelectItem value="low">{t('tasks_priority_low')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="all">{t('recs_all_statuses')}</SelectItem>
             {statusOptions.map(s => (
-              <SelectItem key={s} value={s} className="capitalize">{s.replace('_', ' ')}</SelectItem>
+              <SelectItem key={s} value={s} className="capitalize">{t(`recs_status_${s}`)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={filterFramework} onValueChange={setFilterFramework}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="All Frameworks" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder={t('recs_all_frameworks')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Frameworks</SelectItem>
+            <SelectItem value="all">{t('recs_all_frameworks')}</SelectItem>
             {frameworks.map(fw => (
               <SelectItem key={fw} value={fw}>{fw.replace(/_/g, ' ')}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <span className="text-sm text-muted-foreground ml-auto">{filtered.length} recommendations</span>
+        <span className="text-sm text-muted-foreground ml-auto">{filtered.length} {t('recs_count')}</span>
       </div>
 
       {/* Recommendations by Framework */}
@@ -260,7 +262,7 @@ export default function Recommendations() {
                         </Badge>
                         {rec.domain && <span className="text-xs text-muted-foreground">{rec.domain}</span>}
                         {rec.effort && (
-                          <span className="text-xs text-muted-foreground">Effort: {rec.effort}</span>
+                          <span className="text-xs text-muted-foreground">{t('recs_effort')}: {rec.effort}</span>
                         )}
                       </div>
                       <p className="text-sm font-medium">{rec.title}</p>
@@ -274,7 +276,7 @@ export default function Recommendations() {
                         onClick={() => handleConvertToTask(rec)}
                       >
                         <ListTodo className="w-3.5 h-3.5" />
-                        Create Task
+                        {t('recs_create_task')}
                       </Button>
                       <Select
                         value={rec.status}
@@ -285,7 +287,7 @@ export default function Recommendations() {
                         </SelectTrigger>
                         <SelectContent>
                           {statusOptions.map(s => (
-                            <SelectItem key={s} value={s} className="capitalize text-xs">{s.replace('_', ' ')}</SelectItem>
+                            <SelectItem key={s} value={s} className="capitalize text-xs">{t(`recs_status_${s}`)}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -312,32 +314,32 @@ export default function Recommendations() {
         onSave={async (recs) => {
           await base44.entities.Recommendation.bulkCreate(recs);
           queryClient.invalidateQueries({ queryKey: ['recommendations'] });
-          toast.success(`${recs.length} recommendation${recs.length !== 1 ? 's' : ''} added`);
+          toast.success(`${recs.length} ${t('recs_added')}`);
         }}
       />
 
       <Dialog open={newRecDialog} onOpenChange={setNewRecDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>New Recommendation</DialogTitle>
+            <DialogTitle>{t('recs_dialog_title')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Title *</Label>
+              <Label>{t('recs_title_label')} *</Label>
               <Input
                 value={newRecForm.title}
                 onChange={e => setNewRecForm(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Recommendation title"
+                placeholder={t('recs_title_placeholder')}
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label>Description *</Label>
+              <Label>{t('recs_desc_label')} *</Label>
               <Textarea
                 value={newRecForm.description}
                 onChange={e => setNewRecForm(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Detailed description"
+                placeholder={t('recs_desc_placeholder')}
                 rows={3}
                 required
               />
@@ -345,25 +347,25 @@ export default function Recommendations() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Priority</Label>
+                <Label>{t('recs_priority_label')}</Label>
                 <Select value={newRecForm.priority} onValueChange={v => setNewRecForm(prev => ({ ...prev, priority: v }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="critical">Critical</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="critical">{t('tasks_priority_critical')}</SelectItem>
+                    <SelectItem value="high">{t('tasks_priority_high')}</SelectItem>
+                    <SelectItem value="medium">{t('tasks_priority_medium')}</SelectItem>
+                    <SelectItem value="low">{t('tasks_priority_low')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label>Framework</Label>
+                <Label>{t('recs_framework_label')}</Label>
                 <Select value={newRecForm.framework_code} onValueChange={v => setNewRecForm(prev => ({ ...prev, framework_code: v }))}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select" />
+                    <SelectValue placeholder={t('recs_select_placeholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {frameworks.map(fw => (
@@ -376,30 +378,30 @@ export default function Recommendations() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Effort</Label>
+                <Label>{t('recs_effort_label')}</Label>
                 <Select value={newRecForm.effort} onValueChange={v => setNewRecForm(prev => ({ ...prev, effort: v }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="low">{t('recs_effort_low')}</SelectItem>
+                    <SelectItem value="medium">{t('recs_effort_medium')}</SelectItem>
+                    <SelectItem value="high">{t('recs_effort_high')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label>Timeline</Label>
+                <Label>{t('recs_timeline_label')}</Label>
                 <Select value={newRecForm.timeline} onValueChange={v => setNewRecForm(prev => ({ ...prev, timeline: v }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="immediate">Immediate</SelectItem>
-                    <SelectItem value="short_term">Short Term</SelectItem>
-                    <SelectItem value="medium_term">Medium Term</SelectItem>
-                    <SelectItem value="long_term">Long Term</SelectItem>
+                    <SelectItem value="immediate">{t('recs_timeline_immediate')}</SelectItem>
+                    <SelectItem value="short_term">{t('recs_timeline_short')}</SelectItem>
+                    <SelectItem value="medium_term">{t('recs_timeline_medium')}</SelectItem>
+                    <SelectItem value="long_term">{t('recs_timeline_long')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -407,29 +409,29 @@ export default function Recommendations() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Domain</Label>
+                <Label>{t('recs_domain_label')}</Label>
                 <Input
                   value={newRecForm.domain}
                   onChange={e => setNewRecForm(prev => ({ ...prev, domain: e.target.value }))}
-                  placeholder="e.g. Access Control"
+                  placeholder={t('recs_domain_placeholder')}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label>Control ID</Label>
+                <Label>{t('recs_control_label')}</Label>
                 <Input
                   value={newRecForm.control_id}
                   onChange={e => setNewRecForm(prev => ({ ...prev, control_id: e.target.value }))}
-                  placeholder="e.g. A.5.1"
+                  placeholder={t('recs_control_placeholder')}
                 />
               </div>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setNewRecDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setNewRecDialog(false)}>{t('common_cancel')}</Button>
             <Button onClick={() => createRecMutation.mutate(newRecForm)} disabled={createRecMutation.isPending || !newRecForm.title || !newRecForm.description}>
-              {createRecMutation.isPending ? 'Creating...' : 'Create'}
+              {createRecMutation.isPending ? t('recs_creating') : t('recs_create')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -439,7 +441,7 @@ export default function Recommendations() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Lightbulb className="w-8 h-8 mb-3 opacity-50" />
-            <p className="text-sm">No recommendations yet. Complete an assessment to generate recommendations.</p>
+            <p className="text-sm">{t('recs_empty')}</p>
           </CardContent>
         </Card>
       )}
