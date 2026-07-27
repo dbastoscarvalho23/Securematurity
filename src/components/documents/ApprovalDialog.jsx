@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, FileText, Loader2, ShieldCheck } from 'lucide-react';
+import { validators } from '@/lib/validation';
 
 const STATUS_STYLES = {
   draft: 'bg-muted text-muted-foreground',
@@ -20,23 +21,32 @@ export default function ApprovalDialog({ open, onOpenChange, doc, approverName, 
   const [signature, setSignature] = useState('');
   const [comments, setComments] = useState('');
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const signatureValid = signature.trim().toLowerCase() === approverEmail?.toLowerCase() ||
     signature.trim().toLowerCase() === approverName?.toLowerCase();
+  const commentsError = validators.maxLength(comments, 2000);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!signatureValid) return;
+    const formErrors = {};
+    if (validators.required(signature)) formErrors.signature = 'Signature is required.';
+    else if (!signatureValid) formErrors.signature = 'Signature must match your name or email address.';
+    if (commentsError) formErrors.comments = commentsError;
+    setErrors(formErrors);
+    if (Object.keys(formErrors).length > 0) return;
     setSaving(true);
     await onConfirm({ comments, signature: signature.trim() });
     setSaving(false);
     setSignature('');
     setComments('');
+    setErrors({});
   };
 
   const handleClose = () => {
     setSignature('');
     setComments('');
+    setErrors({});
     onOpenChange(false);
   };
 
@@ -75,10 +85,12 @@ export default function ApprovalDialog({ open, onOpenChange, doc, approverName, 
             <Label>Approval Comments <span className="text-muted-foreground font-normal">(optional)</span></Label>
             <Textarea
               value={comments}
-              onChange={e => setComments(e.target.value)}
+              onChange={e => { setComments(e.target.value); if (errors.comments) setErrors(p => ({ ...p, comments: null })); }}
               placeholder="Add any notes about this approval decision..."
               rows={2}
+              className={errors.comments ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
+            {errors.comments && <p className="text-xs text-destructive">{errors.comments}</p>}
           </div>
 
           <div className="space-y-1.5">

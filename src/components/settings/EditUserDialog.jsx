@@ -5,11 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { validators, validateForm, hasErrors } from '@/lib/validation';
 
 export default function EditUserDialog({ open, onOpenChange, user, customers, onSave, isSaving, currentUserRole }) {
   const [fullName, setFullName] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [role, setRole] = useState('user');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (user) {
@@ -17,6 +19,7 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
       setCustomerId(user.customer_id || '');
       setRole(user.role || 'user');
     }
+    setErrors({});
   }, [user]);
 
   const isPlatformAdmin = currentUserRole === 'admin';
@@ -24,6 +27,16 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
   const needsCustomer = role === 'customer_admin' || role === 'user';
 
   const handleSave = () => {
+    const values = { fullName, customerId, role };
+    const schema = {
+      fullName: [validators.required, (v) => validators.minLength(v, 2), (v) => validators.maxLength(v, 100)],
+      role: (v) => validators.enum(v, ['user', 'customer_admin', 'admin']),
+      ...(isPlatformAdmin && role === 'customer_admin' && { customerId: validators.required }),
+    };
+    const formErrors = validateForm(values, schema);
+    setErrors(formErrors);
+    if (hasErrors(formErrors)) return;
+
     const selectedCustomer = customers.find(c => c.id === customerId);
     onSave(user.id, {
       full_name: fullName,
@@ -47,9 +60,11 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
             <Label>Full Name</Label>
             <Input
               value={fullName}
-              onChange={e => setFullName(e.target.value)}
+              onChange={e => { setFullName(e.target.value); if (errors.fullName) setErrors(p => ({ ...p, fullName: null })); }}
               placeholder="Full name"
+              className={errors.fullName ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
+            {errors.fullName && <p className="text-xs text-destructive">{errors.fullName}</p>}
           </div>
 
           {/* Customer — shown whenever role is customer_admin or user */}
@@ -57,8 +72,8 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
             isPlatformAdmin ? (
               <div className="space-y-1.5">
                 <Label>Associated Customer {role === 'customer_admin' && <span className="text-destructive">*</span>}</Label>
-                <Select value={customerId} onValueChange={setCustomerId}>
-                  <SelectTrigger>
+                <Select value={customerId} onValueChange={(v) => { setCustomerId(v); if (errors.customerId) setErrors(p => ({ ...p, customerId: null })); }}>
+                  <SelectTrigger className={errors.customerId ? 'border-destructive' : ''}>
                     <SelectValue placeholder="Select a customer..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -68,7 +83,8 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
                     ))}
                   </SelectContent>
                 </Select>
-                {role === 'customer_admin' && (
+                {errors.customerId && <p className="text-xs text-destructive">{errors.customerId}</p>}
+                {role === 'customer_admin' && !errors.customerId && (
                   <p className="text-xs text-muted-foreground">Customer Admin must be linked to a customer.</p>
                 )}
               </div>

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Bell, Plus, X, Loader2, Save, Globe, AlertTriangle, CheckSquare, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
+import { validators, validateForm, hasErrors } from '@/lib/validation';
 
 const DEFAULT_SETTINGS = {
   due_date_reminders_enabled: true,
@@ -27,9 +28,11 @@ function SettingsForm({ initialData, customerId, customerName, onSaved }) {
   const [form, setForm] = useState({ ...DEFAULT_SETTINGS, ...initialData });
   const [saving, setSaving] = useState(false);
   const [newDay, setNewDay] = useState('');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     setForm({ ...DEFAULT_SETTINGS, ...initialData });
+    setErrors({});
   }, [initialData?.id]);
 
   const addDay = () => {
@@ -45,6 +48,15 @@ function SettingsForm({ initialData, customerId, customerName, onSaved }) {
   };
 
   const handleSave = async () => {
+    const schema = {
+      additional_recipients: validators.emailList,
+    };
+    const formErrors = validateForm(form, schema);
+    setErrors(formErrors);
+    if (hasErrors(formErrors)) {
+      toast.error('Please correct the highlighted fields.');
+      return;
+    }
     setSaving(true);
     const payload = { ...form, customer_id: customerId || null, customer_name: customerName || null };
     if (initialData?.id) {
@@ -165,10 +177,13 @@ function SettingsForm({ initialData, customerId, customerName, onSaved }) {
         <Label className="text-sm">{t('reminders_cc_recipients')}</Label>
         <Input
           value={form.additional_recipients}
-          onChange={e => setForm(f => ({ ...f, additional_recipients: e.target.value }))}
+          onChange={e => { setForm(f => ({ ...f, additional_recipients: e.target.value })); if (errors.additional_recipients) setErrors(p => ({ ...p, additional_recipients: null })); }}
           placeholder={t('reminders_cc_placeholder')}
+          className={errors.additional_recipients ? 'border-destructive focus-visible:ring-destructive' : ''}
         />
-        <p className="text-xs text-muted-foreground">{t('reminders_cc_hint')}</p>
+        {errors.additional_recipients
+          ? <p className="text-xs text-destructive">{errors.additional_recipients}</p>
+          : <p className="text-xs text-muted-foreground">{t('reminders_cc_hint')}</p>}
       </div>
 
       <Button onClick={handleSave} disabled={saving} className="gap-2">

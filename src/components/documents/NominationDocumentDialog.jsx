@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { base44 } from '@/api/base44Client';
 import { Upload, Loader2, FileText, X } from 'lucide-react';
+import { validators, validateForm, hasErrors } from '@/lib/validation';
 
 const ROLE_TYPES = [
   { value: 'risk_officer', label: 'Risk Officer Manager' },
@@ -20,19 +21,26 @@ const ROLE_TYPES = [
   { value: 'other', label: 'Other Governance Role' },
 ];
 
+const ALLOWED_ROLES = ROLE_TYPES.map(r => r.value);
+
 const DEFAULT = { title: '', role_type: '', nominated_person: '', nomination_date: '', expiry_date: '', status: 'draft', description: '', file_url: '', file_name: '' };
 
 export default function NominationDocumentDialog({ open, onOpenChange, doc, customers, isAdmin, onSave }) {
   const [form, setForm] = useState(DEFAULT);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (doc) setForm({ ...DEFAULT, ...doc });
     else setForm(DEFAULT);
+    setErrors({});
   }, [doc, open]);
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k, v) => {
+    setForm(f => ({ ...f, [k]: v }));
+    if (errors[k]) setErrors(p => ({ ...p, [k]: null }));
+  };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -46,6 +54,14 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const schema = {
+      title: [validators.required, (v) => validators.minLength(v, 3), (v) => validators.maxLength(v, 200)],
+      role_type: [(v) => validators.required(v), (v) => validators.enum(v, ALLOWED_ROLES)],
+      expiry_date: (v) => validators.dateAfter(v, form.nomination_date),
+    };
+    const formErrors = validateForm(form, schema);
+    setErrors(formErrors);
+    if (hasErrors(formErrors)) return;
     setSaving(true);
     await onSave(form);
     setSaving(false);
@@ -61,17 +77,24 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
         <div className="flex-1 overflow-y-auto pr-1 space-y-4 mt-2">
           <div className="space-y-1.5">
             <Label>Title *</Label>
-            <Input value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Appointment of Risk Officer Manager" required />
+            <Input
+              value={form.title}
+              onChange={e => set('title', e.target.value)}
+              placeholder="e.g. Appointment of Risk Officer Manager"
+              className={errors.title ? 'border-destructive focus-visible:ring-destructive' : ''}
+            />
+            {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
           </div>
 
           <div className="space-y-1.5">
             <Label>Governance Role *</Label>
             <Select value={form.role_type} onValueChange={v => set('role_type', v)} required>
-              <SelectTrigger><SelectValue placeholder="Select role type..." /></SelectTrigger>
+              <SelectTrigger className={errors.role_type ? 'border-destructive' : ''}><SelectValue placeholder="Select role type..." /></SelectTrigger>
               <SelectContent>
                 {ROLE_TYPES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
               </SelectContent>
             </Select>
+            {errors.role_type && <p className="text-xs text-destructive">{errors.role_type}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -100,7 +123,13 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
             </div>
             <div className="space-y-1.5">
               <Label>Expiry / Renewal Date</Label>
-              <Input type="date" value={form.expiry_date} onChange={e => set('expiry_date', e.target.value)} />
+              <Input
+                type="date"
+                value={form.expiry_date}
+                onChange={e => set('expiry_date', e.target.value)}
+                className={errors.expiry_date ? 'border-destructive focus-visible:ring-destructive' : ''}
+              />
+              {errors.expiry_date && <p className="text-xs text-destructive">{errors.expiry_date}</p>}
             </div>
           </div>
 

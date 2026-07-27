@@ -9,6 +9,7 @@ import { Loader2, Upload } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { validators, validateForm, hasErrors } from '@/lib/validation';
 
 const DEFAULT = {
   title: '', level: 'policy', status: 'draft', description: '',
@@ -25,6 +26,7 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
   const [tagsInput, setTagsInput] = useState('');
   const [frameworksInput, setFrameworksInput] = useState('');
   const [changeNote, setChangeNote] = useState('');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (doc) {
@@ -37,9 +39,13 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
       setFrameworksInput('');
     }
     setChangeNote('');
+    setErrors({});
   }, [doc, open]);
 
-  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+  const set = (key, val) => {
+    setForm(f => ({ ...f, [key]: val }));
+    if (errors[key]) setErrors(p => ({ ...p, [key]: null }));
+  };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -54,8 +60,15 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isAdmin && !form.customer_id) {
-      toast.error('Please assign a customer to this document');
+    const schema = {
+      title: [validators.required, (v) => validators.minLength(v, 3), (v) => validators.maxLength(v, 200)],
+      level: (v) => validators.enum(v, ['policy', 'standard', 'procedure', 'playbook']),
+      ...(isAdmin && { customer_id: validators.required }),
+    };
+    const formErrors = validateForm(form, schema);
+    setErrors(formErrors);
+    if (hasErrors(formErrors)) {
+      toast.error('Please correct the highlighted fields.');
       return;
     }
     setSaving(true);
@@ -103,7 +116,13 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
         <div className="flex-1 overflow-y-auto pr-1 space-y-4">
           <div className="space-y-1.5">
             <Label>Title *</Label>
-            <Input value={form.title} onChange={e => set('title', e.target.value)} required placeholder="Document title" />
+            <Input
+              value={form.title}
+              onChange={e => set('title', e.target.value)}
+              placeholder="Document title"
+              className={errors.title ? 'border-destructive focus-visible:ring-destructive' : ''}
+            />
+            {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -166,11 +185,12 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
             <div className="space-y-1.5">
               <Label>Customer *</Label>
               <Select value={form.customer_id || ''} onValueChange={handleCustomerChange} required>
-                <SelectTrigger><SelectValue placeholder="Select a customer" /></SelectTrigger>
+                <SelectTrigger className={errors.customer_id ? 'border-destructive' : ''}><SelectValue placeholder="Select a customer" /></SelectTrigger>
                 <SelectContent>
                   {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
+              {errors.customer_id && <p className="text-xs text-destructive">{errors.customer_id}</p>}
             </div>
           )}
 
