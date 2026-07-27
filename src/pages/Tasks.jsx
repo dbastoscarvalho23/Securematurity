@@ -5,10 +5,11 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, LayoutGrid, List } from 'lucide-react';
+import { Plus, Search, LayoutGrid, List, CalendarDays } from 'lucide-react';
 import TaskBoard from '@/components/tasks/TaskBoard';
 import TaskFormDialog from '@/components/tasks/TaskFormDialog';
 import TaskListView from '@/components/tasks/TaskListView';
+import TaskCalendar from '@/components/tasks/TaskCalendar';
 import BulkActionBar from '@/components/tasks/BulkActionBar';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
@@ -221,6 +222,13 @@ export default function Tasks() {
           >
             <List className="w-4 h-4" />
           </button>
+          <button
+            onClick={() => setView('calendar')}
+            className={`px-3 py-1.5 text-sm transition-colors ${view === 'calendar' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+            title={t('tasks_calendar_month')}
+          >
+            <CalendarDays className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -239,7 +247,7 @@ export default function Tasks() {
           onEdit={handleEdit}
           onDelete={(task) => deleteMutation.mutate(task)}
         />
-      ) : (
+      ) : view === 'list' ? (
         <TaskListView
           tasks={filteredTasks}
           onStatusChange={(id, status, title) => statusMutation.mutate({ id, status, title })}
@@ -249,6 +257,11 @@ export default function Tasks() {
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           onToggleSelectAll={toggleSelectAll}
+        />
+      ) : (
+        <TaskCalendar
+          tasks={filteredTasks}
+          onEdit={handleEdit}
         />
       )}
 
