@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
 
 async function getSettings(base44ServiceRole, customerId) {
   const all = await base44ServiceRole.entities.ReminderSettings.list();
@@ -21,11 +22,17 @@ Deno.serve(async (req) => {
 
   if (body.event && body.data) {
     // Entity automation: triggered by SecurityDocument update
-    const newStatus = body.data.status;
+    // Verify the document exists in the database to prevent spoofed payloads
+    const docId = body.data.id;
+    if (!docId) return Response.json({ error: 'document id is required' }, { status: 400 });
+    const realDoc = await base44.asServiceRole.entities.SecurityDocument.get(docId);
+    if (!realDoc) return Response.json({ error: 'document not found' }, { status: 404 });
+
+    const newStatus = realDoc.status;
     const oldStatus = body.old_data?.status;
     if (newStatus === oldStatus) return Response.json({ skipped: 'status unchanged' });
 
-    document = body.data;
+    document = realDoc;
     previousDocument = body.old_data;
 
     if (newStatus === 'under_review') type = 'sent_for_review';
@@ -85,22 +92,22 @@ Deno.serve(async (req) => {
           <p>Hello,</p>
           <p>The following security document has been submitted for review and requires your attention:</p>
           <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px;margin:12px 0;">
-            ${tableRow('Title', document.title)}
-            ${tableRow('Level', LEVEL_LABELS[document.level] || document.level || '—')}
+            ${tableRow('Title', esc(document.title))}
+            ${tableRow('Level', LEVEL_LABELS[document.level] || esc(document.level) || '—')}
             ${tableRow('Status', '<strong>Under Review</strong>')}
-            ${document.customer_name ? tableRow('Customer', document.customer_name) : ''}
-            ${document.review_date ? tableRow('Review Date', document.review_date) : ''}
-            ${document.description ? tableRow('Description', document.description) : ''}
+            ${document.customer_name ? tableRow('Customer', esc(document.customer_name)) : ''}
+            ${document.review_date ? tableRow('Review Date', esc(document.review_date)) : ''}
+            ${document.description ? tableRow('Description', esc(document.description)) : ''}
           </table>
           <p>Please log in to the platform to review and approve or request changes.</p>
-          <p style="color:#6b7280;font-size:12px;">Submitted by: ${user.full_name || user.email}</p>
+          <p style="color:#6b7280;font-size:12px;">Submitted by: ${esc(user.full_name || user.email)}</p>
         </div>
       </div>`.trim();
 
     for (const to of recipients) {
       await base44.asServiceRole.integrations.Core.SendEmail({
         to,
-        subject: `[Review Required] ${document.title}`,
+        subject: `[Review Required] ${esc(document.title)}`,
         body,
       });
     }
@@ -130,21 +137,21 @@ Deno.serve(async (req) => {
           <p>Hello,</p>
           <p>The following security document has been <strong style="color:#16a34a;">approved</strong>:</p>
           <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px;margin:12px 0;">
-            ${tableRow('Title', document.title)}
-            ${tableRow('Level', LEVEL_LABELS[document.level] || document.level || '—')}
+            ${tableRow('Title', esc(document.title))}
+            ${tableRow('Level', LEVEL_LABELS[document.level] || esc(document.level) || '—')}
             ${tableRow('Status', '<strong style="color:#16a34a;">Approved</strong>')}
-            ${document.approved_by ? tableRow('Approved By', document.approved_by) : ''}
-            ${document.approved_date ? tableRow('Approval Date', document.approved_date) : ''}
-            ${document.customer_name ? tableRow('Customer', document.customer_name) : ''}
+            ${document.approved_by ? tableRow('Approved By', esc(document.approved_by)) : ''}
+            ${document.approved_date ? tableRow('Approval Date', esc(document.approved_date)) : ''}
+            ${document.customer_name ? tableRow('Customer', esc(document.customer_name)) : ''}
           </table>
-          <p style="color:#6b7280;font-size:12px;">Approved by: ${user.full_name || user.email}</p>
+          <p style="color:#6b7280;font-size:12px;">Approved by: ${esc(user.full_name || user.email)}</p>
         </div>
       </div>`.trim();
 
     for (const to of recipients) {
       await base44.asServiceRole.integrations.Core.SendEmail({
         to,
-        subject: `[Document Approved] ${document.title}`,
+        subject: `[Document Approved] ${esc(document.title)}`,
         body,
       });
     }

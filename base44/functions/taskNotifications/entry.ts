@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
 
 const STATUS_LABELS = {
   todo: 'To-Do',
@@ -59,19 +60,19 @@ Deno.serve(async (req) => {
 <p>Hello,</p>
 <p>You have been assigned to the following task:</p>
 <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:sans-serif;font-size:14px;">
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Title</td><td style="padding:6px 12px;">${task.title}</td></tr>
-  ${task.description ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Description</td><td style="padding:6px 12px;">${task.description}</td></tr>` : ''}
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Status</td><td style="padding:6px 12px;">${STATUS_LABELS[task.status] || task.status}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Priority</td><td style="padding:6px 12px;">${PRIORITY_LABELS[task.priority] || task.priority || '—'}</td></tr>
-  ${task.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;">${task.due_date}</td></tr>` : ''}
-  ${task.customer_name ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Customer</td><td style="padding:6px 12px;">${task.customer_name}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Title</td><td style="padding:6px 12px;">${esc(task.title)}</td></tr>
+  ${task.description ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Description</td><td style="padding:6px 12px;">${esc(task.description)}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Status</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[task.status] || task.status)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Priority</td><td style="padding:6px 12px;">${esc(PRIORITY_LABELS[task.priority] || task.priority || '—')}</td></tr>
+  ${task.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;">${esc(task.due_date)}</td></tr>` : ''}
+  ${task.customer_name ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Customer</td><td style="padding:6px 12px;">${esc(task.customer_name)}</td></tr>` : ''}
 </table>
 <p>Please review this task and take appropriate action.</p>
-<p style="color:#6b7280;font-size:12px;">Assigned by: ${user.full_name || user.email}</p>
+<p style="color:#6b7280;font-size:12px;">Assigned by: ${esc(user.full_name || user.email)}</p>
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Task Assigned] ${task.title}`, body });
+      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Task Assigned] ${esc(task.title)}`, body });
     }
     await base44.asServiceRole.entities.AuditLog.create({
       action: 'email_sent',
@@ -96,18 +97,18 @@ Deno.serve(async (req) => {
 <p>Hello,</p>
 <p>The status of a task assigned to you has been updated:</p>
 <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:sans-serif;font-size:14px;">
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Title</td><td style="padding:6px 12px;">${task.title}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Old Status</td><td style="padding:6px 12px;">${STATUS_LABELS[oldStatus] || oldStatus}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">New Status</td><td style="padding:6px 12px;"><strong>${STATUS_LABELS[newStatus] || newStatus}</strong></td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Priority</td><td style="padding:6px 12px;">${PRIORITY_LABELS[task.priority] || task.priority || '—'}</td></tr>
-  ${task.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;">${task.due_date}</td></tr>` : ''}
-  ${task.customer_name ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Customer</td><td style="padding:6px 12px;">${task.customer_name}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Title</td><td style="padding:6px 12px;">${esc(task.title)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Old Status</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[oldStatus] || oldStatus)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">New Status</td><td style="padding:6px 12px;"><strong>${esc(STATUS_LABELS[newStatus] || newStatus)}</strong></td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Priority</td><td style="padding:6px 12px;">${esc(PRIORITY_LABELS[task.priority] || task.priority || '—')}</td></tr>
+  ${task.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;">${esc(task.due_date)}</td></tr>` : ''}
+  ${task.customer_name ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Customer</td><td style="padding:6px 12px;">${esc(task.customer_name)}</td></tr>` : ''}
 </table>
-<p style="color:#6b7280;font-size:12px;">Updated by: ${user.full_name || user.email}</p>
+<p style="color:#6b7280;font-size:12px;">Updated by: ${esc(user.full_name || user.email)}</p>
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Task Update] Status changed — ${task.title}`, body });
+      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Task Update] Status changed — ${esc(task.title)}`, body });
     }
     await base44.asServiceRole.entities.AuditLog.create({
       action: 'email_sent',

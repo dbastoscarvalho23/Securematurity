@@ -9,10 +9,20 @@ import { Send } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
 
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function buildHtmlEmail({ questionnaire, questions, isPt }) {
-  const supplierName = questionnaire?.supplier_name || (isPt ? 'Fornecedor' : 'Supplier');
-  const customerName = questionnaire?.customer_name || '';
-  const title = questionnaire?.title || '';
+  const supplierName = escapeHtml(questionnaire?.supplier_name || (isPt ? 'Fornecedor' : 'Supplier'));
+  const customerName = escapeHtml(questionnaire?.customer_name || '');
+  const title = escapeHtml(questionnaire?.title || '');
 
   const groupedByArea = questions.reduce((acc, q) => {
     const area = q.area || (isPt ? 'Geral' : 'General');
@@ -26,7 +36,7 @@ function buildHtmlEmail({ questionnaire, questions, isPt }) {
     if (q.answer_type === 'scale_1_5') return isPt ? 'Pontuação: 1 &nbsp;|&nbsp; 2 &nbsp;|&nbsp; 3 &nbsp;|&nbsp; 4 &nbsp;|&nbsp; 5' : 'Score: 1 &nbsp;|&nbsp; 2 &nbsp;|&nbsp; 3 &nbsp;|&nbsp; 4 &nbsp;|&nbsp; 5';
     if (q.answer_type === 'multiple_choice') {
       const opts = (isPt && q.options_pt?.length ? q.options_pt : q.options) || [];
-      return opts.join(' &nbsp;|&nbsp; ');
+      return opts.map(escapeHtml).join(' &nbsp;|&nbsp; ');
     }
     return isPt ? '(texto livre)' : '(free text)';
   };
@@ -35,12 +45,12 @@ function buildHtmlEmail({ questionnaire, questions, isPt }) {
     const areaHeader = `
       <tr>
         <td colspan="2" style="background:#1e293b;color:#ffffff;padding:10px 16px;font-size:13px;font-weight:600;letter-spacing:0.05em;">
-          ${area.toUpperCase()}
+          ${escapeHtml(area.toUpperCase())}
         </td>
       </tr>`;
 
     const rows = areaQs.map((q, i) => {
-      const qText = (isPt && q.question_text_pt) ? q.question_text_pt : q.question_text;
+      const qText = escapeHtml((isPt && q.question_text_pt) ? q.question_text_pt : q.question_text);
       const answerLabel = isPt ? 'Resposta' : 'Answer';
       const notesLabel = isPt ? 'Notas / Evidências' : 'Notes / Evidence';
       return `
