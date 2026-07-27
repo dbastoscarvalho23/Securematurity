@@ -68,6 +68,7 @@ export default function Recommendations() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const canBulkAction = user?.role === 'admin' || user?.role === 'customer_admin';
   const customerId = user?.customer_id;
 
   const { data: recommendations = [] } = useQuery({
@@ -318,16 +319,18 @@ export default function Recommendations() {
           </SelectContent>
         </Select>
         <div className="flex items-center gap-2 ml-auto">
+          {canBulkAction && (
           <Checkbox
             checked={allFilteredSelected}
             onCheckedChange={toggleSelectAll}
             aria-label={t('bulk_select_all')}
           />
-          <span className="text-sm text-muted-foreground">{t('bulk_select_all')}</span>
+          )}
           <span className="text-sm text-muted-foreground">{filtered.length} {t('recs_count')}</span>
         </div>
       </div>
 
+      {canBulkAction && (
       <BulkActionBar
         selectedCount={selectedIds.length}
         statusOptions={statusOptions.map(s => ({ value: s, labelKey: `recs_status_${s}` }))}
@@ -337,6 +340,7 @@ export default function Recommendations() {
         onClear={() => setSelectedIds([])}
         isProcessing={isBulkAction}
       />
+      )}
 
       {/* Recommendations by Framework */}
       {Object.entries(groupedByFramework).map(([fw, recs]) => (
@@ -355,12 +359,14 @@ export default function Recommendations() {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 flex-1">
+                      {canBulkAction && (
                       <Checkbox
                         checked={selectedIds.includes(rec.id)}
                         onCheckedChange={() => toggleSelect(rec.id)}
                         aria-label="select"
                         className="mt-0.5"
                       />
+                      )}
                       <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1.5">
                         <Badge variant="outline" className={cn("text-xs border", priorityColors[rec.priority])}>

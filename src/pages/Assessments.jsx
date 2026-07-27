@@ -56,6 +56,7 @@ export default function Assessments() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
+  const canBulkAction = user?.role === 'admin' || user?.role === 'customer_admin';
   const customerId = user?.customer_id;
 
   const { data: assessments = [], isLoading } = useQuery({
@@ -156,6 +157,7 @@ export default function Assessments() {
                 className="pl-10"
               />
             </div>
+            {canBulkAction && (
             <BulkActionBar
               selectedCount={selectedIds.length}
               statusOptions={assessmentStatusOptions}
@@ -164,16 +166,19 @@ export default function Assessments() {
               onClear={() => setSelectedIds([])}
               isProcessing={isBulkAction}
             />
+            )}
           </div>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
+                  {canBulkAction && (
                   <Checkbox
                     checked={allFilteredSelected}
                     onCheckedChange={toggleSelectAll}
                     aria-label={t('bulk_select_all')}
                   />
+                  )}
                 </TableHead>
                 <TableHead>{t('assessments_col_assessment')}</TableHead>
                 <TableHead>{t('assessments_col_customer')}</TableHead>
@@ -198,11 +203,13 @@ export default function Assessments() {
               ) : filtered.map(a => (
                 <TableRow key={a.id} className="group cursor-pointer hover:bg-muted/30">
                   <TableCell onClick={(e) => e.stopPropagation()}>
+                    {canBulkAction && (
                     <Checkbox
                       checked={selectedIds.includes(a.id)}
                       onCheckedChange={() => toggleSelect(a.id)}
                       aria-label="select"
                     />
+                    )}
                   </TableCell>
                   <TableCell>
                     <Link to={`/assessments/${a.id}`} className="font-medium text-sm hover:text-primary transition-colors">
