@@ -60,6 +60,10 @@
       "type": "string",
       "description": "Framework code"
     },
+    "framework_control_id": {
+      "type": "string",
+      "description": "Reference to the specific FrameworkControl being addressed by this task"
+    },
     "domain": {
       "type": "string",
       "description": "Domain/category"
