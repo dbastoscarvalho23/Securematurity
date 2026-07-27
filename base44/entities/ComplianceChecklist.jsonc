@@ -70,7 +70,7 @@
           }
         },
         {
-          "data.customer_id": "{{user.customer_id}}"
+          "data.customer_id": "{{user.data.customer_id}}"
         }
       ]
     },
@@ -82,7 +82,7 @@
           }
         },
         {
-          "data.customer_id": "{{user.customer_id}}"
+          "data.customer_id": "{{user.data.customer_id}}"
         }
       ]
     },
@@ -94,7 +94,7 @@
           }
         },
         {
-          "data.customer_id": "{{user.customer_id}}"
+          "data.customer_id": "{{user.data.customer_id}}"
         }
       ]
     },
@@ -106,7 +106,7 @@
           }
         },
         {
-          "data.customer_id": "{{user.customer_id}}"
+          "data.customer_id": "{{user.data.customer_id}}"
         }
       ]
     }

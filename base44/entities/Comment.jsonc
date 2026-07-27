@@ -32,19 +32,16 @@
   ],
   "rls": {
     "create": {
-      "data.task_id": {
-        "$in": {
-          "$query": {
-            "collection": "Task",
-            "filter": {
-              "data.customer_id": "{{user.customer_id}}"
-            },
-            "select": [
-              "id"
-            ]
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
           }
+        },
+        {
+          "created_by_id": "{{user.id}}"
         }
-      }
+      ]
     },
     "read": null,
     "update": {
@@ -55,26 +52,7 @@
           }
         },
         {
-          "$and": [
-            {
-              "created_by": "{{user.email}}"
-            },
-            {
-              "data.task_id": {
-                "$in": {
-                  "$query": {
-                    "collection": "Task",
-                    "filter": {
-                      "data.customer_id": "{{user.customer_id}}"
-                    },
-                    "select": [
-                      "id"
-                    ]
-                  }
-                }
-              }
-            }
-          ]
+          "created_by_id": "{{user.id}}"
         }
       ]
     },
@@ -86,26 +64,7 @@
           }
         },
         {
-          "$and": [
-            {
-              "created_by": "{{user.email}}"
-            },
-            {
-              "data.task_id": {
-                "$in": {
-                  "$query": {
-                    "collection": "Task",
-                    "filter": {
-                      "data.customer_id": "{{user.customer_id}}"
-                    },
-                    "select": [
-                      "id"
-                    ]
-                  }
-                }
-              }
-            }
-          ]
+          "created_by_id": "{{user.id}}"
         }
       ]
     }
