@@ -1,11 +1,12 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const ZONE_CONFIG = [
-  { min: 0,  max: 4,  label: 'Low',      bg: 'bg-emerald-500', text: 'text-emerald-700',  border: 'border-emerald-200', light: 'bg-emerald-50' },
-  { min: 4,  max: 9,  label: 'Medium',   bg: 'bg-yellow-400',  text: 'text-yellow-700',   border: 'border-yellow-200',  light: 'bg-yellow-50' },
-  { min: 9,  max: 16, label: 'High',     bg: 'bg-orange-500',  text: 'text-orange-700',   border: 'border-orange-200',  light: 'bg-orange-50' },
-  { min: 16, max: 26, label: 'Critical', bg: 'bg-red-500',     text: 'text-red-700',       border: 'border-red-200',    light: 'bg-red-50' },
+  { min: 0,  max: 4,  labelKey: 'risk_level_low',      bg: 'bg-emerald-500', text: 'text-emerald-700',  border: 'border-emerald-200', light: 'bg-emerald-50' },
+  { min: 4,  max: 9,  labelKey: 'risk_level_medium',   bg: 'bg-yellow-400',  text: 'text-yellow-700',   border: 'border-yellow-200',  light: 'bg-yellow-50' },
+  { min: 9,  max: 16, labelKey: 'risk_level_high',     bg: 'bg-orange-500',  text: 'text-orange-700',   border: 'border-orange-200',  light: 'bg-orange-50' },
+  { min: 16, max: 26, labelKey: 'risk_level_critical', bg: 'bg-red-500',     text: 'text-red-700',       border: 'border-red-200',    light: 'bg-red-50' },
 ];
 
 function getZone(score) {
@@ -13,20 +14,20 @@ function getZone(score) {
 }
 
 export default function ResidualRiskGauge({ impact, likelihood }) {
+  const { t } = useLanguage();
   const score = (impact || 0) * (likelihood || 0);
   const zone = getZone(score);
-  // Percentage for progress bar: score goes 1–25
   const pct = Math.min(100, Math.round((score / 25) * 100));
 
   return (
     <div className={cn('rounded-xl border p-4 space-y-3', zone.border, zone.light)}>
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Residual Risk Score
+          {t('risk_residual_score')}
         </span>
         <div className={cn('flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold', zone.text)}>
           <span className={cn('w-2 h-2 rounded-full', zone.bg)} />
-          {score} — {zone.label}
+          {score} — {t(zone.labelKey)}
         </div>
       </div>
 
@@ -55,14 +56,14 @@ export default function ResidualRiskGauge({ impact, likelihood }) {
 
       {/* Zone labels */}
       <div className="flex text-[10px] text-muted-foreground font-medium">
-        <span style={{ width: `${(4/25)*100}%` }} className="text-emerald-600">Low</span>
-        <span style={{ width: `${(5/25)*100}%` }} className="text-yellow-600">Med</span>
-        <span style={{ width: `${(7/25)*100}%` }} className="text-orange-600">High</span>
-        <span style={{ width: `${(9/25)*100}%` }} className="text-red-600 text-right">Critical</span>
+        <span style={{ width: `${(4/25)*100}%` }} className="text-emerald-600">{t('risk_level_low')}</span>
+        <span style={{ width: `${(5/25)*100}%` }} className="text-yellow-600">{t('risk_level_medium')}</span>
+        <span style={{ width: `${(7/25)*100}%` }} className="text-orange-600">{t('risk_level_high')}</span>
+        <span style={{ width: `${(9/25)*100}%` }} className="text-red-600 text-right">{t('risk_level_critical')}</span>
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Impact <strong>{impact || '–'}</strong> × Likelihood <strong>{likelihood || '–'}</strong> = Score <strong>{score || '–'}</strong>
+        {t('risk_impact')} <strong>{impact || '–'}</strong> × {t('risk_likelihood')} <strong>{likelihood || '–'}</strong> = {t('risk_score')} <strong>{score || '–'}</strong>
       </p>
     </div>
   );

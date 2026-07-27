@@ -5,33 +5,34 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, Download, ChevronRight, ArrowLeft, X, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const RISK_FIELDS = [
-  { key: 'risk_id',         label: 'Risk ID',         required: false },
-  { key: 'title',           label: 'Title',           required: true  },
-  { key: 'description',     label: 'Description',     required: false },
-  { key: 'category',        label: 'Category',        required: false },
-  { key: 'impact',          label: 'Impact (1–5)',     required: false },
-  { key: 'likelihood',      label: 'Likelihood (1–5)', required: false },
-  { key: 'status',          label: 'Status',          required: false },
-  { key: 'owner_email',     label: 'Owner Email',     required: false },
-  { key: 'due_date',        label: 'Due Date',        required: false },
-  { key: 'treatment_notes', label: 'Treatment Notes', required: false },
-  { key: 'customer_name',   label: 'Customer Name',   required: false },
+  { key: 'risk_id',         labelKey: 'risk_form_risk_id',         required: false },
+  { key: 'title',           labelKey: 'risk_form_title',           required: true  },
+  { key: 'description',     labelKey: 'risk_form_description',     required: false },
+  { key: 'category',        labelKey: 'risk_form_category',        required: false },
+  { key: 'impact',          labelKey: 'risk_form_impact',          required: false },
+  { key: 'likelihood',      labelKey: 'risk_form_likelihood',      required: false },
+  { key: 'status',          labelKey: 'risk_form_status',          required: false },
+  { key: 'owner_email',     labelKey: 'risk_form_owner_email',     required: false },
+  { key: 'due_date',        labelKey: 'risk_form_due_date',        required: false },
+  { key: 'treatment_notes', labelKey: 'risk_form_treatment_notes', required: false },
+  { key: 'customer_name',   labelKey: 'common_customer',           required: false },
 ];
 
-const CATEGORIES = [
-  { value: 'access_control',   label: 'Access Control' },
-  { value: 'data_protection',  label: 'Data Protection' },
-  { value: 'network_security', label: 'Network Security' },
-  { value: 'physical_security',label: 'Physical Security' },
-  { value: 'third_party',      label: 'Third Party' },
-  { value: 'compliance',       label: 'Compliance' },
-  { value: 'operational',      label: 'Operational' },
-  { value: 'other',            label: 'Other' },
-];
+const CATEGORY_KEYS = {
+  access_control: 'risk_cat_access_control',
+  data_protection: 'risk_cat_data_protection',
+  network_security: 'risk_cat_network_security',
+  physical_security: 'risk_cat_physical_security',
+  third_party: 'risk_cat_third_party',
+  compliance: 'risk_cat_compliance',
+  operational: 'risk_cat_operational',
+  other: 'risk_cat_other',
+};
 
 const CATEGORY_MAP = {
   'access control': 'access_control', 'access_control': 'access_control', 'controlo de acesso': 'access_control', 'access': 'access_control',
@@ -70,7 +71,6 @@ const AUTO_HINTS = {
 function normalizeHeader(h) { return String(h || '').toLowerCase().trim(); }
 
 function autoDetectMapping(allSheetData) {
-  // Returns { fieldKey: { sheet, col } } using hints across all sheets
   const mapping = {};
   for (const [field, hints] of Object.entries(AUTO_HINTS)) {
     for (const [sheetName, { headers }] of Object.entries(allSheetData)) {
@@ -96,10 +96,7 @@ function parseExcelDate(raw) {
   return String(raw).trim();
 }
 
-// mapping: { fieldKey: { sheet, col } }
-// sheetData: { sheetName: { headers, rows } }
 function buildRisksFromMapping(sheetData, enabledSheets, mapping) {
-  // Group fields by source sheet
   const bySheet = {};
   for (const [field, src] of Object.entries(mapping)) {
     if (!src || !src.sheet || !src.col) continue;
@@ -107,7 +104,6 @@ function buildRisksFromMapping(sheetData, enabledSheets, mapping) {
     bySheet[src.sheet][field] = src.col;
   }
 
-  // We need a "primary" sheet (the one that has `title`) to drive row count
   const titleSrc = mapping.title;
   if (!titleSrc) return [];
 
@@ -139,7 +135,7 @@ function buildRisksFromMapping(sheetData, enabledSheets, mapping) {
       title,
       description:     String(getField('description')     || '').trim(),
       category:        CATEGORY_MAP[rawCategory.toLowerCase()] || rawCategory,
-      rawCategory:     rawCategory, // keep original cell value for display
+      rawCategory:     rawCategory,
       impact:          parseNumber(getField('impact')),
       likelihood:      parseNumber(getField('likelihood')),
       status:          STATUS_MAP[rawStatus] || 'open',
@@ -166,7 +162,7 @@ function downloadTemplate() {
 
 // ─── Step 1: Upload ────────────────────────────────────────────────────────────
 
-function UploadStep({ onFile }) {
+function UploadStep({ onFile, t }) {
   const inputRef = useRef();
   const handleDrop = (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) onFile(f); };
   return (
@@ -178,14 +174,14 @@ function UploadStep({ onFile }) {
         className="border-2 border-dashed border-border rounded-xl p-10 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
       >
         <Upload className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
-        <p className="text-sm font-medium">Drop your Excel file here or click to browse</p>
-        <p className="text-xs text-muted-foreground mt-1">.xlsx or .xls</p>
+        <p className="text-sm font-medium">{t('risk_import_drop_here')}</p>
+        <p className="text-xs text-muted-foreground mt-1">{t('risk_import_file_types')}</p>
         <input ref={inputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => onFile(e.target.files[0])} />
       </div>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span>Don't have a file yet?</span>
+        <span>{t('risk_import_no_file')}</span>
         <button onClick={downloadTemplate} className="flex items-center gap-1 text-primary hover:underline font-medium">
-          <Download className="w-3 h-3" /> Download template
+          <Download className="w-3 h-3" /> {t('risk_import_download_template')}
         </button>
       </div>
     </div>
@@ -215,10 +211,9 @@ function ColumnChip({ col, sheet, preview, dragging, onDragStart }) {
   );
 }
 
-function DropZone({ field, mapped, onDrop, onClear, sheetData }) {
+function DropZone({ field, mapped, onDrop, onClear, sheetData, t }) {
   const [over, setOver] = useState(false);
 
-  // Get preview value from first data row
   let preview = '';
   if (mapped) {
     const { rows = [], headers = [] } = sheetData[mapped.sheet] || {};
@@ -237,7 +232,7 @@ function DropZone({ field, mapped, onDrop, onClear, sheetData }) {
       )}
     >
       <div className="w-32 flex-shrink-0">
-        <span className="text-xs font-medium">{field.label}</span>
+        <span className="text-xs font-medium">{t(field.labelKey)}</span>
         {field.required && <span className="text-destructive ml-0.5 text-xs">*</span>}
       </div>
       <ChevronRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
@@ -254,16 +249,16 @@ function DropZone({ field, mapped, onDrop, onClear, sheetData }) {
         </div>
       ) : (
         <span className="text-xs text-muted-foreground italic">
-          {over ? '↓ Drop here' : 'drag a column here'}
+          {t('risk_import_drop_zone')}
         </span>
       )}
     </div>
   );
 }
 
-function MappingStep({ sheets, sheetData, mapping, onDrop, onClear }) {
+function MappingStep({ sheets, sheetData, mapping, onDrop, onClear, t }) {
   const [activeSheet, setActiveSheet] = useState(0);
-  const [dragging, setDragging] = useState(null); // { sheet, col }
+  const [dragging, setDragging] = useState(null);
 
   const sheetName = sheets[activeSheet];
   const headers = sheetData[sheetName]?.headers || [];
@@ -277,7 +272,6 @@ function MappingStep({ sheets, sheetData, mapping, onDrop, onClear }) {
     if (dragging) { onDrop(fieldKey, dragging); setDragging(null); }
   };
 
-  // Get first data row as preview
   const getPreview = (col) => {
     const idx = headers.indexOf(col);
     if (rows[1] && idx >= 0) return String(rows[1][idx] || '').trim().slice(0, 20);
@@ -305,9 +299,9 @@ function MappingStep({ sheets, sheetData, mapping, onDrop, onClear }) {
         </div>
         {/* Column chips */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide px-1 mb-1">Columns</p>
+          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide px-1 mb-1">{t('risk_import_columns')}</p>
           {headers.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-4">No columns found</p>
+            <p className="text-xs text-muted-foreground text-center py-4">{t('risk_import_no_columns')}</p>
           )}
           {headers.map(col => (
             <ColumnChip
@@ -325,7 +319,7 @@ function MappingStep({ sheets, sheetData, mapping, onDrop, onClear }) {
       {/* Right: drop targets */}
       <div className="flex-1 overflow-y-auto">
         <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mb-2">
-          Risk Fields — drag columns from the left onto each field
+          {t('risk_import_fields_hint')}
         </p>
         <div className="space-y-1.5">
           {RISK_FIELDS.map(field => (
@@ -336,6 +330,7 @@ function MappingStep({ sheets, sheetData, mapping, onDrop, onClear }) {
               onDrop={handleDrop}
               onClear={() => onClear(field.key)}
               sheetData={sheetData}
+              t={t}
             />
           ))}
         </div>
@@ -359,22 +354,27 @@ function ScoreBadge({ score }) {
   );
 }
 
-function PreviewStep({ sheetData, enabledSheets, mapping, overrides, onOverride }) {
+function PreviewStep({ sheetData, enabledSheets, mapping, overrides, onOverride, t }) {
   const risks = buildRisksFromMapping(sheetData, enabledSheets, mapping);
   const unmappedCount = risks.filter(r => !r.category).length;
+
+  const tableHeaders = [
+    t('risk_form_title'), t('risk_form_category'), t('risk_impact'),
+    t('risk_likelihood'), t('risk_score'), t('risk_form_status'), t('risk_owner')
+  ];
 
   return (
     <div className="space-y-3">
       {unmappedCount > 0 && (
         <div className="flex items-center gap-2 p-2.5 bg-chart-3/10 border border-chart-3/20 rounded-lg text-xs text-chart-3">
           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-          {unmappedCount} row{unmappedCount !== 1 ? 's have' : ' has'} no recognized category — set them inline below.
+          {unmappedCount} {t('risk_import_select')}
         </div>
       )}
       {risks.length === 0 ? (
         <div className="text-center py-10 text-muted-foreground text-sm">
           <AlertCircle className="w-6 h-6 mx-auto mb-2 opacity-40" />
-          No valid rows found. Make sure the "Title" field is mapped.
+          {t('risk_import_no_valid')}
         </div>
       ) : (
         <div className="border rounded-lg overflow-hidden">
@@ -382,7 +382,7 @@ function PreviewStep({ sheetData, enabledSheets, mapping, overrides, onOverride 
             <table className="w-full text-xs">
               <thead className="bg-muted/50 sticky top-0">
                 <tr>
-                  {['Title', 'Category', 'Impact', 'Likelihood', 'Score', 'Status', 'Owner'].map(h => (
+                  {tableHeaders.map(h => (
                     <th key={h} className="text-left px-3 py-2 font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -392,7 +392,7 @@ function PreviewStep({ sheetData, enabledSheets, mapping, overrides, onOverride 
                   const effectiveCategory = overrides[i] ?? r.category;
                   const score = r.impact * r.likelihood;
                   const missingCategory = !effectiveCategory;
-                  const isKnown = CATEGORIES.find(c => c.value === effectiveCategory);
+                  const isKnown = Object.keys(CATEGORY_KEYS).includes(effectiveCategory);
                   return (
                     <tr key={i} className={cn('border-t', missingCategory ? 'bg-chart-3/5' : 'hover:bg-muted/30')}>
                       <td className="px-3 py-2 max-w-[180px] truncate font-medium">{r.title}</td>
@@ -407,16 +407,16 @@ function PreviewStep({ sheetData, enabledSheets, mapping, overrides, onOverride 
                                 missingCategory ? 'border-chart-3/50 text-chart-3' : 'border-border text-foreground'
                               )}
                             >
-                              <option value="">— select —</option>
-                              {CATEGORIES.map(c => (
-                                <option key={c.value} value={c.value}>{c.label}</option>
+                              <option value="">{t('risk_import_select')}</option>
+                              {Object.entries(CATEGORY_KEYS).map(([v, key]) => (
+                                <option key={v} value={v}>{t(key)}</option>
                               ))}
                             </select>
                           ) : (
                             <span className="text-xs px-1.5 py-1 rounded border border-border bg-muted/30">{effectiveCategory}</span>
                           )}
                           {missingCategory && r.rawCategory && (
-                            <span className="text-[10px] text-muted-foreground italic">from Excel: "{r.rawCategory}"</span>
+                            <span className="text-[10px] text-muted-foreground italic">{t('risk_import_from_excel')} "{r.rawCategory}"</span>
                           )}
                         </div>
                       </td>
@@ -433,7 +433,7 @@ function PreviewStep({ sheetData, enabledSheets, mapping, overrides, onOverride 
           </div>
           <div className="px-3 py-2 bg-muted/30 border-t flex items-center gap-2 text-xs text-muted-foreground">
             <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
-            {risks.length} risk{risks.length !== 1 ? 's' : ''} ready to import
+            {risks.length} {risks.length !== 1 ? t('risk_mit_task_plural') : t('risk_mit_task_singular')} {t('risk_import_ready')}
           </div>
         </div>
       )}
@@ -443,17 +443,18 @@ function PreviewStep({ sheetData, enabledSheets, mapping, overrides, onOverride 
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 
-const STEPS = ['Upload', 'Map Fields', 'Preview & Import'];
-
 export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) {
+  const { t } = useLanguage();
   const [step, setStep]           = useState(0);
   const [fileName, setFileName]   = useState('');
   const [sheets, setSheets]       = useState([]);
   const [sheetData, setSheetData] = useState({});
   const [enabledSheets, setEnabled] = useState([]);
-  const [mapping, setMapping]         = useState({}); // { fieldKey: { sheet, col } }
-  const [categoryOverrides, setOverrides] = useState({}); // { rowIndex: categoryValue }
+  const [mapping, setMapping]         = useState({});
+  const [categoryOverrides, setOverrides] = useState({});
   const [importing, setImporting]     = useState(false);
+
+  const STEPS = [t('risk_import_step_upload'), t('risk_import_step_map'), t('risk_import_step_preview')];
 
   const reset = () => { setStep(0); setFileName(''); setSheets([]); setSheetData({}); setEnabled([]); setMapping({}); setOverrides({}); };
   const handleClose = () => { reset(); onOpenChange(false); };
@@ -509,7 +510,7 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-primary" />
-            Import Risks from Excel
+            {t('risk_import_dialog_title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -534,13 +535,13 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
           <div className="flex items-center gap-3 p-2.5 bg-muted/40 rounded-lg text-xs flex-shrink-0">
             <FileSpreadsheet className="w-4 h-4 text-primary flex-shrink-0" />
             <span className="flex-1 truncate font-medium">{fileName}</span>
-            <span className="text-muted-foreground">{sheets.length} sheet{sheets.length !== 1 ? 's' : ''}</span>
-            <button onClick={reset} className="text-muted-foreground hover:text-foreground">Change</button>
+            <span className="text-muted-foreground">{sheets.length} {sheets.length !== 1 ? t('risk_mit_task_plural') : t('risk_mit_task_singular')}</span>
+            <button onClick={reset} className="text-muted-foreground hover:text-foreground">{t('risk_import_change')}</button>
           </div>
         )}
 
         <div className="flex-1 overflow-y-auto min-h-0">
-          {step === 0 && <UploadStep onFile={handleFile} />}
+          {step === 0 && <UploadStep onFile={handleFile} t={t} />}
           {step === 1 && (
             <MappingStep
               sheets={sheets}
@@ -548,6 +549,7 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
               mapping={mapping}
               onDrop={handleDrop}
               onClear={handleClear}
+              t={t}
             />
           )}
           {step === 2 && (
@@ -557,6 +559,7 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
               mapping={mapping}
               overrides={categoryOverrides}
               onOverride={(i, val) => setOverrides(prev => ({ ...prev, [i]: val }))}
+              t={t}
             />
           )}
         </div>
@@ -564,19 +567,19 @@ export default function RiskExcelImportDialog({ open, onOpenChange, onImport }) 
         <DialogFooter className="border-t pt-4 flex items-center gap-2 flex-shrink-0">
           {step > 0 && (
             <Button variant="outline" onClick={() => setStep(s => s - 1)} className="gap-1 mr-auto">
-              <ArrowLeft className="w-3.5 h-3.5" /> Back
+              <ArrowLeft className="w-3.5 h-3.5" /> {t('risk_import_back')}
             </Button>
           )}
-          <Button variant="outline" onClick={handleClose}>Cancel</Button>
+          <Button variant="outline" onClick={handleClose}>{t('common_cancel')}</Button>
           {step < 2 && (
             <Button onClick={() => setStep(s => s + 1)} disabled={step === 1 && !canProceed}>
-              Next <ChevronRight className="w-3.5 h-3.5" />
+              {t('risk_import_next')} <ChevronRight className="w-3.5 h-3.5" />
             </Button>
           )}
           {step === 2 && (
             <Button onClick={handleImport} disabled={risks.length === 0 || importing} className="gap-2">
               {importing && <Loader2 className="w-4 h-4 animate-spin" />}
-              Import {risks.length > 0 ? `${risks.length} Risk${risks.length !== 1 ? 's' : ''}` : ''}
+              {t('risk_import_btn')} {risks.length > 0 ? `${risks.length}` : ''}
             </Button>
           )}
         </DialogFooter>

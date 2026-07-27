@@ -15,12 +15,20 @@ import {
 import { cn } from '@/lib/utils';
 import UserSelect from '@/components/shared/UserSelect';
 import { useCustomerUsers } from '@/hooks/useCustomerUsers';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const STATUS_CONFIG = {
-  todo:        { label: 'To Do',       icon: Circle,       color: 'text-muted-foreground' },
-  in_progress: { label: 'In Progress', icon: Clock,        color: 'text-primary' },
-  done:        { label: 'Done',        icon: CheckCircle2, color: 'text-chart-2' },
-  blocked:     { label: 'Blocked',     icon: AlertCircle,  color: 'text-destructive' },
+  todo:        { labelKey: 'tasks_status_todo',       icon: Circle,       color: 'text-muted-foreground' },
+  in_progress: { labelKey: 'tasks_status_in_progress', icon: Clock,        color: 'text-primary' },
+  done:        { labelKey: 'tasks_status_done',        icon: CheckCircle2, color: 'text-chart-2' },
+  blocked:     { labelKey: 'tasks_status_blocked',     icon: AlertCircle,  color: 'text-destructive' },
+};
+
+const PRIORITY_KEYS = {
+  low: 'tasks_priority_low',
+  medium: 'tasks_priority_medium',
+  high: 'tasks_priority_high',
+  critical: 'tasks_priority_critical',
 };
 
 const PRIORITY_STYLES = {
@@ -41,7 +49,7 @@ const EMPTY_TASK = {
 
 // ── Single task card ──────────────────────────────────────────────────────────
 
-function TaskCard({ task, onUpdate, onDelete, customerUsers = [] }) {
+function TaskCard({ task, onUpdate, onDelete, customerUsers = [], t }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(task);
@@ -57,7 +65,6 @@ function TaskCard({ task, onUpdate, onDelete, customerUsers = [] }) {
       ...task,
       checklist: task.checklist.map(i => i.id === itemId ? { ...i, done: !i.done } : i),
     };
-    // auto-mark done if all checked
     if (updated.checklist.every(i => i.done) && updated.checklist.length > 0) {
       updated.status = 'done';
     } else if (updated.status === 'done' && !updated.checklist.every(i => i.done)) {
@@ -88,12 +95,12 @@ function TaskCard({ task, onUpdate, onDelete, customerUsers = [] }) {
   if (editing) {
     return (
       <div className="border rounded-lg p-3 space-y-3 bg-muted/20">
-        <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Task title *" className="font-medium" />
-        <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Description / acceptance criteria..." rows={2} />
+        <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={t('risk_mit_task_title_ph')} className="font-medium" />
+        <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={t('risk_mit_task_desc_ph')} rows={2} />
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label className="text-xs">Assigned To</Label>
+            <Label className="text-xs">{t('risk_mit_assigned_to')}</Label>
             <UserSelect
               value={form.assigned_to}
               onChange={v => setForm(f => ({ ...f, assigned_to: v }))}
@@ -103,27 +110,24 @@ function TaskCard({ task, onUpdate, onDelete, customerUsers = [] }) {
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Due Date</Label>
+            <Label className="text-xs">{t('risk_mit_due_date')}</Label>
             <Input type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} className="h-8 text-xs" />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Status</Label>
+            <Label className="text-xs">{t('risk_mit_status')}</Label>
             <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
               <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Object.entries(STATUS_CONFIG).map(([v, c]) => <SelectItem key={v} value={v}>{c.label}</SelectItem>)}
+                {Object.entries(STATUS_CONFIG).map(([v, c]) => <SelectItem key={v} value={v}>{t(c.labelKey)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Priority</Label>
+            <Label className="text-xs">{t('risk_mit_priority')}</Label>
             <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
               <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
+                {Object.entries(PRIORITY_KEYS).map(([v, key]) => <SelectItem key={v} value={v}>{t(key)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -131,13 +135,13 @@ function TaskCard({ task, onUpdate, onDelete, customerUsers = [] }) {
 
         {/* Checklist editor */}
         <div className="space-y-1.5">
-          <Label className="text-xs">Checklist</Label>
+          <Label className="text-xs">{t('risk_mit_checklist')}</Label>
           {(form.checklist || []).map(item => (
             <div key={item.id} className="flex items-center gap-2">
               <Input
                 value={item.text}
                 onChange={e => updateChecklistText(item.id, e.target.value)}
-                placeholder="Step description..."
+                placeholder={t('risk_mit_step_ph')}
                 className="h-7 text-xs flex-1"
               />
               <button type="button" onClick={() => removeChecklistItem(item.id)} className="text-muted-foreground hover:text-destructive transition-colors">
@@ -146,16 +150,16 @@ function TaskCard({ task, onUpdate, onDelete, customerUsers = [] }) {
             </div>
           ))}
           <button type="button" onClick={addChecklistItem} className="flex items-center gap-1.5 text-xs text-primary hover:underline mt-1">
-            <Plus className="w-3 h-3" /> Add step
+            <Plus className="w-3 h-3" /> {t('risk_mit_add_step')}
           </button>
         </div>
 
-        <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes..." rows={1} />
+        <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder={t('risk_mit_notes_ph')} rows={1} />
 
         <div className="flex gap-2 justify-end pt-1">
-          <Button type="button" variant="outline" size="sm" onClick={() => { setEditing(false); setForm(task); }}>Cancel</Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => { setEditing(false); setForm(task); }}>{t('common_cancel')}</Button>
           <Button type="button" size="sm" onClick={handleSave} disabled={!form.title || saving}>
-            {saving && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />} Save
+            {saving && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />} {t('risk_mit_save')}
           </Button>
         </div>
       </div>
@@ -176,7 +180,7 @@ function TaskCard({ task, onUpdate, onDelete, customerUsers = [] }) {
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {task.priority && (
             <Badge variant="outline" className={cn('text-[10px] border px-1.5 py-0', PRIORITY_STYLES[task.priority])}>
-              {task.priority}
+              {t(PRIORITY_KEYS[task.priority])}
             </Badge>
           )}
           {progress !== null && (
@@ -186,7 +190,7 @@ function TaskCard({ task, onUpdate, onDelete, customerUsers = [] }) {
             <span className="text-[10px] text-muted-foreground hidden sm:block">{task.due_date}</span>
           )}
           <button type="button" onClick={() => setEditing(true)} className="text-muted-foreground hover:text-foreground transition-colors px-1">
-            <span className="text-[10px]">Edit</span>
+            <span className="text-[10px]">{t('common_edit')}</span>
           </button>
           <button type="button" onClick={() => onDelete(task.id)} className="text-muted-foreground hover:text-destructive transition-colors">
             <Trash2 className="w-3.5 h-3.5" />
@@ -205,7 +209,7 @@ function TaskCard({ task, onUpdate, onDelete, customerUsers = [] }) {
       {expanded && (
         <div className="px-3 pb-3 space-y-2 border-t pt-2 mt-0.5">
           {task.description && <p className="text-xs text-muted-foreground">{task.description}</p>}
-          {task.assigned_to && <p className="text-xs text-muted-foreground">Assigned: <span className="font-medium text-foreground">{task.assigned_to}</span></p>}
+          {task.assigned_to && <p className="text-xs text-muted-foreground">{t('risk_mit_assigned')}: <span className="font-medium text-foreground">{task.assigned_to}</span></p>}
 
           {task.checklist?.length > 0 && (
             <div className="space-y-1.5 pt-1">
@@ -236,7 +240,7 @@ function TaskCard({ task, onUpdate, onDelete, customerUsers = [] }) {
 
 // ── New task inline form ──────────────────────────────────────────────────────
 
-function NewTaskForm({ onAdd, onCancel, customerUsers = [] }) {
+function NewTaskForm({ onAdd, onCancel, customerUsers = [], t }) {
   const [form, setForm] = useState(EMPTY_TASK);
 
   return (
@@ -245,7 +249,7 @@ function NewTaskForm({ onAdd, onCancel, customerUsers = [] }) {
         autoFocus
         value={form.title}
         onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-        placeholder="Task title *"
+        placeholder={t('risk_mit_task_title_ph')}
         className="font-medium"
       />
       <div className="grid grid-cols-2 gap-2">
@@ -267,22 +271,19 @@ function NewTaskForm({ onAdd, onCancel, customerUsers = [] }) {
         <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
           <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {Object.entries(STATUS_CONFIG).map(([v, c]) => <SelectItem key={v} value={v}>{c.label}</SelectItem>)}
+            {Object.entries(STATUS_CONFIG).map(([v, c]) => <SelectItem key={v} value={v}>{t(c.labelKey)}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
           <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="low">Low</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
+            {Object.entries(PRIORITY_KEYS).map(([v, key]) => <SelectItem key={v} value={v}>{t(key)}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
       <div className="flex gap-2 justify-end">
-        <Button type="button" variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
-        <Button type="button" size="sm" disabled={!form.title} onClick={() => onAdd(form)}>Add Task</Button>
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>{t('common_cancel')}</Button>
+        <Button type="button" size="sm" disabled={!form.title} onClick={() => onAdd(form)}>{t('risk_mit_add_task')}</Button>
       </div>
     </div>
   );
@@ -291,6 +292,7 @@ function NewTaskForm({ onAdd, onCancel, customerUsers = [] }) {
 // ── Panel ─────────────────────────────────────────────────────────────────────
 
 export default function MitigationTasksPanel({ riskId, customerId }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [showNew, setShowNew] = useState(false);
 
@@ -330,12 +332,12 @@ export default function MitigationTasksPanel({ riskId, customerId }) {
     await deleteMutation.mutateAsync(id);
   };
 
-  const done = tasks.filter(t => t.status === 'done').length;
+  const done = tasks.filter(task => task.status === 'done').length;
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
-        <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading tasks...
+        <Loader2 className="w-4 h-4 animate-spin mr-2" /> {t('risk_mit_loading')}
       </div>
     );
   }
@@ -346,7 +348,7 @@ export default function MitigationTasksPanel({ riskId, customerId }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <ListChecks className="w-4 h-4" />
-          <span>{tasks.length} task{tasks.length !== 1 ? 's' : ''}{tasks.length > 0 ? ` · ${done} done` : ''}</span>
+          <span>{tasks.length} {tasks.length !== 1 ? t('risk_mit_task_plural') : t('risk_mit_task_singular')}{tasks.length > 0 ? ` · ${done} ${t('risk_mit_done')}` : ''}</span>
           {tasks.length > 0 && (
             <span className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded">
               {Math.round((done / tasks.length) * 100)}%
@@ -354,20 +356,20 @@ export default function MitigationTasksPanel({ riskId, customerId }) {
           )}
         </div>
         <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setShowNew(true)}>
-          <Plus className="w-3.5 h-3.5" /> Add Task
+          <Plus className="w-3.5 h-3.5" /> {t('risk_mit_add_task')}
         </Button>
       </div>
 
       {/* New task form */}
-      {showNew && <NewTaskForm onAdd={handleAdd} onCancel={() => setShowNew(false)} customerUsers={customerUsers} />}
+      {showNew && <NewTaskForm onAdd={handleAdd} onCancel={() => setShowNew(false)} customerUsers={customerUsers} t={t} />}
 
       {/* Task list */}
       {tasks.length === 0 && !showNew ? (
         <div className="flex flex-col items-center justify-center py-8 text-muted-foreground text-sm gap-2 border border-dashed rounded-lg">
           <ListChecks className="w-5 h-5 opacity-30" />
-          <p>No mitigation tasks yet.</p>
+          <p>{t('risk_mit_empty')}</p>
           <Button type="button" size="sm" variant="outline" onClick={() => setShowNew(true)} className="gap-1">
-            <Plus className="w-3.5 h-3.5" /> Add first task
+            <Plus className="w-3.5 h-3.5" /> {t('risk_mit_add_first')}
           </Button>
         </div>
       ) : (
@@ -379,6 +381,7 @@ export default function MitigationTasksPanel({ riskId, customerId }) {
               onUpdate={handleUpdate}
               onDelete={handleDelete}
               customerUsers={customerUsers}
+              t={t}
             />
           ))}
         </div>

@@ -8,14 +8,14 @@ import { X, Pencil, ShieldCheck, ClipboardList, ChevronRight, AlertTriangle, Plu
 import { useLanguage } from '@/lib/LanguageContext';
 
 const CELL_BG = (score) => {
-  if (score >= 20) return '#dc2626'; // red-600
-  if (score >= 16) return '#ef4444'; // red-500
-  if (score >= 12) return '#f97316'; // orange-500
-  if (score >= 9)  return '#fb923c'; // orange-400
-  if (score >= 6)  return '#facc15'; // yellow-400
-  if (score >= 4)  return '#fde047'; // yellow-300
-  if (score >= 2)  return '#bbf7d0'; // green-200
-  return '#dcfce7'; // green-100
+  if (score >= 20) return '#dc2626';
+  if (score >= 16) return '#ef4444';
+  if (score >= 12) return '#f97316';
+  if (score >= 9)  return '#fb923c';
+  if (score >= 6)  return '#facc15';
+  if (score >= 4)  return '#fde047';
+  if (score >= 2)  return '#bbf7d0';
+  return '#dcfce7';
 };
 
 const CELL_TEXT = (score) => {
@@ -24,11 +24,11 @@ const CELL_TEXT = (score) => {
   return '#166534';
 };
 
-const LEVEL_LABEL = (score) => {
-  if (score >= 16) return 'Critical';
-  if (score >= 9)  return 'High';
-  if (score >= 4)  return 'Medium';
-  return 'Low';
+const LEVEL_KEY = (score) => {
+  if (score >= 16) return 'risk_level_critical';
+  if (score >= 9)  return 'risk_level_high';
+  if (score >= 4)  return 'risk_level_medium';
+  return 'risk_level_low';
 };
 
 const STATUS_STYLES = {
@@ -37,7 +37,12 @@ const STATUS_STYLES = {
   accepted: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
   closed: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
 };
-const STATUS_LABELS = { open: 'Open', in_treatment: 'In Treatment', accepted: 'Accepted', closed: 'Closed' };
+const STATUS_KEYS = {
+  open: 'risk_status_open',
+  in_treatment: 'risk_status_in_treatment',
+  accepted: 'risk_status_accepted',
+  closed: 'risk_status_closed',
+};
 
 const TASK_STATUS_STYLES = {
   todo: 'bg-muted text-muted-foreground border-border',
@@ -45,23 +50,34 @@ const TASK_STATUS_STYLES = {
   blocked: 'bg-destructive/10 text-destructive border-destructive/20',
   done: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
 };
-const TASK_STATUS_LABELS = { todo: 'To-Do', in_progress: 'In Progress', blocked: 'Blocked', done: 'Done' };
-
-const CATEGORY_LABELS = {
-  access_control: 'Access Control', data_protection: 'Data Protection',
-  network_security: 'Network Security', physical_security: 'Physical Security',
-  third_party: 'Third Party', compliance: 'Compliance', operational: 'Operational', other: 'Other',
+const TASK_STATUS_KEYS = {
+  todo: 'tasks_status_todo',
+  in_progress: 'tasks_status_in_progress',
+  blocked: 'tasks_status_blocked',
+  done: 'tasks_status_done',
 };
 
-function ScoreZoneLegend() {
+const CATEGORY_KEYS = {
+  access_control: 'risk_cat_access_control',
+  data_protection: 'risk_cat_data_protection',
+  network_security: 'risk_cat_network_security',
+  physical_security: 'risk_cat_physical_security',
+  third_party: 'risk_cat_third_party',
+  compliance: 'risk_cat_compliance',
+  operational: 'risk_cat_operational',
+  other: 'risk_cat_other',
+};
+
+function ScoreZoneLegend({ t }) {
+  const zones = [
+    { color: '#dcfce7', text: '#166534', label: t('risk_heatmap_legend_low') },
+    { color: '#fde047', text: '#713f12', label: t('risk_heatmap_legend_medium') },
+    { color: '#fb923c', text: '#fff',    label: t('risk_heatmap_legend_high') },
+    { color: '#ef4444', text: '#fff',    label: t('risk_heatmap_legend_critical') },
+  ];
   return (
     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-      {[
-        { color: '#dcfce7', text: '#166534', label: 'Low (1–3)' },
-        { color: '#fde047', text: '#713f12', label: 'Medium (4–8)' },
-        { color: '#fb923c', text: '#fff',    label: 'High (9–15)' },
-        { color: '#ef4444', text: '#fff',    label: 'Critical (16–25)' },
-      ].map(({ color, text, label }) => (
+      {zones.map(({ color, text, label }) => (
         <span key={label} className="flex items-center gap-1.5">
           <span className="w-4 h-4 rounded flex items-center justify-center text-[9px] font-bold" style={{ background: color, color: text }}>●</span>
           {label}
@@ -73,9 +89,9 @@ function ScoreZoneLegend() {
 
 export default function RiskHeatmap({ risks, onEdit }) {
   const { t } = useLanguage();
-  const [selected, setSelected] = useState(null); // { impact, likelihood }
-  const [activeTab, setActiveTab] = useState('risks'); // 'risks' | 'tasks'
-  const [taskSubTab, setTaskSubTab] = useState('general'); // 'general' | 'mitigation'
+  const [selected, setSelected] = useState(null);
+  const [activeTab, setActiveTab] = useState('risks');
+  const [taskSubTab, setTaskSubTab] = useState('general');
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
@@ -103,12 +119,8 @@ export default function RiskHeatmap({ risks, onEdit }) {
 
   const selectedScore = selected ? selected.impact * selected.likelihood : 0;
 
-  // Tasks linked to the selected risks
   const linkedTasks = useMemo(() => {
     if (!selectedRisks.length) return [];
-    const riskIds = new Set(selectedRisks.map(r => r.id));
-    // Tasks that reference one of the selected risk IDs (via assessment_id match or customer)
-    // We match on customer_id to surface relevant remediation tasks
     const customerIds = new Set(selectedRisks.map(r => r.customer_id).filter(Boolean));
     return tasks.filter(t =>
       (t.customer_id && customerIds.has(t.customer_id)) ||
@@ -116,7 +128,6 @@ export default function RiskHeatmap({ risks, onEdit }) {
     );
   }, [selectedRisks, tasks]);
 
-  // Mitigation notes from selected risks
   const mitigationItems = useMemo(() =>
     selectedRisks.filter(r => r.treatment_notes),
     [selectedRisks]
@@ -131,7 +142,7 @@ export default function RiskHeatmap({ risks, onEdit }) {
           <div className="flex items-start gap-2 mb-2">
             <div className="w-20 flex-shrink-0" />
             <div className="flex-1 text-center text-xs font-semibold text-muted-foreground tracking-wide uppercase">
-              Likelihood →
+              {t('risk_heatmap_likelihood_axis')}
             </div>
           </div>
 
@@ -140,7 +151,7 @@ export default function RiskHeatmap({ risks, onEdit }) {
             <div className="w-5 flex items-center justify-center flex-shrink-0">
               <span className="text-xs font-semibold text-muted-foreground tracking-wide uppercase"
                 style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
-                Impact ↑
+                {t('risk_heatmap_impact_axis')}
               </span>
             </div>
 
@@ -177,7 +188,7 @@ export default function RiskHeatmap({ risks, onEdit }) {
                           key={likelihood}
                           onClick={() => handleCellClick(impact, likelihood)}
                           title={hasRisks
-                            ? `I${impact} × L${likelihood} = ${score} · ${cell.length} risk${cell.length !== 1 ? 's' : ''} — click to drill down`
+                            ? `I${impact} × L${likelihood} = ${score} · ${cell.length} ${cell.length !== 1 ? t('risk_mit_task_plural') : t('risk_mit_task_singular')}`
                             : `I${impact} × L${likelihood} = ${score}`
                           }
                           className={`flex-1 h-14 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all select-none
@@ -201,15 +212,15 @@ export default function RiskHeatmap({ risks, onEdit }) {
         </div>
       </div>
 
-      <ScoreZoneLegend />
+      <ScoreZoneLegend t={t} />
 
       {/* Zone summary bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {[
-          { label: 'Critical', min: 16, bg: 'bg-destructive/10', text: 'text-destructive', border: 'border-destructive/20' },
-          { label: 'High',     min: 9,  max: 16, bg: 'bg-chart-4/10', text: 'text-chart-4', border: 'border-chart-4/20' },
-          { label: 'Medium',   min: 4,  max: 9,  bg: 'bg-chart-3/10', text: 'text-chart-3', border: 'border-chart-3/20' },
-          { label: 'Low',      max: 4,  bg: 'bg-chart-2/10', text: 'text-chart-2', border: 'border-chart-2/20' },
+          { labelKey: 'risk_level_critical', min: 16, bg: 'bg-destructive/10', text: 'text-destructive', border: 'border-destructive/20' },
+          { labelKey: 'risk_level_high',     min: 9,  max: 16, bg: 'bg-chart-4/10', text: 'text-chart-4', border: 'border-chart-4/20' },
+          { labelKey: 'risk_level_medium',   min: 4,  max: 9,  bg: 'bg-chart-3/10', text: 'text-chart-3', border: 'border-chart-3/20' },
+          { labelKey: 'risk_level_low',      max: 4,  bg: 'bg-chart-2/10', text: 'text-chart-2', border: 'border-chart-2/20' },
         ].map(zone => {
           const count = risks.filter(r => {
             const s = (r.impact || 0) * (r.likelihood || 0);
@@ -217,9 +228,8 @@ export default function RiskHeatmap({ risks, onEdit }) {
           }).length;
           return (
             <button
-              key={zone.label}
+              key={zone.labelKey}
               onClick={() => {
-                // Find first cell in this zone and select it (or clear if already filtering this zone)
                 if (count === 0) return;
                 const firstRisk = risks.find(r => {
                   const s = (r.impact || 0) * (r.likelihood || 0);
@@ -235,12 +245,10 @@ export default function RiskHeatmap({ risks, onEdit }) {
                   }).length;
 
                   if (!isSameZone) {
-                    // Select the highest-score cell in this zone
                     const zoneRisks = risks.filter(r => {
                       const s = (r.impact || 0) * (r.likelihood || 0);
                       return s >= (zone.min || 0) && s < (zone.max || Infinity);
                     });
-                    // Find the cell with most risks in this zone
                     const best = zoneRisks.reduce((acc, r) => {
                       const key = `${r.impact}-${r.likelihood}`;
                       acc[key] = (acc[key] || 0) + 1;
@@ -258,7 +266,7 @@ export default function RiskHeatmap({ risks, onEdit }) {
               className={`rounded-lg border px-3 py-2.5 text-left transition-colors hover:opacity-80 ${zone.bg} ${zone.border} ${count === 0 ? 'opacity-40 cursor-default' : 'cursor-pointer'}`}
             >
               <p className={`text-xl font-bold ${zone.text}`}>{count}</p>
-              <p className={`text-xs font-medium ${zone.text}`}>{zone.label}</p>
+              <p className={`text-xs font-medium ${zone.text}`}>{t(zone.labelKey)}</p>
             </button>
           );
         })}
@@ -271,7 +279,7 @@ export default function RiskHeatmap({ risks, onEdit }) {
           <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-semibold">
-                Impact <strong>{selected.impact}</strong> × Likelihood <strong>{selected.likelihood}</strong>
+                {t('risk_impact')} <strong>{selected.impact}</strong> × {t('risk_likelihood')} <strong>{selected.likelihood}</strong>
               </span>
               <Badge
                 className={`border text-xs ${
@@ -282,9 +290,9 @@ export default function RiskHeatmap({ risks, onEdit }) {
                 }`}
                 variant="outline"
               >
-                {LEVEL_LABEL(selectedScore)} · Score {selectedScore}
+                {t(LEVEL_KEY(selectedScore))} · {t('risk_score')} {selectedScore}
               </Badge>
-              <span className="text-xs text-muted-foreground">{selectedRisks.length} risk{selectedRisks.length !== 1 ? 's' : ''}</span>
+              <span className="text-xs text-muted-foreground">{selectedRisks.length} {selectedRisks.length !== 1 ? t('risk_mit_task_plural') : t('risk_mit_task_singular')}</span>
             </div>
             <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground transition-colors">
               <X className="w-4 h-4" />
@@ -294,9 +302,9 @@ export default function RiskHeatmap({ risks, onEdit }) {
           {/* Tabs */}
           <div className="flex border-b">
             {[
-              { id: 'risks', label: 'Risks', Icon: AlertTriangle },
-              { id: 'tasks', label: `Tasks`, Icon: ClipboardList },
-            ].map(({ id, label, Icon }) => (
+              { id: 'risks', labelKey: 'risk_heatmap_risks_tab', Icon: AlertTriangle },
+              { id: 'tasks', labelKey: 'risk_heatmap_tasks_tab', Icon: ClipboardList },
+            ].map(({ id, labelKey, Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
@@ -307,7 +315,7 @@ export default function RiskHeatmap({ risks, onEdit }) {
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
-                {label}
+                {t(labelKey)}
               </button>
             ))}
           </div>
@@ -326,16 +334,16 @@ export default function RiskHeatmap({ risks, onEdit }) {
                       )}
                       <p className="text-sm font-medium">{risk.title}</p>
                       <Badge variant="outline" className={`text-xs border ${STATUS_STYLES[risk.status]}`}>
-                        {STATUS_LABELS[risk.status]}
+                        {t(STATUS_KEYS[risk.status])}
                       </Badge>
                     </div>
                     {risk.description && (
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{risk.description}</p>
                     )}
                     <div className="flex flex-wrap gap-2 mt-1.5 text-xs text-muted-foreground">
-                      {risk.category && <span className="bg-muted px-1.5 py-0.5 rounded">{CATEGORY_LABELS[risk.category] || risk.category}</span>}
-                      {risk.owner_email && <span>Owner: {risk.owner_email}</span>}
-                      {risk.due_date && <span>Due: {risk.due_date}</span>}
+                      {risk.category && <span className="bg-muted px-1.5 py-0.5 rounded">{t(CATEGORY_KEYS[risk.category]) || risk.category}</span>}
+                      {risk.owner_email && <span>{t('risk_owner')}: {risk.owner_email}</span>}
+                      {risk.due_date && <span>{t('risk_due')}: {risk.due_date}</span>}
                       {risk.customer_name && <span>· {risk.customer_name}</span>}
                     </div>
                   </div>
@@ -402,15 +410,15 @@ export default function RiskHeatmap({ risks, onEdit }) {
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-sm font-medium">{task.title}</p>
                               <Badge variant="outline" className={`text-xs border ${TASK_STATUS_STYLES[task.status]}`}>
-                                {TASK_STATUS_LABELS[task.status]}
+                                {t(TASK_STATUS_KEYS[task.status])}
                               </Badge>
                             </div>
                             {task.description && (
                               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{task.description}</p>
                             )}
                             <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
-                              {task.assigned_to && <span>Assigned: {task.assigned_to}</span>}
-                              {task.due_date && <span>· Due: {task.due_date}</span>}
+                              {task.assigned_to && <span>{t('risk_mit_assigned')}: {task.assigned_to}</span>}
+                              {task.due_date && <span>· {t('risk_due')}: {task.due_date}</span>}
                               {task.customer_name && <span>· {task.customer_name}</span>}
                             </div>
                           </div>
@@ -445,9 +453,9 @@ export default function RiskHeatmap({ risks, onEdit }) {
                             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{risk.treatment_notes}</p>
                             <div className="flex gap-2 mt-1.5 text-xs text-muted-foreground">
                               <Badge variant="outline" className={`text-xs border ${STATUS_STYLES[risk.status]}`}>
-                                {STATUS_LABELS[risk.status]}
+                                {t(STATUS_KEYS[risk.status])}
                               </Badge>
-                              {risk.due_date && <span className="self-center">Target: {risk.due_date}</span>}
+                              {risk.due_date && <span className="self-center">{t('risk_heatmap_target')}: {risk.due_date}</span>}
                             </div>
                           </div>
                         </div>
