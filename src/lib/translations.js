@@ -9,6 +9,7 @@ export const translations = {
     nav_tools: 'Tools',
     nav_system: 'System',
     nav_supply_chain_group: 'Supply Chain',
+    nav_development: 'Development',
     // Sidebar items
     nav_dashboard: 'Dashboard',
     nav_customers: 'Customers',
@@ -1252,6 +1253,7 @@ export const translations = {
     nav_tools: 'Ferramentas',
     nav_system: 'Sistema',
     nav_supply_chain_group: 'Cadeia de Abastecimento',
+    nav_development: 'Desenvolvimento',
     // Sidebar items
     nav_dashboard: 'Painel',
     nav_customers: 'Clientes',

@@ -79,6 +79,9 @@ export default function Sidebar({ collapsed, onToggle }) {
       { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
     ] : []),
     { path: '/settings', labelKey: 'nav_settings', icon: Settings },
+  ];
+
+  const developmentItems = [
     { path: '/ropa', labelKey: 'nav_ropa', icon: Database },
     { path: '/incidents', labelKey: 'nav_incidents', icon: Siren },
     { path: '/dsr', labelKey: 'nav_dsr', icon: Users },
@@ -95,6 +98,7 @@ export default function Sidebar({ collapsed, onToggle }) {
     { labelKey: 'nav_main', items: visibleMainItems },
     ...(isAdmin ? [{ labelKey: 'nav_tools', items: toolsNavItems }] : []),
     { labelKey: 'nav_supply_chain_group', items: supplyChainItems },
+    { labelKey: 'nav_development', items: developmentItems },
     { labelKey: 'nav_system', items: systemItems },
   ];
 
