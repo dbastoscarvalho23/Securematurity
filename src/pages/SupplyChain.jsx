@@ -9,10 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, ChevronRight, Building2, CalendarDays, Layers, Loader2 } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, ChevronRight, Building2, CalendarDays, Layers, Loader2, FileSpreadsheet } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import QuestionnaireFormDialog from '@/components/supplychain/QuestionnaireFormDialog';
 import QuestionnaireDetail from '@/components/supplychain/QuestionnaireDetail';
+import QuestionnaireExcelImportDialog from '@/components/supplychain/QuestionnaireExcelImportDialog';
+import { writeAuditLog } from '@/lib/auditLog';
 import { toast } from 'sonner';
 
 const STATUS_STYLES = {
@@ -33,6 +35,7 @@ export default function SupplyChain() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [customerFilter, setCustomerFilter] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [selected, setSelected] = useState(null);
 
@@ -66,6 +69,29 @@ export default function SupplyChain() {
     toast.success(t('sc_questionnaire_deleted'));
   };
 
+  const handleExcelImport = async (items) => {
+    let created = 0;
+    for (const item of items) {
+      const data = { ...item };
+      if (!isAdmin) {
+        data.customer_id = customerId;
+        data.customer_name = user?.customer_name || data.customer_name;
+      } else if (item.customer_name && customers.length > 0) {
+        const match = customers.find(c => c.name?.toLowerCase() === item.customer_name?.toLowerCase());
+        if (match) { data.customer_id = match.id; data.customer_name = match.name; }
+      }
+      if (!data.customer_id) {
+        toast.error(t('sc_form_customer'));
+        return;
+      }
+      await base44.entities.SupplierQuestionnaire.create(data);
+      created++;
+    }
+    await writeAuditLog({ action: 'ropa_created', entity_type: 'SupplierQuestionnaire', details: `Bulk imported ${created} questionnaires from Excel` });
+    queryClient.invalidateQueries({ queryKey: ['supplier-questionnaires'] });
+    toast.success(`${created} ${t('sc_imported')}`);
+  };
+
   const filtered = questionnaires.filter(q => {
     const matchSearch = !search || q.title?.toLowerCase().includes(search.toLowerCase()) || q.supplier_name?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || q.status === statusFilter;
@@ -97,9 +123,14 @@ export default function SupplyChain() {
           <h1 className="text-2xl font-bold">{t('nav_supply_chain')}</h1>
           <p className="text-sm text-muted-foreground">{t('sc_page_subtitle')}</p>
         </div>
-        <Button onClick={() => { setEditing(null); setDialogOpen(true); }} className="gap-2">
-          <Plus className="w-4 h-4" />{t('sc_new_questionnaire')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+            <FileSpreadsheet className="w-4 h-4" /> {t('sc_import_excel')}
+          </Button>
+          <Button onClick={() => { setEditing(null); setDialogOpen(true); }} className="gap-2">
+            <Plus className="w-4 h-4" />{t('sc_new_questionnaire')}
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -240,6 +271,12 @@ export default function SupplyChain() {
         customers={customers}
         suppliers={suppliers}
         onSaved={() => queryClient.invalidateQueries({ queryKey: ['supplier-questionnaires'] })}
+      />
+
+      <QuestionnaireExcelImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImport={handleExcelImport}
       />
     </div>
   );
