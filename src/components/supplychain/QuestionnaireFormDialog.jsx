@@ -23,7 +23,7 @@ const PRESET_AREAS = [
   'Compliance & Certifications',
 ];
 
-export default function QuestionnaireFormDialog({ open, onClose, questionnaire, customers, onSaved }) {
+export default function QuestionnaireFormDialog({ open, onClose, questionnaire, customers, suppliers = [], onSaved }) {
   const { t } = useLanguage();
   const [form, setForm] = useState({
     title: '',
@@ -37,14 +37,37 @@ export default function QuestionnaireFormDialog({ open, onClose, questionnaire, 
   });
   const [saving, setSaving] = useState(false);
   const [customArea, setCustomArea] = useState('');
+  const [selectedSupplierId, setSelectedSupplierId] = useState('');
 
   useEffect(() => {
     if (questionnaire) {
       setForm({ ...questionnaire });
+      // Try to match an existing supplier by name/email
+      const matched = suppliers.find(s =>
+        (questionnaire.supplier_name && s.name === questionnaire.supplier_name) ||
+        (questionnaire.supplier_email && s.contact_email === questionnaire.supplier_email)
+      );
+      setSelectedSupplierId(matched?.id || '');
     } else {
       setForm({ title: '', customer_id: '', supplier_name: '', supplier_email: '', areas: [], status: 'draft', due_date: '', notes: '' });
+      setSelectedSupplierId('');
     }
   }, [questionnaire, open]);
+
+  const handleSelectSupplier = (supplierId) => {
+    setSelectedSupplierId(supplierId);
+    if (supplierId === 'manual') {
+      return; // keep current values, user will type
+    }
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (supplier) {
+      setForm(f => ({
+        ...f,
+        supplier_name: supplier.name || f.supplier_name,
+        supplier_email: supplier.contact_email || f.supplier_email,
+      }));
+    }
+  };
 
   const toggleArea = (area) => {
     setForm(f => ({
@@ -106,6 +129,21 @@ export default function QuestionnaireFormDialog({ open, onClose, questionnaire, 
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="col-span-2">
+              <Label>{t('sc_form_select_supplier')}</Label>
+              <Select value={selectedSupplierId} onValueChange={handleSelectSupplier}>
+                <SelectTrigger><SelectValue placeholder={t('sc_form_select_supplier_placeholder')} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manual">{t('sc_form_supplier_manual')}</SelectItem>
+                  {suppliers.map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}{s.contact_email ? ` — ${s.contact_email}` : ''}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {suppliers.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">{t('sc_form_no_suppliers')}</p>
+              )}
             </div>
             <div>
               <Label>{t('sc_form_supplier_name')}</Label>

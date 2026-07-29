@@ -51,6 +51,14 @@ export default function SupplyChain() {
     queryFn: () => base44.entities.Customer.list('name'),
   });
 
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ['suppliers'],
+    queryFn: () => isAdmin
+      ? base44.entities.Supplier.list('name')
+      : base44.entities.Supplier.filter({ customer_id: customerId }, 'name'),
+    enabled: isAdmin || !!customerId,
+  });
+
   const handleDelete = async (q) => {
     if (!confirm(`${t('sc_delete_confirm')} "${q.title}"?`)) return;
     await base44.entities.SupplierQuestionnaire.delete(q.id);
@@ -230,6 +238,7 @@ export default function SupplyChain() {
         onClose={() => setDialogOpen(false)}
         questionnaire={editing}
         customers={customers}
+        suppliers={suppliers}
         onSaved={() => queryClient.invalidateQueries({ queryKey: ['supplier-questionnaires'] })}
       />
     </div>
