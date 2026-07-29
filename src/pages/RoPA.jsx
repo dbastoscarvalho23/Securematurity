@@ -18,13 +18,15 @@ import { STATUS_STYLES } from '@/lib/complianceUtils';
 import { toast } from 'sonner';
 
 const LEGAL_BASES = [
-  { value: 'consent', label: 'Consent (Art. 6(1)(a))' },
-  { value: 'contract', label: 'Contract (Art. 6(1)(b))' },
-  { value: 'legal_obligation', label: 'Legal Obligation (Art. 6(1)(c))' },
-  { value: 'vital_interests', label: 'Vital Interests (Art. 6(1)(d))' },
-  { value: 'public_task', label: 'Public Task (Art. 6(1)(e))' },
-  { value: 'legitimate_interests', label: 'Legitimate Interests (Art. 6(1)(f))' },
+  { value: 'consent', key: 'ropa_lb_consent' },
+  { value: 'contract', key: 'ropa_lb_contract' },
+  { value: 'legal_obligation', key: 'ropa_lb_legal_obligation' },
+  { value: 'vital_interests', key: 'ropa_lb_vital_interests' },
+  { value: 'public_task', key: 'ropa_lb_public_task' },
+  { value: 'legitimate_interests', key: 'ropa_lb_legitimate_interests' },
 ];
+
+const STATUS_LABELS = { active: 'ropa_status_active', inactive: 'ropa_status_inactive', draft: 'ropa_status_draft' };
 
 const DEFAULT_FORM = {
   activity_name: '', purpose: '', legal_basis: 'consent', data_subjects: '',
@@ -107,20 +109,20 @@ export default function RoPA() {
         const created = await base44.entities.DataProcessingActivity.create(payload);
         await writeAuditLog({ action: 'ropa_created', entity_type: 'DataProcessingActivity', entity_id: created.id, details: `RoPA created: ${form.activity_name}` });
       }
-      toast.success(editing ? 'Activity updated' : 'Activity created');
+      toast.success(editing ? t('ropa_updated') : t('ropa_created'));
       queryClient.invalidateQueries({ queryKey: ['ropa'] });
       setDialogOpen(false);
     } catch (e) {
-      toast.error('Failed to save');
+      toast.error(t('common_save_failed'));
     }
     setSaving(false);
   };
 
   const handleDelete = async (rec) => {
-    if (!confirm(`Delete "${rec.activity_name}"?`)) return;
+    if (!confirm(t('ropa_delete_confirm').replace('{name}', rec.activity_name))) return;
     await base44.entities.DataProcessingActivity.delete(rec.id);
     await writeAuditLog({ action: 'ropa_deleted', entity_type: 'DataProcessingActivity', entity_id: rec.id, details: `RoPA deleted: ${rec.activity_name}` });
-    toast.success('Activity deleted');
+    toast.success(t('ropa_deleted'));
     queryClient.invalidateQueries({ queryKey: ['ropa'] });
   };
 
@@ -128,24 +130,24 @@ export default function RoPA() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Database className="w-6 h-6" /> Records of Processing Activities</h1>
-          <p className="text-sm text-muted-foreground">GDPR Article 30 — Registry of processing operations</p>
+          <h1 className="text-2xl font-bold flex items-center gap-2"><Database className="w-6 h-6" /> {t('page_ropa')}</h1>
+          <p className="text-sm text-muted-foreground">{t('ropa_subtitle')}</p>
         </div>
-        <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" /> New Activity</Button>
+        <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" /> {t('ropa_new')}</Button>
       </div>
 
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search activities..." className="pl-9" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('ropa_search_placeholder')} className="pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="all">{t('ropa_filter_all_statuses')}</SelectItem>
+            <SelectItem value="active">{t('ropa_status_active')}</SelectItem>
+            <SelectItem value="inactive">{t('ropa_status_inactive')}</SelectItem>
+            <SelectItem value="draft">{t('ropa_status_draft')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -157,17 +159,17 @@ export default function RoPA() {
           ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
-              <p>No processing activities recorded yet.</p>
+              <p>{t('ropa_empty')}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Activity</TableHead>
-                  <TableHead>Legal Basis</TableHead>
-                  <TableHead>Retention</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-20">Actions</TableHead>
+                  <TableHead>{t('ropa_col_activity')}</TableHead>
+                  <TableHead>{t('ropa_col_legal_basis')}</TableHead>
+                  <TableHead>{t('ropa_col_retention')}</TableHead>
+                  <TableHead>{t('common_status')}</TableHead>
+                  <TableHead className="w-20">{t('common_actions') || 'Actions'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -178,14 +180,14 @@ export default function RoPA() {
                       <p className="text-xs text-muted-foreground truncate max-w-xs">{r.purpose}</p>
                     </TableCell>
                     <TableCell>
-                      <span className="text-xs">{LEGAL_BASES.find(b => b.value === r.legal_basis)?.label.split(' (')[0] || r.legal_basis}</span>
+                      <span className="text-xs">{(LEGAL_BASES.find(b => b.value === r.legal_basis)?.key ? t(LEGAL_BASES.find(b => b.value === r.legal_basis).key) : r.legal_basis).split(' (')[0]}</span>
                     </TableCell>
                     <TableCell>
                       <p className="text-xs">{r.retention_period || '—'}</p>
-                      {r.retention_expiry_date && <p className="text-xs text-muted-foreground">Exp: {r.retention_expiry_date}</p>}
+                      {r.retention_expiry_date && <p className="text-xs text-muted-foreground">{t('ropa_exp')}: {r.retention_expiry_date}</p>}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-xs ${STATUS_STYLES[r.status] || ''}`}>{r.status}</Badge>
+                      <Badge variant="outline" className={`text-xs ${STATUS_STYLES[r.status] || ''}`}>{t(STATUS_LABELS[r.status] || r.status)}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -203,99 +205,99 @@ export default function RoPA() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? 'Edit Activity' : 'New Processing Activity'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? t('ropa_edit_title') : t('ropa_new_title')}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Activity Name *</Label>
-              <Input value={form.activity_name} onChange={e => set('activity_name', e.target.value)} placeholder="e.g. Employee payroll processing" />
+              <Label>{t('ropa_activity_name')} *</Label>
+              <Input value={form.activity_name} onChange={e => set('activity_name', e.target.value)} placeholder={t('ropa_ph_activity')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Purpose *</Label>
-              <Textarea value={form.purpose} onChange={e => set('purpose', e.target.value)} rows={2} placeholder="Purpose of the processing..." />
+              <Label>{t('ropa_purpose')} *</Label>
+              <Textarea value={form.purpose} onChange={e => set('purpose', e.target.value)} rows={2} placeholder={t('ropa_ph_purpose')} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Legal Basis *</Label>
+                <Label>{t('ropa_legal_basis')} *</Label>
                 <Select value={form.legal_basis} onValueChange={v => set('legal_basis', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{LEGAL_BASES.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}</SelectContent>
+                  <SelectContent>{LEGAL_BASES.map(b => <SelectItem key={b.value} value={b.value}>{t(b.key)}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Status</Label>
+                <Label>{t('common_status')}</Label>
                 <Select value={form.status} onValueChange={v => set('status', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="draft">{t('ropa_status_draft')}</SelectItem>
+                    <SelectItem value="active">{t('ropa_status_active')}</SelectItem>
+                    <SelectItem value="inactive">{t('ropa_status_inactive')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Data Subjects (comma-separated)</Label>
-                <Input value={form.data_subjects} onChange={e => set('data_subjects', e.target.value)} placeholder="Employees, Customers..." />
+                <Label>{t('ropa_data_subjects')}</Label>
+                <Input value={form.data_subjects} onChange={e => set('data_subjects', e.target.value)} placeholder={t('ropa_ph_subjects')} />
               </div>
               <div className="space-y-1.5">
-                <Label>Data Categories (comma-separated)</Label>
-                <Input value={form.data_categories} onChange={e => set('data_categories', e.target.value)} placeholder="Identification, Financial..." />
+                <Label>{t('ropa_data_categories')}</Label>
+                <Input value={form.data_categories} onChange={e => set('data_categories', e.target.value)} placeholder={t('ropa_ph_categories')} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Retention Period</Label>
-                <Input value={form.retention_period} onChange={e => set('retention_period', e.target.value)} placeholder="e.g. 5 years" />
+                <Label>{t('ropa_retention_period')}</Label>
+                <Input value={form.retention_period} onChange={e => set('retention_period', e.target.value)} placeholder={t('ropa_ph_retention')} />
               </div>
               <div className="space-y-1.5">
-                <Label>Retention Action</Label>
+                <Label>{t('ropa_retention_action')}</Label>
                 <Select value={form.retention_action} onValueChange={v => set('retention_action', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="delete">Delete</SelectItem>
-                    <SelectItem value="anonymize">Anonymize</SelectItem>
-                    <SelectItem value="archive">Archive</SelectItem>
+                    <SelectItem value="delete">{t('ropa_action_delete')}</SelectItem>
+                    <SelectItem value="anonymize">{t('ropa_action_anonymize')}</SelectItem>
+                    <SelectItem value="archive">{t('ropa_action_archive')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Retention Expiry Date</Label>
+                <Label>{t('ropa_retention_expiry')}</Label>
                 <Input type="date" value={form.retention_expiry_date || ''} onChange={e => set('retention_expiry_date', e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>Next Review Date</Label>
+                <Label>{t('ropa_next_review')}</Label>
                 <Input type="date" value={form.next_review || ''} onChange={e => set('next_review', e.target.value)} />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Processor Name</Label>
-              <Input value={form.processor_name} onChange={e => set('processor_name', e.target.value)} placeholder="Data processor (if applicable)" />
+              <Label>{t('ropa_processor_name')}</Label>
+              <Input value={form.processor_name} onChange={e => set('processor_name', e.target.value)} placeholder={t('ropa_ph_processor')} />
             </div>
             <div className="space-y-1.5">
-              <Label>DPO Name</Label>
-              <Input value={form.dpo_name} onChange={e => set('dpo_name', e.target.value)} placeholder="Data Protection Officer" />
+              <Label>{t('ropa_dpo_name')}</Label>
+              <Input value={form.dpo_name} onChange={e => set('dpo_name', e.target.value)} placeholder={t('ropa_ph_dpo')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Security Measures</Label>
-              <Textarea value={form.security_measures} onChange={e => set('security_measures', e.target.value)} rows={2} placeholder="Technical and organisational measures..." />
+              <Label>{t('ropa_security_measures')}</Label>
+              <Textarea value={form.security_measures} onChange={e => set('security_measures', e.target.value)} rows={2} placeholder={t('ropa_ph_measures')} />
             </div>
             {isAdmin && !editing && (
               <div className="space-y-1.5">
-                <Label>Customer *</Label>
+                <Label>{t('common_customer')} *</Label>
                 <Select value={form.customer_id || ''} onValueChange={v => { const c = customers.find(c => c.id === v); set('customer_id', v); set('customer_name', c?.name || ''); }}>
-                  <SelectTrigger><SelectValue placeholder="Select customer..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('common_select_customer')} /></SelectTrigger>
                   <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('common_cancel')}</Button>
             <Button onClick={handleSave} disabled={saving || !form.activity_name || !form.purpose}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Save
+              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{t('common_save')}
             </Button>
           </DialogFooter>
         </DialogContent>

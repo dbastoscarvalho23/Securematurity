@@ -42,12 +42,12 @@ const DEFAULT_FORM = {
   supervisor_authority_notified: false, individuals_notified: false,
 };
 
-function Nis2TimerBadge({ detected_at, sent, deadlineHours, label }) {
+function Nis2TimerBadge({ detected_at, sent, deadlineHours, label, overdueLabel, leftLabel }) {
   const hours = hoursRemaining(detected_at, deadlineHours);
   if (sent) return <Badge variant="outline" className="text-xs bg-chart-2/10 text-chart-2 border-chart-2/20"><CheckCircle2 className="w-3 h-3 mr-1" />{label}</Badge>;
   if (hours === null) return <Badge variant="outline" className="text-xs text-muted-foreground">{label}</Badge>;
-  if (hours < 0) return <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/20"><AlertOctagon className="w-3 h-3 mr-1" />{label} overdue</Badge>;
-  return <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20"><Clock className="w-3 h-3 mr-1" />{label}: {hours}h left</Badge>;
+  if (hours < 0) return <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/20"><AlertOctagon className="w-3 h-3 mr-1" />{label} {overdueLabel}</Badge>;
+  return <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20"><Clock className="w-3 h-3 mr-1" />{label}: {hours}h {leftLabel}</Badge>;
 }
 
 export default function IncidentManagement() {
@@ -123,25 +123,25 @@ export default function IncidentManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><AlertTriangle className="w-6 h-6" /> Incident Management</h1>
-          <p className="text-sm text-muted-foreground">NIS2 Article 23 — Incident reporting with notification timers</p>
+          <h1 className="text-2xl font-bold flex items-center gap-2"><AlertTriangle className="w-6 h-6" /> {t('page_incidents')}</h1>
+          <p className="text-sm text-muted-foreground">{t('inc_subtitle')}</p>
         </div>
-        <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" /> New Incident</Button>
+        <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" /> {t('inc_new')}</Button>
       </div>
 
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search incidents..." className="pl-9" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('inc_search_placeholder')} className="pl-9" />
         </div>
         <Select value={severityFilter} onValueChange={setSeverityFilter}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Severities</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="all">{t('inc_filter_all_severities')}</SelectItem>
+            <SelectItem value="critical">{t('risk_level_critical')}</SelectItem>
+            <SelectItem value="high">{t('risk_level_high')}</SelectItem>
+            <SelectItem value="medium">{t('risk_level_medium')}</SelectItem>
+            <SelectItem value="low">{t('risk_level_low')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -151,17 +151,17 @@ export default function IncidentManagement() {
           {isLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground"><AlertTriangle className="w-10 h-10 mx-auto mb-2 opacity-30" /><p>No incidents recorded.</p></div>
+            <div className="text-center py-12 text-muted-foreground"><AlertTriangle className="w-10 h-10 mx-auto mb-2 opacity-30" /><p>{t('inc_empty')}</p></div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Incident</TableHead>
-                  <TableHead>Severity</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Detected</TableHead>
-                  <TableHead>NIS2 Notifications</TableHead>
-                  <TableHead className="w-16">Edit</TableHead>
+                  <TableHead>{t('inc_col_incident')}</TableHead>
+                  <TableHead>{t('common_severity') || 'Severity'}</TableHead>
+                  <TableHead>{t('common_status')}</TableHead>
+                  <TableHead>{t('inc_col_detected')}</TableHead>
+                  <TableHead>{t('inc_col_notifications')}</TableHead>
+                  <TableHead className="w-16">{t('common_edit') || 'Edit'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -169,18 +169,18 @@ export default function IncidentManagement() {
                   <TableRow key={r.id}>
                     <TableCell>
                       <p className="font-medium">{r.title}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{r.category?.replace(/_/g, ' ')}</p>
+                      <p className="text-xs text-muted-foreground">{t(`inc_cat_${r.category}`) || r.category?.replace(/_/g, ' ')}</p>
                       {r.incident_id && <p className="text-xs text-muted-foreground">{r.incident_id}</p>}
                     </TableCell>
-                    <TableCell><Badge variant="outline" className={`text-xs ${SEVERITY_STYLES[r.severity] || ''}`}>{r.severity}</Badge></TableCell>
-                    <TableCell><Badge variant="outline" className={`text-xs ${STATUS_STYLES[r.status] || ''}`}>{r.status?.replace(/_/g, ' ')}</Badge></TableCell>
+                    <TableCell><Badge variant="outline" className={`text-xs ${SEVERITY_STYLES[r.severity] || ''}`}>{t(SEVERITY_LABELS[r.severity] || r.severity)}</Badge></TableCell>
+                    <TableCell><Badge variant="outline" className={`text-xs ${STATUS_STYLES[r.status] || ''}`}>{t(STATUS_LABELS[r.status] || r.status)}</Badge></TableCell>
                     <TableCell><p className="text-xs">{formatDateTime(r.detected_at)}</p></TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        <Nis2TimerBadge detected_at={r.detected_at} sent={r.early_warning_sent} deadlineHours={24} label="Early Warning" />
-                        <Nis2TimerBadge detected_at={r.detected_at} sent={r.notification_sent} deadlineHours={72} label="Notification" />
+                        <Nis2TimerBadge detected_at={r.detected_at} sent={r.early_warning_sent} deadlineHours={24} label={t('inc_badge_early_warning')} overdueLabel={t('inc_overdue')} leftLabel={t('common_left') || 'left'} />
+                        <Nis2TimerBadge detected_at={r.detected_at} sent={r.notification_sent} deadlineHours={72} label={t('inc_badge_notification')} overdueLabel={t('inc_overdue')} leftLabel={t('common_left') || 'left'} />
                         {r.data_breach && (
-                          <Nis2TimerBadge detected_at={r.detected_at} sent={r.supervisor_authority_notified} deadlineHours={72} label="SA Notified" />
+                          <Nis2TimerBadge detected_at={r.detected_at} sent={r.supervisor_authority_notified} deadlineHours={72} label={t('inc_badge_sa')} overdueLabel={t('inc_overdue')} leftLabel={t('common_left') || 'left'} />
                         )}
                       </div>
                     </TableCell>
@@ -195,89 +195,89 @@ export default function IncidentManagement() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? 'Edit Incident' : 'New Incident'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? t('inc_edit_title') : t('inc_new_title')}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Title *</Label>
-              <Input value={form.title} onChange={e => set('title', e.target.value)} placeholder="Brief incident title" />
+              <Label>{t('inc_title')} *</Label>
+              <Input value={form.title} onChange={e => set('title', e.target.value)} placeholder={t('inc_ph_title')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Description</Label>
-              <Textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2} placeholder="What happened..." />
+              <Label>{t('common_description')}</Label>
+              <Textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2} placeholder={t('inc_ph_description')} />
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label>Category</Label>
+                <Label>{t('inc_category')}</Label>
                 <Select value={form.category} onValueChange={v => set('category', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c.replace(/_/g, ' ')}</SelectItem>)}</SelectContent>
+                  <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{t(`inc_cat_${c}`)}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Severity</Label>
+                <Label>{t('common_severity') || 'Severity'}</Label>
                 <Select value={form.severity} onValueChange={v => set('severity', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{['critical','high','medium','low'].map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
+                  <SelectContent>{['critical','high','medium','low'].map(s => <SelectItem key={s} value={s}>{t(SEVERITY_LABELS[s])}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Status</Label>
+                <Label>{t('common_status')}</Label>
                 <Select value={form.status} onValueChange={v => set('status', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{['detected','investigating','contained','resolved','closed'].map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>)}</SelectContent>
+                  <SelectContent>{['detected','investigating','contained','resolved','closed'].map(s => <SelectItem key={s} value={s}>{t(STATUS_LABELS[s])}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Detected At *</Label>
+                <Label>{t('inc_detected_at')} *</Label>
                 <Input type="datetime-local" value={form.detected_at} onChange={e => set('detected_at', e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>Assigned To</Label>
+                <Label>{t('common_assigned_to') || 'Assigned To'}</Label>
                 <Input value={form.assigned_to || ''} onChange={e => set('assigned_to', e.target.value)} placeholder="responder@email.com" />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Affected Systems (comma-separated)</Label>
-              <Input value={form.affected_systems} onChange={e => set('affected_systems', e.target.value)} placeholder="Email server, CRM..." />
+              <Label>{t('inc_affected_systems')}</Label>
+              <Input value={form.affected_systems} onChange={e => set('affected_systems', e.target.value)} placeholder={t('inc_ph_systems')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Affected Data Description</Label>
-              <Textarea value={form.affected_data_description || ''} onChange={e => set('affected_data_description', e.target.value)} rows={2} placeholder="What data was affected..." />
+              <Label>{t('inc_affected_data')}</Label>
+              <Textarea value={form.affected_data_description || ''} onChange={e => set('affected_data_description', e.target.value)} rows={2} placeholder={t('inc_ph_affected_data')} />
             </div>
             <div className="flex items-center gap-6">
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.data_breach} onChange={e => set('data_breach', e.target.checked)} /> Data Breach</label>
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.personal_data_affected} onChange={e => set('personal_data_affected', e.target.checked)} /> Personal Data Affected</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.data_breach} onChange={e => set('data_breach', e.target.checked)} /> {t('inc_data_breach')}</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.personal_data_affected} onChange={e => set('personal_data_affected', e.target.checked)} /> {t('inc_personal_data')}</label>
             </div>
             <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">NIS2 / GDPR Notification Status</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('inc_notif_status')}</p>
               <div className="grid grid-cols-2 gap-2">
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.early_warning_sent} onChange={e => set('early_warning_sent', e.target.checked)} /> Early Warning sent (24h)</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notification_sent} onChange={e => set('notification_sent', e.target.checked)} /> Full Notification sent (72h)</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.supervisor_authority_notified} onChange={e => set('supervisor_authority_notified', e.target.checked)} /> Supervisory Authority notified</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.individuals_notified} onChange={e => set('individuals_notified', e.target.checked)} /> Individuals notified</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.final_report_sent} onChange={e => set('final_report_sent', e.target.checked)} /> Final Report sent (1 month)</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.early_warning_sent} onChange={e => set('early_warning_sent', e.target.checked)} /> {t('inc_early_warning')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notification_sent} onChange={e => set('notification_sent', e.target.checked)} /> {t('inc_notification')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.supervisor_authority_notified} onChange={e => set('supervisor_authority_notified', e.target.checked)} /> {t('inc_sa_notified')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.individuals_notified} onChange={e => set('individuals_notified', e.target.checked)} /> {t('inc_individuals_notified')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.final_report_sent} onChange={e => set('final_report_sent', e.target.checked)} /> {t('inc_final_report')}</label>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Impact Assessment</Label>
-              <Textarea value={form.impact_assessment || ''} onChange={e => set('impact_assessment', e.target.value)} rows={2} placeholder="Assessment of impact..." />
+              <Label>{t('inc_impact_assessment')}</Label>
+              <Textarea value={form.impact_assessment || ''} onChange={e => set('impact_assessment', e.target.value)} rows={2} placeholder={t('inc_ph_impact')} />
             </div>
             {isAdmin && !editing && (
               <div className="space-y-1.5">
-                <Label>Customer *</Label>
+                <Label>{t('common_customer')} *</Label>
                 <Select value={form.customer_id || ''} onValueChange={v => { const c = customers.find(c => c.id === v); set('customer_id', v); set('customer_name', c?.name || ''); }}>
-                  <SelectTrigger><SelectValue placeholder="Select customer..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('common_select_customer')} /></SelectTrigger>
                   <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('common_cancel')}</Button>
             <Button onClick={handleSave} disabled={saving || !form.title || !form.detected_at}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Save
+              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{t('common_save')}
             </Button>
           </DialogFooter>
         </DialogContent>

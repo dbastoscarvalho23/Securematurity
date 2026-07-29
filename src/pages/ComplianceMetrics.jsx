@@ -6,6 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Bug, Users, Database, ShieldCheck, AlertOctagon, Clock, CheckCircle2, Activity, FileText } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, RadialBarChart, RadialBar } from 'recharts';
 import { SEVERITY_STYLES, daysRemaining, hoursRemaining, slaStatus } from '@/lib/complianceUtils';
+import { useLanguage } from '@/lib/LanguageContext';
+
+const INC_STATUS_LABELS = { detected: 'inc_status_detected', investigating: 'inc_status_investigating', contained: 'inc_status_contained', resolved: 'inc_status_resolved', closed: 'inc_status_closed' };
+const VULN_STATUS_LABELS = { open: 'vuln_status_open', in_progress: 'vuln_status_in_progress', remediated: 'vuln_status_remediated', verified: 'vuln_status_verified', accepted_risk: 'vuln_status_accepted_risk', false_positive: 'vuln_status_false_positive' };
+const SEVERITY_LABELS = { critical: 'risk_level_critical', high: 'risk_level_high', medium: 'risk_level_medium', low: 'risk_level_low' };
+const DSR_TYPE_LABELS = { access: 'dsr_type_access', rectification: 'dsr_type_rectification', erasure: 'dsr_type_erasure', restriction: 'dsr_type_restriction', portability: 'dsr_type_portability', objection: 'dsr_type_objection' };
 
 const CHART_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7'];
 
@@ -27,6 +33,7 @@ function KpiCard({ icon: Icon, label, value, sub, color = 'text-primary' }) {
 }
 
 export default function ComplianceMetrics() {
+  const { t } = useLanguage();
   const { data: incidents = [] } = useQuery({ queryKey: ['incidents'], queryFn: () => base44.entities.Incident.list('-updated_date', 200) });
   const { data: vulns = [] } = useQuery({ queryKey: ['vulnerabilities'], queryFn: () => base44.entities.Vulnerability.list('-updated_date', 200) });
   const { data: dsrs = [] } = useQuery({ queryKey: ['dsrs'], queryFn: () => base44.entities.DataSubjectRequest.list('-updated_date', 200) });

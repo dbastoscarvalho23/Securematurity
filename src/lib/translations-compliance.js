@@ -101,6 +101,7 @@ export const complianceEn = {
 
   // ── Vulnerabilities ───────────────────────────────────────────
   vuln_new: 'New Vulnerability',
+  vuln_sla_tracking: 'SLA-enforced remediation tracking',
   vuln_search_placeholder: 'Search by title, CVE, or asset...',
   vuln_filter_all_severities: 'All Severities',
   vuln_sla_breached: 'SLA breached',
@@ -315,6 +316,7 @@ export const compliancePt = {
 
   // ── Vulnerabilities ───────────────────────────────────────────
   vuln_new: 'Nova Vulnerabilidade',
+  vuln_sla_tracking: 'Acompanhamento de remediação com SLA',
   vuln_search_placeholder: 'Procurar por título, CVE ou ativo...',
   vuln_filter_all_severities: 'Todas as Gravidades',
   vuln_sla_breached: 'SLA incumprido',
