@@ -29,6 +29,7 @@ import EvidenceOverview from '@/pages/EvidenceOverview';
 import ComplianceJourney from '@/pages/ComplianceJourney';
 import EmailReport from '@/pages/EmailReport';
 import SupplyChain from '@/pages/SupplyChain';
+import Suppliers from '@/pages/Suppliers';
 import RoPA from '@/pages/RoPA';
 import IncidentManagement from '@/pages/IncidentManagement';
 import DSRManagement from '@/pages/DSRManagement';
@@ -85,6 +86,7 @@ const AuthenticatedApp = () => {
         <Route path="/evidence" element={<RouteGuard path="/evidence"><EvidenceOverview /></RouteGuard>} />
         <Route path="/compliance-journey" element={<RouteGuard path="/compliance-journey"><ComplianceJourney /></RouteGuard>} />
         <Route path="/supply-chain" element={<RouteGuard path="/supply-chain"><SupplyChain /></RouteGuard>} />
+        <Route path="/suppliers" element={<RouteGuard path="/suppliers"><Suppliers /></RouteGuard>} />
         <Route path="/ropa" element={<RouteGuard path="/ropa"><RoPA /></RouteGuard>} />
         <Route path="/incidents" element={<RouteGuard path="/incidents"><IncidentManagement /></RouteGuard>} />
         <Route path="/dsr" element={<RouteGuard path="/dsr"><DSRManagement /></RouteGuard>} />

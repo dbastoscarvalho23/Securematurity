@@ -52,6 +52,7 @@ const PAGE_TITLE_KEYS = {
   '/dsr': 'page_dsr',
   '/vulnerabilities': 'page_vulnerabilities',
   '/compliance-metrics': 'page_compliance_metrics',
+  '/suppliers': 'suppliers_title',
 };
 
 export default function TopBar() {

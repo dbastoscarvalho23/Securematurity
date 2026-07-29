@@ -88,6 +88,7 @@ export default function Sidebar({ collapsed, onToggle }) {
 
   const supplyChainItems = [
     { path: '/supply-chain', labelKey: 'nav_supply_chain', icon: Truck },
+    { path: '/suppliers', labelKey: 'nav_suppliers', icon: Building2 },
   ];
 
   const navGroups = [

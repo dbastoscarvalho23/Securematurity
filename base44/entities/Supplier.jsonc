@@ -1,0 +1,112 @@
+{
+  "name": "Supplier",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "name": {
+      "type": "string",
+      "description": "Supplier / vendor name"
+    },
+    "nif": {
+      "type": "string",
+      "description": "Tax Identification Number (NIF)"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Supplier contact email"
+    },
+    "contact_phone": {
+      "type": "string",
+      "description": "Supplier contact phone"
+    },
+    "website": {
+      "type": "string",
+      "description": "Supplier website URL"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional information / notes"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active",
+      "description": "Supplier status"
+    }
+  },
+  "required": [
+    "name",
+    "nif",
+    "contact_email",
+    "contact_phone"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

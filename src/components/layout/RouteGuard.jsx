@@ -14,7 +14,7 @@ import { useAuth } from '@/lib/AuthContext';
 const USER_ALLOWED = [
   '/', '/compliance-journey', '/assessments', '/evidence',
   '/tasks', '/task-analytics', '/risk-assessment', '/security-documents',
-  '/document-audit-trail', '/supply-chain', '/reports', '/settings',
+  '/document-audit-trail', '/supply-chain', '/suppliers', '/reports', '/settings',
   '/ropa', '/incidents', '/dsr', '/vulnerabilities', '/compliance-metrics',
 ];
 
