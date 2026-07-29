@@ -15,11 +15,10 @@ const USER_ALLOWED = [
   '/', '/compliance-journey', '/assessments', '/evidence',
   '/tasks', '/task-analytics', '/risk-assessment', '/security-documents',
   '/document-audit-trail', '/supply-chain', '/suppliers', '/reports', '/settings',
-  '/ropa', '/incidents', '/dsr', '/vulnerabilities', '/compliance-metrics',
 ];
 
 // Routes NOT accessible by customer_admin
-const CUSTOMER_ADMIN_BLOCKED = ['/admin', '/audit-log', '/customers', '/question-bank'];
+const CUSTOMER_ADMIN_BLOCKED = ['/admin', '/audit-log', '/customers', '/question-bank', '/ropa', '/incidents', '/dsr', '/vulnerabilities', '/compliance-metrics'];
 
 export default function RouteGuard({ path, children }) {
   const { user } = useAuth();
