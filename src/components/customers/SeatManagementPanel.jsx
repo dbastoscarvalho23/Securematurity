@@ -11,11 +11,13 @@ import { Users, Loader2, Search } from 'lucide-react';
 import SeatAdjustDialog from '@/components/customers/SeatAdjustDialog';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { notifySeatChange, MIN_SEAT_LIMIT } from '@/lib/seatManagement';
 
 export default function SeatManagementPanel() {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [savingId, setSavingId] = useState(null);
   const [addonEdits, setAddonEdits] = useState({});
@@ -55,7 +57,7 @@ export default function SeatManagementPanel() {
   const handleSaveAddon = async (customer) => {
     const newAddon = parseInt(getAddonValue(customer), 10);
     if (isNaN(newAddon) || newAddon < 0) {
-      toast.error('Invalid value');
+      toast.error(t('seat_invalid_value'));
       return;
     }
     const oldAddon = customer.user_seat_addon_count ?? 0;
@@ -74,10 +76,10 @@ export default function SeatManagementPanel() {
         changedBy: currentUser?.email,
       });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
-      toast.success(`Add-on seats updated for ${customer.name}`);
+      toast.success(t('seat_addon_updated').replace('{name}', customer.name));
       setAddonEdits(prev => { const n = { ...prev }; delete n[customer.id]; return n; });
     } catch {
-      toast.error('Failed to update seats');
+      toast.error(t('seat_update_failed'));
     } finally {
       setSavingId(null);
     }
@@ -101,10 +103,10 @@ export default function SeatManagementPanel() {
         changedBy: currentUser?.email,
       });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
-      toast.success(`Base seat limit updated for ${customer.name}`);
+      toast.success(t('seat_base_updated').replace('{name}', customer.name));
       setSeatDialog(null);
     } catch {
-      toast.error('Failed to update seat limit');
+      toast.error(t('seat_limit_update_failed'));
     } finally {
       setSavingId(null);
     }
@@ -116,13 +118,13 @@ export default function SeatManagementPanel() {
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Users className="w-4 h-4 text-primary" />
-            Seat Management
+            {t('seat_management')}
           </CardTitle>
           <div className="relative w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
               className="pl-9 h-8 text-xs"
-              placeholder="Search customer…"
+              placeholder={t('seat_search_customer')}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -133,11 +135,11 @@ export default function SeatManagementPanel() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Customer</TableHead>
-              <TableHead>Usage</TableHead>
-              <TableHead className="text-center">Base Seats</TableHead>
-              <TableHead className="text-center">Add-on Seats</TableHead>
-              <TableHead className="text-center">Total</TableHead>
+              <TableHead>{t('seat_col_customer')}</TableHead>
+              <TableHead>{t('seat_col_usage')}</TableHead>
+              <TableHead className="text-center">{t('seat_col_base')}</TableHead>
+              <TableHead className="text-center">{t('seat_col_addon')}</TableHead>
+              <TableHead className="text-center">{t('seat_col_total')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -163,7 +165,7 @@ export default function SeatManagementPanel() {
                         <span className={atLimit ? 'text-destructive font-bold' : 'text-muted-foreground'}>
                           {used} / {total}
                         </span>
-                        {atLimit && <Badge variant="destructive" className="text-[10px] px-1">At limit</Badge>}
+                        {atLimit && <Badge variant="destructive" className="text-[10px] px-1">{t('seat_at_limit')}</Badge>}
                       </div>
                       <Progress value={pct} className={`h-1.5 ${atLimit ? '[&>div]:bg-destructive' : ''}`} />
                     </div>
@@ -178,7 +180,7 @@ export default function SeatManagementPanel() {
                         onClick={() => setSeatDialog(c)}
                         disabled={savingId === c.id + '_limit'}
                       >
-                        {savingId === c.id + '_limit' ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Adjust'}
+                        {savingId === c.id + '_limit' ? <Loader2 className="w-3 h-3 animate-spin" /> : t('seat_adjust')}
                       </Button>
                     </div>
                   </TableCell>
@@ -198,7 +200,7 @@ export default function SeatManagementPanel() {
                           onClick={() => handleSaveAddon(c)}
                           disabled={savingId === c.id}
                         >
-                          {savingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
+                          {savingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : t('seat_save')}
                         </Button>
                       )}
                     </div>
@@ -209,7 +211,7 @@ export default function SeatManagementPanel() {
             })}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8 text-sm">No customers found</TableCell>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8 text-sm">{t('seat_no_customers')}</TableCell>
               </TableRow>
             )}
           </TableBody>

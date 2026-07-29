@@ -1,7 +1,7 @@
 import { assessmentEn, assessmentPt } from './translations-assessments';
 import { complianceEn, compliancePt } from './translations-compliance';
 import { emailReportEn, emailReportPt } from './translations-emailreport';
-
+import { seatsEn, seatsPt } from './translations-seats';
 export const translations = {
   en: {
     // Sidebar nav groups
@@ -2446,15 +2446,11 @@ export const translations = {
     recs_effort_low: 'Baixo',
     recs_effort_medium: 'Médio',
     recs_effort_high: 'Alto',
-    // Common error messages
     common_save_error: 'Erro ao guardar',
     common_delete_error: 'Erro ao eliminar',
     common_update_error: 'Erro ao atualizar',
-    // Maturity
     maturity_not_implemented: 'Não Implementado',
-    // Reports
     reports_question: 'Pergunta',
-    // Risk
     risk_save_error: 'Erro ao guardar risco',
     risk_delete_error: 'Erro ao eliminar risco',
     risk_risk_singular: 'risco',
@@ -2499,3 +2495,5 @@ Object.assign(translations.en, complianceEn);
 Object.assign(translations.pt, compliancePt);
 Object.assign(translations.en, emailReportEn);
 Object.assign(translations.pt, emailReportPt);
+Object.assign(translations.en, seatsEn);
+Object.assign(translations.pt, seatsPt);

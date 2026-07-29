@@ -6,12 +6,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Minus, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const MIN_SEAT_LIMIT = 5;
 
 export default function SeatAdjustDialog({
   open, customer, currentLimit, addonSeats, saving, onConfirm, onCancel,
 }) {
+  const { t } = useLanguage();
   const [value, setValue] = useState(currentLimit);
 
   useEffect(() => {
@@ -28,9 +30,9 @@ export default function SeatAdjustDialog({
     <Dialog open={open} onOpenChange={v => !v && onCancel()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Adjust seat limit</DialogTitle>
+          <DialogTitle>{t('seat_dialog_title')}</DialogTitle>
           <DialogDescription>
-            Set the base seat limit for <strong>{customer?.name}</strong>. You can type the number directly or use the +/− buttons.
+            {t('seat_dialog_desc').replace('{name}', customer?.name || '')}
           </DialogDescription>
         </DialogHeader>
 
@@ -58,7 +60,7 @@ export default function SeatAdjustDialog({
                   setValue(isNaN(raw) ? MIN_SEAT_LIMIT : clamp(raw));
                 }}
               />
-              <span className="text-[10px] text-muted-foreground mt-1">min {MIN_SEAT_LIMIT}</span>
+              <span className="text-[10px] text-muted-foreground mt-1">{t('seat_min').replace('{count}', MIN_SEAT_LIMIT)}</span>
             </div>
             <Button
               type="button"
@@ -74,37 +76,37 @@ export default function SeatAdjustDialog({
           {/* Summary */}
           <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-1">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Current base limit:</span>
+              <span className="text-muted-foreground">{t('seat_current_limit')}</span>
               <span className="font-mono font-semibold">{currentLimit}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">New base limit:</span>
+              <span className="text-muted-foreground">{t('seat_new_limit')}</span>
               <span className={`font-mono font-semibold ${changed ? 'text-primary' : ''}`}>{value}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Add-on seats:</span>
+              <span className="text-muted-foreground">{t('seat_addon_seats')}</span>
               <span className="font-mono font-semibold">{addonSeats}</span>
             </div>
             <div className="flex justify-between border-t pt-1">
-              <span className="text-muted-foreground">Total seats after change:</span>
+              <span className="text-muted-foreground">{t('seat_total_after')}</span>
               <span className="font-mono font-bold">{newTotal}</span>
             </div>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Changing the seat limit will notify platform and customer admins for billing reconciliation.
+            {t('seat_change_notify')}
           </p>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={saving}>
-            Cancel
+            {t('seat_cancel')}
           </Button>
           <Button
             onClick={() => onConfirm(value)}
             disabled={saving || !changed || !valid}
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm change'}
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : t('seat_confirm_change')}
           </Button>
         </DialogFooter>
       </DialogContent>

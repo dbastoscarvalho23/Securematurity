@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { notifySeatChange, MIN_SEAT_LIMIT } from '@/lib/seatManagement';
 
 const ROLE_STYLES = {
@@ -27,6 +28,7 @@ const ROLE_LABELS = {
 };
 
 function SeatBar({ used, total }) {
+  const { t } = useLanguage();
   const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
   const atLimit = used >= total;
   const nearLimit = pct >= 80;
@@ -51,17 +53,17 @@ function SeatBar({ used, total }) {
         ))}
       </div>
       <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{used} of {total} seats used</span>
+        <span className="text-muted-foreground">{t('seat_used_of_total').replace('{used}', used).replace('{total}', total)}</span>
         {atLimit && (
           <span className="text-destructive font-semibold flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3" /> At limit
+            <AlertTriangle className="w-3 h-3" /> {t('seat_at_limit')}
           </span>
         )}
         {!atLimit && nearLimit && (
-          <span className="text-orange-500 font-medium">{total - used} remaining</span>
+          <span className="text-orange-500 font-medium">{t('seat_remaining').replace('{count}', total - used)}</span>
         )}
         {!atLimit && !nearLimit && (
-          <span className="text-muted-foreground">{total - used} available</span>
+          <span className="text-muted-foreground">{t('seat_available').replace('{count}', total - used)}</span>
         )}
       </div>
     </div>
@@ -71,6 +73,7 @@ function SeatBar({ used, total }) {
 export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+  const { t } = useLanguage();
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
   const [inviting, setInviting] = useState(false);
@@ -120,12 +123,12 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
         customer_name: customer.name,
         status: 'inactive',
       });
-      toast.success(`Invitation sent to ${inviteEmail.trim()}`);
+      toast.success(t('seat_invite_sent').replace('{email}', inviteEmail.trim()));
       setInviteEmail('');
       setInviteRole('user');
       invalidate();
     } catch (err) {
-      toast.error(err?.message || 'Failed to invite user');
+      toast.error(err?.message || t('seat_invite_failed'));
     } finally {
       setInviting(false);
     }
@@ -135,10 +138,10 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
     setRemovingId(userId);
     try {
       await base44.entities.User.update(userId, { customer_id: null });
-      toast.success(`${userName} removed from ${customer.name}`);
+      toast.success(t('seat_user_removed').replace('{name}', userName).replace('{customer}', customer.name));
       invalidate();
     } catch {
-      toast.error('Failed to remove user');
+      toast.error(t('seat_remove_failed'));
     } finally {
       setRemovingId(null);
     }
@@ -148,10 +151,10 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
     setRemovingId(inviteId);
     try {
       await base44.entities.InvitedUser.delete(inviteId);
-      toast.success(`Invite for ${email} cancelled`);
+      toast.success(t('seat_invite_cancelled').replace('{email}', email));
       invalidate();
     } catch {
-      toast.error('Failed to cancel invite');
+      toast.error(t('seat_invite_cancel_failed'));
     } finally {
       setRemovingId(null);
     }
@@ -161,10 +164,10 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
     setUpdatingRoleId(userId);
     try {
       await base44.entities.User.update(userId, { role: newRole });
-      toast.success('Role updated');
+      toast.success(t('seat_role_updated'));
       invalidate();
     } catch {
-      toast.error('Failed to update role');
+      toast.error(t('seat_role_update_failed'));
     } finally {
       setUpdatingRoleId(null);
     }
@@ -189,17 +192,17 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
       });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       if (onCustomerUpdated) onCustomerUpdated({ ...customer, user_seat_limit: clamped });
-      toast.success(`Seat limit updated to ${clamped + addonSeats}`);
+      toast.success(t('seat_limit_total_updated').replace('{count}', clamped + addonSeats));
       setShowSeatDialog(false);
     } catch {
-      toast.error('Failed to update seat limit');
+      toast.error(t('seat_limit_update_failed'));
     } finally {
       setSavingSeats(false);
     }
   };
 
   if (loadingUsers || loadingInvites) {
-    return <div className="py-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>;
+    return <div className="py-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> {t('common_loading')}</div>;
   }
 
   return (
@@ -208,12 +211,12 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
       {/* Seat usage + admin controls */}
       <div className="rounded-lg border bg-muted/20 p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Seat Usage</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('seat_usage')}</p>
           {canManage && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">
-                Base limit: <span className="font-mono font-bold text-foreground">{baseLimit}</span>
-                {addonSeats > 0 && <span className="ml-1">+{addonSeats} add-on</span>}
+                {t('seat_base_limit')} <span className="font-mono font-bold text-foreground">{baseLimit}</span>
+                {addonSeats > 0 && <span className="ml-1">{t('seat_addon_short').replace('{count}', addonSeats)}</span>}
               </span>
               <Button
                 size="sm"
@@ -223,7 +226,7 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
                 disabled={savingSeats}
               >
                 {savingSeats ? <Loader2 className="w-3 h-3 animate-spin" /> : <Users className="w-3 h-3" />}
-                Adjust Seats
+                {t('seat_adjust_seats')}
               </Button>
             </div>
           )}
@@ -236,7 +239,7 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
         <div className="flex items-center gap-3 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800 px-3 py-2">
           <p className="text-xs text-orange-700 dark:text-orange-400 flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-            Seat limit reached. Adjust the base limit above to add more users.
+            {t('seat_limit_reached')}
           </p>
         </div>
       )}
@@ -245,7 +248,7 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
       {canManage && !atLimit && (
         <form onSubmit={handleInvite} className="flex gap-2 flex-wrap items-end">
           <div className="flex-1 min-w-[180px] space-y-1">
-            <p className="text-xs text-muted-foreground">Email address</p>
+            <p className="text-xs text-muted-foreground">{t('seat_email_address')}</p>
             <Input
               type="email"
               placeholder="user@company.com"
@@ -256,18 +259,18 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
             />
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Role</p>
+            <p className="text-xs text-muted-foreground">{t('seat_role')}</p>
             <Select value={inviteRole} onValueChange={setInviteRole}>
               <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="user">User</SelectItem>
-                <SelectItem value="customer_admin">Customer Admin</SelectItem>
+                <SelectItem value="user">{t('role_user')}</SelectItem>
+                <SelectItem value="customer_admin">{t('role_customer_admin')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <Button type="submit" size="sm" className="h-8 gap-1.5 text-xs" disabled={inviting}>
             {inviting ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
-            Invite User
+            {t('seat_invite_user')}
           </Button>
         </form>
       )}
@@ -276,8 +279,8 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
       {customerUsers.length === 0 && pendingInvites.length === 0 ? (
         <div className="py-6 flex flex-col items-center gap-2 text-muted-foreground border-2 border-dashed rounded-lg">
           <Users className="w-8 h-8 opacity-30" />
-          <p className="text-sm">No users assigned yet.</p>
-          {canManage && !atLimit && <p className="text-xs opacity-60">Use the invite form above to add the first user.</p>}
+          <p className="text-sm">{t('seat_no_users')}</p>
+          {canManage && !atLimit && <p className="text-xs opacity-60">{t('seat_use_invite_form')}</p>}
         </div>
       ) : (
         <div className="rounded-lg border overflow-hidden">
@@ -307,8 +310,8 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="user">User</SelectItem>
-                            <SelectItem value="customer_admin">Customer Admin</SelectItem>
+                            <SelectItem value="user">{t('role_user')}</SelectItem>
+                            <SelectItem value="customer_admin">{t('role_customer_admin')}</SelectItem>
                           </SelectContent>
                         </Select>
                       )}
@@ -323,7 +326,7 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
                     onClick={() => handleRemoveUser(u.id, u.display_name || u.full_name || u.email)}
                     disabled={removingId === u.id}
                     className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
-                    title="Remove from customer"
+                    title={t('seat_remove_user')}
                   >
                     {removingId === u.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                   </button>
@@ -340,18 +343,18 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm truncate text-muted-foreground">{inv.email}</p>
-                <p className="text-[10px] text-muted-foreground">Invited by {inv.invited_by || 'admin'}</p>
+                <p className="text-[10px] text-muted-foreground">{t('seat_invited_by').replace('{name}', inv.invited_by || 'admin')}</p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Badge variant="outline" className="text-[10px] px-1.5 border-dashed text-muted-foreground">
-                  Pending
+                  {t('seat_pending')}
                 </Badge>
                 {canManage && (
                   <button
                     onClick={() => handleRemoveInvite(inv.id, inv.email)}
                     disabled={removingId === inv.id}
                     className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
-                    title="Cancel invite"
+                    title={t('seat_cancel_invite')}
                   >
                     {removingId === inv.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                   </button>
