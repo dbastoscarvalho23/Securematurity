@@ -12,6 +12,7 @@ import MaturityOverview from '@/components/dashboard/MaturityOverview';
 import TasksOverview from '@/components/dashboard/TasksOverview';
 import RiskMatrixWidget from '@/components/dashboard/RiskMatrixWidget';
 import RiskExposureTrend from '@/components/dashboard/RiskExposureTrend';
+import ComplianceJourneyStatusCard from '@/components/dashboard/ComplianceJourneyStatusCard';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
@@ -110,6 +111,7 @@ export default function Dashboard() {
         <AssessmentsOverview assessments={assessments} />
         <MaturityOverview assessment={latestAssessment} />
         <TasksOverview tasks={tasks} />
+        <ComplianceJourneyStatusCard />
       </div>
 
       {/* Framework Scores */}
