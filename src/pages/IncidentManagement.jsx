@@ -12,11 +12,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertTriangle, Plus, Pencil, Loader2, Search, Clock, CheckCircle2, AlertOctagon } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
 import { SEVERITY_STYLES, STATUS_STYLES, formatDateTime, hoursRemaining, daysRemaining } from '@/lib/complianceUtils';
 import { toast } from 'sonner';
 
 const CATEGORIES = ['malware_ransomware','data_breach','ddos','phishing','unauthorized_access','insider_threat','system_failure','physical_security','supply_chain','other'];
+
+const STATUS_LABELS = {
+  detected: 'inc_status_detected',
+  investigating: 'inc_status_investigating',
+  contained: 'inc_status_contained',
+  resolved: 'inc_status_resolved',
+  closed: 'inc_status_closed',
+};
+
+const SEVERITY_LABELS = {
+  critical: 'risk_level_critical',
+  high: 'risk_level_high',
+  medium: 'risk_level_medium',
+  low: 'risk_level_low',
+};
 
 const DEFAULT_FORM = {
   title: '', description: '', category: 'data_breach', severity: 'medium', status: 'detected',
@@ -36,6 +52,7 @@ function Nis2TimerBadge({ detected_at, sent, deadlineHours, label }) {
 
 export default function IncidentManagement() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [severityFilter, setSeverityFilter] = useState('all');
@@ -93,11 +110,11 @@ export default function IncidentManagement() {
         const created = await base44.entities.Incident.create(payload);
         await writeAuditLog({ action: 'incident_created', entity_type: 'Incident', entity_id: created.id, details: `Incident created: ${form.title}` });
       }
-      toast.success(editing ? 'Incident updated' : 'Incident created');
+      toast.success(editing ? t('inc_updated') : t('inc_created'));
       queryClient.invalidateQueries({ queryKey: ['incidents'] });
       setDialogOpen(false);
     } catch (e) {
-      toast.error('Failed to save');
+      toast.error(t('common_save_failed'));
     }
     setSaving(false);
   };
