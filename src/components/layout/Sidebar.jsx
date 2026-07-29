@@ -98,8 +98,8 @@ export default function Sidebar({ collapsed, onToggle }) {
     { labelKey: 'nav_main', items: visibleMainItems },
     ...(isAdmin ? [{ labelKey: 'nav_tools', items: toolsNavItems }] : []),
     { labelKey: 'nav_supply_chain_group', items: supplyChainItems },
-    ...(isAdmin ? [{ labelKey: 'nav_development', items: developmentItems }] : []),
     { labelKey: 'nav_system', items: systemItems },
+    ...(isAdmin ? [{ labelKey: 'nav_development', items: developmentItems }] : []),
   ];
 
   return (
