@@ -157,11 +157,11 @@ export default function IncidentManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('inc_col_incident')}</TableHead>
-                  <TableHead>{t('common_severity') || 'Severity'}</TableHead>
+                  <TableHead>{t('common_severity')}</TableHead>
                   <TableHead>{t('common_status')}</TableHead>
                   <TableHead>{t('inc_col_detected')}</TableHead>
                   <TableHead>{t('inc_col_notifications')}</TableHead>
-                  <TableHead className="w-16">{t('common_edit') || 'Edit'}</TableHead>
+                  <TableHead className="w-16">{t('common_edit')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -177,10 +177,10 @@ export default function IncidentManagement() {
                     <TableCell><p className="text-xs">{formatDateTime(r.detected_at)}</p></TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        <Nis2TimerBadge detected_at={r.detected_at} sent={r.early_warning_sent} deadlineHours={24} label={t('inc_badge_early_warning')} overdueLabel={t('inc_overdue')} leftLabel={t('common_left') || 'left'} />
-                        <Nis2TimerBadge detected_at={r.detected_at} sent={r.notification_sent} deadlineHours={72} label={t('inc_badge_notification')} overdueLabel={t('inc_overdue')} leftLabel={t('common_left') || 'left'} />
+                        <Nis2TimerBadge detected_at={r.detected_at} sent={r.early_warning_sent} deadlineHours={24} label={t('inc_badge_early_warning')} overdueLabel={t('inc_overdue')} leftLabel={t('common_left')} />
+                        <Nis2TimerBadge detected_at={r.detected_at} sent={r.notification_sent} deadlineHours={72} label={t('inc_badge_notification')} overdueLabel={t('inc_overdue')} leftLabel={t('common_left')} />
                         {r.data_breach && (
-                          <Nis2TimerBadge detected_at={r.detected_at} sent={r.supervisor_authority_notified} deadlineHours={72} label={t('inc_badge_sa')} overdueLabel={t('inc_overdue')} leftLabel={t('common_left') || 'left'} />
+                          <Nis2TimerBadge detected_at={r.detected_at} sent={r.supervisor_authority_notified} deadlineHours={72} label={t('inc_badge_sa')} overdueLabel={t('inc_overdue')} leftLabel={t('common_left')} />
                         )}
                       </div>
                     </TableCell>
@@ -214,7 +214,7 @@ export default function IncidentManagement() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>{t('common_severity') || 'Severity'}</Label>
+                <Label>{t('common_severity')}</Label>
                 <Select value={form.severity} onValueChange={v => set('severity', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{['critical','high','medium','low'].map(s => <SelectItem key={s} value={s}>{t(SEVERITY_LABELS[s])}</SelectItem>)}</SelectContent>
@@ -234,8 +234,8 @@ export default function IncidentManagement() {
                 <Input type="datetime-local" value={form.detected_at} onChange={e => set('detected_at', e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>{t('common_assigned_to') || 'Assigned To'}</Label>
-                <Input value={form.assigned_to || ''} onChange={e => set('assigned_to', e.target.value)} placeholder="responder@email.com" />
+                <Label>{t('common_assigned_to')}</Label>
+                <Input value={form.assigned_to || ''} onChange={e => set('assigned_to', e.target.value)} placeholder={t('inc_ph_assigned_to')} />
               </div>
             </div>
             <div className="space-y-1.5">

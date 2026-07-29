@@ -169,7 +169,7 @@ export default function RoPA() {
                   <TableHead>{t('ropa_col_legal_basis')}</TableHead>
                   <TableHead>{t('ropa_col_retention')}</TableHead>
                   <TableHead>{t('common_status')}</TableHead>
-                  <TableHead className="w-20">{t('common_actions') || 'Actions'}</TableHead>
+                  <TableHead className="w-20">{t('common_actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
