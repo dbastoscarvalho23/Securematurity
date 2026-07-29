@@ -52,7 +52,7 @@ export default function ComplianceMetrics() {
   // ── Vulnerability KPIs ─────────────────────────────────────────────────
   const openVulns = vulns.filter(v => v.status === 'open' || v.status === 'in_progress');
   const slaBreachedVulns = openVulns.filter(v => v.due_date && daysRemaining(v.due_date) < 0);
-  const vulnsBySeverity = ['critical', 'high', 'medium', 'low'].map(s => ({ name: s, value: openVulns.filter(v => v.severity === s).length }));
+  const vulnsBySeverity = ['critical', 'high', 'medium', 'low'].map(s => ({ name: t(SEVERITY_LABELS[s] || s), value: openVulns.filter(v => v.severity === s).length }));
 
   // ── DSR KPIs ───────────────────────────────────────────────────────────
   const openDsrs = dsrs.filter(d => d.status !== 'completed' && d.status !== 'rejected' && d.status !== 'withdrawn');
@@ -70,55 +70,55 @@ export default function ComplianceMetrics() {
 
   // ── Charts ─────────────────────────────────────────────────────────────
   const incidentStatusData = ['detected', 'investigating', 'contained', 'resolved', 'closed'].map(s => ({
-    name: s.replace(/_/g, ' '), count: incidents.filter(i => i.status === s).length,
+    name: t(INC_STATUS_LABELS[s] || s), count: incidents.filter(i => i.status === s).length,
   }));
 
   const vulnStatusData = ['open', 'in_progress', 'remediated', 'verified', 'accepted_risk', 'false_positive'].map(s => ({
-    name: s.replace(/_/g, ' '), count: vulns.filter(v => v.status === s).length,
+    name: t(VULN_STATUS_LABELS[s] || s), count: vulns.filter(v => v.status === s).length,
   }));
 
-  const dsrTypeData = ['access', 'rectification', 'erasure', 'restriction', 'portability', 'objection'].map(t => ({
-    name: t, count: dsrs.filter(d => d.request_type === t).length,
+  const dsrTypeData = ['access', 'rectification', 'erasure', 'restriction', 'portability', 'objection'].map(ty => ({
+    name: t(DSR_TYPE_LABELS[ty] || ty), count: dsrs.filter(d => d.request_type === ty).length,
   }));
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2"><ShieldCheck className="w-6 h-6" /> Compliance Metrics Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Aggregated KPIs for GDPR & NIS2 compliance monitoring</p>
+        <h1 className="text-2xl font-bold flex items-center gap-2"><ShieldCheck className="w-6 h-6" /> {t('cm_title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('cm_subtitle')}</p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard icon={AlertTriangle} label="Open Incidents" value={openIncidents.length} sub={`${criticalIncidents.length} critical · ${nis2Overdue.length} NIS2 overdue`} color="text-orange-500" />
-        <KpiCard icon={Bug} label="Open Vulnerabilities" value={openVulns.length} sub={`${slaBreachedVulns.length} SLA breached`} color="text-destructive" />
-        <KpiCard icon={Users} label="Open DSRs" value={openDsrs.length} sub={`${overdueDsrs.length} overdue · ${dsrComplianceRate}% compliance`} color="text-blue-500" />
-        <KpiCard icon={Database} label="Active RoPA Entries" value={activeRopas.length} sub={`${ropasNeedingReview.length} need review`} color="text-chart-2" />
+        <KpiCard icon={AlertTriangle} label={t('cm_open_incidents')} value={openIncidents.length} sub={`${criticalIncidents.length} ${t('cm_critical')} · ${nis2Overdue.length} ${t('cm_nis2_overdue')}`} color="text-orange-500" />
+        <KpiCard icon={Bug} label={t('cm_open_vulns')} value={openVulns.length} sub={`${slaBreachedVulns.length} ${t('cm_sla_breached')}`} color="text-destructive" />
+        <KpiCard icon={Users} label={t('cm_open_dsrs')} value={openDsrs.length} sub={`${overdueDsrs.length} ${t('cm_overdue')} · ${dsrComplianceRate}% ${t('cm_compliance')}`} color="text-blue-500" />
+        <KpiCard icon={Database} label={t('cm_active_ropa')} value={activeRopas.length} sub={`${ropasNeedingReview.length} ${t('cm_need_review')}`} color="text-chart-2" />
       </div>
 
       {/* NIS2 Notification Compliance */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2"><Activity className="w-4 h-4" /> NIS2 Incident Notification Compliance</CardTitle>
-          <CardDescription>Early warning (24h) · Full notification (72h) · Final report (1 month)</CardDescription>
+          <CardTitle className="text-base flex items-center gap-2"><Activity className="w-4 h-4" /> {t('cm_nis2_notif_title')}</CardTitle>
+          <CardDescription>{t('cm_nis2_notif_desc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="rounded-lg border p-4 text-center">
               <p className="text-2xl font-bold text-orange-500">{incidents.filter(i => !i.early_warning_sent && hoursRemaining(i.detected_at, 24) < 0 && i.status !== 'closed').length}</p>
-              <p className="text-xs text-muted-foreground mt-1">Early Warning Overdue</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('cm_early_warning_overdue')}</p>
             </div>
             <div className="rounded-lg border p-4 text-center">
               <p className="text-2xl font-bold text-destructive">{incidents.filter(i => !i.notification_sent && hoursRemaining(i.detected_at, 72) < 0 && i.status !== 'closed').length}</p>
-              <p className="text-xs text-muted-foreground mt-1">Notification Overdue</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('cm_notification_overdue')}</p>
             </div>
             <div className="rounded-lg border p-4 text-center">
               <p className="text-2xl font-bold text-destructive">{incidents.filter(i => !i.supervisor_authority_notified && i.data_breach && hoursRemaining(i.detected_at, 72) < 0 && i.status !== 'closed').length}</p>
-              <p className="text-xs text-muted-foreground mt-1">GDPR Art. 33 Overdue</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('cm_gdpr33_overdue')}</p>
             </div>
             <div className="rounded-lg border p-4 text-center">
               <p className="text-2xl font-bold text-chart-2">{incidents.filter(i => i.early_warning_sent && i.notification_sent).length}</p>
-              <p className="text-xs text-muted-foreground mt-1">Fully Notified</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('cm_fully_notified')}</p>
             </div>
           </div>
         </CardContent>
@@ -127,7 +127,7 @@ export default function ComplianceMetrics() {
       {/* Charts row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle className="text-sm">Incidents by Status</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm">{t('cm_incidents_by_status')}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={incidentStatusData}>
@@ -142,7 +142,7 @@ export default function ComplianceMetrics() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-sm">Open Vulnerabilities by Severity</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm">{t('cm_vulns_by_severity')}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -167,7 +167,7 @@ export default function ComplianceMetrics() {
       {/* Charts row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle className="text-sm">Vulnerability Status Distribution</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm">{t('cm_vuln_status_dist')}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={vulnStatusData} layout="vertical">
@@ -182,7 +182,7 @@ export default function ComplianceMetrics() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-sm">DSR Types Received</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm">{t('cm_dsr_types')}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={dsrTypeData}>
@@ -200,33 +200,33 @@ export default function ComplianceMetrics() {
       {/* Data Retention & SLA Summary */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4" /> SLA & Retention Summary</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4" /> {t('cm_sla_retention_title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Bug className="w-4 h-4 text-destructive" />
-                <p className="text-sm font-medium">Vulnerability SLA</p>
+                <p className="text-sm font-medium">{t('cm_vuln_sla')}</p>
               </div>
-              <p className="text-2xl font-bold">{slaBreachedVulns.length} breached</p>
-              <p className="text-xs text-muted-foreground mt-1">out of {openVulns.length} open vulnerabilities</p>
+              <p className="text-2xl font-bold">{slaBreachedVulns.length} {t('cm_breached')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('common_out_of')} {openVulns.length} {t('cm_open_vulns').toLowerCase()}</p>
             </div>
             <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Users className="w-4 h-4 text-blue-500" />
-                <p className="text-sm font-medium">DSR SLA (30 days)</p>
+                <p className="text-sm font-medium">{t('cm_dsr_sla')}</p>
               </div>
-              <p className="text-2xl font-bold">{overdueDsrs.length} overdue</p>
-              <p className="text-xs text-muted-foreground mt-1">out of {openDsrs.length} open requests</p>
+              <p className="text-2xl font-bold">{overdueDsrs.length} {t('cm_overdue')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('common_out_of')} {openDsrs.length} {t('cm_dsr_open_requests')}</p>
             </div>
             <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Database className="w-4 h-4 text-chart-2" />
-                <p className="text-sm font-medium">Data Retention</p>
+                <p className="text-sm font-medium">{t('cm_data_retention')}</p>
               </div>
-              <p className="text-2xl font-bold">{ropas.filter(r => r.retention_expiry_date && daysRemaining(r.retention_expiry_date) <= 0 && r.status === 'active').length} expired</p>
-              <p className="text-xs text-muted-foreground mt-1">{ropas.filter(r => r.retention_expiry_date && daysRemaining(r.retention_expiry_date) > 0 && daysRemaining(r.retention_expiry_date) <= 30 && r.status === 'active').length} expiring within 30 days</p>
+              <p className="text-2xl font-bold">{ropas.filter(r => r.retention_expiry_date && daysRemaining(r.retention_expiry_date) <= 0 && r.status === 'active').length} {t('cm_expired')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{ropas.filter(r => r.retention_expiry_date && daysRemaining(r.retention_expiry_date) > 0 && daysRemaining(r.retention_expiry_date) <= 30 && r.status === 'active').length} {t('cm_expiring_30')}</p>
             </div>
           </div>
         </CardContent>

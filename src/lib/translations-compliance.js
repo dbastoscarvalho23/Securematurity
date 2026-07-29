@@ -215,6 +215,13 @@ export const complianceEn = {
   // ── Shared ─────────────────────────────────────────────────────
   common_select_customer: 'Select customer...',
   common_save_failed: 'Failed to save',
+  common_severity: 'Severity',
+  common_title: 'Title',
+  common_assigned_to: 'Assigned To',
+  common_left: 'left',
+  common_out_of: 'out of',
+  cm_dsr_open_requests: 'open requests',
+  cm_expiring_30: 'expiring within 30 days',
 };
 
 export const compliancePt = {
@@ -430,4 +437,11 @@ export const compliancePt = {
   // ── Shared ─────────────────────────────────────────────────────
   common_select_customer: 'Selecionar cliente...',
   common_save_failed: 'Falha ao guardar',
+  common_severity: 'Gravidade',
+  common_title: 'Título',
+  common_assigned_to: 'Atribuído a',
+  common_left: 'restante',
+  common_out_of: 'de',
+  cm_dsr_open_requests: 'pedidos abertos',
+  cm_expiring_30: 'expiram em 30 dias',
 };
