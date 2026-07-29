@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, Truck, Globe, Mail, Phone, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import SupplierBulkImport from '@/components/suppliers/SupplierBulkImport';
 
 const emptyForm = { name: '', nif: '', contact_email: '', contact_phone: '', website: '', notes: '', status: 'active' };
 
@@ -86,9 +87,12 @@ export default function Suppliers() {
           <h1 className="text-xl font-bold">{t('suppliers_title')}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{t('suppliers_subtitle')}</p>
         </div>
-        <Button onClick={openNew} className="gap-2">
-          <Plus className="w-4 h-4" /> {t('suppliers_new')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <SupplierBulkImport isAdmin={isAdmin} customerId={customerId} onDone={() => queryClient.invalidateQueries({ queryKey })} />
+          <Button onClick={openNew} className="gap-2">
+            <Plus className="w-4 h-4" /> {t('suppliers_new')}
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2">
