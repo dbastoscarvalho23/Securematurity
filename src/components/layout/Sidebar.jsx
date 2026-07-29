@@ -56,7 +56,6 @@ export default function Sidebar({ collapsed, onToggle }) {
     { path: '/risk-assessment', labelKey: 'nav_risk_assessment', icon: TriangleAlert },
     { path: '/security-documents', labelKey: 'nav_documents', icon: FolderLock },
     { path: '/document-audit-trail', labelKey: 'nav_doc_audit_trail', icon: Activity },
-    { path: '/supply-chain', labelKey: 'nav_supply_chain', icon: Truck },
     { path: '/reports', labelKey: 'nav_reports', icon: BarChart3 },
   ];
 
@@ -87,9 +86,14 @@ export default function Sidebar({ collapsed, onToggle }) {
     { path: '/compliance-metrics', labelKey: 'nav_compliance_metrics', icon: Gauge },
   ];
 
+  const supplyChainItems = [
+    { path: '/supply-chain', labelKey: 'nav_supply_chain', icon: Truck },
+  ];
+
   const navGroups = [
     { labelKey: 'nav_main', items: visibleMainItems },
     ...(isAdmin ? [{ labelKey: 'nav_tools', items: toolsNavItems }] : []),
+    { labelKey: 'nav_supply_chain_group', items: supplyChainItems },
     { labelKey: 'nav_system', items: systemItems },
   ];
 
