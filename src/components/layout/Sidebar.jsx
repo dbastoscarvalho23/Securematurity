@@ -32,7 +32,6 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import DevelopmentNavGroup from './DevelopmentNavGroup';
 
 export default function Sidebar({ collapsed, onToggle }) {
   const location = useLocation();
@@ -80,9 +79,6 @@ export default function Sidebar({ collapsed, onToggle }) {
       { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
     ] : []),
     { path: '/settings', labelKey: 'nav_settings', icon: Settings },
-  ];
-
-  const developmentItems = [
     { path: '/ropa', labelKey: 'nav_ropa', icon: Database },
     { path: '/incidents', labelKey: 'nav_incidents', icon: Siren },
     { path: '/dsr', labelKey: 'nav_dsr', icon: Users },
@@ -164,11 +160,6 @@ export default function Sidebar({ collapsed, onToggle }) {
               </div>
             </div>
           ))}
-
-          {/* Desenvolvimento — collapsible aggregator group */}
-          <div>
-            <DevelopmentNavGroup items={developmentItems} collapsed={collapsed} />
-          </div>
         </nav>
 
         {/* Collapse Toggle */}
