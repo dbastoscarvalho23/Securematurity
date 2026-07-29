@@ -12,9 +12,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Truck, Globe, Mail, Phone, Loader2 } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Truck, Globe, Mail, Phone, Loader2, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
-import SupplierBulkImport from '@/components/suppliers/SupplierBulkImport';
+import { writeAuditLog } from '@/lib/auditLog';
+import SupplierExcelImportDialog from '@/components/suppliers/SupplierExcelImportDialog';
 
 const emptyForm = { name: '', nif: '', contact_email: '', contact_phone: '', website: '', notes: '', status: 'active' };
 
@@ -27,6 +28,7 @@ export default function Suppliers() {
 
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -80,6 +82,19 @@ export default function Suppliers() {
     toast.success(t('suppliers_deleted'));
   };
 
+  const handleExcelImport = async (rows) => {
+    const valid = rows.filter(r => r.name && r.nif && r.contact_email && r.contact_phone);
+    const payload = valid.map(r => isAdmin && !customerId ? r : { ...r, customer_id: customerId });
+    if (!payload.length) {
+      toast.error(t('suppliers_required_missing'));
+      return;
+    }
+    const created = await base44.entities.Supplier.bulkCreate(payload);
+    await writeAuditLog({ action: 'customer_updated', entity_type: 'Supplier', details: `Bulk imported ${created.length} suppliers from Excel` });
+    queryClient.invalidateQueries({ queryKey });
+    toast.success(`${created.length} ${created.length !== 1 ? t('suppliers_supplier_plural') : t('suppliers_supplier_singular')} ${t('suppliers_imported')}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -88,7 +103,9 @@ export default function Suppliers() {
           <p className="text-sm text-muted-foreground mt-0.5">{t('suppliers_subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
-          <SupplierBulkImport isAdmin={isAdmin} customerId={customerId} onDone={() => queryClient.invalidateQueries({ queryKey })} />
+          <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+            <FileSpreadsheet className="w-4 h-4" /> {t('suppliers_bulk_import')}
+          </Button>
           <Button onClick={openNew} className="gap-2">
             <Plus className="w-4 h-4" /> {t('suppliers_new')}
           </Button>
@@ -204,6 +221,12 @@ export default function Suppliers() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <SupplierExcelImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImport={handleExcelImport}
+      />
     </div>
   );
 }
