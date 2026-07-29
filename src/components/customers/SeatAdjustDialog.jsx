@@ -32,7 +32,9 @@ export default function SeatAdjustDialog({
         <DialogHeader>
           <DialogTitle>{t('seat_dialog_title')}</DialogTitle>
           <DialogDescription>
-            {t('seat_dialog_desc').replace('{name}', customer?.name || '')}
+            {t('seat_dialog_desc').split('{name}')[0]}
+            <strong>{customer?.name}</strong>
+            {t('seat_dialog_desc').split('{name}')[1]}
           </DialogDescription>
         </DialogHeader>
 
