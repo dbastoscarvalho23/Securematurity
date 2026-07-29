@@ -227,6 +227,7 @@ export const complianceEn = {
   common_out_of: 'out of',
   cm_dsr_open_requests: 'open requests',
   cm_expiring_30: 'expiring within 30 days',
+  common_sla: 'SLA',
 };
 
 export const compliancePt = {
@@ -454,4 +455,5 @@ export const compliancePt = {
   common_out_of: 'de',
   cm_dsr_open_requests: 'pedidos abertos',
   cm_expiring_30: 'expiram em 30 dias',
+  common_sla: 'SLA',
 };

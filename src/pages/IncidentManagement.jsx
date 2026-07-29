@@ -52,7 +52,7 @@ function Nis2TimerBadge({ detected_at, sent, deadlineHours, label, overdueLabel,
 
 export default function IncidentManagement() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [severityFilter, setSeverityFilter] = useState('all');
@@ -174,7 +174,7 @@ export default function IncidentManagement() {
                     </TableCell>
                     <TableCell><Badge variant="outline" className={`text-xs ${SEVERITY_STYLES[r.severity] || ''}`}>{t(SEVERITY_LABELS[r.severity] || r.severity)}</Badge></TableCell>
                     <TableCell><Badge variant="outline" className={`text-xs ${STATUS_STYLES[r.status] || ''}`}>{t(STATUS_LABELS[r.status] || r.status)}</Badge></TableCell>
-                    <TableCell><p className="text-xs">{formatDateTime(r.detected_at)}</p></TableCell>
+                    <TableCell><p className="text-xs">{formatDateTime(r.detected_at, language === 'pt' ? 'pt-PT' : 'en-GB')}</p></TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         <Nis2TimerBadge detected_at={r.detected_at} sent={r.early_warning_sent} deadlineHours={24} label={t('inc_badge_early_warning')} overdueLabel={t('inc_overdue')} leftLabel={t('common_left')} />

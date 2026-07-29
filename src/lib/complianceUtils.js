@@ -113,9 +113,9 @@ export const STATUS_STYLES = {
   false_positive: 'bg-muted text-muted-foreground',
 };
 
-export function formatDateTime(dt) {
+export function formatDateTime(dt, locale = 'en-GB') {
   if (!dt) return '—';
-  return new Date(dt).toLocaleString('en-GB', {
+  return new Date(dt).toLocaleString(locale, {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
