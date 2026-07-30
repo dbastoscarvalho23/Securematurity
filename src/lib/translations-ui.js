@@ -344,6 +344,12 @@ export const uiEn = {
   cup_no_users: 'No users assigned to this customer yet.',
   cup_remove_title: 'Remove from customer',
   cup_pending: 'Pending',
+  // shadcn/ui defaults
+  ui_close: 'Close',
+  ui_prev_slide: 'Previous slide',
+  ui_next_slide: 'Next slide',
+  ui_prev_month: 'Previous month',
+  ui_next_month: 'Next month',
 };
 
 export const uiPt = {
@@ -689,4 +695,10 @@ export const uiPt = {
   cup_no_users: 'Ainda não há utilizadores atribuídos a este cliente.',
   cup_remove_title: 'Remover do cliente',
   cup_pending: 'Pendente',
+  // shadcn/ui defaults
+  ui_close: 'Fechar',
+  ui_prev_slide: 'Diapositivo anterior',
+  ui_next_slide: 'Diapositivo seguinte',
+  ui_prev_month: 'Mês anterior',
+  ui_next_month: 'Mês seguinte',
 };
