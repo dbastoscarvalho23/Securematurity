@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { escapeHtml } from '../../shared/escapeHtml.ts';
 
 function scoreLevel(score) {
   if (score >= 16) return 'Critical';
@@ -73,12 +74,12 @@ Deno.serve(async (req) => {
 <p>Hello,</p>
 <p>This is a reminder that a risk you own is due <strong>${urgencyLabel}</strong>:</p>
 <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:sans-serif;font-size:14px;">
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Risk ID</td><td style="padding:6px 12px;">${risk.risk_id || '—'}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Title</td><td style="padding:6px 12px;">${risk.title}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;"><strong>${risk.due_date}</strong></td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Status</td><td style="padding:6px 12px;">${risk.status?.replace(/_/g, ' ')}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Risk Level</td><td style="padding:6px 12px;">${level} (score ${score})</td></tr>
-  ${risk.treatment_notes ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Treatment</td><td style="padding:6px 12px;">${risk.treatment_notes}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Risk ID</td><td style="padding:6px 12px;">${escapeHtml(risk.risk_id || '—')}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Title</td><td style="padding:6px 12px;">${escapeHtml(risk.title || '')}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;"><strong>${escapeHtml(risk.due_date || '')}</strong></td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Status</td><td style="padding:6px 12px;">${escapeHtml(risk.status?.replace(/_/g, ' ') || '')}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Risk Level</td><td style="padding:6px 12px;">${escapeHtml(level)} (score ${escapeHtml(String(score))})</td></tr>
+  ${risk.treatment_notes ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Treatment</td><td style="padding:6px 12px;">${escapeHtml(risk.treatment_notes)}</td></tr>` : ''}
 </table>
 <p>Please ensure this risk is addressed before the deadline.</p>
     `.trim();
