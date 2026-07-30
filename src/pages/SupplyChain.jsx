@@ -84,10 +84,11 @@ export default function SupplyChain() {
     );
   }
 
-  const totalQ = questionnaires.length;
-  const completedQ = questionnaires.filter(q => q.status === 'completed').length;
-  const inProgressQ = questionnaires.filter(q => q.status === 'in_progress' || q.status === 'sent').length;
-  const suppliersCount = new Set(questionnaires.map(q => q.supplier_name).filter(Boolean)).size;
+  const customerScoped = customerFilter === 'all' ? questionnaires : questionnaires.filter(q => q.customer_id === customerFilter);
+  const totalQ = customerScoped.length;
+  const completedQ = customerScoped.filter(q => q.status === 'completed').length;
+  const inProgressQ = customerScoped.filter(q => q.status === 'in_progress' || q.status === 'sent').length;
+  const suppliersCount = new Set(customerScoped.map(q => q.supplier_name).filter(Boolean)).size;
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
