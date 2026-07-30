@@ -8,16 +8,7 @@ import { toast } from 'sonner';
 import { Send } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
-
-function escapeHtml(value) {
-  if (value === null || value === undefined) return '';
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { escapeHtml } from '@/lib/escapeHtml';
 
 function buildHtmlEmail({ questionnaire, questions, isPt }) {
   const supplierName = escapeHtml(questionnaire?.supplier_name || (isPt ? 'Fornecedor' : 'Supplier'));
