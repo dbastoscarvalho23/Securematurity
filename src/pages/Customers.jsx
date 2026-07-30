@@ -4,8 +4,11 @@ import { base44 } from '@/api/base44Client';
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, ExternalLink, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import PageHeader from '@/components/shared/PageHeader';
+import StatusBadge from '@/components/shared/StatusBadge';
+import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -19,12 +22,6 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { writeAuditLog } from '@/lib/auditLog';
 import { toast } from 'sonner';
-
-const statusStyles = {
-  active: 'bg-accent/10 text-accent border-accent/20',
-  inactive: 'bg-muted text-muted-foreground',
-  onboarding: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
-};
 
 export default function Customers() {
   const { t } = useLanguage();
@@ -103,14 +100,14 @@ export default function Customers() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">
-          {t('customers_subtitle')} · <span className="text-foreground font-medium">{customers.length}</span> {t('common_total')}
-        </p>
-        <Button onClick={() => { setEditingCustomer(null); setShowForm(true); }} className="gap-2">
-          <Plus className="w-4 h-4" /> {t('customers_add')}
-        </Button>
-      </div>
+      <PageHeader
+        description={<>{t('customers_subtitle')} · <span className="text-foreground font-medium">{customers.length}</span> {t('common_total')}</>}
+        actions={
+          <Button onClick={() => { setEditingCustomer(null); setShowForm(true); }} className="gap-2">
+            <Plus className="w-4 h-4" /> {t('customers_add')}
+          </Button>
+        }
+      />
 
       {showForm && (
         <CustomerForm
@@ -152,13 +149,11 @@ export default function Customers() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('common_loading')}</TableCell>
+                    <TableCell colSpan={8}><LoadingState label={t('common_loading')} /></TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      {search ? t('customers_no_results') : t('customers_empty')}
-                    </TableCell>
+                    <TableCell colSpan={8}><EmptyState compact title={search ? t('customers_no_results') : t('customers_empty')} /></TableCell>
                   </TableRow>
                 ) : filtered.map(c => (
                   <TableRow
@@ -197,9 +192,7 @@ export default function Customers() {
                     )}
                     {!selectedCustomer && <TableCell className="text-sm">{c.num_employees}</TableCell>}
                     <TableCell>
-                      <Badge variant="outline" className={cn("text-xs border", statusStyles[c.status])}>
-                        {t(`customers_status_${c.status}`) || c.status}
-                      </Badge>
+                      <StatusBadge status={c.status} label={t(`customers_status_${c.status}`) || c.status} />
                     </TableCell>
                     <TableCell onClick={e => e.stopPropagation()}>
                       <DropdownMenu>

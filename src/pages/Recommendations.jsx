@@ -7,16 +7,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
+import PageHeader from '@/components/shared/PageHeader';
+import StatusBadge from '@/components/shared/StatusBadge';
+import EmptyState from '@/components/shared/EmptyState';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -28,13 +23,6 @@ import BulkActionBar from '@/components/shared/BulkActionBar';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
-
-const priorityColors = {
-  critical: 'bg-destructive/10 text-destructive border-destructive/20',
-  high: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
-  medium: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
-  low: 'bg-muted text-muted-foreground',
-};
 
 const statusOptions = ['pending', 'in_progress', 'completed', 'dismissed'];
 
@@ -269,23 +257,25 @@ export default function Recommendations() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">{t('recs_subtitle')} · <span className="text-foreground font-medium">{recommendations.length}</span> {t('recs_count')}</p>
-        <div className="flex gap-2 items-center">
-          <Button onClick={handleCheckDuplicates} variant="outline" disabled={isCheckingDuplicates} className="gap-2">
-            {isCheckingDuplicates ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-            {t('recs_check_duplicates')}
-          </Button>
-          <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
-            <Sparkles className="w-4 h-4" />
-            {t('recs_ai_generate')}
-          </Button>
-          <Button onClick={() => setNewRecDialog(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            {t('recs_new')}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        description={<>{t('recs_subtitle')} · <span className="text-foreground font-medium">{recommendations.length}</span> {t('recs_count')}</>}
+        actions={
+          <div className="flex gap-2 items-center">
+            <Button onClick={handleCheckDuplicates} variant="outline" disabled={isCheckingDuplicates} className="gap-2">
+              {isCheckingDuplicates ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+              {t('recs_check_duplicates')}
+            </Button>
+            <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              {t('recs_ai_generate')}
+            </Button>
+            <Button onClick={() => setNewRecDialog(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              {t('recs_new')}
+            </Button>
+          </div>
+        }
+      />
 
       {/* Filters */}
       <div className="flex gap-3 items-center">
@@ -369,9 +359,7 @@ export default function Recommendations() {
                       )}
                       <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <Badge variant="outline" className={cn("text-xs border", priorityColors[rec.priority])}>
-                          {rec.priority}
-                        </Badge>
+                        <StatusBadge variant="severity" status={rec.priority} label={rec.priority} />
                         {rec.domain && <span className="text-xs text-muted-foreground">{rec.domain}</span>}
                         {rec.effort && (
                           <span className="text-xs text-muted-foreground">{t('recs_effort')}: {rec.effort}</span>
@@ -551,49 +539,33 @@ export default function Recommendations() {
       </Dialog>
 
       {filtered.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <Lightbulb className="w-8 h-8 mb-3 opacity-50" />
-            <p className="text-sm">{t('recs_empty')}</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-0">
+          <EmptyState icon={Lightbulb} title={t('recs_empty')} />
+        </CardContent></Card>
       )}
 
-      <AlertDialog open={bulkStatusConfirm} onOpenChange={(open) => !isBulkAction && setBulkStatusConfirm(open)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('bulk_confirm_status_title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('bulk_confirm_status_desc')} {selectedIds.length} {t('bulk_selected')} → {pendingStatus?.replace('_', ' ')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel disabled={isBulkAction}>{t('common_cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={executeBulkStatus} disabled={isBulkAction} className="gap-1.5">
-              {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
-              {t('common_confirm')}
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={bulkStatusConfirm}
+        onOpenChange={(open) => !isBulkAction && setBulkStatusConfirm(open)}
+        title={t('bulk_confirm_status_title')}
+        description={`${t('bulk_confirm_status_desc')} ${selectedIds.length} ${t('bulk_selected')} → ${pendingStatus?.replace('_', ' ')}`}
+        confirmLabel={t('common_confirm')}
+        cancelLabel={t('common_cancel')}
+        onConfirm={executeBulkStatus}
+        loading={isBulkAction}
+        destructive={false}
+      />
 
-      <AlertDialog open={bulkConvertConfirm} onOpenChange={(open) => !isBulkAction && setBulkConvertConfirm(open)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('bulk_confirm_convert_title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('bulk_confirm_convert_desc')} {selectedIds.length} {t('bulk_selected')}. {t('bulk_cannot_undo')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel disabled={isBulkAction}>{t('common_cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={executeBulkConvertToTasks} disabled={isBulkAction} className="gap-1.5">
-              {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
-              {t('common_confirm')}
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={bulkConvertConfirm}
+        onOpenChange={(open) => !isBulkAction && setBulkConvertConfirm(open)}
+        title={t('bulk_confirm_convert_title')}
+        description={`${t('bulk_confirm_convert_desc')} ${selectedIds.length} ${t('bulk_selected')}. ${t('bulk_cannot_undo')}`}
+        confirmLabel={t('common_confirm')}
+        cancelLabel={t('common_cancel')}
+        onConfirm={executeBulkConvertToTasks}
+        loading={isBulkAction}
+      />
     </div>
   );
 }

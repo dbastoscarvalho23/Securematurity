@@ -16,6 +16,8 @@ import VersionHistoryDialog from '@/components/documents/VersionHistoryDialog';
 import PendingReviewsPanel from '@/components/documents/PendingReviewsPanel';
 import ApprovalDialog from '@/components/documents/ApprovalDialog';
 import NominationsPanel from '@/components/documents/NominationsPanel';
+import StatusBadge from '@/components/shared/StatusBadge';
+import EmptyState from '@/components/shared/EmptyState';
 
 const LEVEL_CONFIGS = [
   { id: 'policy',    labelKey: 'docs_level1_label', sublabelKey: 'docs_level1_sublabel', statLabelKey: 'docs_stat_policies',  exampleKeys: ['docs_level1_ex1','docs_level1_ex2','docs_level1_ex3'], icon: Shield,   color: 'text-chart-1', bg: 'bg-chart-1/10', border: 'border-chart-1/20' },
@@ -23,13 +25,6 @@ const LEVEL_CONFIGS = [
   { id: 'procedure', labelKey: 'docs_level3_label', sublabelKey: 'docs_level3_sublabel', statLabelKey: 'docs_stat_procedures', exampleKeys: ['docs_level3_ex1','docs_level3_ex2','docs_level3_ex3'], icon: Workflow, color: 'text-chart-4', bg: 'bg-chart-4/10', border: 'border-chart-4/20' },
   { id: 'playbook',  labelKey: 'docs_level4_label', sublabelKey: 'docs_level4_sublabel', statLabelKey: 'docs_stat_playbooks',  exampleKeys: ['docs_level4_ex1','docs_level4_ex2','docs_level4_ex3'], icon: Zap,      color: 'text-chart-5', bg: 'bg-chart-5/10', border: 'border-chart-5/20' },
 ];
-
-const STATUS_STYLES = {
-  draft: 'bg-muted text-muted-foreground',
-  under_review: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
-  approved: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
-  deprecated: 'bg-destructive/10 text-destructive border-destructive/20',
-};
 
 export default function SecurityDocuments() {
   const { user } = useAuth();
@@ -316,7 +311,7 @@ export default function SecurityDocuments() {
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">{searchResults.length} {searchResults.length !== 1 ? t('docs_search_results_plural') : t('docs_search_results')} {t('docs_search_for')} "{searchQuery}"</p>
           {searchResults.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">{t('docs_search_no_results')}</p>
+            <EmptyState compact title={t('docs_search_no_results')} className="py-6" />
           ) : (
             <div className="divide-y border rounded-xl bg-card overflow-hidden">
               {searchResults.map(doc => (
@@ -326,7 +321,7 @@ export default function SecurityDocuments() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-medium">{doc.title}</p>
                       <Badge variant="secondary" className="text-xs capitalize">{doc.level}</Badge>
-                      <Badge variant="outline" className={`text-xs ${STATUS_STYLES[doc.status]}`}>{STATUS_LABELS[doc.status]}</Badge>
+                      <StatusBadge status={doc.status} label={STATUS_LABELS[doc.status]} />
                       <span className="text-xs text-primary font-medium">{doc.relevance_score}% {t('docs_match')}</span>
                     </div>
                     {doc.match_reason && <p className="text-xs text-muted-foreground mt-0.5">{doc.match_reason}</p>}
@@ -409,15 +404,17 @@ export default function SecurityDocuments() {
             {!isCollapsed && (
               <div className="bg-card">
                 {levelDocs.length === 0 ? (
-                  <div className="px-5 py-8 text-center space-y-2">
-                    <FileText className="w-8 h-8 mx-auto text-muted-foreground opacity-30" />
-                    <p className="text-sm text-muted-foreground">{t('docs_no_docs')}</p>
-                    <p className="text-xs text-muted-foreground">{t('docs_examples')} {level.examples.join(' · ')}</p>
-                    {canCreate && (
-                      <Button size="sm" variant="outline" className="mt-2 gap-1.5" onClick={() => handleNew(level.id)}>
-                        <Plus className="w-3 h-3" /> {t('docs_add_first')}
-                      </Button>
-                    )}
+                  <div className="px-5 py-8">
+                    <EmptyState
+                      icon={FileText}
+                      title={t('docs_no_docs')}
+                      description={`${t('docs_examples')} ${level.examples.join(' · ')}`}
+                      action={canCreate && (
+                        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => handleNew(level.id)}>
+                          <Plus className="w-3 h-3" /> {t('docs_add_first')}
+                        </Button>
+                      )}
+                    />
                   </div>
                 ) : (
                   <div className="divide-y">
@@ -428,9 +425,7 @@ export default function SecurityDocuments() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-medium">{doc.title}</p>
                             {doc.version && <span className="text-xs text-muted-foreground">v{doc.version}</span>}
-                            <Badge variant="outline" className={`text-xs ${STATUS_STYLES[doc.status]}`}>
-                              {STATUS_LABELS[doc.status]}
-                            </Badge>
+                            <StatusBadge status={doc.status} label={STATUS_LABELS[doc.status]} />
                             {doc.status === 'under_review' && canApprove && (
                               <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-chart-2 border-chart-2/30 hover:bg-chart-2/10"
                                 onClick={() => handleApproveClick(doc)}>

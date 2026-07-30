@@ -16,6 +16,9 @@ import { exportReportPdf } from '@/lib/exportReportPdf';
 import AnnualReport from '@/components/reports/AnnualReport';
 import RecordDetailDialog from '@/components/reports/RecordDetailDialog';
 import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
+import PageHeader from '@/components/shared/PageHeader';
+import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 
 const MATURITY_LABEL_KEYS = ['maturity_not_implemented', 'maturity_initial', 'maturity_developing', 'maturity_defined', 'maturity_managed', 'maturity_optimized'];
 
@@ -43,11 +46,7 @@ function AssessmentAnswersPanel({ assessmentId }) {
   });
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8 text-muted-foreground">
-        <Loader2 className="w-4 h-4 animate-spin mr-2" /> {t('reports_loading_answers')}
-      </div>
-    );
+    return <LoadingState label={t('reports_loading_answers')} className="py-8" />;
   }
 
   if (responses.length === 0) {
@@ -181,9 +180,9 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">{t('reports_subtitle')}</p>
-        {isAdmin && (
+      <PageHeader
+        description={t('reports_subtitle')}
+        actions={isAdmin && (
           <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
             <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -192,7 +191,7 @@ export default function Reports() {
             </SelectContent>
           </Select>
         )}
-      </div>
+      />
 
       {/* Current vs Previous */}
       {latest && (
@@ -235,7 +234,7 @@ export default function Reports() {
         </CardHeader>
         <CardContent>
           {completed.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">{t('reports_no_completed')}</p>
+            <EmptyState compact title={t('reports_no_completed')} />
           ) : (
             <div className="space-y-2">
               {completed.map(a => {

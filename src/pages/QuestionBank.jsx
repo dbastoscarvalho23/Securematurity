@@ -13,6 +13,9 @@ import QuestionFormDialog from '@/components/questions/QuestionFormDialog';
 import AIQuestionGeneratorDialog from '@/components/questions/AIQuestionGeneratorDialog';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
+import PageHeader from '@/components/shared/PageHeader';
+import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 
 const FRAMEWORK_COLORS = {
   NIS2: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
@@ -189,27 +192,29 @@ Return only valid JSON with the translations.`,
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <p className="text-muted-foreground text-sm">{t('qb_subtitle')}</p>
-        <div className="flex gap-2 items-center flex-wrap">
-          <Button variant="outline" onClick={handleTranslate} disabled={isTranslating} className="gap-2">
-            {isTranslating
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('qb_translating')} {translateProgress.done}/{translateProgress.total}</>
-              : <><Languages className="w-4 h-4" /> {t('qb_translate_pt')}</>
-            }
-          </Button>
-          <Button variant="outline" onClick={handleRemoveDuplicates} disabled={isDeduplicating} className="gap-2">
-            {isDeduplicating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-            {t('qb_remove_dupes')}
-          </Button>
-          <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="gap-2">
-            <Sparkles className="w-4 h-4" /> {t('qb_ai_generate')}
-          </Button>
-          <Button onClick={handleNew} className="gap-2">
-            <Plus className="w-4 h-4" /> {t('qb_new_question')}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        description={t('qb_subtitle')}
+        actions={
+          <div className="flex gap-2 items-center flex-wrap">
+            <Button variant="outline" onClick={handleTranslate} disabled={isTranslating} className="gap-2">
+              {isTranslating
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('qb_translating')} {translateProgress.done}/{translateProgress.total}</>
+                : <><Languages className="w-4 h-4" /> {t('qb_translate_pt')}</>
+              }
+            </Button>
+            <Button variant="outline" onClick={handleRemoveDuplicates} disabled={isDeduplicating} className="gap-2">
+              {isDeduplicating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+              {t('qb_remove_dupes')}
+            </Button>
+            <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="gap-2">
+              <Sparkles className="w-4 h-4" /> {t('qb_ai_generate')}
+            </Button>
+            <Button onClick={handleNew} className="gap-2">
+              <Plus className="w-4 h-4" /> {t('qb_new_question')}
+            </Button>
+          </div>
+        }
+      />
 
       {/* Search */}
       <div className="relative max-w-sm">
@@ -240,12 +245,9 @@ Return only valid JSON with the translations.`,
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center justify-center h-48 text-muted-foreground">{t('common_loading')}</div>
+            <LoadingState label={t('common_loading')} className="h-48" />
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-2">
-              <p>{t('qb_empty')}</p>
-              <Button variant="outline" size="sm" onClick={handleNew}>{t('qb_create_first')}</Button>
-            </div>
+            <EmptyState title={t('qb_empty')} action={<Button variant="outline" size="sm" onClick={handleNew}>{t('qb_create_first')}</Button>} className="h-48" />
           ) : (
             <Table>
               <TableHeader>

@@ -10,6 +10,9 @@ import { Button } from '@/components/ui/button';
 import { ScrollText, X, Loader2, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import PageHeader from '@/components/shared/PageHeader';
+import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 
 const formatLocalTimestamp = (dateStr) => {
   if (!dateStr) return '';
@@ -123,14 +126,14 @@ export default function AuditLog() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">{t('audit_subtitle')} · <span className="text-foreground font-medium">{filtered.length}</span> {t('audit_of')} {logs.length} {t('audit_entries')}</p>
-        {hasFilters && (
+      <PageHeader
+        description={<>{t('audit_subtitle')} · <span className="text-foreground font-medium">{filtered.length}</span> {t('audit_of')} {logs.length} {t('audit_entries')}</>}
+        actions={hasFilters && (
           <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5 text-muted-foreground">
             <X className="w-3.5 h-3.5" /> {t('audit_clear_filters')}
           </Button>
         )}
-      </div>
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
@@ -184,20 +187,15 @@ export default function AuditLog() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">{t('common_loading')}</TableCell>
+                  <TableCell colSpan={5}><LoadingState label={t('common_loading')} /></TableCell>
                 </TableRow>
               ) : logs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
-                    <ScrollText className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                    {t('audit_empty')}
-                  </TableCell>
+                  <TableCell colSpan={5}><EmptyState compact icon={ScrollText} title={t('audit_empty')} /></TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
-                    {t('audit_no_match')}
-                  </TableCell>
+                  <TableCell colSpan={5}><EmptyState compact title={t('audit_no_match')} /></TableCell>
                 </TableRow>
               ) : filtered.map(log => (
                 <TableRow key={log.id}>
