@@ -45,11 +45,36 @@ export default function TrainingUserRoster({ customer }) {
     enabled,
   });
 
-  const handleReport = (u) => {
+  const handleReport = async (u) => {
     setGeneratingId(u.id);
     try {
       const userEnr = enrollments.filter(e => e.training_user_id === u.id);
-      exportTrainingReportPdf(u, userEnr, trainings, customer, t, language);
+      const result = exportTrainingReportPdf(u, userEnr, trainings, customer, t, language);
+      if (result?.blob) {
+        const file = new File([result.blob], result.filename, { type: 'application/pdf' });
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        await base44.entities.TrainingReport.create({
+          customer_id: customer.id,
+          customer_name: customer.name,
+          training_user_id: u.id,
+          user_name: u.full_name,
+          user_email: u.email,
+          user_position: u.position,
+          user_department: u.department,
+          title: `${u.full_name} — ${t('training_report_title')}`,
+          file_url,
+          file_name: result.filename,
+          completion_rate: result.completionRate,
+          total_trainings: result.total,
+          completed_trainings: result.completed,
+          status: 'approved',
+          language,
+        });
+        toast.success(t('training_report_saved'));
+        qc.invalidateQueries({ queryKey: ['training-reports'] });
+      }
+    } catch (e) {
+      toast.error(t('training_report_save_failed'));
     } finally {
       setGeneratingId(null);
     }

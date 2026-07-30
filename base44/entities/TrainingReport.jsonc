@@ -1,0 +1,145 @@
+{
+  "name": "TrainingReport",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "training_user_id": {
+      "type": "string",
+      "description": "Reference to TrainingUser"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Denormalized collaborator name"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Denormalized collaborator email"
+    },
+    "user_position": {
+      "type": "string",
+      "description": "Denormalized collaborator position"
+    },
+    "user_department": {
+      "type": "string",
+      "description": "Denormalized collaborator department"
+    },
+    "title": {
+      "type": "string",
+      "description": "Report title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description / notes"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "Stored PDF file url"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original PDF file name"
+    },
+    "completion_rate": {
+      "type": "number",
+      "description": "Completion percentage at generation time"
+    },
+    "total_trainings": {
+      "type": "number",
+      "description": "Total assigned trainings at generation time"
+    },
+    "completed_trainings": {
+      "type": "number",
+      "description": "Completed trainings at generation time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "under_review",
+        "approved",
+        "deprecated"
+      ],
+      "default": "approved",
+      "description": "Report lifecycle status"
+    },
+    "version": {
+      "type": "string",
+      "description": "Report version"
+    },
+    "language": {
+      "type": "string",
+      "description": "Language the report was generated in"
+    }
+  },
+  "required": [
+    "title",
+    "file_url",
+    "training_user_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

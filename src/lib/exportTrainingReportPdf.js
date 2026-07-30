@@ -228,7 +228,9 @@ export function exportTrainingReportPdf(user, enrollments, trainings, customer, 
   }
 
   const filename = `${fullName.replace(/[^a-z0-9]/gi, '_')}_Training_Report.pdf`;
+  const blob = doc.output('blob');
   doc.save(filename);
+  return { blob, filename, completionRate, total, completed: completed.length, pending: pending.length };
 }
 
 function renderSection(doc, title, items, tMap, t, locale, isCompleted, startY, W, H) {
