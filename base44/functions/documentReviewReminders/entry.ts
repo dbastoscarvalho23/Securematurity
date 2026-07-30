@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { escapeHtml } from "../../shared/escapeHtml.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -38,7 +39,7 @@ Deno.serve(async (req) => {
     for (const [ownerEmail, docs] of Object.entries(byOwner)) {
       const docList = docs.map(d => {
         const daysLeft = Math.ceil((new Date(d.review_date) - today) / (1000 * 60 * 60 * 24));
-        return `• <strong>${d.title}</strong> (${d.level}) — Review due: ${d.review_date} (<strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>)`;
+        return `• <strong>${escapeHtml(d.title)}</strong> (${escapeHtml(d.level)}) — Review due: ${d.review_date} (<strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>)`;
       }).join('<br/>');
 
       const body = `

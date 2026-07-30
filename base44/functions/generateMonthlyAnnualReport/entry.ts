@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import jsPDF from 'npm:jspdf@4.0.0';
+import { getAutomationSecret } from "../../shared/automationSecret.ts";
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
 const BRAND_DARK = [20, 30, 60];
@@ -360,19 +361,23 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Allow both scheduled (no auth) and manual admin trigger
+    // Allow both scheduled (via shared automation secret) and manual admin trigger.
+    // Anonymous callers are rejected — access is never granted merely because
+    // base44.auth.me() threw.
     let isScheduled = false;
-    let callerIsAdmin = false;
 
-    try {
-      const user = await base44.auth.me();
-      if (user?.role !== 'admin') {
+    const automationSecret = await getAutomationSecret(req);
+    if (automationSecret) {
+      isScheduled = true;
+    } else {
+      try {
+        const user = await base44.auth.me();
+        if (user?.role !== 'admin') {
+          return Response.json({ error: 'Admin access required' }, { status: 403 });
+        }
+      } catch {
         return Response.json({ error: 'Admin access required' }, { status: 403 });
       }
-      callerIsAdmin = true;
-    } catch {
-      // Called without auth token (scheduled automation) — use service role
-      isScheduled = true;
     }
 
     const sr = base44.asServiceRole;
