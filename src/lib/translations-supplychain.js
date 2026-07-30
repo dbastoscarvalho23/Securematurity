@@ -202,6 +202,9 @@ export const supplyChainEn = {
     sst_overdue: 'Overdue',
     sst_archived: 'Archived',
     sst_maturity: 'Maturity',
+    sst_tier_distribution_title: 'Maturity Tier Distribution',
+    sst_tier_distribution_subtitle: 'Suppliers grouped by tier for the selected client',
+    sst_tier_distribution_empty: 'No suppliers to display',
 };
 
 export const supplyChainPt = {
@@ -407,4 +410,7 @@ export const supplyChainPt = {
     sst_overdue: 'Em Atraso',
     sst_archived: 'Arquivado',
     sst_maturity: 'Maturidade',
+    sst_tier_distribution_title: 'Distribuição de Níveis de Maturidade',
+    sst_tier_distribution_subtitle: 'Fornecedores agrupados por nível para o cliente selecionado',
+    sst_tier_distribution_empty: 'Sem fornecedores para mostrar',
 };

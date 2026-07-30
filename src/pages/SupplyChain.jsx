@@ -13,6 +13,7 @@ import { Plus, Search, MoreHorizontal, Pencil, Trash2, ChevronRight, Building2, 
 import { format, parseISO } from 'date-fns';
 import QuestionnaireFormDialog from '@/components/supplychain/QuestionnaireFormDialog';
 import QuestionnaireDetail from '@/components/supplychain/QuestionnaireDetail';
+import SupplierTierDistributionChart from '@/components/supplychain/SupplierTierDistributionChart';
 import { toast } from 'sonner';
 
 const STATUS_STYLES = {
@@ -85,6 +86,7 @@ export default function SupplyChain() {
   }
 
   const customerScoped = customerFilter === 'all' ? questionnaires : questionnaires.filter(q => q.customer_id === customerFilter);
+  const chartSuppliers = customerFilter === 'all' ? suppliers : suppliers.filter(s => s.customer_id === customerFilter);
   const totalQ = customerScoped.length;
   const completedQ = customerScoped.filter(q => q.status === 'completed').length;
   const inProgressQ = customerScoped.filter(q => q.status === 'in_progress' || q.status === 'sent').length;
@@ -119,6 +121,8 @@ export default function SupplyChain() {
           </Card>
         ))}
       </div>
+
+      <SupplierTierDistributionChart suppliers={chartSuppliers} />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
