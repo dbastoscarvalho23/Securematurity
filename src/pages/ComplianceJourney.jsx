@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
 const RJCS_TEMPLATE_EN = [
   {
@@ -255,6 +256,7 @@ export default function ComplianceJourney() {
   const isAdmin = user?.role === 'admin';
   const [selectedCustomerId, setSelectedCustomerId] = useState(isAdmin ? '' : user?.customer_id);
   const [initializing, setInitializing] = useState(false);
+  const [reinitConfirm, setReinitConfirm] = useState(false);
 
   const RJCS_TEMPLATE = language === 'pt' ? RJCS_TEMPLATE_PT : RJCS_TEMPLATE_EN;
 
@@ -382,14 +384,7 @@ export default function ComplianceJourney() {
                 variant="outline"
                 size="sm"
                 className="gap-2 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
-                onClick={async () => {
-                  if (!confirm(t('compliance_reinit_confirm'))) return;
-                  setInitializing(true);
-                  for (const item of items) {
-                    await base44.entities.ComplianceChecklist.delete(item.id);
-                  }
-                  await initMutation.mutateAsync();
-                }}
+                onClick={() => setReinitConfirm(true)}
                 disabled={initializing}
               >
                 <RefreshCw className="w-3 h-3" /> {t('compliance_reinit')}
@@ -398,6 +393,25 @@ export default function ComplianceJourney() {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={reinitConfirm}
+        onOpenChange={setReinitConfirm}
+        title={t('compliance_reinit')}
+        description={t('compliance_reinit_confirm')}
+        confirmLabel={t('common_confirm')}
+        cancelLabel={t('common_cancel')}
+        onConfirm={async () => {
+          setInitializing(true);
+          for (const item of items) {
+            await base44.entities.ComplianceChecklist.delete(item.id);
+          }
+          await initMutation.mutateAsync();
+          setReinitConfirm(false);
+        }}
+        loading={initializing}
+        destructive
+      />
     </div>
   );
 }

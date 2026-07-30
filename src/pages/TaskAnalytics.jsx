@@ -313,7 +313,7 @@ export default function TaskAnalytics() {
               {analytics.overdueTasks.map(task => <TaskRow key={task.id} task={task} />)}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground py-8 text-center text-accent">{t('analytics_no_overdue')}</p>
+            <EmptyState compact title={t('analytics_no_overdue')} className="py-8" />
           )}
         </CardContent>
       </Card>
