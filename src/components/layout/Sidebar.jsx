@@ -34,7 +34,6 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import Logo from '@/components/layout/Logo';
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onCloseMobile }) {
   const location = useLocation();
@@ -125,7 +124,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
       >
         {/* Logo */}
         <div className="h-16 flex items-center px-4 border-b border-sidebar-border flex-shrink-0">
-          <Logo size={28} />
+          <Shield className="w-7 h-7 text-primary flex-shrink-0" />
           {!collapsed && (
             <div className="ml-3 overflow-hidden">
               <span className="font-bold text-base tracking-tight block leading-tight">AnkoraOne</span>

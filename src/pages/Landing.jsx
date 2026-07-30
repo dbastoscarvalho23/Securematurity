@@ -1,6 +1,5 @@
 import React from 'react';
-import { CheckCircle2 } from 'lucide-react';
-import Logo from '@/components/layout/Logo';
+import { Shield, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -19,7 +18,7 @@ export default function Landing() {
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-sidebar flex-col justify-between p-12">
         <div className="flex items-center gap-3">
-          <Logo size={36} />
+          <Shield className="w-9 h-9 text-primary" />
           <div>
             <p className="text-sidebar-foreground font-bold text-xl tracking-tight">AnkoraOne</p>
             <p className="text-sidebar-foreground/40 text-xs">{t('landing_tagline')}</p>
@@ -54,7 +53,7 @@ export default function Landing() {
         <div className="w-full max-w-sm space-y-8">
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center gap-3 justify-center">
-            <Logo size={32} />
+            <Shield className="w-8 h-8 text-primary" />
             <p className="text-foreground font-bold text-xl">AnkoraOne</p>
           </div>
 
