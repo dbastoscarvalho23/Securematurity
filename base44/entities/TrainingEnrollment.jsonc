@@ -1,0 +1,121 @@
+{
+  "name": "TrainingEnrollment",
+  "type": "object",
+  "properties": {
+    "training_id": {
+      "type": "string",
+      "description": "Reference to Training"
+    },
+    "training_title": {
+      "type": "string",
+      "description": "Denormalized training title"
+    },
+    "training_user_id": {
+      "type": "string",
+      "description": "Reference to TrainingUser"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Denormalized person name"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Denormalized person email (for summon)"
+    },
+    "user_position": {
+      "type": "string",
+      "description": "Denormalized position (cargo)"
+    },
+    "user_department": {
+      "type": "string",
+      "description": "Denormalized department (dire\u00e7\u00e3o)"
+    },
+    "attendance_status": {
+      "type": "string",
+      "enum": [
+        "invited",
+        "confirmed",
+        "attended",
+        "absent"
+      ],
+      "default": "invited",
+      "description": "Attendance status"
+    },
+    "summoned": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the summon email was sent"
+    },
+    "summoned_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the summon email was sent"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "training_id",
+    "training_user_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    }
+  }
+}

@@ -26,7 +26,8 @@ import {
   Siren,
   Users,
   Bug,
-  Gauge
+  Gauge,
+  GraduationCap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -87,6 +88,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
     { path: '/dsr', labelKey: 'nav_dsr', icon: Users },
     { path: '/vulnerabilities', labelKey: 'nav_vulnerabilities', icon: Bug },
     { path: '/compliance-metrics', labelKey: 'nav_compliance_metrics', icon: Gauge },
+    { path: '/training', labelKey: 'nav_training', icon: GraduationCap },
   ];
 
   const supplyChainItems = [

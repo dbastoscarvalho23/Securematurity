@@ -1,0 +1,147 @@
+{
+  "name": "Training",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "title": {
+      "type": "string",
+      "description": "Training title"
+    },
+    "topic": {
+      "type": "string",
+      "enum": [
+        "phishing_awareness",
+        "data_protection_gdpr",
+        "nis2_awareness",
+        "incident_response",
+        "secure_development",
+        "access_management",
+        "social_engineering",
+        "physical_security",
+        "other"
+      ],
+      "default": "phishing_awareness",
+      "description": "Cybersecurity training component / topic"
+    },
+    "topic_other": {
+      "type": "string",
+      "description": "Description when topic is 'other'"
+    },
+    "description": {
+      "type": "string",
+      "description": "Training description / agenda"
+    },
+    "modality": {
+      "type": "string",
+      "enum": [
+        "presential",
+        "online",
+        "hybrid"
+      ],
+      "default": "presential",
+      "description": "Delivery modality"
+    },
+    "trainer": {
+      "type": "string",
+      "description": "Trainer / instructor name"
+    },
+    "location": {
+      "type": "string",
+      "description": "Location (room) or online link"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Scheduled date and time"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "Duration in minutes"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "completed",
+        "cancelled"
+      ],
+      "default": "scheduled",
+      "description": "Training status"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "title",
+    "topic",
+    "scheduled_date"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
