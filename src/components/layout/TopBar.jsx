@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Settings, Building2, Loader2, Clock, Sun, Moon, Monitor } from 'lucide-react';
+import { User, LogOut, Settings, Building2, Loader2, Clock, Sun, Moon, Monitor, Menu } from 'lucide-react';
 import { useTheme } from '@/lib/ThemeContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,7 +55,7 @@ const PAGE_TITLE_KEYS = {
   '/suppliers': 'suppliers_title',
 };
 
-export default function TopBar() {
+export default function TopBar({ onMenuClick }) {
   const { user, refreshUser } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const { theme, setTheme } = useTheme();
@@ -118,6 +118,15 @@ export default function TopBar() {
     <>
       <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0">
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden h-9 w-9"
+            onClick={onMenuClick}
+            aria-label="Menu"
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
           <h2 className="text-base font-semibold text-foreground">{pageTitle}</h2>
         </div>
 

@@ -33,7 +33,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 
-export default function Sidebar({ collapsed, onToggle }) {
+export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onCloseMobile }) {
   const location = useLocation();
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -104,10 +104,18 @@ export default function Sidebar({ collapsed, onToggle }) {
 
   return (
     <TooltipProvider delayDuration={0}>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={onCloseMobile}
+          aria-hidden="true"
+        />
+      )}
       <aside
         className={cn(
-          "fixed left-0 top-0 h-screen bg-sidebar text-sidebar-foreground z-40 flex flex-col transition-all duration-300 border-r border-sidebar-border",
-          collapsed ? "w-16" : "w-60"
+          "fixed left-0 top-0 h-screen bg-sidebar text-sidebar-foreground z-50 flex flex-col transition-all duration-300 border-r border-sidebar-border w-64",
+          collapsed ? "md:w-16" : "md:w-60",
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         {/* Logo */}
@@ -140,6 +148,7 @@ export default function Sidebar({ collapsed, onToggle }) {
                     <Link
                       key={item.path}
                       to={item.path}
+                      onClick={onCloseMobile}
                       className={cn(
                         "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
                         isActive
@@ -169,7 +178,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         {/* Collapse Toggle */}
         <button
           onClick={onToggle}
-          className="h-10 flex items-center justify-center border-t border-sidebar-border text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors flex-shrink-0"
+          className="hidden md:flex h-10 items-center justify-center border-t border-sidebar-border text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors flex-shrink-0"
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
