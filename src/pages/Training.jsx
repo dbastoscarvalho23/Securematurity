@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import PageHeader from '@/components/shared/PageHeader';
 import TrainingUserRoster from '@/components/training/TrainingUserRoster';
 import TrainingList from '@/components/training/TrainingList';
+import TrainingCalendar from '@/components/training/TrainingCalendar';
 
 export default function Training() {
   const { user } = useAuth();
@@ -61,12 +62,16 @@ export default function Training() {
           <TabsList>
             <TabsTrigger value="users">{t('training_tab_users')}</TabsTrigger>
             <TabsTrigger value="trainings">{t('training_tab_trainings')}</TabsTrigger>
+            <TabsTrigger value="calendar">{t('training_tab_calendar')}</TabsTrigger>
           </TabsList>
           <TabsContent value="users" className="mt-6">
             <TrainingUserRoster customer={customer} />
           </TabsContent>
           <TabsContent value="trainings" className="mt-6">
             <TrainingList customer={customer} />
+          </TabsContent>
+          <TabsContent value="calendar" className="mt-6">
+            <TrainingCalendar customer={customer} />
           </TabsContent>
         </Tabs>
       ) : (

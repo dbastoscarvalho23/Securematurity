@@ -86,6 +86,13 @@ export const trainingEn = {
   training_col_modality: 'Modality',
   training_col_enrolled: 'Enrolled',
 
+  // Calendar
+  training_tab_calendar: 'Calendar',
+  training_calendar_subtitle: 'Visualize upcoming training sessions',
+  training_calendar_today: 'Today',
+  training_calendar_no_events: 'No trainings on this day',
+  training_calendar_events_on: 'Trainings on {date}',
+
   // Enrollments
   training_enrollment_title: 'Enrollments',
   training_enrollment_subtitle: 'Add participants and summon them by email',
@@ -199,6 +206,13 @@ export const trainingPt = {
   training_col_topic: 'Tema',
   training_col_modality: 'Modalidade',
   training_col_enrolled: 'Inscritos',
+
+  // Calendar
+  training_tab_calendar: 'Calendário',
+  training_calendar_subtitle: 'Visualize as próximas ações de formação',
+  training_calendar_today: 'Hoje',
+  training_calendar_no_events: 'Não há formações neste dia',
+  training_calendar_events_on: 'Formações em {date}',
 
   // Enrollments
   training_enrollment_title: 'Inscrições',
