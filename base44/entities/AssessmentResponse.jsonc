@@ -38,6 +38,10 @@
       "type": "number",
       "description": "Target maturity level (0-5)"
     },
+    "improvement_suggestions": {
+      "type": "string",
+      "description": "AI-generated concrete actions to reach the next maturity level"
+    },
     "attachments": {
       "type": "array",
       "description": "Evidence file attachments",
