@@ -51,6 +51,7 @@ export default function Suppliers() {
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [pendingStatus, setPendingStatus] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
+  const [supplierToDelete, setSupplierToDelete] = useState(null);
 
   const queryKey = ['suppliers', customerId];
   const { data: suppliers = [], isLoading } = useQuery({
@@ -115,11 +116,18 @@ export default function Suppliers() {
     }
   };
 
-  const handleDelete = async (s) => {
-    if (!confirm(`${t('suppliers_delete_confirm')} "${s.name}"?`)) return;
-    await base44.entities.Supplier.delete(s.id);
-    queryClient.invalidateQueries({ queryKey });
-    toast.success(t('suppliers_deleted'));
+  const handleDelete = (s) => setSupplierToDelete(s);
+
+  const executeDelete = async () => {
+    if (!supplierToDelete) return;
+    try {
+      await base44.entities.Supplier.delete(supplierToDelete.id);
+      queryClient.invalidateQueries({ queryKey });
+      toast.success(t('suppliers_deleted'));
+    } catch (err) {
+      toast.error(err?.message || t('suppliers_save_error'));
+    }
+    setSupplierToDelete(null);
   };
 
   const handleBulkStatus = (status) => { setPendingStatus(status); setBulkStatusConfirm(true); };
@@ -349,6 +357,17 @@ export default function Suppliers() {
         onConfirm={executeBulkStatus}
         loading={isBulkAction}
         destructive={false}
+      />
+
+      <ConfirmDialog
+        open={!!supplierToDelete}
+        onOpenChange={(open) => !open && setSupplierToDelete(null)}
+        title={t('suppliers_delete')}
+        description={`${t('suppliers_delete_confirm')} "${supplierToDelete?.name}"?`}
+        confirmLabel={t('suppliers_delete')}
+        cancelLabel={t('suppliers_cancel')}
+        onConfirm={executeDelete}
+        destructive
       />
 
       <SupplierExcelImportDialog
