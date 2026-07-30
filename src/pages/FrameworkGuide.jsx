@@ -5,12 +5,13 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import ConversationSidebar from "@/components/agents/ConversationSidebar";
 import ChatPanel from "@/components/agents/ChatPanel";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 const AGENT_NAME = "framework_guide";
 
 const STR = {
-  en: { title: "Framework Guidance", subtitle: "Walk through a framework's controls with an AI guide and record your maturity answers.", createErr: "Could not start a new session.", loadErr: "Could not load sessions." },
-  pt: { title: " Orientação de Framework", subtitle: "Percorra os controlos de um framework com um guia de IA e registe as suas respostas de maturidade.", createErr: "Não foi possível iniciar uma nova sessão.", loadErr: "Não foi possível carregar as sessões." },
+  en: { title: "Framework Guidance", subtitle: "Walk through a framework's controls with an AI guide and record your maturity answers.", createErr: "Could not start a new session.", loadErr: "Could not load sessions.", deleteErr: "Could not delete the session.", deleteTitle: "Delete session?", deleteDesc: "This will permanently delete the session and its messages.", deleteConfirm: "Delete", deleteCancel: "Cancel" },
+  pt: { title: "Orientação de Framework", subtitle: "Percorra os controlos de um framework com um guia de IA e registe as suas respostas de maturidade.", createErr: "Não foi possível iniciar uma nova sessão.", loadErr: "Não foi possível carregar as sessões.", deleteErr: "Não foi possível eliminar a sessão.", deleteTitle: "Eliminar sessão?", deleteDesc: "Isto eliminará permanentemente a sessão e as suas mensagens.", deleteConfirm: "Eliminar", deleteCancel: "Cancelar" },
 };
 
 export default function FrameworkGuide() {
@@ -23,6 +24,7 @@ export default function FrameworkGuide() {
   const [messages, setMessages] = useState([]);
   const [creating, setCreating] = useState(false);
   const [sending, setSending] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -62,6 +64,22 @@ export default function FrameworkGuide() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deletingId) return;
+    try {
+      await base44.agents.deleteConversation(deletingId);
+      setConversations((prev) => prev.filter((c) => c.id !== deletingId));
+      if (activeId === deletingId) {
+        setActiveId(null);
+        setMessages([]);
+      }
+    } catch (e) {
+      toast({ title: s.deleteErr, description: e.message, variant: "destructive" });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const handleSend = async (text) => {
     setSending(true);
     try {
@@ -83,7 +101,7 @@ export default function FrameworkGuide() {
       </div>
       <Card className="h-[calc(100vh-220px)] min-h-[480px] flex overflow-hidden">
         <div className="w-72 border-r border-border shrink-0 hidden md:block">
-          <ConversationSidebar language={language} conversations={conversations} activeId={activeId} onSelect={setActiveId} onNew={handleNew} creating={creating} />
+          <ConversationSidebar language={language} conversations={conversations} activeId={activeId} onSelect={setActiveId} onNew={handleNew} onDelete={setDeletingId} creating={creating} />
         </div>
         <div className="flex-1 min-w-0">
           {activeId ? (
@@ -95,6 +113,15 @@ export default function FrameworkGuide() {
           )}
         </div>
       </Card>
+      <ConfirmDialog
+        open={!!deletingId}
+        onOpenChange={(open) => { if (!open) setDeletingId(null); }}
+        title={s.deleteTitle}
+        description={s.deleteDesc}
+        confirmLabel={s.deleteConfirm}
+        cancelLabel={s.deleteCancel}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
