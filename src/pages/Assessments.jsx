@@ -9,32 +9,20 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import NewAssessmentDialog from '@/components/assessments/NewAssessmentDialog';
 import BulkActionBar from '@/components/shared/BulkActionBar';
+import PageHeader from '@/components/shared/PageHeader';
+import StatusBadge from '@/components/shared/StatusBadge';
+import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { exportReportPdf } from '@/lib/exportReportPdf';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
-
-const statusStyles = {
-  draft: 'bg-muted text-muted-foreground',
-  in_progress: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
-  completed: 'bg-accent/10 text-accent border-accent/20',
-  archived: 'bg-muted text-muted-foreground',
-};
 
 const assessmentStatusOptions = [
   { value: 'draft', labelKey: 'assessments_status_draft' },
@@ -134,14 +122,14 @@ export default function Assessments() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">{t('assessments_subtitle')}</p>
-        {isAdmin && (
+      <PageHeader
+        description={t('assessments_subtitle')}
+        actions={isAdmin && (
           <Button onClick={() => setShowNew(true)} className="gap-2">
             <Plus className="w-4 h-4" /> {t('assessments_new')}
           </Button>
         )}
-      </div>
+      />
 
       {isAdmin && <NewAssessmentDialog open={showNew} onOpenChange={setShowNew} />}
 
@@ -192,12 +180,12 @@ export default function Assessments() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('common_loading')}</TableCell>
+                  <TableCell colSpan={8}><LoadingState label={t('common_loading')} /></TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                    {search ? t('assessments_no_results') : t('assessments_empty')}
+                  <TableCell colSpan={8}>
+                    <EmptyState compact title={search ? t('assessments_no_results') : t('assessments_empty')} />
                   </TableCell>
                 </TableRow>
               ) : filtered.map(a => (
@@ -239,9 +227,7 @@ export default function Assessments() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={cn("text-xs border", statusStyles[a.status])}>
-                      {t('assessments_status_' + a.status)}
-                    </Badge>
+                    <StatusBadge status={a.status} label={t('assessments_status_' + a.status)} />
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -283,41 +269,28 @@ export default function Assessments() {
         </CardContent>
       </Card>
 
-      <AlertDialog open={bulkDeleteConfirm} onOpenChange={(open) => !isBulkAction && setBulkDeleteConfirm(open)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('bulk_confirm_delete_title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('bulk_confirm_delete_desc')} {selectedIds.length}? {t('bulk_cannot_undo')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel disabled={isBulkAction}>{t('common_cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} disabled={isBulkAction} className="gap-1.5">
-              {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
-              {t('common_confirm')}
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={bulkDeleteConfirm}
+        onOpenChange={(open) => !isBulkAction && setBulkDeleteConfirm(open)}
+        title={t('bulk_confirm_delete_title')}
+        description={`${t('bulk_confirm_delete_desc')} ${selectedIds.length}? ${t('bulk_cannot_undo')}`}
+        confirmLabel={t('common_confirm')}
+        cancelLabel={t('common_cancel')}
+        onConfirm={handleBulkDelete}
+        loading={isBulkAction}
+      />
 
-      <AlertDialog open={bulkStatusConfirm} onOpenChange={(open) => !isBulkAction && setBulkStatusConfirm(open)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('bulk_confirm_status_title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('bulk_confirm_status_desc')} {selectedIds.length} {t('bulk_selected')} → {t('assessments_status_' + pendingStatus)}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel disabled={isBulkAction}>{t('common_cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={executeBulkStatus} disabled={isBulkAction} className="gap-1.5">
-              {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
-              {t('common_confirm')}
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={bulkStatusConfirm}
+        onOpenChange={(open) => !isBulkAction && setBulkStatusConfirm(open)}
+        title={t('bulk_confirm_status_title')}
+        description={`${t('bulk_confirm_status_desc')} ${selectedIds.length} ${t('bulk_selected')} → ${pendingStatus ? t('assessments_status_' + pendingStatus) : ''}`}
+        confirmLabel={t('common_confirm')}
+        cancelLabel={t('common_cancel')}
+        onConfirm={executeBulkStatus}
+        loading={isBulkAction}
+        destructive={false}
+      />
     </div>
   );
 }

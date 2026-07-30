@@ -13,15 +13,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
-} from '@/components/ui/alert-dialog';
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, Truck, Globe, Mail, Phone, Loader2, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import SupplierExcelImportDialog from '@/components/suppliers/SupplierExcelImportDialog';
 import SupplierStatusTracker from '@/components/suppliers/SupplierStatusTracker';
 import BulkActionBar from '@/components/shared/BulkActionBar';
+import PageHeader from '@/components/shared/PageHeader';
+import StatusBadge from '@/components/shared/StatusBadge';
+import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
 const emptyForm = { name: '', nif: '', contact_email: '', contact_phone: '', website: '', tier: 'tier_2', notes: '', status: 'active' };
 
@@ -168,20 +170,19 @@ export default function Suppliers() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold">{t('suppliers_title')}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{t('suppliers_subtitle')}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
-            <FileSpreadsheet className="w-4 h-4" /> {t('suppliers_bulk_import')}
-          </Button>
-          <Button onClick={openNew} className="gap-2">
-            <Plus className="w-4 h-4" /> {t('suppliers_new')}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        description={t('suppliers_subtitle')}
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+              <FileSpreadsheet className="w-4 h-4" /> {t('suppliers_bulk_import')}
+            </Button>
+            <Button onClick={openNew} className="gap-2">
+              <Plus className="w-4 h-4" /> {t('suppliers_new')}
+            </Button>
+          </>
+        }
+      />
 
       <div className="flex items-center gap-2">
         {canBulkAction && filtered.length > 0 && (
@@ -207,11 +208,10 @@ export default function Suppliers() {
       )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+        <LoadingState label={t('common_loading')} className="py-20" />
       ) : filtered.length === 0 ? (
-        <Card><CardContent className="py-16 text-center text-muted-foreground">
-          <Truck className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">{t('suppliers_empty')}</p>
+        <Card><CardContent className="p-0">
+          <EmptyState icon={Truck} title={t('suppliers_empty')} />
         </CardContent></Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -254,9 +254,7 @@ export default function Suppliers() {
                 </div>
                 {s.notes && <p className="mt-3 text-xs text-muted-foreground line-clamp-2">{s.notes}</p>}
                 <div className="mt-3 flex items-center gap-2">
-                  <Badge variant={s.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                    {s.status === 'active' ? t('suppliers_status_active') : t('suppliers_status_inactive')}
-                  </Badge>
+                  <StatusBadge status={s.status} label={s.status === 'active' ? t('suppliers_status_active') : t('suppliers_status_inactive')} />
                 </div>
                 <SupplierStatusTracker supplier={s} questionnaire={questionnaireByName.get((s.name || '').trim().toLowerCase())} />
               </CardContent>
@@ -330,41 +328,28 @@ export default function Suppliers() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={bulkDeleteConfirm} onOpenChange={open => !isBulkAction && setBulkDeleteConfirm(open)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('bulk_confirm_delete_title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('bulk_confirm_delete_desc')} {selectedIds.length}? {t('bulk_cannot_undo')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel disabled={isBulkAction}>{t('suppliers_cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} disabled={isBulkAction} className="gap-1.5">
-              {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
-              {t('suppliers_delete')}
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={bulkDeleteConfirm}
+        onOpenChange={open => !isBulkAction && setBulkDeleteConfirm(open)}
+        title={t('bulk_confirm_delete_title')}
+        description={`${t('bulk_confirm_delete_desc')} ${selectedIds.length}? ${t('bulk_cannot_undo')}`}
+        confirmLabel={t('suppliers_delete')}
+        cancelLabel={t('suppliers_cancel')}
+        onConfirm={handleBulkDelete}
+        loading={isBulkAction}
+      />
 
-      <AlertDialog open={bulkStatusConfirm} onOpenChange={open => !isBulkAction && setBulkStatusConfirm(open)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('bulk_confirm_status_title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('bulk_confirm_status_desc')} {selectedIds.length} {t('bulk_selected')} → {pendingStatus ? t('suppliers_status_' + pendingStatus) : ''}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel disabled={isBulkAction}>{t('suppliers_cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={executeBulkStatus} disabled={isBulkAction} className="gap-1.5">
-              {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
-              {t('suppliers_save')}
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={bulkStatusConfirm}
+        onOpenChange={open => !isBulkAction && setBulkStatusConfirm(open)}
+        title={t('bulk_confirm_status_title')}
+        description={`${t('bulk_confirm_status_desc')} ${selectedIds.length} ${t('bulk_selected')} → ${pendingStatus ? t('suppliers_status_' + pendingStatus) : ''}`}
+        confirmLabel={t('suppliers_save')}
+        cancelLabel={t('suppliers_cancel')}
+        onConfirm={executeBulkStatus}
+        loading={isBulkAction}
+        destructive={false}
+      />
 
       <SupplierExcelImportDialog
         open={importOpen}
