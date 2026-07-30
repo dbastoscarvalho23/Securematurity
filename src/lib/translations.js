@@ -11,6 +11,7 @@ import { documentsEn, documentsPt } from './translations-documents';
 import { reportingEn, reportingPt } from './translations-reporting';
 import { customersEn, customersPt } from './translations-customers';
 import { trainingEn, trainingPt } from './translations-training';
+import { genReportsEn, genReportsPt } from './translations-genreports';
 export const translations = {
   en: {
     // assessments
@@ -448,3 +449,5 @@ Object.assign(translations.en, customersEn);
 Object.assign(translations.pt, customersPt);
 Object.assign(translations.en, trainingEn);
 Object.assign(translations.pt, trainingPt);
+Object.assign(translations.en, genReportsEn);
+Object.assign(translations.pt, genReportsPt);
