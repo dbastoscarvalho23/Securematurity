@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import SupplierExcelImportDialog from '@/components/suppliers/SupplierExcelImportDialog';
 
-const emptyForm = { name: '', nif: '', contact_email: '', contact_phone: '', website: '', notes: '', status: 'active' };
+const emptyForm = { name: '', nif: '', contact_email: '', contact_phone: '', website: '', tier: 'tier_2', notes: '', status: 'active' };
 
 export default function Suppliers() {
   const { user } = useAuth();
@@ -158,7 +158,12 @@ export default function Suppliers() {
                   {s.website && <div className="flex items-center gap-2 text-muted-foreground"><Globe className="w-3.5 h-3.5" /><a href={s.website} target="_blank" rel="noreferrer" className="truncate hover:text-primary">{s.website}</a></div>}
                 </div>
                 {s.notes && <p className="mt-3 text-xs text-muted-foreground line-clamp-2">{s.notes}</p>}
-                <div className="mt-3">
+                <div className="mt-3 flex items-center gap-2">
+                  {s.tier && (
+                    <Badge variant="outline" className="text-xs">
+                      {t(`suppliers_${s.tier}`)}
+                    </Badge>
+                  )}
                   <Badge variant={s.status === 'active' ? 'default' : 'secondary'} className="text-xs">
                     {s.status === 'active' ? t('suppliers_status_active') : t('suppliers_status_inactive')}
                   </Badge>
@@ -195,6 +200,18 @@ export default function Suppliers() {
               <div className="space-y-1.5">
                 <Label>{t('suppliers_website')}</Label>
                 <Input value={form.website} onChange={e => setForm({ ...form, website: e.target.value })} placeholder="https://" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('suppliers_form_tier')}</Label>
+                <Select value={form.tier} onValueChange={v => setForm({ ...form, tier: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tier_1">{t('suppliers_tier_1')}</SelectItem>
+                    <SelectItem value="tier_2">{t('suppliers_tier_2')}</SelectItem>
+                    <SelectItem value="tier_3">{t('suppliers_tier_3')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{t('suppliers_tier_help')}</p>
               </div>
               <div className="space-y-1.5">
                 <Label>{t('suppliers_status')}</Label>

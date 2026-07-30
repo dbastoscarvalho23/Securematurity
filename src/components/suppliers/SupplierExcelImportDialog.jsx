@@ -13,6 +13,7 @@ const SUPPLIER_FIELDS = [
   { key: 'contact_email', labelKey: 'suppliers_form_email', required: true  },
   { key: 'contact_phone', labelKey: 'suppliers_form_phone', required: true  },
   { key: 'website',       labelKey: 'suppliers_form_website', required: false },
+  { key: 'tier',          labelKey: 'suppliers_form_tier', required: false },
   { key: 'notes',         labelKey: 'suppliers_form_notes', required: false },
   { key: 'status',        labelKey: 'suppliers_form_status', required: false },
 ];
@@ -22,12 +23,19 @@ const STATUS_MAP = {
   'inactive': 'inactive', 'inativo': 'inactive', 'false': 'inactive', 'no': 'inactive', 'nao': 'inactive', 'não': 'inactive',
 };
 
+const TIER_MAP = {
+  'tier_1': 'tier_1', 'tier1': 'tier_1', '1': 'tier_1', 't1': 'tier_1', 'tier 1': 'tier_1', 'nivel 1': 'tier_1', 'nível 1': 'tier_1',
+  'tier_2': 'tier_2', 'tier2': 'tier_2', '2': 'tier_2', 't2': 'tier_2', 'tier 2': 'tier_2', 'nivel 2': 'tier_2', 'nível 2': 'tier_2',
+  'tier_3': 'tier_3', 'tier3': 'tier_3', '3': 'tier_3', 't3': 'tier_3', 'tier 3': 'tier_3', 'nivel 3': 'tier_3', 'nível 3': 'tier_3',
+};
+
 const AUTO_HINTS = {
   name:          ['name', 'supplier name', 'supplier', 'nome', 'fornecedor', 'fornecedor nome'],
   nif:           ['nif', 'tax id', 'vat', 'nif', 'tax', 'número fiscal'],
   contact_email: ['email', 'contact email', 'e-mail', 'email contacto', 'contact_email'],
   contact_phone: ['phone', 'contact phone', 'telefone', 'tel', 'contact_phone', 'contacto'],
   website:       ['website', 'site', 'url', 'web', 'site web'],
+  tier:          ['tier', 'level', 'nivel', 'nível', 'class', 'classe', 'tier level'],
   notes:         ['notes', 'note', 'notas', 'observações', 'observations', 'comments'],
   status:        ['status', 'estado', 'state', 'situação'],
 };
@@ -68,12 +76,14 @@ function buildSuppliersFromMapping(sheetData, mapping) {
     const name = String(getVal(primaryRows, primaryHeaders, titleSrc.col, i) || '').trim();
     if (!name) continue;
     const rawStatus = String(getField('status') || '').toLowerCase().trim();
+    const rawTier = String(getField('tier') || '').toLowerCase().trim();
     suppliers.push({
       name,
       nif:           String(getField('nif')           || '').trim(),
       contact_email: String(getField('contact_email') || '').trim(),
       contact_phone: String(getField('contact_phone') || '').trim(),
       website:       String(getField('website')       || '').trim(),
+      tier:          TIER_MAP[rawTier] || 'tier_2',
       notes:         String(getField('notes')         || '').trim(),
       status:        STATUS_MAP[rawStatus] || 'active',
     });
@@ -83,11 +93,12 @@ function buildSuppliersFromMapping(sheetData, mapping) {
 
 function downloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['Name', 'NIF', 'Email', 'Phone', 'Website', 'Notes', 'Status'],
-    ['Acme Security Ltd', 'PT500123456', 'contact@acmesecurity.pt', '+351210000000', 'https://acmesecurity.pt', 'Managed SOC provider', 'active'],
-    ['CloudGuard Inc', 'PT509876543', 'sales@cloudguard.pt', '+351220000000', 'https://cloudguard.pt', 'Penetration testing services', 'active'],
+    ['Name', 'NIF', 'Email', 'Phone', 'Website', 'Tier', 'Notes', 'Status'],
+    ['Acme Security Ltd', 'PT500123456', 'contact@acmesecurity.pt', '+351210000000', 'https://acmesecurity.pt', 'Tier 1', 'Managed SOC provider', 'active'],
+    ['CloudGuard Inc', 'PT509876543', 'sales@cloudguard.pt', '+351220000000', 'https://cloudguard.pt', 'Tier 2', 'Penetration testing services', 'active'],
+    ['Office Supplies Co', 'PT501112223', 'info@officesupplies.pt', '+351230000000', 'https://officesupplies.pt', 'Tier 3', 'General office supplies', 'active'],
   ]);
-  ws['!cols'] = [{ wch: 24 }, { wch: 18 }, { wch: 28 }, { wch: 18 }, { wch: 28 }, { wch: 32 }, { wch: 10 }];
+  ws['!cols'] = [{ wch: 24 }, { wch: 18 }, { wch: 28 }, { wch: 18 }, { wch: 28 }, { wch: 10 }, { wch: 32 }, { wch: 10 }];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Suppliers');
   XLSX.writeFile(wb, 'suppliers_template.xlsx');
@@ -232,7 +243,7 @@ function MappingStep({ sheets, sheetData, mapping, onDrop, onClear, t }) {
 function PreviewStep({ sheetData, mapping, t }) {
   const suppliers = buildSuppliersFromMapping(sheetData, mapping);
   const missingRequired = suppliers.filter(s => !s.nif || !s.contact_email || !s.contact_phone).length;
-  const tableHeaders = [t('suppliers_form_name'), t('suppliers_form_nif'), t('suppliers_form_email'), t('suppliers_form_phone'), t('suppliers_form_website'), t('suppliers_form_status')];
+  const tableHeaders = [t('suppliers_form_name'), t('suppliers_form_nif'), t('suppliers_form_email'), t('suppliers_form_phone'), t('suppliers_form_website'), t('suppliers_form_tier'), t('suppliers_form_status')];
   return (
     <div className="space-y-3">
       {missingRequired > 0 && (
@@ -263,6 +274,7 @@ function PreviewStep({ sheetData, mapping, t }) {
                       <td className="px-3 py-2 max-w-[160px] truncate">{s.contact_email || '—'}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{s.contact_phone || '—'}</td>
                       <td className="px-3 py-2 max-w-[140px] truncate text-muted-foreground">{s.website || '—'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{t(`suppliers_${s.tier}`)}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{s.status}</td>
                     </tr>
                   );

@@ -30,6 +30,16 @@
       "type": "string",
       "description": "Supplier website URL"
     },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "tier_1",
+        "tier_2",
+        "tier_3"
+      ],
+      "default": "tier_2",
+      "description": "Supplier tier classification (Tier 1 = strategic/critical, Tier 2 = important, Tier 3 = standard)"
+    },
     "notes": {
       "type": "string",
       "description": "Additional information / notes"
