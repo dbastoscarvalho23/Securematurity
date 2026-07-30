@@ -36,6 +36,7 @@ import DSRManagement from '@/pages/DSRManagement';
 import VulnerabilityManagement from '@/pages/VulnerabilityManagement';
 import ComplianceMetrics from '@/pages/ComplianceMetrics';
 import Training from '@/pages/Training';
+import FrameworkGuide from '@/pages/FrameworkGuide';
 import RouteGuard from '@/components/layout/RouteGuard';
 
 const AuthenticatedApp = () => {
@@ -94,6 +95,7 @@ const AuthenticatedApp = () => {
         <Route path="/vulnerabilities" element={<RouteGuard path="/vulnerabilities"><VulnerabilityManagement /></RouteGuard>} />
         <Route path="/compliance-metrics" element={<RouteGuard path="/compliance-metrics"><ComplianceMetrics /></RouteGuard>} />
         <Route path="/training" element={<RouteGuard path="/training"><Training /></RouteGuard>} />
+        <Route path="/framework-guide" element={<RouteGuard path="/framework-guide"><FrameworkGuide /></RouteGuard>} />
         <Route path="/email-report" element={<RouteGuard path="/email-report"><EmailReport /></RouteGuard>} />
       </Route>
       <Route path="*" element={<PageNotFound />} />

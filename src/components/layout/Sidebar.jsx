@@ -27,7 +27,8 @@ import {
   Users,
   Bug,
   Gauge,
-  GraduationCap
+  GraduationCap,
+  Bot
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -51,6 +52,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
     ...(isAdmin ? [{ path: '/customers', labelKey: 'nav_customers', icon: Building2 }] : []),
     { path: '/compliance-journey', labelKey: 'nav_compliance_journey', icon: MapPin },
     { path: '/assessments', labelKey: 'nav_assessments', icon: ClipboardCheck },
+    { path: '/framework-guide', labelKey: 'nav_framework_guide', icon: Bot },
     { path: '/evidence', labelKey: 'nav_evidence', icon: Paperclip },
     { path: '/tasks', labelKey: 'nav_tasks', icon: ListTodo },
     { path: '/task-analytics', labelKey: 'nav_task_analytics', icon: TrendingUp },
