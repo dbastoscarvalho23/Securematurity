@@ -84,9 +84,9 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
 
   const developmentItems = [
     { path: '/ropa', labelKey: 'nav_ropa', icon: Database },
-    { path: '/incidents', labelKey: 'nav_incidents', icon: Siren },
     { path: '/dsr', labelKey: 'nav_dsr', icon: Users },
     { path: '/vulnerabilities', labelKey: 'nav_vulnerabilities', icon: Bug },
+    { path: '/incidents', labelKey: 'nav_incidents', icon: Siren },
     { path: '/compliance-metrics', labelKey: 'nav_compliance_metrics', icon: Gauge },
     { path: '/training', labelKey: 'nav_training', icon: GraduationCap },
   ];
