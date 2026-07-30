@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, Paperclip, Download, FileText, ExternalLink, FolderOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLanguage } from '@/lib/LanguageContext';
+import LoadingState from '@/components/shared/LoadingState';
+import EmptyState from '@/components/shared/EmptyState';
 
 function fileIcon(name = '') {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -191,17 +193,11 @@ export default function EvidenceOverview() {
 
       {/* Results */}
       {isLoading ? (
-        <Card>
-          <CardContent className="py-16 text-center text-muted-foreground">{t('evidence_loading')}</CardContent>
-        </Card>
+        <Card><CardContent className="p-0"><LoadingState label={t('evidence_loading')} className="py-16" /></CardContent></Card>
       ) : filtered.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center text-muted-foreground">
-            <Paperclip className="w-8 h-8 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">{t('evidence_empty')}</p>
-            <p className="text-sm mt-1">{t('evidence_empty_desc')}</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-0">
+          <EmptyState icon={Paperclip} title={t('evidence_empty')} description={t('evidence_empty_desc')} />
+        </CardContent></Card>
       ) : (
         <div className="space-y-4">
           {groupedByAssessment.map(({ assessment, files }) => (

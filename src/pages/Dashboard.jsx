@@ -16,6 +16,7 @@ import ComplianceJourneyStatusCard from '@/components/dashboard/ComplianceJourne
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
+import PageHeader from '@/components/shared/PageHeader';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -78,12 +79,14 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">{t('dashboard_subtitle')}</p>
-        <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-          {new Date().toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </div>
-      </div>
+      <PageHeader
+        description={t('dashboard_subtitle')}
+        actions={
+          <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+            {new Date().toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </div>
+        }
+      />
 
       {/* Top stat strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

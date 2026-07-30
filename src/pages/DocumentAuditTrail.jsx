@@ -10,6 +10,7 @@ import DocActivityChart from '@/components/documents/DocActivityChart';
 import DocCustomerBreakdown from '@/components/documents/DocCustomerBreakdown';
 import DocAuditTable from '@/components/documents/DocAuditTable';
 import { useLanguage } from '@/lib/LanguageContext';
+import PageHeader from '@/components/shared/PageHeader';
 
 const RANGE_KEYS = [
   { key: 'doc_audit_range_30', days: 30 },
@@ -100,34 +101,34 @@ export default function DocumentAuditTrail() {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 justify-between">
-        <p className="text-sm text-muted-foreground">
-          {t('doc_audit_subtitle')}
-        </p>
-        <div className="flex items-center gap-2">
-          {isAdmin && (
-            <Select value={filterCustomer} onValueChange={setFilterCustomer}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder={t('doc_audit_all_customers')} />
+      <PageHeader
+        description={t('doc_audit_subtitle')}
+        actions={
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Select value={filterCustomer} onValueChange={setFilterCustomer}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder={t('doc_audit_all_customers')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('doc_audit_all_customers')}</SelectItem>
+                  {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
+            <Select value={String(rangeDays)} onValueChange={v => setRangeDays(v === 'null' ? null : Number(v))}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('doc_audit_all_customers')}</SelectItem>
-                {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {RANGE_KEYS.map(r => (
+                  <SelectItem key={String(r.days)} value={String(r.days)}>{t(r.key)}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
-          )}
-          <Select value={String(rangeDays)} onValueChange={v => setRangeDays(v === 'null' ? null : Number(v))}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {RANGE_KEYS.map(r => (
-                <SelectItem key={String(r.days)} value={String(r.days)}>{t(r.key)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

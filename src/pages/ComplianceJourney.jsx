@@ -13,6 +13,9 @@ import { CheckCircle2, Clock, Circle, Loader2, Plus, RefreshCw, ChevronDown, Che
 import { cn } from '@/lib/utils';
 import ChecklistItemRow from '@/components/compliance/ChecklistItemRow';
 import { toast } from 'sonner';
+import PageHeader from '@/components/shared/PageHeader';
+import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 
 const RJCS_TEMPLATE_EN = [
   {
@@ -320,12 +323,9 @@ export default function ComplianceJourney() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold">{t('compliance_journey_title')}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{t('compliance_journey_subtitle')}</p>
-        </div>
-        {isAdmin && (
+      <PageHeader
+        description={t('compliance_journey_subtitle')}
+        actions={isAdmin && (
           <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
             <SelectTrigger className="w-64">
               <SelectValue placeholder={t('compliance_select_customer')} />
@@ -337,34 +337,26 @@ export default function ComplianceJourney() {
             </SelectContent>
           </Select>
         )}
-      </div>
+      />
 
       {!activeCustomerId ? (
-        <Card>
-          <CardContent className="py-16 text-center text-muted-foreground">
-            <Circle className="w-8 h-8 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">{t('compliance_select_customer_prompt')}</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-0">
+          <EmptyState icon={Circle} title={t('compliance_select_customer_prompt')} />
+        </CardContent></Card>
       ) : isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
+        <LoadingState label={t('common_loading')} className="py-20" />
       ) : items.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <CheckCircle2 className="w-10 h-10 mx-auto mb-4 text-muted-foreground opacity-40" />
-            <p className="font-medium text-lg mb-1">{t('compliance_not_initialised')}</p>
-            <p className="text-sm text-muted-foreground mb-6">
-              {t('compliance_not_initialised_desc')}{' '}
-              <strong>{selectedCustomer?.name || ''}</strong>.
-            </p>
-            <Button onClick={() => initMutation.mutate()} disabled={initializing} className="gap-2">
+        <Card><CardContent className="p-0">
+          <EmptyState
+            icon={CheckCircle2}
+            title={t('compliance_not_initialised')}
+            description={<>{t('compliance_not_initialised_desc')} <strong>{selectedCustomer?.name || ''}</strong>.</>}
+            action={<Button onClick={() => initMutation.mutate()} disabled={initializing} className="gap-2">
               {initializing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               {t('compliance_init_button')}
-            </Button>
-          </CardContent>
-        </Card>
+            </Button>}
+          />
+        </CardContent></Card>
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

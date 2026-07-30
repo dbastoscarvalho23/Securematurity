@@ -13,6 +13,7 @@ import AssessmentResults from '@/components/assessments/AssessmentResults';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { translateDomain } from '@/lib/domainTranslations';
+import LoadingState from '@/components/shared/LoadingState';
 
 export default function AssessmentDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -202,7 +203,7 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
   }, [responses]);
 
   if (!assessment) {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground">{t('common_loading')}</div>;
+    return <LoadingState label={t('common_loading')} fullHeight className="h-64" />;
   }
 
   const currentFw = activeFramework || assessment.frameworks?.[0];

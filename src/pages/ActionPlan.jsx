@@ -23,13 +23,9 @@ import { format } from 'date-fns';
 import { writeAuditLog } from '@/lib/auditLog';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
-
-const PRIORITY_STYLES = {
-  critical: 'bg-destructive/10 text-destructive border-destructive/20',
-  high: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
-  medium: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
-  low: 'bg-muted text-muted-foreground border-border',
-};
+import PageHeader from '@/components/shared/PageHeader';
+import StatusBadge from '@/components/shared/StatusBadge';
+import EmptyState from '@/components/shared/EmptyState';
 
 const STATUS_ICONS = {
   todo: <Circle className="w-4 h-4 text-muted-foreground" />,
@@ -60,9 +56,7 @@ function RecommendationRow({ rec, tasks, onAddTask, onEditTask, onStatusChange, 
       >
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
-            <Badge variant="outline" className={`text-xs border ${PRIORITY_STYLES[rec.priority]}`}>
-              {rec.priority}
-            </Badge>
+            <StatusBadge variant="severity" status={rec.priority} label={rec.priority} />
             {rec.framework_code && (
               <Badge variant="outline" className="text-xs">{rec.framework_code}</Badge>
             )}
@@ -138,9 +132,7 @@ function RecommendationRow({ rec, tasks, onAddTask, onEditTask, onStatusChange, 
                         {format(new Date(task.due_date), 'MMM d')}
                       </span>
                     )}
-                    <Badge variant="outline" className={`text-xs border ${PRIORITY_STYLES[task.priority]}`}>
-                      {task.priority}
-                    </Badge>
+                    <StatusBadge variant="severity" status={task.priority} label={task.priority} />
                     <span>{STATUS_LABELS[task.status]}</span>
                   </div>
                 </div>
@@ -362,30 +354,29 @@ Return only valid JSON with the translations.`,
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <p className="text-muted-foreground text-sm">
-          {t('action_plan_subtitle')} · <span className="text-foreground font-medium">{recommendations.length}</span> {t('action_plan_recommendations')}
-        </p>
-        <div className="flex gap-2 items-center flex-wrap">
-          <Button onClick={handleTranslate} variant="outline" disabled={isTranslating} className="gap-2">
-            {isTranslating
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('action_plan_translating')} {translateProgress.done}/{translateProgress.total}</>
-              : <><Languages className="w-4 h-4" /> {t('action_plan_translate_pt')}</>
-            }
-          </Button>
-          <Button onClick={handleCheckDuplicates} variant="outline" disabled={isCheckingDuplicates} className="gap-2">
-            {isCheckingDuplicates ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-            {t('action_plan_check_duplicates')}
-          </Button>
-          <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
-            <Sparkles className="w-4 h-4" /> {t('action_plan_ai_generate')}
-          </Button>
-          <Button onClick={() => setNewRecDialog(true)} className="gap-2">
-            <Plus className="w-4 h-4" /> {t('action_plan_new_rec')}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        description={<>{t('action_plan_subtitle')} · <span className="text-foreground font-medium">{recommendations.length}</span> {t('action_plan_recommendations')}</>}
+        actions={
+          <div className="flex gap-2 items-center flex-wrap">
+            <Button onClick={handleTranslate} variant="outline" disabled={isTranslating} className="gap-2">
+              {isTranslating
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('action_plan_translating')} {translateProgress.done}/{translateProgress.total}</>
+                : <><Languages className="w-4 h-4" /> {t('action_plan_translate_pt')}</>
+              }
+            </Button>
+            <Button onClick={handleCheckDuplicates} variant="outline" disabled={isCheckingDuplicates} className="gap-2">
+              {isCheckingDuplicates ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+              {t('action_plan_check_duplicates')}
+            </Button>
+            <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
+              <Sparkles className="w-4 h-4" /> {t('action_plan_ai_generate')}
+            </Button>
+            <Button onClick={() => setNewRecDialog(true)} className="gap-2">
+              <Plus className="w-4 h-4" /> {t('action_plan_new_rec')}
+            </Button>
+          </div>
+        }
+      />
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -456,13 +447,9 @@ Return only valid JSON with the translations.`,
 
       {/* Recommendation groups by priority */}
       {filtered.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center text-muted-foreground">
-            <Sparkles className="w-8 h-8 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">{t('action_plan_no_recs')}</p>
-            <p className="text-sm mt-1">{t('action_plan_no_recs_desc')}</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-0">
+          <EmptyState icon={Sparkles} title={t('action_plan_no_recs')} description={t('action_plan_no_recs_desc')} />
+        </CardContent></Card>
       ) : (
         Object.entries(grouped).map(([priority, recs]) => (
           <div key={priority}>

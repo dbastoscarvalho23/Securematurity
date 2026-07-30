@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import PageHeader from '@/components/shared/PageHeader';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight, Bell, Link, Upload, FileText, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -458,48 +459,28 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       {/* Delete User Confirmation */}
-      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('settings_delete_user_title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('settings_delete_user_desc')} <strong>{userToDelete?.email}</strong>? {t('settings_delete_user_undone')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deleteUserMutation.mutate(userToDelete?.id)}
-              disabled={deleteUserMutation.isPending}
-            >
-              {deleteUserMutation.isPending ? t('common_deleting') : t('common_delete')}
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!userToDelete}
+        onOpenChange={() => setUserToDelete(null)}
+        title={t('settings_delete_user_title')}
+        description={<>{t('settings_delete_user_desc')} <strong>{userToDelete?.email}</strong>? {t('settings_delete_user_undone')}</>}
+        confirmLabel={deleteUserMutation.isPending ? t('common_deleting') : t('common_delete')}
+        cancelLabel={t('common_cancel')}
+        onConfirm={() => deleteUserMutation.mutate(userToDelete?.id)}
+        loading={deleteUserMutation.isPending}
+      />
 
       {/* Delete Invitation Confirmation */}
-      <AlertDialog open={!!invitedToDelete} onOpenChange={() => setInvitedToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('settings_delete_invite_title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('settings_delete_invite_desc')} <strong>{invitedToDelete?.email}</strong>? {t('settings_delete_user_undone')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deleteInvitedUserMutation.mutate(invitedToDelete?.id)}
-              disabled={deleteInvitedUserMutation.isPending}
-            >
-              {deleteInvitedUserMutation.isPending ? t('common_deleting') : t('common_delete')}
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!invitedToDelete}
+        onOpenChange={() => setInvitedToDelete(null)}
+        title={t('settings_delete_invite_title')}
+        description={<>{t('settings_delete_invite_desc')} <strong>{invitedToDelete?.email}</strong>? {t('settings_delete_user_undone')}</>}
+        confirmLabel={deleteInvitedUserMutation.isPending ? t('common_deleting') : t('common_delete')}
+        cancelLabel={t('common_cancel')}
+        onConfirm={() => deleteInvitedUserMutation.mutate(invitedToDelete?.id)}
+        loading={deleteInvitedUserMutation.isPending}
+      />
 
       {/* Edit User Dialog */}
       <EditUserDialog
@@ -511,9 +492,7 @@ export default function Settings() {
         isSaving={updateUserMutation.isPending}
         onSave={(userId, data) => updateUserMutation.mutate({ userId, data })}
       />
-      <div>
-        <p className="text-muted-foreground text-sm">{t('settings_subtitle')}</p>
-      </div>
+      <PageHeader description={t('settings_subtitle')} />
 
       <Tabs defaultValue="users">
         <TabsList>
@@ -988,101 +967,67 @@ export default function Settings() {
           </Card>
 
           {/* Framework Status Toggle Confirmation */}
-          <AlertDialog open={!!fwStatusConfirm} onOpenChange={() => setFwStatusConfirm(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t('settings_fw_confirm_status')}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t('settings_fw_confirm_status_desc')} <strong>{fwStatusConfirm?.status === 'active' ? t('settings_fw_deactivate') : t('settings_fw_activate')}</strong> {t('settings_fw_framework').toLowerCase()} <strong>{fwStatusConfirm?.name}</strong>?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="flex gap-2 justify-end">
-                <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
-                <AlertDialogAction onClick={() => { handleToggleFrameworkStatus(fwStatusConfirm); setFwStatusConfirm(null); }}>
-                  {t('common_confirm')}
-                </AlertDialogAction>
-              </div>
-            </AlertDialogContent>
-          </AlertDialog>
+          <ConfirmDialog
+            open={!!fwStatusConfirm}
+            onOpenChange={() => setFwStatusConfirm(null)}
+            title={t('settings_fw_confirm_status')}
+            description={<>{t('settings_fw_confirm_status_desc')} <strong>{fwStatusConfirm?.status === 'active' ? t('settings_fw_deactivate') : t('settings_fw_activate')}</strong> {t('settings_fw_framework').toLowerCase()} <strong>{fwStatusConfirm?.name}</strong>?</>}
+            confirmLabel={t('common_confirm')}
+            cancelLabel={t('common_cancel')}
+            onConfirm={() => { handleToggleFrameworkStatus(fwStatusConfirm); setFwStatusConfirm(null); }}
+            destructive={false}
+          />
 
           {/* Framework URL Save Confirmation */}
-          <AlertDialog open={!!fwUrlConfirm} onOpenChange={() => setFwUrlConfirm(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t('settings_fw_confirm_url')}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t('settings_fw_confirm_url_desc')} <strong>{fwUrlConfirm?.fw?.name}</strong>?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="flex gap-2 justify-end">
-                <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
-                <AlertDialogAction onClick={() => { handleFwRefUrlSave(fwUrlConfirm.fw, fwUrlConfirm.url); setFwUrlConfirm(null); }}>
-                  {t('common_confirm')}
-                </AlertDialogAction>
-              </div>
-            </AlertDialogContent>
-          </AlertDialog>
+          <ConfirmDialog
+            open={!!fwUrlConfirm}
+            onOpenChange={() => setFwUrlConfirm(null)}
+            title={t('settings_fw_confirm_url')}
+            description={<>{t('settings_fw_confirm_url_desc')} <strong>{fwUrlConfirm?.fw?.name}</strong>?</>}
+            confirmLabel={t('common_confirm')}
+            cancelLabel={t('common_cancel')}
+            onConfirm={() => { handleFwRefUrlSave(fwUrlConfirm.fw, fwUrlConfirm.url); setFwUrlConfirm(null); }}
+            destructive={false}
+          />
 
           {/* Framework Document Upload Confirmation */}
-          <AlertDialog open={!!fwDocConfirm} onOpenChange={() => setFwDocConfirm(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t('settings_fw_confirm_doc')}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t('settings_fw_confirm_doc_desc')} <strong>{fwDocConfirm?.fw?.name}</strong>?
-                  {fwDocConfirm?.fw?.document_url && <><br />{t('settings_fw_confirm_doc_replace')}</>}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="flex gap-2 justify-end">
-                <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
-                <AlertDialogAction onClick={() => { handleFwDocUpload(fwDocConfirm.fw, fwDocConfirm.file); setFwDocConfirm(null); }}>
-                  {t('common_confirm')}
-                </AlertDialogAction>
-              </div>
-            </AlertDialogContent>
-          </AlertDialog>
+          <ConfirmDialog
+            open={!!fwDocConfirm}
+            onOpenChange={() => setFwDocConfirm(null)}
+            title={t('settings_fw_confirm_doc')}
+            description={<>{t('settings_fw_confirm_doc_desc')} <strong>{fwDocConfirm?.fw?.name}</strong>?{fwDocConfirm?.fw?.document_url && <><br />{t('settings_fw_confirm_doc_replace')}</>}</>}
+            confirmLabel={t('common_confirm')}
+            cancelLabel={t('common_cancel')}
+            onConfirm={() => { handleFwDocUpload(fwDocConfirm.fw, fwDocConfirm.file); setFwDocConfirm(null); }}
+            destructive={false}
+          />
 
           {/* Framework Create Confirmation */}
-          <AlertDialog open={fwCreateConfirm} onOpenChange={setFwCreateConfirm}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t('settings_fw_confirm_create')}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t('settings_fw_confirm_create_desc')} <strong>{newFwForm.name}</strong> (<strong>{newFwForm.code}</strong>)?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="flex gap-2 justify-end">
-                <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
-                <AlertDialogAction onClick={() => { setFwCreateConfirm(false); handleCreateFramework(); }}>
-                  {t('common_confirm')}
-                </AlertDialogAction>
-              </div>
-            </AlertDialogContent>
-          </AlertDialog>
+          <ConfirmDialog
+            open={fwCreateConfirm}
+            onOpenChange={setFwCreateConfirm}
+            title={t('settings_fw_confirm_create')}
+            description={<>{t('settings_fw_confirm_create_desc')} <strong>{newFwForm.name}</strong> (<strong>{newFwForm.code}</strong>)?</>}
+            confirmLabel={t('common_confirm')}
+            cancelLabel={t('common_cancel')}
+            onConfirm={() => { setFwCreateConfirm(false); handleCreateFramework(); }}
+            destructive={false}
+          />
 
           {/* Bulk Framework Action Confirmation */}
-          <AlertDialog open={!!fwBulkConfirm} onOpenChange={(open) => !isBulkFwAction && !open && setFwBulkConfirm(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {fwBulkConfirm?.action === 'delete' ? t('settings_fw_bulk_confirm_delete_title') : t('settings_fw_bulk_confirm_toggle_title')}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {fwBulkConfirm?.action === 'delete'
-                    ? `${t('settings_fw_bulk_confirm_delete_desc')} ${fwBulkConfirm?.ids.length}? ${t('settings_fw_bulk_cannot_undo')}`
-                    : `${t('settings_fw_bulk_confirm_toggle_desc')} ${fwBulkConfirm?.ids.length}?`
-                  }
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="flex gap-2 justify-end">
-                <AlertDialogCancel disabled={isBulkFwAction}>{t('common_cancel')}</AlertDialogCancel>
-                <AlertDialogAction onClick={handleBulkFwAction} disabled={isBulkFwAction} className="gap-1.5">
-                  {isBulkFwAction && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {t('common_confirm')}
-                </AlertDialogAction>
-              </div>
-            </AlertDialogContent>
-          </AlertDialog>
+          <ConfirmDialog
+            open={!!fwBulkConfirm}
+            onOpenChange={(open) => !isBulkFwAction && !open && setFwBulkConfirm(null)}
+            title={fwBulkConfirm?.action === 'delete' ? t('settings_fw_bulk_confirm_delete_title') : t('settings_fw_bulk_confirm_toggle_title')}
+            description={fwBulkConfirm?.action === 'delete'
+              ? `${t('settings_fw_bulk_confirm_delete_desc')} ${fwBulkConfirm?.ids.length}? ${t('settings_fw_bulk_cannot_undo')}`
+              : `${t('settings_fw_bulk_confirm_toggle_desc')} ${fwBulkConfirm?.ids.length}?`}
+            confirmLabel={t('common_confirm')}
+            cancelLabel={t('common_cancel')}
+            onConfirm={handleBulkFwAction}
+            loading={isBulkFwAction}
+            destructive={fwBulkConfirm?.action === 'delete'}
+          />
 
           {/* New Framework Dialog */}
           <Dialog open={newFwDialog} onOpenChange={setNewFwDialog}>

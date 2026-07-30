@@ -7,7 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Mail, Send, AlertCircle, CheckCircle2, Clock, Search, TrendingUp, Users, FileText, ShieldAlert, Link } from 'lucide-react';
+import { Mail, Send, AlertCircle, CheckCircle2, Search, TrendingUp, Users, FileText, ShieldAlert, Link } from 'lucide-react';
+import PageHeader from '@/components/shared/PageHeader';
+import LoadingState from '@/components/shared/LoadingState';
+import EmptyState from '@/components/shared/EmptyState';
 import { format, subDays, isAfter } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
@@ -121,10 +124,7 @@ export default function EmailReport() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">{t('page_email_report')}</h1>
-        <p className="text-muted-foreground text-sm mt-1">{t('email_report_subtitle')}</p>
-      </div>
+      <PageHeader description={t('email_report_subtitle')} />
 
       {/* Last 14 days KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -254,14 +254,9 @@ export default function EmailReport() {
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-              <Clock className="w-4 h-4 animate-spin mr-2" /> {t('email_report_loading')}
-            </div>
+            <LoadingState label={t('email_report_loading')} className="h-32" />
           ) : filteredLogs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm gap-2">
-              <Mail className="w-6 h-6 opacity-30" />
-              {t('email_report_empty')}
-            </div>
+            <EmptyState compact icon={Mail} title={t('email_report_empty')} className="h-32" />
           ) : (
             <div className="divide-y">
               {filteredLogs.map(log => (

@@ -22,6 +22,7 @@ import SeatManagementPanel from '@/components/customers/SeatManagementPanel';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { format } from 'date-fns';
+import PageHeader from '@/components/shared/PageHeader';
 
 const COLORS = ['hsl(217,91%,60%)', 'hsl(173,58%,39%)', 'hsl(43,74%,66%)', 'hsl(27,87%,67%)', 'hsl(262,52%,56%)', 'hsl(0,84%,60%)'];
 
@@ -430,9 +431,7 @@ export default function Admin() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-muted-foreground text-sm">{t('admin_subtitle')}</p>
-      </div>
+      <PageHeader description={t('admin_subtitle')} />
 
       {/* Platform Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
