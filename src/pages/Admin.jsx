@@ -23,28 +23,10 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { format } from 'date-fns';
 import PageHeader from '@/components/shared/PageHeader';
+import StatusBadge from '@/components/shared/StatusBadge';
+import EmptyState from '@/components/shared/EmptyState';
 
 const COLORS = ['hsl(217,91%,60%)', 'hsl(173,58%,39%)', 'hsl(43,74%,66%)', 'hsl(27,87%,67%)', 'hsl(262,52%,56%)', 'hsl(0,84%,60%)'];
-
-const PRIORITY_COLORS = {
-  critical: 'bg-red-100 text-red-700 border-red-200',
-  high: 'bg-orange-100 text-orange-700 border-orange-200',
-  medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  low: 'bg-green-100 text-green-700 border-green-200',
-};
-
-const STATUS_COLORS = {
-  active: 'bg-green-100 text-green-700',
-  onboarding: 'bg-blue-100 text-blue-700',
-  inactive: 'bg-gray-100 text-gray-500',
-  open: 'bg-orange-100 text-orange-700',
-  in_treatment: 'bg-blue-100 text-blue-700',
-  accepted: 'bg-purple-100 text-purple-700',
-  closed: 'bg-gray-100 text-gray-500',
-  completed: 'bg-green-100 text-green-700',
-  draft: 'bg-gray-100 text-gray-500',
-  in_progress: 'bg-blue-100 text-blue-700',
-};
 
 function DrillDownDialog({ title, children, open, onClose }) {
   return (
@@ -71,7 +53,7 @@ function CustomerDrillDown({ customers, t }) {
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
         {Object.entries(statusCount).map(([s, n]) => (
-          <Badge key={s} variant="outline" className={`${STATUS_COLORS[s] || ''} capitalize`}>{s.replace(/_/g, ' ')}: {n}</Badge>
+          <StatusBadge key={s} status={s} label={`${s.replace(/_/g, ' ')}: ${n}`} />
         ))}
       </div>
       <div className="relative">
@@ -95,7 +77,7 @@ function CustomerDrillDown({ customers, t }) {
               <TableCell className="capitalize text-sm">{c.sector?.replace(/_/g, ' ') || '-'}</TableCell>
               <TableCell className="text-sm">{c.num_employees || '-'}</TableCell>
               <TableCell>
-                <Badge className={`${STATUS_COLORS[c.status] || ''} capitalize text-xs`}>{c.status?.replace(/_/g, ' ') || '-'}</Badge>
+                <StatusBadge status={c.status} label={c.status?.replace(/_/g, ' ') || '-'} />
               </TableCell>
               <TableCell className="text-sm">{c.contact_email || '-'}</TableCell>
             </TableRow>
@@ -196,7 +178,7 @@ function AssessmentsDrillDown({ assessments, customers, t }) {
               <TableCell className="text-xs">{(a.frameworks || []).join(', ')}</TableCell>
               <TableCell className="font-bold">{a.overall_score != null ? a.overall_score.toFixed(1) : '—'}</TableCell>
               <TableCell>
-                <Badge className={`${STATUS_COLORS[a.status] || ''} capitalize text-xs`}>{a.status?.replace(/_/g, ' ')}</Badge>
+                <StatusBadge status={a.status} label={a.status?.replace(/_/g, ' ')} />
               </TableCell>
             </TableRow>
           ))}
@@ -246,7 +228,7 @@ function RisksDrillDown({ risks, customers, t }) {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <Badge className={`${STATUS_COLORS[r.status] || ''} capitalize text-xs`}>{r.status?.replace(/_/g, ' ') || '-'}</Badge>
+                  <StatusBadge status={r.status} label={r.status?.replace(/_/g, ' ') || '-'} />
                 </TableCell>
               </TableRow>
             );
@@ -288,11 +270,11 @@ function TasksDrillDown({ tasks, customers, t }) {
               <TableCell className="text-sm">{customerMap[tk.customer_id] || '—'}</TableCell>
               <TableCell>
                 {tk.priority && (
-                  <Badge variant="outline" className={`${PRIORITY_COLORS[tk.priority] || ''} text-xs capitalize`}>{tk.priority}</Badge>
+                  <StatusBadge variant="severity" status={tk.priority} label={tk.priority} />
                 )}
               </TableCell>
               <TableCell>
-                <Badge className={`${STATUS_COLORS[tk.status] || ''} capitalize text-xs`}>{tk.status?.replace(/_/g, ' ') || '-'}</Badge>
+                <StatusBadge status={tk.status} label={tk.status?.replace(/_/g, ' ') || '-'} />
               </TableCell>
               <TableCell className="text-sm">{tk.due_date ? format(new Date(tk.due_date), 'dd MMM yyyy') : '—'}</TableCell>
             </TableRow>
@@ -335,12 +317,7 @@ export default function Admin() {
   });
 
   if (user?.role !== 'admin') {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-center space-y-2">
-        <ShieldCheck className="w-10 h-10 text-muted-foreground opacity-40" />
-        <p className="text-muted-foreground">{t('common_no_permission')}</p>
-      </div>
-    );
+    return <EmptyState icon={ShieldCheck} title={t('common_no_permission')} className="h-64" />;
   }
 
   const completed = assessments.filter(a => a.status === 'completed');
@@ -671,7 +648,7 @@ export default function Admin() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge className={`${STATUS_COLORS[c.status] || ''} capitalize text-xs`}>{c.status?.replace(/_/g, ' ') || '-'}</Badge>
+                    <StatusBadge status={c.status} label={c.status?.replace(/_/g, ' ') || '-'} />
                   </TableCell>
                 </TableRow>
               ))}
