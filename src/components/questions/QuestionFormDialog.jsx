@@ -115,7 +115,7 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
             <Input
               value={form.domain_pt}
               onChange={e => set('domain_pt', e.target.value)}
-              placeholder="Domínio em Português..."
+              placeholder={t('qfd_domain_pt_ph')}
             />
           </div>
 
@@ -146,7 +146,7 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
               <Textarea
                 value={form.question_text_pt}
                 onChange={e => set('question_text_pt', e.target.value)}
-                placeholder="Insira a questão em Português..."
+                placeholder={t('qfd_question_pt_ph')}
                 rows={3}
               />
             </div>
@@ -167,7 +167,7 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
               <Textarea
                 value={form.guidance_pt}
                 onChange={e => set('guidance_pt', e.target.value)}
-                placeholder="Orientação opcional em Português..."
+                placeholder={t('qfd_guidance_pt_ph')}
                 rows={2}
               />
             </div>
