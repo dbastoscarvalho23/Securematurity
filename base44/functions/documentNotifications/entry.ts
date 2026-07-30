@@ -46,8 +46,22 @@ Deno.serve(async (req) => {
     user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     type = body.type;
-    document = body.document;
     previousDocument = body.previousDocument;
+
+    // Do NOT trust body.document — fetch the real record from the database
+    // and verify the caller owns it / is authorized to trigger its notifications.
+    const docId = body.document_id || body.document?.id;
+    if (!docId) return Response.json({ error: 'document_id is required' }, { status: 400 });
+    const realDoc = await base44.asServiceRole.entities.SecurityDocument.get(docId);
+    if (!realDoc) return Response.json({ error: 'document not found' }, { status: 404 });
+
+    const isAuthorized = user.role === 'admin' ||
+      realDoc.created_by_id === user.id ||
+      realDoc.owner_email === user.email ||
+      realDoc.customer_id === user.data?.customer_id;
+    if (!isAuthorized) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
+    document = realDoc;
   }
 
   if (!document) return Response.json({ error: 'document is required' }, { status: 400 });

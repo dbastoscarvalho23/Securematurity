@@ -23,6 +23,8 @@ function fileSizeLabel(url) {
   return null; // URLs don't carry size info without fetching
 }
 
+const isSafeUrl = (u) => typeof u === 'string' && /^https?:\/\//i.test(u);
+
 export default function EvidenceOverview() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -113,11 +115,12 @@ export default function EvidenceOverview() {
   // Bulk download for a specific assessment group
   const handleBulkDownload = (files) => {
     files.forEach((f, i) => {
-      if (!f.url) return;
+      if (!f.url || !isSafeUrl(f.url)) return;
       setTimeout(() => {
         const a = document.createElement('a');
         a.href = f.url;
         a.target = '_blank';
+        a.rel = 'noopener noreferrer';
         a.download = f.name || 'evidence';
         document.body.appendChild(a);
         a.click();
@@ -254,11 +257,11 @@ export default function EvidenceOverview() {
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{f.evidence_notes}</p>
                         )}
                       </div>
-                      {f.url && (
+                      {f.url && isSafeUrl(f.url) && (
                         <a
                           href={f.url}
                           target="_blank"
-                          rel="noreferrer"
+                          rel="noopener noreferrer"
                           className="flex-shrink-0"
                         >
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0">

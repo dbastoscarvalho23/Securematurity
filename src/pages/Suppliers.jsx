@@ -27,6 +27,8 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
 const emptyForm = { name: '', nif: '', contact_email: '', contact_phone: '', website: '', tier: 'tier_2', notes: '', status: 'active' };
 
+const isSafeUrl = (u) => typeof u === 'string' && /^https?:\/\//i.test(u);
+
 export default function Suppliers() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -258,7 +260,7 @@ export default function Suppliers() {
                 <div className="mt-4 space-y-2 text-sm">
                   {s.contact_email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-3.5 h-3.5" /><span className="truncate">{s.contact_email}</span></div>}
                   {s.contact_phone && <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-3.5 h-3.5" /><span>{s.contact_phone}</span></div>}
-                  {s.website && <div className="flex items-center gap-2 text-muted-foreground"><Globe className="w-3.5 h-3.5" /><a href={s.website} target="_blank" rel="noreferrer" className="truncate hover:text-primary">{s.website}</a></div>}
+                  {s.website && <div className="flex items-center gap-2 text-muted-foreground"><Globe className="w-3.5 h-3.5" />{isSafeUrl(s.website) ? <a href={s.website} target="_blank" rel="noopener noreferrer" className="truncate hover:text-primary">{s.website}</a> : <span className="truncate">{s.website}</span>}</div>}
                 </div>
                 {s.notes && <p className="mt-3 text-xs text-muted-foreground line-clamp-2">{s.notes}</p>}
                 <div className="mt-3 flex items-center gap-2">
