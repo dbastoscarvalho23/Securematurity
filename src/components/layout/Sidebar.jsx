@@ -21,7 +21,6 @@ import {
   Paperclip,
   MapPin,
   MailCheck,
-  FileBarChart,
   Truck,
   Database,
   Siren,
@@ -76,7 +75,6 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
       { path: '/admin', labelKey: 'nav_admin', icon: ShieldCheck },
       { path: '/audit-log', labelKey: 'nav_audit_log', icon: ScrollText },
       { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
-      { path: '/generated-reports', labelKey: 'nav_generated_reports', icon: FileBarChart },
     ] : []),
     ...(isCustomerAdmin ? [
       { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },

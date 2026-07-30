@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PageHeader from '@/components/shared/PageHeader';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
-import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight, Bell, Link, Upload, FileText, ExternalLink } from 'lucide-react';
+import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight, Bell, Link, Upload, FileText, ExternalLink, FileBarChart } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
@@ -22,6 +22,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import EditUserDialog from '@/components/settings/EditUserDialog';
 import ReminderSettingsPanel from '@/components/settings/ReminderSettingsPanel';
+import GeneratedReportsPanel from '@/components/genreports/GeneratedReportsPanel';
 
 export default function Settings() {
   const { user: currentUser, checkAppState, refreshUser } = useAuth();
@@ -499,6 +500,9 @@ export default function Settings() {
           <TabsTrigger value="users">{t('settings_tab_users')}</TabsTrigger>
           <TabsTrigger value="frameworks">{t('settings_tab_frameworks')}</TabsTrigger>
           <TabsTrigger value="reminders" className="flex items-center gap-1.5"><Bell className="w-3.5 h-3.5" />{t('settings_tab_reminders')}</TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="generated-reports" className="flex items-center gap-1.5"><FileBarChart className="w-3.5 h-3.5" />{t('nav_generated_reports')}</TabsTrigger>
+          )}
         </TabsList>
 
         {/* Users Tab */}
@@ -1119,6 +1123,13 @@ export default function Settings() {
         <TabsContent value="reminders" className="space-y-4 mt-4">
           <ReminderSettingsPanel customers={customers} isAdmin={isAdmin} isReadOnly={isReadOnly} />
         </TabsContent>
+
+        {/* Generated Reports Tab — admin only */}
+        {isAdmin && (
+          <TabsContent value="generated-reports" className="space-y-4 mt-4">
+            <GeneratedReportsPanel customers={customers} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

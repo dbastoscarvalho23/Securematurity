@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import PageHeader from '@/components/shared/PageHeader';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
@@ -39,7 +38,7 @@ function periodOf(report) {
   return report.created_date ? format(new Date(report.created_date), 'yyyy-MM') : '—';
 }
 
-export default function GeneratedReports() {
+export default function GeneratedReportsPanel({ customers = [] }) {
   const { t } = useLanguage();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
@@ -54,7 +53,6 @@ export default function GeneratedReports() {
       '-created_date', 200
     ),
   });
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
 
   const filtered = reports.filter(r => {
     const ms = !search || (r.title || '').toLowerCase().includes(search.toLowerCase());
@@ -89,9 +87,7 @@ export default function GeneratedReports() {
   });
 
   return (
-    <div className="space-y-6">
-      <PageHeader description={t('genreports_subtitle')} />
-
+    <>
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -206,6 +202,6 @@ export default function GeneratedReports() {
         onConfirm={() => deleteMut.mutate(deleting)}
         loading={deleteMut.isPending}
       />
-    </div>
+    </>
   );
 }
