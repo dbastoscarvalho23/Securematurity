@@ -1,5 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+const ENTITY_MAP = {
+  Task: 'Task',
+  RiskItem: 'RiskItem',
+  SecurityDocument: 'SecurityDocument',
+};
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -7,15 +13,36 @@ Deno.serve(async (req) => {
 
     const { event, data, old_data } = payload;
 
+    // Only process trusted entity-automation events (create/update/delete).
+    // Reject anything missing a valid automation event envelope.
+    if (!event || !ENTITY_MAP[event.entity_name] || !['create', 'update', 'delete'].includes(event.type)) {
+      return Response.json({ skipped: true, reason: 'invalid automation event' });
+    }
     if (!data) {
       return Response.json({ skipped: true, reason: 'no data' });
+    }
+
+    // Do NOT trust caller-supplied data fields (target email, title, customer).
+    // Fetch the real record from the database and use it as the source of truth,
+    // so an unauthenticated caller cannot inject notifications to arbitrary users.
+    const entityKey = ENTITY_MAP[event.entity_name];
+    let real = null;
+    if (event.entity_id) {
+      try {
+        real = await base44.asServiceRole.entities[entityKey].get(event.entity_id);
+      } catch {
+        real = null;
+      }
+    }
+    if (!real) {
+      return Response.json({ skipped: true, reason: 'entity not found' });
     }
 
     const notifications = [];
 
     // ── Task changes ────────────────────────────────────────────────
-    if (event?.entity_name === 'Task') {
-      const task = data;
+    if (event.entity_name === 'Task') {
+      const task = real;
       const prevStatus = old_data?.status;
 
       // Task completed
@@ -74,8 +101,8 @@ Deno.serve(async (req) => {
     }
 
     // ── RiskItem changes ─────────────────────────────────────────────
-    if (event?.entity_name === 'RiskItem') {
-      const risk = data;
+    if (event.entity_name === 'RiskItem') {
+      const risk = real;
       const prevStatus = old_data?.status;
 
       // Risk status changed
@@ -111,8 +138,8 @@ Deno.serve(async (req) => {
     }
 
     // ── SecurityDocument changes ─────────────────────────────────────
-    if (event?.entity_name === 'SecurityDocument') {
-      const doc = data;
+    if (event.entity_name === 'SecurityDocument') {
+      const doc = real;
       const prevStatus = old_data?.status;
 
       if (doc.status === 'approved' && prevStatus !== 'approved' && doc.owner_email) {
