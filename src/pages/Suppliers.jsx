@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
@@ -16,6 +16,7 @@ import { Plus, Search, MoreHorizontal, Pencil, Trash2, Truck, Globe, Mail, Phone
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import SupplierExcelImportDialog from '@/components/suppliers/SupplierExcelImportDialog';
+import SupplierStatusTracker from '@/components/suppliers/SupplierStatusTracker';
 
 const emptyForm = { name: '', nif: '', contact_email: '', contact_phone: '', website: '', tier: 'tier_2', notes: '', status: 'active' };
 
@@ -41,6 +42,23 @@ export default function Suppliers() {
       : base44.entities.Supplier.filter({ customer_id: customerId }, '-created_date', 500),
     enabled: isAdmin || !!customerId,
   });
+
+  const { data: questionnaires = [] } = useQuery({
+    queryKey: ['supplier-questionnaires', customerId],
+    queryFn: () => isAdmin
+      ? base44.entities.SupplierQuestionnaire.list('-created_date', 500)
+      : base44.entities.SupplierQuestionnaire.filter({ customer_id: customerId }, '-created_date', 500),
+    enabled: isAdmin || !!customerId,
+  });
+
+  const questionnaireByName = useMemo(() => {
+    const map = new Map();
+    for (const q of questionnaires) {
+      const key = (q.supplier_name || '').trim().toLowerCase();
+      if (key && !map.has(key)) map.set(key, q);
+    }
+    return map;
+  }, [questionnaires]);
 
   const filtered = suppliers.filter(s => {
     const q = search.toLowerCase();
@@ -159,15 +177,11 @@ export default function Suppliers() {
                 </div>
                 {s.notes && <p className="mt-3 text-xs text-muted-foreground line-clamp-2">{s.notes}</p>}
                 <div className="mt-3 flex items-center gap-2">
-                  {s.tier && (
-                    <Badge variant="outline" className="text-xs">
-                      {t(`suppliers_${s.tier}`)}
-                    </Badge>
-                  )}
                   <Badge variant={s.status === 'active' ? 'default' : 'secondary'} className="text-xs">
                     {s.status === 'active' ? t('suppliers_status_active') : t('suppliers_status_inactive')}
                   </Badge>
                 </div>
+                <SupplierStatusTracker supplier={s} questionnaire={questionnaireByName.get((s.name || '').trim().toLowerCase())} />
               </CardContent>
             </Card>
           ))}

@@ -194,6 +194,14 @@ export const supplyChainEn = {
     sc_save: 'Save',
     sc_cancel: 'Cancel',
     sc_question_saved: 'Question saved',
+    sst_tracker_title: 'Compliance',
+    sst_not_assessed: 'Not Assessed',
+    sst_pending: 'Pending',
+    sst_in_progress: 'In Progress',
+    sst_compliant: 'Compliant',
+    sst_overdue: 'Overdue',
+    sst_archived: 'Archived',
+    sst_maturity: 'Maturity',
 };
 
 export const supplyChainPt = {
@@ -391,4 +399,12 @@ export const supplyChainPt = {
     sc_save: 'Guardar',
     sc_cancel: 'Cancelar',
     sc_question_saved: 'Pergunta guardada',
+    sst_tracker_title: 'Conformidade',
+    sst_not_assessed: 'Não Avaliado',
+    sst_pending: 'Pendente',
+    sst_in_progress: 'Em Curso',
+    sst_compliant: 'Conforme',
+    sst_overdue: 'Em Atraso',
+    sst_archived: 'Arquivado',
+    sst_maturity: 'Maturidade',
 };
