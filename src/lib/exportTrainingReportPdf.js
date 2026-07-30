@@ -153,9 +153,9 @@ export function exportTrainingReportPdf(user, enrollments, trainings, customer, 
 
   // ─── COMPLETED TRAININGS ────────────────────────────────────────────────────
   y += 14;
-  renderSection(doc, t('training_report_completed_list'), completed, tMap, t, locale, true, y, W, H);
+  y = renderSection(doc, t('training_report_completed_list'), completed, tMap, t, locale, true, y, W, H);
   // ─── PENDING TRAININGS ─────────────────────────────────────────────────────
-  renderSection(doc, t('training_report_pending_list'), pending, tMap, t, locale, false, 30, W, H);
+  y = renderSection(doc, t('training_report_pending_list'), pending, tMap, t, locale, false, y + 8, W, H);
 
   // ─── PROOF / DISCLAIMER PAGE ────────────────────────────────────────────────
   doc.addPage();
@@ -233,6 +233,7 @@ export function exportTrainingReportPdf(user, enrollments, trainings, customer, 
 
 function renderSection(doc, title, items, tMap, t, locale, isCompleted, startY, W, H) {
   let y = startY;
+  if (y > H - 50) { doc.addPage(); y = 30; }
   const col = isCompleted ? BRAND_TEAL : WARN;
 
   doc.setFontSize(15);
@@ -249,7 +250,7 @@ function renderSection(doc, title, items, tMap, t, locale, isCompleted, startY, 
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(9);
     doc.text(isCompleted ? t('training_report_no_completed') : t('training_report_no_pending'), 22, y);
-    return;
+    return y;
   }
 
   items.forEach((enr, idx) => {
@@ -319,4 +320,6 @@ function renderSection(doc, title, items, tMap, t, locale, isCompleted, startY, 
 
     y += cardH + 4;
   });
+
+  return y;
 }
