@@ -69,7 +69,7 @@ export default function TopBar({ onMenuClick }) {
   const pageTitleKey = Object.entries(PAGE_TITLE_KEYS).find(([path]) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
   )?.[1];
-  const pageTitle = pageTitleKey ? t(pageTitleKey) : 'CyberMaturity';
+  const pageTitle = pageTitleKey ? t(pageTitleKey) : 'AnkoraOne';
 
   const displayName = user?.display_name || user?.full_name || user?.email || 'User';
   const initials = displayName

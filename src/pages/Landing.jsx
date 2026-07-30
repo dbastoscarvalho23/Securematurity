@@ -20,7 +20,7 @@ export default function Landing() {
         <div className="flex items-center gap-3">
           <Shield className="w-9 h-9 text-primary" />
           <div>
-            <p className="text-sidebar-foreground font-bold text-xl tracking-tight">CyberMaturity</p>
+            <p className="text-sidebar-foreground font-bold text-xl tracking-tight">AnkoraOne</p>
             <p className="text-sidebar-foreground/40 text-xs">{t('landing_tagline')}</p>
           </div>
         </div>
@@ -54,7 +54,7 @@ export default function Landing() {
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center gap-3 justify-center">
             <Shield className="w-8 h-8 text-primary" />
-            <p className="text-foreground font-bold text-xl">CyberMaturity</p>
+            <p className="text-foreground font-bold text-xl">AnkoraOne</p>
           </div>
 
           <div className="space-y-2 text-center">

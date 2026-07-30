@@ -1,4 +1,4 @@
-# CyberMaturity Platform — LLM Prompts
+# AnkoraOne Platform — LLM Prompts
 
 All `InvokeLLM` prompts used across the project, organized by feature.
 

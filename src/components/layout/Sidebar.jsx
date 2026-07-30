@@ -127,7 +127,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
           <Shield className="w-7 h-7 text-primary flex-shrink-0" />
           {!collapsed && (
             <div className="ml-3 overflow-hidden">
-              <span className="font-bold text-base tracking-tight block leading-tight">CyberMaturity</span>
+              <span className="font-bold text-base tracking-tight block leading-tight">AnkoraOne</span>
               <span className="text-xs text-sidebar-foreground/40 block">{t('sidebar_subtitle')}</span>
             </div>
           )}

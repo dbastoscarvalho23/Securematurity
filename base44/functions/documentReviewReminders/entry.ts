@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
         <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
           <div style="background: #1e3a5f; padding: 24px 32px; border-radius: 12px 12px 0 0;">
             <h2 style="color: #fff; margin: 0; font-size: 20px;">📋 Document Review Reminder</h2>
-            <p style="color: #94a3b8; margin: 6px 0 0; font-size: 14px;">CyberMaturity Security Platform</p>
+            <p style="color: #94a3b8; margin: 6px 0 0; font-size: 14px;">AnkoraOne Security Platform</p>
           </div>
           <div style="background: #fff; padding: 28px 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
             <p style="margin: 0 0 16px;">Hello,</p>
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
               ${docList}
             </div>
             <p style="margin: 0 0 8px; font-size: 14px; color: #64748b;">Please log in to the platform to review and update these documents. If the document has already been reviewed, update the review date to avoid further reminders.</p>
-            <p style="margin: 20px 0 0; font-size: 13px; color: #94a3b8;">— CyberMaturity Platform · Automated Notification</p>
+            <p style="margin: 20px 0 0; font-size: 13px; color: #94a3b8;">— AnkoraOne Platform · Automated Notification</p>
           </div>
         </div>
       `;

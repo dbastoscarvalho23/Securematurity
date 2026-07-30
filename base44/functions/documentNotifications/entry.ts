@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
   const headerHtml = (title) => `
     <div style="background:#1e3a5f;padding:20px 28px;border-radius:10px 10px 0 0;">
       <h2 style="color:#fff;margin:0;font-size:18px;">📄 ${title}</h2>
-      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px;">CyberMaturity Security Platform</p>
+      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px;">AnkoraOne Security Platform</p>
     </div>`;
 
   const tableRow = (label, value) =>

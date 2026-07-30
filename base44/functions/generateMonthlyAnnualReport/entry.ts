@@ -56,7 +56,7 @@ function buildPdf(reportData, monthLabel, customerName) {
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   sc(doc, [200, 210, 255]);
-  doc.text('CYBERMATURITY PLATFORM', 20, 28);
+  doc.text('ANKORAONE PLATFORM', 20, 28);
 
   doc.setFontSize(22);
   sc(doc, [255, 255, 255]);
@@ -348,7 +348,7 @@ function buildPdf(reportData, monthLabel, customerName) {
     doc.line(20, ph - 14, pw - 20, ph - 14);
     sc(doc, MID_GRAY);
     doc.setFontSize(8);
-    doc.text('CyberMaturity Platform · Monthly Snapshot · Confidential', 20, ph - 8);
+    doc.text('AnkoraOne Platform · Monthly Snapshot · Confidential', 20, ph - 8);
     doc.text(`Page ${i} of ${totalPages}`, pw - 20, ph - 8, { align: 'right' });
   }
 
@@ -429,7 +429,7 @@ Deno.serve(async (req) => {
       file_url,
       file_name: fileName,
       tags: ['monthly_snapshot', `monthly_snapshot_${monthKey}`, 'annual_report', 'automated'],
-      approved_by: 'CyberMaturity Platform (Automated)',
+      approved_by: 'AnkoraOne Platform (Automated)',
       approved_date: new Date().toISOString().split('T')[0],
     });
 
