@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PageHeader from '@/components/shared/PageHeader';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
-import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight, Bell, Link, Upload, FileText, ExternalLink, FileBarChart, GraduationCap } from 'lucide-react';
+import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight, Bell, Link, Upload, FileText, ExternalLink, FileBarChart, GraduationCap, Clock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
@@ -657,7 +657,15 @@ export default function Settings() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">{t('settings_all_users')}</CardTitle>
-                  <CardDescription>{users.length} {t('settings_registered')} · {invitedUsers.filter(i => !users.find(u => u.email === i.email)).length} {t('settings_pending_invitation')}</CardDescription>
+                  <CardDescription>
+                    {users.length} {t('settings_registered')} · {invitedUsers.filter(i => !users.find(u => u.email === i.email)).length} {t('settings_pending_invitation')}
+                    {(() => {
+                      const pending = users.filter(u => u.role !== 'admin' && !u.customer_id);
+                      return pending.length > 0
+                        ? ` · ${pending.length} ${t('settings_pending_activation_count')}`
+                        : '';
+                    })()}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                   <Table>
@@ -691,7 +699,14 @@ export default function Settings() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge className="bg-accent/10 text-accent border-accent/20">{t('settings_user_active')}</Badge>
+                            {u.role !== 'admin' && !u.customer_id ? (
+                              <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
+                                <Clock className="w-3 h-3 mr-1" />
+                                {t('settings_pending_activation')}
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-accent/10 text-accent border-accent/20">{t('settings_user_active')}</Badge>
+                            )}
                           </TableCell>
                           <TableCell className="text-muted-foreground text-xs">
                             {u.created_date ? new Date(u.created_date).toLocaleDateString() : '—'}
