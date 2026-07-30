@@ -72,15 +72,15 @@ export function exportTrainingReportPdf(user, enrollments, trainings, customer, 
 
   // Completion badge
   setColor(doc, BRAND_TEAL, 'fill');
-  doc.roundedRect(W - 62, 24, 44, 44, 4, 4, 'F');
+  doc.roundedRect(W - 56, 24, 40, 44, 4, 4, 'F');
   doc.setFontSize(26);
   doc.setFont('helvetica', 'bold');
   setColor(doc, [255, 255, 255]);
-  doc.text(`${completionRate}%`, W - 40, 44, { align: 'center' });
+  doc.text(`${completionRate}%`, W - 36, 44, { align: 'center' });
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   setColor(doc, [220, 240, 235]);
-  doc.text(t('training_report_completion'), W - 40, 54, { align: 'center' });
+  doc.text(t('training_report_completion'), W - 36, 54, { align: 'center' });
 
   // ─── COLLABORATOR INFO ──────────────────────────────────────────────────────
   let y = 96;
