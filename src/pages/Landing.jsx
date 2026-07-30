@@ -2,15 +2,17 @@ import React from 'react';
 import { Shield, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
-
-const features = [
-  'Multi-framework cybersecurity assessments (NIS2, ISO 27001, NIST CSF, CIS v8, QNRC, GDPR)',
-  'AI-generated recommendations and action plans',
-  'Real-time maturity scoring and trend analysis',
-  'Evidence management and audit trail',
-];
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function Landing() {
+  const { t } = useLanguage();
+  const features = [
+    t('landing_feature_1'),
+    t('landing_feature_2'),
+    t('landing_feature_3'),
+    t('landing_feature_4'),
+  ];
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left Panel */}
@@ -19,17 +21,17 @@ export default function Landing() {
           <Shield className="w-9 h-9 text-primary" />
           <div>
             <p className="text-sidebar-foreground font-bold text-xl tracking-tight">CyberMaturity</p>
-            <p className="text-sidebar-foreground/40 text-xs">Security Assessment Platform</p>
+            <p className="text-sidebar-foreground/40 text-xs">{t('landing_tagline')}</p>
           </div>
         </div>
 
         <div className="space-y-8">
           <div>
             <h1 className="text-3xl font-bold text-sidebar-foreground leading-tight">
-              Manage your cybersecurity maturity with confidence
+              {t('landing_hero_title')}
             </h1>
             <p className="mt-4 text-sidebar-foreground/60 text-base leading-relaxed">
-              A comprehensive platform for conducting compliance assessments, tracking remediation and generating actionable insights.
+              {t('landing_hero_desc')}
             </p>
           </div>
 
@@ -43,7 +45,7 @@ export default function Landing() {
           </ul>
         </div>
 
-        <p className="text-xs text-sidebar-foreground/30">© 2026 CyberMaturity Platform. All rights reserved.</p>
+        <p className="text-xs text-sidebar-foreground/30">{t('landing_copyright')}</p>
       </div>
 
       {/* Right Panel - Login */}
@@ -56,8 +58,8 @@ export default function Landing() {
           </div>
 
           <div className="space-y-2 text-center">
-            <h2 className="text-2xl font-bold text-foreground">Welcome back</h2>
-            <p className="text-muted-foreground text-sm">Sign in to access your security dashboard</p>
+            <h2 className="text-2xl font-bold text-foreground">{t('landing_welcome')}</h2>
+            <p className="text-muted-foreground text-sm">{t('landing_signin_desc')}</p>
           </div>
 
           <div className="space-y-4">
@@ -65,11 +67,11 @@ export default function Landing() {
               className="w-full h-11 text-base font-medium"
               onClick={() => base44.auth.redirectToLogin(window.location.href)}
             >
-              Sign In
+              {t('landing_signin')}
             </Button>
             <p className="text-center text-xs text-muted-foreground">
-              Access is restricted to invited users only.<br />
-              Contact your administrator to request access.
+              {t('landing_access_note_1')}<br />
+              {t('landing_access_note_2')}
             </p>
           </div>
         </div>

@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Pencil, Trash2, ArrowRight, CalendarDays, User } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const PRIORITY_STYLES = {
   critical: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -22,21 +23,20 @@ const STATUS_STYLES = {
   blocked: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-const STATUS_LABELS = { todo: 'To-Do', in_progress: 'In Progress', done: 'Done', blocked: 'Blocked' };
-
 const STATUS_TRANSITIONS = {
-  todo: { next: 'in_progress', label: 'Move to In Progress' },
-  in_progress: { next: 'done', label: 'Mark as Done' },
-  done: { next: 'todo', label: 'Reopen' },
-  blocked: { next: 'in_progress', label: 'Unblock' },
+  todo: { next: 'in_progress', labelKey: 'tlv_move_in_progress' },
+  in_progress: { next: 'done', labelKey: 'tlv_mark_done' },
+  done: { next: 'todo', labelKey: 'tlv_reopen' },
+  blocked: { next: 'in_progress', labelKey: 'tlv_unblock' },
 };
 
 export default function TaskListView({ tasks, onStatusChange, onEdit, onDelete, selectionEnabled, selectedIds, onToggleSelect, onToggleSelectAll }) {
+  const { t } = useLanguage();
   if (tasks.length === 0) {
     return (
       <Card>
         <CardContent className="py-12 text-center text-muted-foreground text-sm">
-          No tasks found.
+          {t('tlv_no_tasks')}
         </CardContent>
       </Card>
     );
@@ -55,7 +55,7 @@ export default function TaskListView({ tasks, onStatusChange, onEdit, onDelete, 
               onCheckedChange={() => onToggleSelectAll(tasks)}
             />
             <span className="text-xs font-medium text-muted-foreground">
-              {allSelected ? 'All selected' : 'Select all'}
+              {allSelected ? t('tlv_all_selected') : t('tlv_select_all')}
             </span>
           </div>
         )}
@@ -80,10 +80,10 @@ export default function TaskListView({ tasks, onStatusChange, onEdit, onDelete, 
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Badge variant="outline" className={cn('text-xs hidden sm:inline-flex', PRIORITY_STYLES[task.priority])}>
-                    {task.priority}
+                    {t(`tasks_priority_${task.priority}`) || task.priority}
                   </Badge>
                   <Badge variant="outline" className={cn('text-xs', STATUS_STYLES[task.status])}>
-                    {STATUS_LABELS[task.status]}
+                    {t(`tasks_status_${task.status}`) || task.status}
                   </Badge>
                   {task.assigned_to && (
                     <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground">
@@ -105,14 +105,14 @@ export default function TaskListView({ tasks, onStatusChange, onEdit, onDelete, 
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => onStatusChange(task.id, transition.next, task.title)}>
-                        <ArrowRight className="w-4 h-4 mr-2" />{transition.label}
+                        <ArrowRight className="w-4 h-4 mr-2" />{t(transition.labelKey)}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => onEdit(task)}>
-                        <Pencil className="w-4 h-4 mr-2" />Edit
+                        <Pencil className="w-4 h-4 mr-2" />{t('common_edit')}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onDelete(task)} className="text-destructive">
-                        <Trash2 className="w-4 h-4 mr-2" />Delete
+                        <Trash2 className="w-4 h-4 mr-2" />{t('common_delete')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

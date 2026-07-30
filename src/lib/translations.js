@@ -2,6 +2,7 @@ import { assessmentEn, assessmentPt } from './translations-assessments';
 import { complianceEn, compliancePt } from './translations-compliance';
 import { emailReportEn, emailReportPt } from './translations-emailreport';
 import { seatsEn, seatsPt } from './translations-seats';
+import { uiEn, uiPt } from './translations-ui';
 export const translations = {
   en: {
     // Sidebar nav groups
@@ -2506,4 +2507,6 @@ Object.assign(translations.pt, compliancePt);
 Object.assign(translations.en, emailReportEn);
 Object.assign(translations.pt, emailReportPt);
 Object.assign(translations.en, seatsEn);
+Object.assign(translations.en, uiEn);
 Object.assign(translations.pt, seatsPt);
+Object.assign(translations.pt, uiPt);

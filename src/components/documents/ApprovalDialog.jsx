@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, FileText, Loader2, ShieldCheck } from 'lucide-react';
 import { validators } from '@/lib/validation';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const STATUS_STYLES = {
   draft: 'bg-muted text-muted-foreground',
@@ -18,6 +19,7 @@ const STATUS_STYLES = {
 };
 
 export default function ApprovalDialog({ open, onOpenChange, doc, approverName, approverEmail, onConfirm }) {
+  const { t } = useLanguage();
   const [signature, setSignature] = useState('');
   const [comments, setComments] = useState('');
   const [saving, setSaving] = useState(false);
@@ -30,8 +32,8 @@ export default function ApprovalDialog({ open, onOpenChange, doc, approverName, 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formErrors = {};
-    if (validators.required(signature)) formErrors.signature = 'Signature is required.';
-    else if (!signatureValid) formErrors.signature = 'Signature must match your name or email address.';
+    if (validators.required(signature)) formErrors.signature = t('appr_signature_required');
+    else if (!signatureValid) formErrors.signature = t('appr_signature_mismatch');
     if (commentsError) formErrors.comments = commentsError;
     setErrors(formErrors);
     if (Object.keys(formErrors).length > 0) return;
@@ -56,10 +58,10 @@ export default function ApprovalDialog({ open, onOpenChange, doc, approverName, 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-chart-2" />
-            Formal Document Approval
+            {t('appr_title')}
           </DialogTitle>
           <DialogDescription>
-            By signing off, you confirm this document has been reviewed and meets all requirements.
+            {t('appr_desc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -72,7 +74,7 @@ export default function ApprovalDialog({ open, onOpenChange, doc, approverName, 
             </div>
             <div className="flex items-center gap-2 flex-wrap pl-6">
               <Badge variant="outline" className={`text-xs ${STATUS_STYLES[doc.status]}`}>
-                {doc.status?.replace('_', ' ')}
+                {t(`docs_status_${doc.status}`) || doc.status?.replace('_', ' ')}
               </Badge>
               <span className="text-xs text-muted-foreground capitalize">{doc.level}</span>
               {doc.customer_name && <span className="text-xs text-muted-foreground">· {doc.customer_name}</span>}
@@ -82,11 +84,11 @@ export default function ApprovalDialog({ open, onOpenChange, doc, approverName, 
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Approval Comments <span className="text-muted-foreground font-normal">(optional)</span></Label>
+            <Label>{t('appr_comments')} <span className="text-muted-foreground font-normal">{t('common_optional')}</span></Label>
             <Textarea
               value={comments}
               onChange={e => { setComments(e.target.value); if (errors.comments) setErrors(p => ({ ...p, comments: null })); }}
-              placeholder="Add any notes about this approval decision..."
+              placeholder={t('appr_comments_ph')}
               rows={2}
               className={errors.comments ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
@@ -95,29 +97,29 @@ export default function ApprovalDialog({ open, onOpenChange, doc, approverName, 
 
           <div className="space-y-1.5">
             <Label>
-              Electronic Signature <span className="text-destructive">*</span>
+              {t('appr_signature')} <span className="text-destructive">*</span>
             </Label>
             <p className="text-xs text-muted-foreground">
-              Type your full name or email address (<span className="font-medium">{approverEmail}</span>) to sign off.
+              {t('appr_signature_help', { email: approverEmail })}
             </p>
             <Input
               value={signature}
               onChange={e => setSignature(e.target.value)}
-              placeholder="Type your name or email to confirm..."
+              placeholder={t('appr_signature_ph')}
               className={signature && !signatureValid ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
             {signature && !signatureValid && (
-              <p className="text-xs text-destructive">Signature must match your name or email address.</p>
+              <p className="text-xs text-destructive">{t('appr_signature_mismatch')}</p>
             )}
             {signature && signatureValid && (
               <p className="text-xs text-chart-2 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" /> Signature verified
+                <CheckCircle className="w-3 h-3" /> {t('appr_signature_verified')}
               </p>
             )}
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={handleClose}>{t('common_cancel')}</Button>
             <Button
               type="submit"
               disabled={!signatureValid || saving}
@@ -127,7 +129,7 @@ export default function ApprovalDialog({ open, onOpenChange, doc, approverName, 
                 ? <Loader2 className="w-4 h-4 animate-spin" />
                 : <ShieldCheck className="w-4 h-4" />
               }
-              Approve &amp; Sign
+              {t('appr_approve_sign')}
             </Button>
           </DialogFooter>
         </form>

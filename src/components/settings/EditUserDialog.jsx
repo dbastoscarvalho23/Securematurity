@@ -6,8 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { validators, validateForm, hasErrors } from '@/lib/validation';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function EditUserDialog({ open, onOpenChange, user, customers, onSave, isSaving, currentUserRole }) {
+  const { t } = useLanguage();
   const [fullName, setFullName] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [role, setRole] = useState('user');
@@ -23,7 +25,6 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
   }, [user]);
 
   const isPlatformAdmin = currentUserRole === 'admin';
-  const targetIsAdmin = user?.role === 'admin';
   const needsCustomer = role === 'customer_admin' || role === 'user';
 
   const handleSave = () => {
@@ -52,16 +53,16 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
+          <DialogTitle>{t('user_dlg_edit')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           {/* Name — editable by all */}
           <div className="space-y-1.5">
-            <Label>Full Name</Label>
+            <Label>{t('common_full_name')}</Label>
             <Input
               value={fullName}
               onChange={e => { setFullName(e.target.value); if (errors.fullName) setErrors(p => ({ ...p, fullName: null })); }}
-              placeholder="Full name"
+              placeholder={t('user_dlg_full_name_ph')}
               className={errors.fullName ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
             {errors.fullName && <p className="text-xs text-destructive">{errors.fullName}</p>}
@@ -71,13 +72,13 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
           {needsCustomer && (
             isPlatformAdmin ? (
               <div className="space-y-1.5">
-                <Label>Associated Customer {role === 'customer_admin' && <span className="text-destructive">*</span>}</Label>
+                <Label>{t('user_dlg_associated_customer')} {role === 'customer_admin' && <span className="text-destructive">*</span>}</Label>
                 <Select value={customerId} onValueChange={(v) => { setCustomerId(v); if (errors.customerId) setErrors(p => ({ ...p, customerId: null })); }}>
                   <SelectTrigger className={errors.customerId ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Select a customer..." />
+                    <SelectValue placeholder={t('common_select_customer_ph')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={null}>— None —</SelectItem>
+                    <SelectItem value={null}>{t('user_dlg_none')}</SelectItem>
                     {customers.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
@@ -85,18 +86,18 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
                 </Select>
                 {errors.customerId && <p className="text-xs text-destructive">{errors.customerId}</p>}
                 {role === 'customer_admin' && !errors.customerId && (
-                  <p className="text-xs text-muted-foreground">Customer Admin must be linked to a customer.</p>
+                  <p className="text-xs text-muted-foreground">{t('user_dlg_customer_admin_must')}</p>
                 )}
               </div>
             ) : (
               <div className="space-y-1.5">
-                <Label>Associated Customer</Label>
+                <Label>{t('user_dlg_associated_customer')}</Label>
                 <Input
                   value={user?.customer_name || '—'}
                   disabled
                   className="bg-muted/50 text-muted-foreground"
                 />
-                <p className="text-xs text-muted-foreground">Only a platform admin can change customer assignment.</p>
+                <p className="text-xs text-muted-foreground">{t('user_dlg_only_admin_customer')}</p>
               </div>
             )
           )}
@@ -104,39 +105,39 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
           {/* Role — only platform admin can change */}
           {isPlatformAdmin ? (
             <div className="space-y-1.5">
-              <Label>Role</Label>
+              <Label>{t('common_role')}</Label>
               <Select value={role} onValueChange={setRole}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="customer_admin">Customer Admin</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="user">{t('user_dlg_role_user')}</SelectItem>
+                  <SelectItem value="customer_admin">{t('user_dlg_role_customer_admin')}</SelectItem>
+                  <SelectItem value="admin">{t('user_dlg_role_admin')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           ) : (
             <div className="space-y-1.5">
-              <Label>Role</Label>
+              <Label>{t('common_role')}</Label>
               <Input
-                value={user?.role === 'customer_admin' ? 'Customer Admin' : user?.role || '—'}
+                value={user?.role === 'customer_admin' ? t('user_dlg_role_customer_admin') : user?.role || '—'}
                 disabled
                 className="bg-muted/50 text-muted-foreground capitalize"
               />
-              <p className="text-xs text-muted-foreground">Only a platform admin can change roles.</p>
+              <p className="text-xs text-muted-foreground">{t('user_dlg_only_admin_roles')}</p>
             </div>
           )}
 
           <div className="text-sm text-muted-foreground border rounded p-2 bg-muted/30">
-            <span className="font-medium">Email:</span> {user?.email}
+            <span className="font-medium">{t('user_dlg_email')}</span> {user?.email}
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common_cancel')}</Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            Save Changes
+            {t('common_save_changes')}
           </Button>
         </DialogFooter>
       </DialogContent>

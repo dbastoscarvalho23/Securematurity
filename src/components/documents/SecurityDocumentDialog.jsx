@@ -9,6 +9,7 @@ import { Loader2, Upload } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { validators, validateForm, hasErrors } from '@/lib/validation';
 
 const DEFAULT = {
@@ -20,6 +21,7 @@ const DEFAULT = {
 
 export default function SecurityDocumentDialog({ open, onOpenChange, doc, customers, isAdmin, isUser, onSave }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [form, setForm] = useState(DEFAULT);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -55,7 +57,7 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
     set('file_url', file_url);
     set('file_name', file.name);
     setUploading(false);
-    toast.success('File uploaded');
+    toast.success(t('docs_dlg_file_uploaded'));
   };
 
   const handleSubmit = async (e) => {
@@ -68,7 +70,7 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
     const formErrors = validateForm(form, schema);
     setErrors(formErrors);
     if (hasErrors(formErrors)) {
-      toast.error('Please correct the highlighted fields.');
+      toast.error(t('docs_dlg_correct_fields'));
       return;
     }
     setSaving(true);
@@ -108,18 +110,18 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
       <DialogContent className="max-w-lg flex flex-col max-h-[90vh]">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
-            {doc?.id ? 'Edit Document' : 'New Document'}
-            {isUser && <span className="text-xs font-normal text-muted-foreground ml-2">(will be submitted for approval)</span>}
+            {doc?.id ? t('docs_dlg_edit') : t('docs_dlg_new')}
+            {isUser && <span className="text-xs font-normal text-muted-foreground ml-2">{t('docs_dlg_submit_note')}</span>}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <div className="flex-1 overflow-y-auto pr-1 space-y-4">
           <div className="space-y-1.5">
-            <Label>Title *</Label>
+            <Label>{t('common_title')} *</Label>
             <Input
               value={form.title}
               onChange={e => set('title', e.target.value)}
-              placeholder="Document title"
+              placeholder={t('docs_dlg_title_ph')}
               className={errors.title ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
             {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
@@ -127,27 +129,27 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Level *</Label>
+              <Label>{t('docs_dlg_level')} *</Label>
               <Select value={form.level} onValueChange={v => set('level', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="policy">L1 — Policy</SelectItem>
-                  <SelectItem value="standard">L2 — Standard</SelectItem>
-                  <SelectItem value="procedure">L3 — Procedure</SelectItem>
-                  <SelectItem value="playbook">L4 — Playbook / Runbook</SelectItem>
+                  <SelectItem value="policy">{t('docs_dlg_level_policy')}</SelectItem>
+                  <SelectItem value="standard">{t('docs_dlg_level_standard')}</SelectItem>
+                  <SelectItem value="procedure">{t('docs_dlg_level_procedure')}</SelectItem>
+                  <SelectItem value="playbook">{t('docs_dlg_level_playbook')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {!isUser && (
               <div className="space-y-1.5">
-                <Label>Status</Label>
+                <Label>{t('common_status')}</Label>
                 <Select value={form.status} onValueChange={v => set('status', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="under_review">Under Review</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="deprecated">Deprecated</SelectItem>
+                    <SelectItem value="draft">{t('docs_status_draft')}</SelectItem>
+                    <SelectItem value="under_review">{t('docs_status_under_review')}</SelectItem>
+                    <SelectItem value="approved">{t('docs_status_approved')}</SelectItem>
+                    <SelectItem value="deprecated">{t('docs_status_deprecated')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -155,37 +157,37 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
           </div>
 
           <div className="space-y-1.5">
-            <Label>Description</Label>
-            <Textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2} placeholder="Brief description..." />
+            <Label>{t('common_description')}</Label>
+            <Textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2} placeholder={t('docs_dlg_description_ph')} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Version</Label>
-              <Input value={form.version} onChange={e => set('version', e.target.value)} placeholder="e.g. 1.0" />
+              <Label>{t('docs_dlg_version')}</Label>
+              <Input value={form.version} onChange={e => set('version', e.target.value)} placeholder={t('docs_dlg_version_ph')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Approved By</Label>
-              <Input value={form.approved_by} onChange={e => set('approved_by', e.target.value)} placeholder="Name or role" />
+              <Label>{t('docs_dlg_approved_by')}</Label>
+              <Input value={form.approved_by} onChange={e => set('approved_by', e.target.value)} placeholder={t('docs_dlg_approved_by_ph')} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Approval Date</Label>
+              <Label>{t('docs_dlg_approval_date')}</Label>
               <Input value={form.approved_date} onChange={e => set('approved_date', e.target.value)} type="date" />
             </div>
             <div className="space-y-1.5">
-              <Label>Next Review Date</Label>
+              <Label>{t('docs_dlg_review_date')}</Label>
               <Input value={form.review_date} onChange={e => set('review_date', e.target.value)} type="date" />
             </div>
           </div>
 
           {isAdmin && customers.length > 0 && (
             <div className="space-y-1.5">
-              <Label>Customer *</Label>
+              <Label>{t('common_customer')} *</Label>
               <Select value={form.customer_id || ''} onValueChange={handleCustomerChange} required>
-                <SelectTrigger className={errors.customer_id ? 'border-destructive' : ''}><SelectValue placeholder="Select a customer" /></SelectTrigger>
+                <SelectTrigger className={errors.customer_id ? 'border-destructive' : ''}><SelectValue placeholder={t('docs_dlg_select_customer_ph')} /></SelectTrigger>
                 <SelectContent>
                   {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
@@ -195,33 +197,33 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
           )}
 
           <div className="space-y-1.5">
-            <Label>Framework Codes (comma-separated)</Label>
-            <Input value={frameworksInput} onChange={e => setFrameworksInput(e.target.value)} placeholder="e.g. NIS2, ISO27001, GDPR" />
+            <Label>{t('docs_dlg_framework_codes')}</Label>
+            <Input value={frameworksInput} onChange={e => setFrameworksInput(e.target.value)} placeholder={t('docs_dlg_framework_codes_ph')} />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Tags (comma-separated)</Label>
-            <Input value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder="e.g. access-control, privacy, backup" />
+            <Label>{t('docs_dlg_tags')}</Label>
+            <Input value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder={t('docs_dlg_tags_ph')} />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Document File</Label>
+            <Label>{t('docs_dlg_file')}</Label>
             {form.file_name && (
-              <p className="text-xs text-muted-foreground mb-1">Current: {form.file_name}</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('docs_dlg_current')}: {form.file_name}</p>
             )}
             <div className="flex items-center gap-2">
               <label className="cursor-pointer">
                 <Button type="button" variant="outline" size="sm" className="gap-2" disabled={uploading} asChild>
                   <span>
                     {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                    {uploading ? 'Uploading...' : form.file_name ? 'Replace File' : 'Upload File'}
+                    {uploading ? t('common_uploading') : form.file_name ? t('docs_dlg_replace_file') : t('docs_dlg_upload_file')}
                   </span>
                 </Button>
                 <input type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.doc,.docx,.xlsx,.pptx,.txt,.md" />
               </label>
               {form.file_url && (
                 <a href={form.file_url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
-                  View current file
+                  {t('docs_dlg_view_current')}
                 </a>
               )}
             </div>
@@ -229,17 +231,17 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
 
           {doc?.id && (
             <div className="space-y-1.5">
-              <Label>Change Note <span className="text-muted-foreground font-normal">(optional)</span></Label>
-              <Input value={changeNote} onChange={e => setChangeNote(e.target.value)} placeholder="Briefly describe what changed..." />
+              <Label>{t('docs_dlg_change_note')} <span className="text-muted-foreground font-normal">{t('common_optional')}</span></Label>
+              <Input value={changeNote} onChange={e => setChangeNote(e.target.value)} placeholder={t('docs_dlg_change_note_ph')} />
             </div>
           )}
 
           </div>
           <div className="flex-shrink-0 flex justify-end gap-2 pt-4 border-t mt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('common_cancel')}</Button>
             <Button type="submit" disabled={saving || uploading}>
               {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              {doc?.id ? 'Save Changes' : 'Create Document'}
+              {doc?.id ? t('common_save_changes') : t('docs_dlg_create_doc')}
             </Button>
           </div>
         </form>

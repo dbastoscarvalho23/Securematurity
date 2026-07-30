@@ -8,17 +8,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { base44 } from '@/api/base44Client';
 import { Upload, Loader2, FileText, X } from 'lucide-react';
 import { validators, validateForm, hasErrors } from '@/lib/validation';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const ROLE_TYPES = [
-  { value: 'risk_officer', label: 'Risk Officer Manager' },
-  { value: 'risk_committee', label: 'Risk Committee' },
-  { value: 'cybersecurity_manager', label: 'Cybersecurity Manager' },
-  { value: 'cybersecurity_committee', label: 'Cybersecurity Committee' },
-  { value: 'dpo', label: 'Data Protection Officer (DPO)' },
-  { value: 'ciso', label: 'CISO / Chief Information Security Officer' },
-  { value: 'incident_response_lead', label: 'Incident Response Lead' },
-  { value: 'compliance_officer', label: 'Compliance Officer' },
-  { value: 'other', label: 'Other Governance Role' },
+  { value: 'risk_officer', labelKey: 'nom_role_risk_officer' },
+  { value: 'risk_committee', labelKey: 'nom_role_risk_committee' },
+  { value: 'cybersecurity_manager', labelKey: 'nom_role_cybersecurity_manager' },
+  { value: 'cybersecurity_committee', labelKey: 'nom_role_cybersecurity_committee' },
+  { value: 'dpo', labelKey: 'nom_role_dpo' },
+  { value: 'ciso', labelKey: 'nom_role_ciso' },
+  { value: 'incident_response_lead', labelKey: 'nom_role_incident_response_lead' },
+  { value: 'compliance_officer', labelKey: 'nom_role_compliance_officer' },
+  { value: 'other', labelKey: 'nom_role_other' },
 ];
 
 const ALLOWED_ROLES = ROLE_TYPES.map(r => r.value);
@@ -26,6 +27,7 @@ const ALLOWED_ROLES = ROLE_TYPES.map(r => r.value);
 const DEFAULT = { title: '', role_type: '', nominated_person: '', nomination_date: '', expiry_date: '', status: 'draft', description: '', file_url: '', file_name: '' };
 
 export default function NominationDocumentDialog({ open, onOpenChange, doc, customers, isAdmin, onSave }) {
+  const { t } = useLanguage();
   const [form, setForm] = useState(DEFAULT);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -71,27 +73,27 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg flex flex-col max-h-[90vh]">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>{doc?.id ? 'Edit Nomination Document' : 'New Nomination Document'}</DialogTitle>
+          <DialogTitle>{doc?.id ? t('nom_edit') : t('nom_new')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <div className="flex-1 overflow-y-auto pr-1 space-y-4 mt-2">
           <div className="space-y-1.5">
-            <Label>Title *</Label>
+            <Label>{t('common_title')} *</Label>
             <Input
               value={form.title}
               onChange={e => set('title', e.target.value)}
-              placeholder="e.g. Appointment of Risk Officer Manager"
+              placeholder={t('nom_title_ph')}
               className={errors.title ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
             {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
           </div>
 
           <div className="space-y-1.5">
-            <Label>Governance Role *</Label>
+            <Label>{t('nom_governance_role')} *</Label>
             <Select value={form.role_type} onValueChange={v => set('role_type', v)} required>
-              <SelectTrigger className={errors.role_type ? 'border-destructive' : ''}><SelectValue placeholder="Select role type..." /></SelectTrigger>
+              <SelectTrigger className={errors.role_type ? 'border-destructive' : ''}><SelectValue placeholder={t('common_select_role')} /></SelectTrigger>
               <SelectContent>
-                {ROLE_TYPES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                {ROLE_TYPES.map(r => <SelectItem key={r.value} value={r.value}>{t(r.labelKey)}</SelectItem>)}
               </SelectContent>
             </Select>
             {errors.role_type && <p className="text-xs text-destructive">{errors.role_type}</p>}
@@ -99,30 +101,30 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Status</Label>
+              <Label>{t('common_status')}</Label>
               <Select value={form.status} onValueChange={v => set('status', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="expired">Expired</SelectItem>
-                  <SelectItem value="revoked">Revoked</SelectItem>
+                  <SelectItem value="draft">{t('nom_status_draft')}</SelectItem>
+                  <SelectItem value="active">{t('nom_status_active')}</SelectItem>
+                  <SelectItem value="expired">{t('nom_status_expired')}</SelectItem>
+                  <SelectItem value="revoked">{t('nom_status_revoked')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Nominated Person / Committee</Label>
-              <Input value={form.nominated_person} onChange={e => set('nominated_person', e.target.value)} placeholder="Full name or committee name" />
+              <Label>{t('nom_nominated_person')}</Label>
+              <Input value={form.nominated_person} onChange={e => set('nominated_person', e.target.value)} placeholder={t('nom_nominated_person_ph')} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Nomination Date</Label>
+              <Label>{t('nom_nomination_date')}</Label>
               <Input type="date" value={form.nomination_date} onChange={e => set('nomination_date', e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label>Expiry / Renewal Date</Label>
+              <Label>{t('nom_expiry_date')}</Label>
               <Input
                 type="date"
                 value={form.expiry_date}
@@ -135,9 +137,9 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
 
           {isAdmin && customers?.length > 0 && (
             <div className="space-y-1.5">
-              <Label>Customer</Label>
+              <Label>{t('common_customer')}</Label>
               <Select value={form.customer_id || ''} onValueChange={v => { const c = customers.find(x => x.id === v); set('customer_id', v); set('customer_name', c?.name || ''); }}>
-                <SelectTrigger><SelectValue placeholder="Select customer..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('common_select_customer_ph')} /></SelectTrigger>
                 <SelectContent>
                   {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
@@ -146,27 +148,27 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
           )}
 
           <div className="space-y-1.5">
-            <Label>Approved By</Label>
-            <Input value={form.approved_by || ''} onChange={e => set('approved_by', e.target.value)} placeholder="Name of approver / signing authority" />
+            <Label>{t('docs_dlg_approved_by')}</Label>
+            <Input value={form.approved_by || ''} onChange={e => set('approved_by', e.target.value)} placeholder={t('nom_approved_by_ph')} />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Approved Date</Label>
+            <Label>{t('nom_approved_date')}</Label>
             <Input type="date" value={form.approved_date || ''} onChange={e => set('approved_date', e.target.value)} />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Notes / Context</Label>
-            <Textarea value={form.description} onChange={e => set('description', e.target.value)} placeholder="Additional context, mandate scope, etc." rows={2} />
+            <Label>{t('nom_notes')}</Label>
+            <Textarea value={form.description} onChange={e => set('description', e.target.value)} placeholder={t('nom_notes_ph')} rows={2} />
           </div>
 
           {/* File upload */}
           <div className="space-y-1.5">
-            <Label>Document File</Label>
+            <Label>{t('docs_dlg_file')}</Label>
             {form.file_url ? (
               <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/40 border text-sm">
                 <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <a href={form.file_url} target="_blank" rel="noreferrer" className="text-primary underline flex-1 truncate">{form.file_name || 'View file'}</a>
+                <a href={form.file_url} target="_blank" rel="noreferrer" className="text-primary underline flex-1 truncate">{form.file_name || t('common_view_file')}</a>
                 <button type="button" onClick={() => { set('file_url', ''); set('file_name', ''); }} className="text-muted-foreground hover:text-destructive">
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -174,7 +176,7 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
             ) : (
               <label className="flex items-center gap-2 cursor-pointer border border-dashed rounded-lg px-4 py-3 hover:bg-muted/30 transition-colors">
                 {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
-                <span className="text-sm text-muted-foreground">{uploading ? 'Uploading...' : 'Click to upload nomination document (PDF, DOCX, etc.)'}</span>
+                <span className="text-sm text-muted-foreground">{uploading ? t('common_uploading') : t('nom_upload_hint')}</span>
                 <input type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" disabled={uploading} />
               </label>
             )}
@@ -182,10 +184,10 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
 
           </div>
           <div className="flex-shrink-0 flex justify-end gap-2 pt-4 border-t mt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('common_cancel')}</Button>
             <Button type="submit" disabled={saving || uploading || !form.title || !form.role_type}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-              {doc?.id ? 'Save Changes' : 'Create'}
+              {doc?.id ? t('common_save_changes') : t('common_create')}
             </Button>
           </div>
         </form>

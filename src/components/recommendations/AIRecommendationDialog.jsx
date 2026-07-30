@@ -9,6 +9,7 @@ import { Sparkles, Loader2, CheckSquare, Square } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { writeAuditLog } from '@/lib/auditLog';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const FRAMEWORKS = [
   { code: 'NIS2', name: 'NIS2 / DL 125/2025' },
@@ -28,6 +29,7 @@ const PRIORITY_COLORS = {
 };
 
 export default function AIRecommendationDialog({ open, onOpenChange, customers, onSave }) {
+  const { t } = useLanguage();
   const [framework, setFramework] = useState('NIS2');
   const [customerId, setCustomerId] = useState('none');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -114,6 +116,7 @@ Include clear titles, detailed descriptions, effort estimates, and suggested tim
   };
 
   const selectedCount = Object.values(selected).filter(Boolean).length;
+  const allSel = suggestions.every((_, i) => selected[i]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -121,7 +124,7 @@ Include clear titles, detailed descriptions, effort estimates, and suggested tim
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            AI Recommendation Generator
+            {t('airec_title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -129,7 +132,7 @@ Include clear titles, detailed descriptions, effort estimates, and suggested tim
           {/* Controls */}
           <div className="flex gap-3 items-end">
             <div className="flex-1 space-y-1.5">
-              <Label>Framework</Label>
+              <Label>{t('airec_framework')}</Label>
               <Select value={framework} onValueChange={setFramework}>
                 <SelectTrigger>
                   <SelectValue />
@@ -143,13 +146,13 @@ Include clear titles, detailed descriptions, effort estimates, and suggested tim
             </div>
             {customers?.length > 0 && (
               <div className="flex-1 space-y-1.5">
-                <Label>Customer (optional)</Label>
+                <Label>{t('airec_customer_opt')}</Label>
                 <Select value={customerId} onValueChange={setCustomerId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="No customer" />
+                    <SelectValue placeholder={t('airec_no_customer')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No customer</SelectItem>
+                    <SelectItem value="none">{t('airec_no_customer')}</SelectItem>
                     {customers.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
@@ -159,8 +162,8 @@ Include clear titles, detailed descriptions, effort estimates, and suggested tim
             )}
             <Button onClick={handleGenerate} disabled={isGenerating} className="gap-2">
               {isGenerating
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
-                : <><Sparkles className="w-4 h-4" /> Generate</>
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('airec_generating')}</>
+                : <><Sparkles className="w-4 h-4" /> {t('airec_generate')}</>
               }
             </Button>
           </div>
@@ -168,23 +171,20 @@ Include clear titles, detailed descriptions, effort estimates, and suggested tim
           {isGenerating && (
             <div className="text-center py-10 text-muted-foreground text-sm">
               <Loader2 className="w-6 h-6 animate-spin mx-auto mb-3 text-primary" />
-              Generating recommendations for <strong>{FRAMEWORKS.find(f => f.code === framework)?.name}</strong>...
+              {t('airec_generating_for')} <strong>{FRAMEWORKS.find(f => f.code === framework)?.name}</strong>...
             </div>
           )}
 
           {suggestions.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">{suggestions.length} recommendations generated</p>
+                <p className="text-sm font-medium">{t('airec_generated_count', { count: suggestions.length })}</p>
                 <button
                   onClick={toggleAll}
                   className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {suggestions.every((_, i) => selected[i])
-                    ? <CheckSquare className="w-4 h-4" />
-                    : <Square className="w-4 h-4" />
-                  }
-                  {suggestions.every((_, i) => selected[i]) ? 'Deselect all' : 'Select all'}
+                  {allSel ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                  {allSel ? t('airec_deselect_all') : t('airec_select_all')}
                 </button>
               </div>
 
@@ -209,17 +209,17 @@ Include clear titles, detailed descriptions, effort estimates, and suggested tim
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                         <Badge variant="outline" className={cn("text-xs border", PRIORITY_COLORS[rec.priority])}>
-                          {rec.priority}
+                          {t(`tasks_priority_${rec.priority}`) || rec.priority}
                         </Badge>
                         {rec.domain && <span className="text-xs text-muted-foreground">{rec.domain}</span>}
                         {rec.effort && (
                           <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                            {rec.effort} effort
+                            {t(`airec_effort_${rec.effort}`) || rec.effort}
                           </span>
                         )}
                         {rec.timeline && (
                           <span className="text-xs text-muted-foreground">
-                            {rec.timeline.replace('_', ' ')}
+                            {t(`airec_tl_${rec.timeline}`) || rec.timeline.replace('_', ' ')}
                           </span>
                         )}
                       </div>
@@ -234,19 +234,19 @@ Include clear titles, detailed descriptions, effort estimates, and suggested tim
 
           {!isGenerating && suggestions.length === 0 && (
             <div className="text-center py-10 text-muted-foreground text-sm">
-              Select a framework and click <strong>Generate</strong> to get AI-suggested recommendations.
+              {t('airec_empty_1')} <strong>{t('airec_empty_bold')}</strong> {t('airec_empty_2')}
             </div>
           )}
         </div>
 
         {suggestions.length > 0 && (
           <div className="flex items-center justify-between pt-4 border-t">
-            <span className="text-sm text-muted-foreground">{selectedCount} of {suggestions.length} selected</span>
+            <span className="text-sm text-muted-foreground">{t('airec_selected', { count: selectedCount, total: suggestions.length })}</span>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common_cancel')}</Button>
               <Button onClick={handleSave} disabled={isSaving || selectedCount === 0} className="gap-2">
                 {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                Save {selectedCount > 0 ? selectedCount : ''} Recommendation{selectedCount !== 1 ? 's' : ''}
+                {t('airec_save')} {selectedCount > 0 ? selectedCount : ''} {selectedCount !== 1 ? t('airec_recommendations') : t('airec_recommendation')}
               </Button>
             </div>
           </div>

@@ -2,8 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Send, FileIcon, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 export default function TaskComments({ taskId }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [attachments, setAttachments] = useState([]);
@@ -33,17 +34,17 @@ export default function TaskComments({ taskId }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task-comments', taskId] });
       setContent('');
-      toast.success('Comment added');
+      toast.success(t('tc_added'));
     },
     onError: (err) => {
-      toast.error(err?.message || 'Failed to add comment');
+      toast.error(err?.message || t('tc_add_failed'));
     },
   });
 
   const uploadFiles = async (files) => {
     if (!files || files.length === 0) return;
     setIsUploading(true);
-    
+
     try {
       const uploaded = [];
       for (const file of files) {
@@ -54,9 +55,9 @@ export default function TaskComments({ taskId }) {
         });
       }
       setAttachments(prev => [...prev, ...uploaded]);
-      toast.success(`${uploaded.length} file(s) uploaded`);
+      toast.success(t('tc_files_uploaded', { n: uploaded.length }));
     } catch (err) {
-      toast.error(err?.message || 'Failed to upload file');
+      toast.error(err?.message || t('tc_upload_failed'));
     } finally {
       setIsUploading(false);
     }
@@ -87,7 +88,7 @@ export default function TaskComments({ taskId }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!content.trim() && attachments.length === 0) return;
-    
+
     setIsSubmitting(true);
     await addCommentMutation.mutateAsync({
       task_id: taskId,
@@ -100,12 +101,12 @@ export default function TaskComments({ taskId }) {
 
   return (
     <div className="border-t pt-4 space-y-4">
-      <h3 className="text-sm font-semibold">Comments</h3>
-      
+      <h3 className="text-sm font-semibold">{t('tc_title')}</h3>
+
       {/* Comment List */}
       <div className="space-y-3 max-h-48 overflow-y-auto">
         {comments.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic">No comments yet</p>
+          <p className="text-xs text-muted-foreground italic">{t('tc_no_comments')}</p>
         ) : (
           comments.map(comment => (
             <div key={comment.id} className="p-2.5 rounded-lg bg-muted/50 border text-xs space-y-1.5">
@@ -142,7 +143,7 @@ export default function TaskComments({ taskId }) {
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Add a comment..."
+          placeholder={t('tc_placeholder')}
           rows={2}
           disabled={isSubmitting || isUploading}
           className="text-xs resize-none"
@@ -190,12 +191,12 @@ export default function TaskComments({ taskId }) {
             {isUploading ? (
               <>
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Uploading...
+                {t('common_uploading')}
               </>
             ) : (
               <>
                 <Upload className="w-3 h-3" />
-                Drag files here or click to upload
+                {t('tc_drag_hint')}
               </>
             )}
           </div>
@@ -209,7 +210,7 @@ export default function TaskComments({ taskId }) {
             className="gap-1.5"
           >
             {isSubmitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-            Comment
+            {t('tc_comment')}
           </Button>
         </div>
       </form>

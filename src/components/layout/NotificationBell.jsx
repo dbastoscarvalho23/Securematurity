@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, Check, CheckCheck, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
@@ -23,6 +24,7 @@ const TYPE_ICONS = {
 
 export default function NotificationBell() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -114,7 +116,7 @@ export default function NotificationBell() {
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <div className="flex items-center gap-2">
             <Bell className="w-4 h-4 text-muted-foreground" />
-            <span className="font-semibold text-sm">Notifications</span>
+            <span className="font-semibold text-sm">{t('nb_notifications')}</span>
             {unreadCount > 0 && (
               <Badge variant="destructive" className="h-5 text-[10px] px-1.5">{unreadCount}</Badge>
             )}
@@ -128,7 +130,7 @@ export default function NotificationBell() {
               disabled={loading}
             >
               <CheckCheck className="w-3.5 h-3.5" />
-              Mark all read
+              {t('nb_mark_all_read')}
             </Button>
           )}
         </div>
@@ -138,7 +140,7 @@ export default function NotificationBell() {
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 gap-2 text-muted-foreground">
               <Bell className="w-8 h-8 opacity-20" />
-              <p className="text-sm">No notifications</p>
+              <p className="text-sm">{t('nb_no_notifications')}</p>
             </div>
           ) : (
             <div className="divide-y">

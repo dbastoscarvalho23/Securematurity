@@ -3,11 +3,12 @@ import { Search, X, AlertTriangle, FileText, Users, ClipboardList, CheckSquare }
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const ENTITY_CONFIG = [
   {
     key: 'risks',
-    label: 'Risk',
+    labelKey: 'gs_label_risk',
     icon: AlertTriangle,
     color: 'text-orange-500',
     bg: 'bg-orange-50',
@@ -18,7 +19,7 @@ const ENTITY_CONFIG = [
   },
   {
     key: 'documents',
-    label: 'Document',
+    labelKey: 'gs_label_document',
     icon: FileText,
     color: 'text-blue-500',
     bg: 'bg-blue-50',
@@ -29,7 +30,7 @@ const ENTITY_CONFIG = [
   },
   {
     key: 'customers',
-    label: 'Customer',
+    labelKey: 'gs_label_customer',
     icon: Users,
     color: 'text-green-500',
     bg: 'bg-green-50',
@@ -40,7 +41,7 @@ const ENTITY_CONFIG = [
   },
   {
     key: 'tasks',
-    label: 'Task',
+    labelKey: 'gs_label_task',
     icon: CheckSquare,
     color: 'text-purple-500',
     bg: 'bg-purple-50',
@@ -51,7 +52,7 @@ const ENTITY_CONFIG = [
   },
   {
     key: 'assessments',
-    label: 'Assessment',
+    labelKey: 'gs_label_assessment',
     icon: ClipboardList,
     color: 'text-teal-500',
     bg: 'bg-teal-50',
@@ -63,6 +64,7 @@ const ENTITY_CONFIG = [
 ];
 
 export default function GlobalSearch() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -152,7 +154,7 @@ export default function GlobalSearch() {
         className="flex items-center gap-2 h-8 pl-3 pr-4 rounded-lg border border-border bg-muted/50 hover:bg-muted text-muted-foreground text-sm transition-colors min-w-[180px]"
       >
         <Search className="w-3.5 h-3.5 flex-shrink-0" />
-        <span className="flex-1 text-left text-xs">Search...</span>
+        <span className="flex-1 text-left text-xs">{t('gs_search_placeholder')}</span>
         <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 rounded border border-border bg-background px-1 text-[10px] font-mono text-muted-foreground">
           <span>⌘K</span>
         </kbd>
@@ -169,7 +171,7 @@ export default function GlobalSearch() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Search risks, documents, customers, tasks..."
+              placeholder={t('gs_input_ph')}
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground"
             />
             {query && (
@@ -182,18 +184,18 @@ export default function GlobalSearch() {
           {/* Results */}
           <div className="max-h-[360px] overflow-y-auto">
             {loading && (
-              <div className="py-8 text-center text-sm text-muted-foreground">Loading...</div>
+              <div className="py-8 text-center text-sm text-muted-foreground">{t('gs_loading')}</div>
             )}
 
             {!loading && query.length < 2 && (
               <div className="py-6 text-center text-sm text-muted-foreground">
-                Type at least 2 characters to search
+                {t('gs_min_chars')}
               </div>
             )}
 
             {!loading && query.length >= 2 && results.length === 0 && (
               <div className="py-6 text-center text-sm text-muted-foreground">
-                No results for "<span className="font-medium">{query}</span>"
+                {t('gs_no_results', { query })}
               </div>
             )}
 
@@ -221,7 +223,7 @@ export default function GlobalSearch() {
                           )}
                         </div>
                         <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full border flex-shrink-0', result.cfg.bg, result.cfg.color, 'border-current/20')}>
-                          {result.cfg.label}
+                          {t(result.cfg.labelKey)}
                         </span>
                       </button>
                     </li>
@@ -234,9 +236,9 @@ export default function GlobalSearch() {
           {/* Footer hint */}
           {results.length > 0 && (
             <div className="px-3 py-1.5 border-t border-border flex items-center gap-3 text-[10px] text-muted-foreground">
-              <span>↑↓ navigate</span>
-              <span>↵ select</span>
-              <span>Esc close</span>
+              <span>↑↓ {t('gs_nav')}</span>
+              <span>↵ {t('gs_select')}</span>
+              <span>{t('gs_esc')}</span>
             </div>
           )}
         </div>

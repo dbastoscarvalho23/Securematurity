@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { ExternalLink, RotateCcw, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
 
 const STATUS_STYLES = {
@@ -26,6 +27,7 @@ const formatLocalTimestamp = (dateStr) => {
 
 export default function VersionHistoryDialog({ open, onOpenChange, doc, canRevert }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(null);
 
@@ -80,7 +82,7 @@ export default function VersionHistoryDialog({ open, onOpenChange, doc, canRever
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['securityDocuments'] });
       queryClient.invalidateQueries({ queryKey: ['documentVersions', doc?.id] });
-      toast.success('Reverted to selected version (status reset to Under Review)');
+      toast.success(t('vhist_reverted'));
       onOpenChange(false);
     },
   });
@@ -90,19 +92,19 @@ export default function VersionHistoryDialog({ open, onOpenChange, doc, canRever
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Version History
+            {t('docs_version_history')}
             <span className="text-sm font-normal text-muted-foreground">— {doc?.title}</span>
           </DialogTitle>
         </DialogHeader>
 
         {isLoading && (
-          <p className="text-sm text-muted-foreground py-4 text-center">Loading history...</p>
+          <p className="text-sm text-muted-foreground py-4 text-center">{t('vhist_loading')}</p>
         )}
 
         {!isLoading && versions.length === 0 && (
           <div className="py-10 text-center text-muted-foreground text-sm space-y-1">
-            <p>No version history yet.</p>
-            <p className="text-xs">Versions are saved automatically each time a document is updated.</p>
+            <p>{t('vhist_empty')}</p>
+            <p className="text-xs">{t('vhist_empty_hint')}</p>
           </div>
         )}
 
@@ -117,11 +119,11 @@ export default function VersionHistoryDialog({ open, onOpenChange, doc, canRever
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {idx === 0 && <Badge variant="secondary" className="text-xs">Latest</Badge>}
+                      {idx === 0 && <Badge variant="secondary" className="text-xs">{t('vhist_latest')}</Badge>}
                       {v.version_label && <span className="text-sm font-medium">v{v.version_label}</span>}
                       {v.status && (
                         <Badge variant="outline" className={`text-xs ${STATUS_STYLES[v.status]}`}>
-                          {v.status.replace('_', ' ')}
+                          {t(`docs_status_${v.status}`) || v.status.replace('_', ' ')}
                         </Badge>
                       )}
                       <span className="text-xs text-muted-foreground">{formatLocalTimestamp(v.created_date)}</span>
@@ -136,23 +138,23 @@ export default function VersionHistoryDialog({ open, onOpenChange, doc, canRever
 
                 {isExpanded && (
                   <div className="px-4 pb-4 border-t bg-muted/10 space-y-3">
-                    {v.title && <p className="text-sm mt-3"><span className="text-muted-foreground text-xs uppercase tracking-wide">Title</span><br />{v.title}</p>}
-                    {v.description && <p className="text-sm"><span className="text-muted-foreground text-xs uppercase tracking-wide">Description</span><br />{v.description}</p>}
+                    {v.title && <p className="text-sm mt-3"><span className="text-muted-foreground text-xs uppercase tracking-wide">{t('common_title')}</span><br />{v.title}</p>}
+                    {v.description && <p className="text-sm"><span className="text-muted-foreground text-xs uppercase tracking-wide">{t('common_description')}</span><br />{v.description}</p>}
                     <div className="flex flex-wrap gap-4 text-sm">
-                      {v.approved_by && <p><span className="text-muted-foreground text-xs uppercase tracking-wide block">Approved By</span>{v.approved_by}</p>}
-                      {v.approved_date && <p><span className="text-muted-foreground text-xs uppercase tracking-wide block">Approval Date</span>{v.approved_date}</p>}
+                      {v.approved_by && <p><span className="text-muted-foreground text-xs uppercase tracking-wide block">{t('docs_dlg_approved_by')}</span>{v.approved_by}</p>}
+                      {v.approved_date && <p><span className="text-muted-foreground text-xs uppercase tracking-wide block">{t('docs_dlg_approval_date')}</span>{v.approved_date}</p>}
                     </div>
                     {(v.framework_codes?.length > 0 || v.tags?.length > 0) && (
                       <div className="flex flex-wrap gap-1">
                         {v.framework_codes?.map(f => <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>)}
-                        {v.tags?.map(t => <span key={t} className="text-xs bg-muted px-1.5 py-0.5 rounded">{t}</span>)}
+                        {v.tags?.map(tag => <span key={tag} className="text-xs bg-muted px-1.5 py-0.5 rounded">{tag}</span>)}
                       </div>
                     )}
                     <div className="flex items-center gap-2 pt-1">
                       {v.file_url && (
                         <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7" asChild>
                           <a href={v.file_url} target="_blank" rel="noreferrer">
-                            <ExternalLink className="w-3 h-3" /> View file
+                            <ExternalLink className="w-3 h-3" /> {t('common_view_file')}
                           </a>
                         </Button>
                       )}
@@ -164,7 +166,7 @@ export default function VersionHistoryDialog({ open, onOpenChange, doc, canRever
                           onClick={() => revertMutation.mutate(v)}
                           disabled={revertMutation.isPending}
                         >
-                          <RotateCcw className="w-3 h-3" /> Revert to this version
+                          <RotateCcw className="w-3 h-3" /> {t('vhist_revert')}
                         </Button>
                       )}
                     </div>

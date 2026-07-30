@@ -9,6 +9,7 @@ import { Sparkles, Loader2, CheckSquare, Square, AlertTriangle } from 'lucide-re
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { writeAuditLog } from '@/lib/auditLog';
+import { useLanguage } from '@/lib/LanguageContext';
 
 // Normalize text for comparison
 const normalize = (str) => str?.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim() || '';
@@ -60,6 +61,7 @@ const FRAMEWORK_COLORS = {
 };
 
 export default function AIQuestionGeneratorDialog({ open, onOpenChange, existingQuestions, onSave }) {
+  const { t } = useLanguage();
   const [filterFramework, setFilterFramework] = useState('all');
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -206,6 +208,7 @@ CRITICAL RULES:
   };
 
   const selectedCount = Object.values(selected).filter(Boolean).length;
+  const allSel = suggestions.every((_, i) => selected[i]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -213,7 +216,7 @@ CRITICAL RULES:
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            AI Question Generator
+            {t('aiqg_title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -221,13 +224,13 @@ CRITICAL RULES:
           {/* Controls */}
           <div className="flex gap-3 items-end">
             <div className="flex-1 space-y-1.5">
-              <Label>Scope (Framework)</Label>
+              <Label>{t('aiqg_scope')}</Label>
               <Select value={filterFramework} onValueChange={setFilterFramework}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Frameworks</SelectItem>
+                  <SelectItem value="all">{t('aiqg_all_frameworks')}</SelectItem>
                   {FRAMEWORKS.map(fw => (
                     <SelectItem key={fw.code} value={fw.code}>{fw.name}</SelectItem>
                   ))}
@@ -236,8 +239,8 @@ CRITICAL RULES:
             </div>
             <Button onClick={handleGenerate} disabled={isGenerating} className="gap-2">
               {isGenerating
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
-                : <><Sparkles className="w-4 h-4" /> Analyze & Generate</>
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('aiqg_analyzing')}</>
+                : <><Sparkles className="w-4 h-4" /> {t('aiqg_analyze')}</>
               }
             </Button>
           </div>
@@ -246,7 +249,7 @@ CRITICAL RULES:
           {isGenerating && (
             <div className="text-center py-10 text-muted-foreground text-sm">
               <Loader2 className="w-6 h-6 animate-spin mx-auto mb-3 text-primary" />
-              Analyzing {existingQuestions.length} existing questions and identifying gaps...
+              {t('aiqg_analyzing_count', { count: existingQuestions.length })}
             </div>
           )}
 
@@ -255,20 +258,17 @@ CRITICAL RULES:
             <div className="space-y-3">
               {duplicatesRemoved > 0 && (
                 <div className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
-                  {duplicatesRemoved} duplicate{duplicatesRemoved !== 1 ? 's' : ''} removed — already exist in your question bank.
+                  {t('aiqg_duplicates_removed', { count: duplicatesRemoved })}
                 </div>
               )}
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">{suggestions.length} suggested questions</p>
+                <p className="text-sm font-medium">{t('aiqg_suggested_count', { count: suggestions.length })}</p>
                 <button
                   onClick={toggleAll}
                   className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {suggestions.every((_, i) => selected[i])
-                    ? <CheckSquare className="w-4 h-4" />
-                    : <Square className="w-4 h-4" />
-                  }
-                  {suggestions.every((_, i) => selected[i]) ? 'Deselect all' : 'Select all'}
+                  {allSel ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                  {allSel ? t('aiqg_deselect_all') : t('aiqg_select_all')}
                 </button>
               </div>
 
@@ -306,14 +306,14 @@ CRITICAL RULES:
                         {q._isSimilar && (
                           <Badge variant="outline" className="text-xs gap-1 border-amber-400/60 text-amber-600 bg-amber-50">
                             <AlertTriangle className="w-3 h-3" />
-                            Similar to existing ({Math.round(q._similarity * 100)}%)
+                            {t('aiqg_similar', { pct: Math.round(q._similarity * 100) })}
                           </Badge>
                         )}
                       </div>
                       <p className="text-sm font-medium leading-snug">{q.question_text}</p>
                       {q._isSimilar && q._matchedQuestion && (
                         <p className="text-xs text-amber-600/80 mt-1 bg-amber-50 rounded px-2 py-1">
-                          <span className="font-medium">Similar existing:</span> {q._matchedQuestion.question_text}
+                          <span className="font-medium">{t('aiqg_similar_existing')}</span> {q._matchedQuestion.question_text}
                         </p>
                       )}
                       {q.guidance && (
@@ -328,7 +328,7 @@ CRITICAL RULES:
 
           {!isGenerating && suggestions.length === 0 && (
             <div className="text-center py-10 text-muted-foreground text-sm">
-              Select a scope and click <strong>Analyze & Generate</strong> to get AI-suggested questions based on gaps in your current question bank.
+              {t('aiqg_empty_1')} <strong>{t('aiqg_empty_bold')}</strong> {t('aiqg_empty_2')}
             </div>
           )}
         </div>
@@ -336,12 +336,12 @@ CRITICAL RULES:
         {/* Footer */}
         {suggestions.length > 0 && (
           <div className="flex items-center justify-between pt-4 border-t">
-            <span className="text-sm text-muted-foreground">{selectedCount} of {suggestions.length} selected</span>
+            <span className="text-sm text-muted-foreground">{t('aiqg_selected', { count: selectedCount, total: suggestions.length })}</span>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common_cancel')}</Button>
               <Button onClick={handleSave} disabled={isSaving || selectedCount === 0} className="gap-2">
                 {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                Save {selectedCount > 0 ? selectedCount : ''} Question{selectedCount !== 1 ? 's' : ''}
+                {t('common_save')} {selectedCount > 0 ? selectedCount : ''} {selectedCount !== 1 ? t('aiqg_questions') : t('aiqg_question')}
               </Button>
             </div>
           </div>

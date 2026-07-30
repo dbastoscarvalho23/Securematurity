@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { writeAuditLog } from '@/lib/auditLog';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const FRAMEWORKS = [
   { code: 'NIS2', name: 'NIS2 / DL 125/2025', domains: ['Governance', 'Risk Management', 'Incident Response', 'Business Continuity', 'Supply Chain', 'Access Control', 'Cryptography', 'Physical Security', 'Vulnerability Management'] },
@@ -34,6 +35,7 @@ const EMPTY_FORM = {
 };
 
 export default function QuestionFormDialog({ open, onOpenChange, question }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [form, setForm] = useState(EMPTY_FORM);
 
@@ -77,27 +79,27 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg flex flex-col max-h-[90vh]">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>{question ? 'Edit Question' : 'New Question'}</DialogTitle>
+          <DialogTitle>{question ? t('qfd_edit') : t('qfd_new')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <div className="flex-1 overflow-y-auto pr-1 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Framework *</Label>
+              <Label>{t('qfd_framework')} *</Label>
               <Select value={form.framework_code} onValueChange={v => { set('framework_code', v); set('domain', ''); }}>
-                <SelectTrigger><SelectValue placeholder="Select framework" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('qfd_select_framework')} /></SelectTrigger>
                 <SelectContent>
                   {FRAMEWORKS.map(fw => <SelectItem key={fw.code} value={fw.code}>{fw.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Domain (EN) *</Label>
+              <Label>{t('qfd_domain_en')} *</Label>
               <Input
                 list={`domains-${form.framework_code}`}
                 value={form.domain}
                 onChange={e => set('domain', e.target.value)}
-                placeholder="Type or select a domain..."
+                placeholder={t('qfd_domain_en_ph')}
                 required
               />
               {domainOptions.length > 0 && (
@@ -109,7 +111,7 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Domain (PT)</Label>
+            <Label>{t('qfd_domain_pt')}</Label>
             <Input
               value={form.domain_pt}
               onChange={e => set('domain_pt', e.target.value)}
@@ -119,28 +121,28 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Control ID</Label>
-              <Input value={form.control_id} onChange={e => set('control_id', e.target.value)} placeholder="e.g. A.5.1" />
+              <Label>{t('qfd_control_id')}</Label>
+              <Input value={form.control_id} onChange={e => set('control_id', e.target.value)} placeholder={t('qfd_control_id_ph')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Weight (1–5)</Label>
+              <Label>{t('qfd_weight')}</Label>
               <Input type="number" min={1} max={5} value={form.weight} onChange={e => set('weight', Number(e.target.value))} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Question Text (EN) *</Label>
+              <Label>{t('qfd_question_en')} *</Label>
               <Textarea
                 value={form.question_text}
                 onChange={e => set('question_text', e.target.value)}
-                placeholder="Enter the question in English..."
+                placeholder={t('qfd_question_en_ph')}
                 rows={3}
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Question Text (PT)</Label>
+              <Label>{t('qfd_question_pt')}</Label>
               <Textarea
                 value={form.question_text_pt}
                 onChange={e => set('question_text_pt', e.target.value)}
@@ -152,16 +154,16 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Guidance (EN)</Label>
+              <Label>{t('qfd_guidance_en')}</Label>
               <Textarea
                 value={form.guidance}
                 onChange={e => set('guidance', e.target.value)}
-                placeholder="Optional guidance in English..."
+                placeholder={t('qfd_guidance_en_ph')}
                 rows={2}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Guidance (PT)</Label>
+              <Label>{t('qfd_guidance_pt')}</Label>
               <Textarea
                 value={form.guidance_pt}
                 onChange={e => set('guidance_pt', e.target.value)}
@@ -172,15 +174,15 @@ export default function QuestionFormDialog({ open, onOpenChange, question }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Order Index</Label>
+            <Label>{t('qfd_order_index')}</Label>
             <Input type="number" value={form.order_index} onChange={e => set('order_index', Number(e.target.value))} placeholder="0" />
           </div>
 
           </div>
           <div className="flex-shrink-0 flex justify-end gap-2 pt-4 border-t mt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('common_cancel')}</Button>
             <Button type="submit" disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? 'Saving...' : question ? 'Update Question' : 'Create Question'}
+              {saveMutation.isPending ? t('qfd_saving') : question ? t('qfd_update') : t('qfd_create')}
             </Button>
           </div>
         </form>

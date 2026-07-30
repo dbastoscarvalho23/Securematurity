@@ -116,7 +116,7 @@ export default function Sidebar({ collapsed, onToggle }) {
           {!collapsed && (
             <div className="ml-3 overflow-hidden">
               <span className="font-bold text-base tracking-tight block leading-tight">CyberMaturity</span>
-              <span className="text-xs text-sidebar-foreground/40 block">Security Platform</span>
+              <span className="text-xs text-sidebar-foreground/40 block">{t('sidebar_subtitle')}</span>
             </div>
           )}
         </div>

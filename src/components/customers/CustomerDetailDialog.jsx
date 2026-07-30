@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Building2, Mail, Phone, Globe, Users, Briefcase, Hash, Pencil, ExternalLink, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const statusStyles = {
   active: 'bg-accent/10 text-accent border-accent/20',
@@ -27,6 +28,7 @@ function InfoRow({ icon: Icon, label, value }) {
 }
 
 export default function CustomerDetailDialog({ open, onOpenChange, customer, onEdit }) {
+  const { t } = useLanguage();
   if (!customer) return null;
 
   return (
@@ -41,10 +43,10 @@ export default function CustomerDetailDialog({ open, onOpenChange, customer, onE
               <p className="font-semibold text-base leading-tight truncate">{customer.name}</p>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="outline" className={cn("text-xs border capitalize", statusStyles[customer.status])}>
-                  {customer.status}
+                  {t(`customers_status_${customer.status}`) || customer.status}
                 </Badge>
                 {customer.sector && (
-                  <span className="text-xs text-muted-foreground capitalize">{customer.sector.replace(/_/g, ' ')}</span>
+                  <span className="text-xs text-muted-foreground capitalize">{t(`custsec_${customer.sector}`) || customer.sector.replace(/_/g, ' ')}</span>
                 )}
               </div>
             </div>
@@ -53,21 +55,21 @@ export default function CustomerDetailDialog({ open, onOpenChange, customer, onE
 
         <div className="flex-1 overflow-y-auto pr-1 space-y-0 mt-2">
           <InfoRow icon={Hash} label="NIF" value={customer.nif} />
-          <InfoRow icon={ShieldCheck} label="Cybersecurity Manager" value={customer.cybersecurity_manager} />
-          <InfoRow icon={Mail} label="Manager Email" value={customer.cybersecurity_manager_email} />
-          <InfoRow icon={Phone} label="Manager Phone" value={customer.cybersecurity_manager_phone} />
-          <InfoRow icon={Users} label="Contact Name" value={customer.contact_name} />
-          <InfoRow icon={Mail} label="Contact Email" value={customer.contact_email} />
-          <InfoRow icon={Phone} label="Contact Phone" value={customer.contact_phone} />
-          <InfoRow icon={Briefcase} label="Employees" value={customer.num_employees} />
-          <InfoRow icon={Building2} label="Sector" value={customer.sector?.replace(/_/g, ' ')} />
+          <InfoRow icon={ShieldCheck} label={t('cdd_cyber_mgr')} value={customer.cybersecurity_manager} />
+          <InfoRow icon={Mail} label={t('cdd_mgr_email')} value={customer.cybersecurity_manager_email} />
+          <InfoRow icon={Phone} label={t('cdd_mgr_phone')} value={customer.cybersecurity_manager_phone} />
+          <InfoRow icon={Users} label={t('cdd_contact_name')} value={customer.contact_name} />
+          <InfoRow icon={Mail} label={t('cdd_contact_email')} value={customer.contact_email} />
+          <InfoRow icon={Phone} label={t('cdd_contact_phone')} value={customer.contact_phone} />
+          <InfoRow icon={Briefcase} label={t('cdd_employees')} value={customer.num_employees} />
+          <InfoRow icon={Building2} label={t('cdd_sector')} value={t(`custsec_${customer.sector}`) || customer.sector?.replace(/_/g, ' ')} />
           {customer.website && (
             <div className="flex items-start gap-3 py-2.5 border-b last:border-0">
               <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Globe className="w-3.5 h-3.5 text-muted-foreground" />
               </div>
               <div className="flex-1">
-                <p className="text-xs text-muted-foreground">Website</p>
+                <p className="text-xs text-muted-foreground">{t('cdd_website')}</p>
                 <a
                   href={customer.website}
                   target="_blank"
@@ -81,13 +83,13 @@ export default function CustomerDetailDialog({ open, onOpenChange, customer, onE
           )}
           {customer.notes && (
             <div className="pt-2.5">
-              <p className="text-xs text-muted-foreground mb-1">Notes</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('cdd_notes')}</p>
               <p className="text-sm text-foreground bg-muted/30 rounded-lg px-3 py-2">{customer.notes}</p>
             </div>
           )}
           {customer.allowed_frameworks?.length > 0 && (
             <div className="pt-2.5">
-              <p className="text-xs text-muted-foreground mb-1.5">Allowed Frameworks</p>
+              <p className="text-xs text-muted-foreground mb-1.5">{t('cdd_allowed_frameworks')}</p>
               <div className="flex flex-wrap gap-1.5">
                 {customer.allowed_frameworks.map(f => (
                   <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>
@@ -99,7 +101,7 @@ export default function CustomerDetailDialog({ open, onOpenChange, customer, onE
 
         <div className="flex justify-end pt-2">
           <Button onClick={() => { onOpenChange(false); onEdit(customer); }} className="gap-2" size="sm">
-            <Pencil className="w-3.5 h-3.5" /> Edit Customer
+            <Pencil className="w-3.5 h-3.5" /> {t('cdd_edit')}
           </Button>
         </div>
       </DialogContent>

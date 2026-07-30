@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Loader2, Paperclip, Upload, X, FileText, FileImage, FileArchive, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,6 +24,7 @@ function formatBytes(bytes) {
 
 export default function TaskAttachments({ attachments = [], onChange }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -43,9 +45,9 @@ export default function TaskAttachments({ attachments = [], onChange }) {
         });
       }
       onChange([...attachments, ...uploaded]);
-      toast.success(`${uploaded.length} file${uploaded.length !== 1 ? 's' : ''} attached`);
+      toast.success(t('ta_attached', { n: uploaded.length }));
     } catch {
-      toast.error('Failed to upload file');
+      toast.error(t('ta_upload_failed'));
     } finally {
       setUploading(false);
     }
@@ -73,7 +75,7 @@ export default function TaskAttachments({ attachments = [], onChange }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-sm font-medium">
           <Paperclip className="w-3.5 h-3.5" />
-          Attachments
+          {t('ta_title')}
           {attachments.length > 0 && (
             <span className="text-xs text-muted-foreground font-normal">({attachments.length})</span>
           )}
@@ -87,7 +89,7 @@ export default function TaskAttachments({ attachments = [], onChange }) {
           disabled={uploading}
         >
           {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-          Upload
+          {t('ta_upload')}
         </Button>
       </div>
 
@@ -152,9 +154,9 @@ export default function TaskAttachments({ attachments = [], onChange }) {
         )}
       >
         {uploading ? (
-          <><Loader2 className="w-3 h-3 animate-spin" /> Uploading...</>
+          <><Loader2 className="w-3 h-3 animate-spin" /> {t('common_uploading')}</>
         ) : (
-          <><Upload className="w-3 h-3" /> Drag & drop files or click to browse</>
+          <><Upload className="w-3 h-3" /> {t('ta_drag_hint')}</>
         )}
       </div>
     </div>

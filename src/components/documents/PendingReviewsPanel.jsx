@@ -2,23 +2,25 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarClock, AlertTriangle, Clock, Pencil, ChevronRight } from 'lucide-react';
+import { CalendarClock, AlertTriangle, Clock, Pencil } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function getDaysUntil(dateStr) {
   if (!dateStr) return null;
   return Math.ceil((new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24));
 }
 
-function UrgencyBadge({ days }) {
-  if (days < 0) return <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs">Overdue</Badge>;
-  if (days <= 7) return <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs">{days}d left</Badge>;
-  if (days <= 14) return <Badge className="bg-chart-4/10 text-chart-4 border-chart-4/20 text-xs">{days}d left</Badge>;
-  return <Badge className="bg-chart-3/10 text-chart-3 border-chart-3/20 text-xs">{days}d left</Badge>;
+function UrgencyBadge({ days, t }) {
+  if (days < 0) return <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs">{t('prp_overdue')}</Badge>;
+  if (days <= 7) return <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs">{t('prp_days_left', { days })}</Badge>;
+  if (days <= 14) return <Badge className="bg-chart-4/10 text-chart-4 border-chart-4/20 text-xs">{t('prp_days_left', { days })}</Badge>;
+  return <Badge className="bg-chart-3/10 text-chart-3 border-chart-3/20 text-xs">{t('prp_days_left', { days })}</Badge>;
 }
 
-const LEVEL_LABELS = { policy: 'Policy', standard: 'Standard', procedure: 'Procedure', playbook: 'Playbook' };
+const LEVEL_LABELS_KEY = { policy: 'prp_level_policy', standard: 'prp_level_standard', procedure: 'prp_level_procedure', playbook: 'prp_level_playbook' };
 
 export default function PendingReviewsPanel({ docs, onEdit }) {
+  const { t } = useLanguage();
   const pending = useMemo(() => {
     const today = new Date();
     const in30 = new Date(); in30.setDate(today.getDate() + 30);
@@ -44,16 +46,16 @@ export default function PendingReviewsPanel({ docs, onEdit }) {
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <CalendarClock className="w-4 h-4 text-chart-4" />
-          Pending Reviews
+          {t('prp_title')}
           <Badge className="ml-1 bg-chart-4/10 text-chart-4 border-chart-4/20">{pending.length}</Badge>
           {overdueCount > 0 && (
             <Badge className="bg-destructive/10 text-destructive border-destructive/20 gap-1">
-              <AlertTriangle className="w-3 h-3" />{overdueCount} overdue
+              <AlertTriangle className="w-3 h-3" />{t('prp_overdue_count', { count: overdueCount })}
             </Badge>
           )}
           {urgentCount > 0 && overdueCount === 0 && (
             <Badge className="bg-chart-4/10 text-chart-4 border-chart-4/20 gap-1">
-              <Clock className="w-3 h-3" />{urgentCount} urgent
+              <Clock className="w-3 h-3" />{t('prp_urgent', { count: urgentCount })}
             </Badge>
           )}
         </CardTitle>
@@ -65,14 +67,14 @@ export default function PendingReviewsPanel({ docs, onEdit }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-medium truncate">{doc.title}</p>
-                  <span className="text-xs text-muted-foreground">{LEVEL_LABELS[doc.level]}</span>
+                  <span className="text-xs text-muted-foreground">{t(LEVEL_LABELS_KEY[doc.level]) || doc.level}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Review date: <span className="font-medium">{doc.review_date}</span>
+                  {t('prp_review_date')} <span className="font-medium">{doc.review_date}</span>
                   {doc.owner_email && <span> · {doc.owner_email}</span>}
                 </p>
               </div>
-              <UrgencyBadge days={doc.daysUntil} />
+              <UrgencyBadge days={doc.daysUntil} t={t} />
               {onEdit && (
                 <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => onEdit(doc)}>
                   <Pencil className="w-3.5 h-3.5" />

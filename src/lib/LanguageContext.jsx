@@ -27,8 +27,12 @@ export const LanguageProvider = ({ children }) => {
     try { localStorage.setItem('app_language', lang); } catch {}
   };
 
-  const t = (key) => {
-    return translations[language]?.[key] || translations['en']?.[key] || key;
+  const t = (key, params) => {
+    let str = translations[language]?.[key] || translations['en']?.[key] || key;
+    if (params && typeof str === 'string') {
+      str = str.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
+    }
+    return str;
   };
 
   return (
