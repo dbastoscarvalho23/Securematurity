@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { escapeHtml } from '../../shared/escapeHtml.ts';
+import { getAutomationSecret } from '../../shared/automationSecret.ts';
 
 function scoreLevel(score) {
   if (score >= 16) return 'Critical';
@@ -11,10 +12,20 @@ function scoreLevel(score) {
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
-  // Allow scheduled (no user) or admin-triggered calls
-  let user = null;
-  try { user = await base44.auth.me(); } catch (_) {}
-  if (user && user.role !== 'admin') {
+  // Authorization: scheduled automation passes the shared secret (body.args.automation_secret
+  // or x-automation-secret header); manual admin triggers authenticate via base44.auth.me().
+  // Anonymous external callers are rejected before any service-role query / email dispatch.
+  const automationSecret = await getAutomationSecret(req);
+  let authorized = !!automationSecret;
+  if (!authorized) {
+    try {
+      const user = await base44.auth.me();
+      authorized = user?.role === 'admin';
+    } catch {
+      authorized = false;
+    }
+  }
+  if (!authorized) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 
