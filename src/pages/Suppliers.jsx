@@ -12,11 +12,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, Truck, Globe, Mail, Phone, Loader2, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import SupplierExcelImportDialog from '@/components/suppliers/SupplierExcelImportDialog';
 import SupplierStatusTracker from '@/components/suppliers/SupplierStatusTracker';
+import BulkActionBar from '@/components/shared/BulkActionBar';
 
 const emptyForm = { name: '', nif: '', contact_email: '', contact_phone: '', website: '', tier: 'tier_2', notes: '', status: 'active' };
 
@@ -24,8 +29,14 @@ export default function Suppliers() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const isAdmin = user?.role === 'admin';
+  const canBulkAction = user?.role === 'admin' || user?.role === 'customer_admin';
   const customerId = user?.customer_id;
   const queryClient = useQueryClient();
+
+  const supplierStatusOptions = [
+    { value: 'active', labelKey: 'suppliers_status_active' },
+    { value: 'inactive', labelKey: 'suppliers_status_inactive' },
+  ];
 
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -33,6 +44,11 @@ export default function Suppliers() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkStatusConfirm, setBulkStatusConfirm] = useState(false);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
+  const [isBulkAction, setIsBulkAction] = useState(false);
 
   const queryKey = ['suppliers', customerId];
   const { data: suppliers = [], isLoading } = useQuery({
@@ -64,6 +80,10 @@ export default function Suppliers() {
     const q = search.toLowerCase();
     return !q || s.name?.toLowerCase().includes(q) || s.nif?.toLowerCase().includes(q) || s.contact_email?.toLowerCase().includes(q);
   });
+
+  const toggleSelect = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const allFilteredSelected = filtered.length > 0 && selectedIds.length === filtered.length;
+  const toggleSelectAll = () => setSelectedIds(allFilteredSelected ? [] : filtered.map(s => s.id));
 
   const openNew = () => { setEditing(null); setForm(emptyForm); setDialogOpen(true); };
   const openEdit = (s) => { setEditing(s); setForm({ ...emptyForm, ...s }); setDialogOpen(true); };
@@ -100,6 +120,39 @@ export default function Suppliers() {
     toast.success(t('suppliers_deleted'));
   };
 
+  const handleBulkStatus = (status) => { setPendingStatus(status); setBulkStatusConfirm(true); };
+
+  const executeBulkStatus = async () => {
+    setIsBulkAction(true);
+    try {
+      await base44.entities.Supplier.bulkUpdate(selectedIds.map(id => ({ id, status: pendingStatus })));
+      await writeAuditLog({ action: 'customer_updated', entity_type: 'Supplier', details: `Bulk updated ${selectedIds.length} suppliers → status: ${pendingStatus}` });
+      toast.success(`${selectedIds.length} ${t('bulk_updated')}`);
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey });
+    } catch {
+      toast.error(t('bulk_error'));
+    }
+    setIsBulkAction(false);
+    setBulkStatusConfirm(false);
+    setPendingStatus(null);
+  };
+
+  const handleBulkDelete = async () => {
+    setIsBulkAction(true);
+    try {
+      for (const id of selectedIds) await base44.entities.Supplier.delete(id);
+      await writeAuditLog({ action: 'customer_updated', entity_type: 'Supplier', details: `Bulk deleted ${selectedIds.length} suppliers` });
+      toast.success(`${selectedIds.length} ${t('bulk_deleted')}`);
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey });
+    } catch {
+      toast.error(t('bulk_error'));
+    }
+    setIsBulkAction(false);
+    setBulkDeleteConfirm(false);
+  };
+
   const handleExcelImport = async (rows) => {
     const valid = rows.filter(r => r.name && r.nif && r.contact_email && r.contact_phone);
     const payload = valid.map(r => isAdmin && !customerId ? r : { ...r, customer_id: customerId });
@@ -131,12 +184,27 @@ export default function Suppliers() {
       </div>
 
       <div className="flex items-center gap-2">
+        {canBulkAction && filtered.length > 0 && (
+          <Checkbox checked={allFilteredSelected} onCheckedChange={toggleSelectAll} aria-label={t('bulk_select_all')} />
+        )}
         <div className="relative flex-1 max-w-sm">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('suppliers_search')} className="pl-9" />
         </div>
         <Badge variant="outline" className="ml-auto">{filtered.length} {t('suppliers_total')}</Badge>
       </div>
+
+      {canBulkAction && (
+        <BulkActionBar
+          selectedCount={selectedIds.length}
+          statusOptions={supplierStatusOptions}
+          statusLabelKey="bulk_set_status"
+          onBulkStatus={handleBulkStatus}
+          onBulkDelete={isAdmin ? () => setBulkDeleteConfirm(true) : undefined}
+          onClear={() => setSelectedIds([])}
+          isProcessing={isBulkAction}
+        />
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
@@ -152,6 +220,15 @@ export default function Suppliers() {
               <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
+                    {canBulkAction && (
+                      <Checkbox
+                        checked={selectedIds.includes(s.id)}
+                        onCheckedChange={() => toggleSelect(s.id)}
+                        onClick={e => e.stopPropagation()}
+                        aria-label={t('bulk_select_all')}
+                        className="flex-shrink-0"
+                      />
+                    )}
                     <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Truck className="w-4 h-4 text-primary" />
                     </div>
@@ -252,6 +329,42 @@ export default function Suppliers() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={bulkDeleteConfirm} onOpenChange={open => !isBulkAction && setBulkDeleteConfirm(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('bulk_confirm_delete_title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('bulk_confirm_delete_desc')} {selectedIds.length}? {t('bulk_cannot_undo')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel disabled={isBulkAction}>{t('suppliers_cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} disabled={isBulkAction} className="gap-1.5">
+              {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t('suppliers_delete')}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkStatusConfirm} onOpenChange={open => !isBulkAction && setBulkStatusConfirm(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('bulk_confirm_status_title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('bulk_confirm_status_desc')} {selectedIds.length} {t('bulk_selected')} → {pendingStatus ? t('suppliers_status_' + pendingStatus) : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel disabled={isBulkAction}>{t('suppliers_cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={executeBulkStatus} disabled={isBulkAction} className="gap-1.5">
+              {isBulkAction && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t('suppliers_save')}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <SupplierExcelImportDialog
         open={importOpen}
