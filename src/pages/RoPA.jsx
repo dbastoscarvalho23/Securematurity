@@ -6,16 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Database, Plus, Pencil, Trash2, Loader2, Search, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Search, FileText } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
-import { STATUS_STYLES } from '@/lib/complianceUtils';
 import { toast } from 'sonner';
+import PageHeader from '@/components/shared/PageHeader';
+import StatusBadge from '@/components/shared/StatusBadge';
+import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 
 const LEGAL_BASES = [
   { value: 'consent', key: 'ropa_lb_consent' },
@@ -128,13 +130,10 @@ export default function RoPA() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Database className="w-6 h-6" /> {t('page_ropa')}</h1>
-          <p className="text-sm text-muted-foreground">{t('ropa_subtitle')}</p>
-        </div>
-        <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" /> {t('ropa_new')}</Button>
-      </div>
+      <PageHeader
+        description={t('ropa_subtitle')}
+        actions={<Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" /> {t('ropa_new')}</Button>}
+      />
 
       <div className="flex gap-3">
         <div className="relative flex-1">
@@ -155,12 +154,9 @@ export default function RoPA() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+            <LoadingState label={t('common_loading')} className="py-12" />
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
-              <p>{t('ropa_empty')}</p>
-            </div>
+            <EmptyState compact icon={FileText} title={t('ropa_empty')} />
           ) : (
             <Table>
               <TableHeader>
@@ -187,7 +183,7 @@ export default function RoPA() {
                       {r.retention_expiry_date && <p className="text-xs text-muted-foreground">{t('ropa_exp')}: {r.retention_expiry_date}</p>}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-xs ${STATUS_STYLES[r.status] || ''}`}>{t(STATUS_LABELS[r.status] || r.status)}</Badge>
+                      <StatusBadge status={r.status} label={t(STATUS_LABELS[r.status] || r.status)} />
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">

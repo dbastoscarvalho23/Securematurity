@@ -14,8 +14,12 @@ import { AlertTriangle, Plus, Pencil, Loader2, Search, Clock, CheckCircle2, Aler
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
-import { SEVERITY_STYLES, STATUS_STYLES, formatDateTime, hoursRemaining, daysRemaining } from '@/lib/complianceUtils';
+import { formatDateTime, hoursRemaining, daysRemaining } from '@/lib/complianceUtils';
 import { toast } from 'sonner';
+import PageHeader from '@/components/shared/PageHeader';
+import StatusBadge from '@/components/shared/StatusBadge';
+import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 
 const CATEGORIES = ['malware_ransomware','data_breach','ddos','phishing','unauthorized_access','insider_threat','system_failure','physical_security','supply_chain','other'];
 
@@ -121,13 +125,10 @@ export default function IncidentManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><AlertTriangle className="w-6 h-6" /> {t('page_incidents')}</h1>
-          <p className="text-sm text-muted-foreground">{t('inc_subtitle')}</p>
-        </div>
-        <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" /> {t('inc_new')}</Button>
-      </div>
+      <PageHeader
+        description={t('inc_subtitle')}
+        actions={<Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" /> {t('inc_new')}</Button>}
+      />
 
       <div className="flex gap-3">
         <div className="relative flex-1">
@@ -149,9 +150,9 @@ export default function IncidentManagement() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+            <LoadingState label={t('common_loading')} className="py-12" />
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground"><AlertTriangle className="w-10 h-10 mx-auto mb-2 opacity-30" /><p>{t('inc_empty')}</p></div>
+            <EmptyState compact icon={AlertTriangle} title={t('inc_empty')} />
           ) : (
             <Table>
               <TableHeader>
@@ -172,8 +173,8 @@ export default function IncidentManagement() {
                       <p className="text-xs text-muted-foreground">{t(`inc_cat_${r.category}`) || r.category?.replace(/_/g, ' ')}</p>
                       {r.incident_id && <p className="text-xs text-muted-foreground">{r.incident_id}</p>}
                     </TableCell>
-                    <TableCell><Badge variant="outline" className={`text-xs ${SEVERITY_STYLES[r.severity] || ''}`}>{t(SEVERITY_LABELS[r.severity] || r.severity)}</Badge></TableCell>
-                    <TableCell><Badge variant="outline" className={`text-xs ${STATUS_STYLES[r.status] || ''}`}>{t(STATUS_LABELS[r.status] || r.status)}</Badge></TableCell>
+                    <TableCell><StatusBadge variant="severity" status={r.severity} label={t(SEVERITY_LABELS[r.severity] || r.severity)} /></TableCell>
+                    <TableCell><StatusBadge status={r.status} label={t(STATUS_LABELS[r.status] || r.status)} /></TableCell>
                     <TableCell><p className="text-xs">{formatDateTime(r.detected_at, language === 'pt' ? 'pt-PT' : 'en-GB')}</p></TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">

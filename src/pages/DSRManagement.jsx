@@ -14,8 +14,12 @@ import { Users, Plus, Pencil, Loader2, Search, Clock, AlertOctagon, CheckCircle2
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
-import { STATUS_STYLES, SLA_STATUS_STYLES, slaStatus, daysRemaining, calculateDsrDueDate } from '@/lib/complianceUtils';
+import { SLA_STATUS_STYLES, slaStatus, daysRemaining, calculateDsrDueDate } from '@/lib/complianceUtils';
 import { toast } from 'sonner';
+import PageHeader from '@/components/shared/PageHeader';
+import StatusBadge from '@/components/shared/StatusBadge';
+import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 
 const REQUEST_TYPES = [
   { value: 'access', labelKey: 'dsr_type_access' },
@@ -117,16 +121,15 @@ export default function DSRManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="w-6 h-6" /> {t('page_dsr')}</h1>
-          <p className="text-sm text-muted-foreground">{t('dsr_subtitle')}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {overdueCount > 0 && <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20"><AlertOctagon className="w-3 h-3 mr-1" />{overdueCount} {t('dsr_overdue')}</Badge>}
-          <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" /> {t('dsr_new')}</Button>
-        </div>
-      </div>
+      <PageHeader
+        description={t('dsr_subtitle')}
+        actions={
+          <div className="flex items-center gap-3">
+            {overdueCount > 0 && <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20"><AlertOctagon className="w-3 h-3 mr-1" />{overdueCount} {t('dsr_overdue')}</Badge>}
+            <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" /> {t('dsr_new')}</Button>
+          </div>
+        }
+      />
 
       <div className="flex gap-3">
         <div className="relative flex-1">
@@ -149,9 +152,9 @@ export default function DSRManagement() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+            <LoadingState label={t('common_loading')} className="py-12" />
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground"><Users className="w-10 h-10 mx-auto mb-2 opacity-30" /><p>{t('dsr_empty')}</p></div>
+            <EmptyState compact icon={Users} title={t('dsr_empty')} />
           ) : (
             <Table>
               <TableHeader>
@@ -178,7 +181,7 @@ export default function DSRManagement() {
                         {r.request_id && <p className="text-xs text-muted-foreground">{r.request_id}</p>}
                       </TableCell>
                       <TableCell><span className="text-xs">{(REQUEST_TYPES.find(ty => ty.value === r.request_type)?.labelKey ? t(REQUEST_TYPES.find(ty => ty.value === r.request_type).labelKey) : r.request_type).split(' (')[0]}</span></TableCell>
-                      <TableCell><Badge variant="outline" className={`text-xs ${STATUS_STYLES[r.status] || ''}`}>{t(STATUS_LABELS[r.status] || r.status)}</Badge></TableCell>
+                      <TableCell><StatusBadge status={r.status} label={t(STATUS_LABELS[r.status] || r.status)} /></TableCell>
                       <TableCell><p className="text-xs">{r.received_date}</p></TableCell>
                       <TableCell>
                         {isClosed ? (
