@@ -8,6 +8,14 @@ import ChatPanel from "@/components/agents/ChatPanel";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 const AGENT_NAME = "framework_guide";
+const HIDDEN_KEY = "framework_guide_hidden_sessions";
+
+const getHidden = () => {
+  try { return new Set(JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]")); } catch { return new Set(); }
+};
+const saveHidden = (set) => {
+  try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...set])); } catch { /* ignore */ }
+};
 
 const STR = {
   en: { title: "Framework Guidance", subtitle: "Walk through a framework's controls with an AI guide and record your maturity answers.", createErr: "Could not start a new session.", loadErr: "Could not load sessions.", deleteErr: "Could not delete the session.", deleteTitle: "Delete session?", deleteDesc: "This will permanently delete the session and its messages.", deleteConfirm: "Delete", deleteCancel: "Cancel" },
@@ -29,8 +37,10 @@ export default function FrameworkGuide() {
   const loadConversations = useCallback(async () => {
     try {
       const list = await base44.agents.listConversations({ agent_name: AGENT_NAME });
-      setConversations(list || []);
-      if (list?.length && !activeId) setActiveId(list[0].id);
+      const hidden = getHidden();
+      const visible = (list || []).filter((c) => !hidden.has(c.id));
+      setConversations(visible);
+      if (visible.length && !activeId) setActiveId(visible[0].id);
     } catch (e) {
       toast({ title: s.loadErr, description: e.message, variant: "destructive" });
     }
@@ -66,25 +76,21 @@ export default function FrameworkGuide() {
 
   const handleDelete = async () => {
     if (!deletingId) return;
-    try {
-      await base44.agents.deleteConversation(deletingId);
-      setConversations((prev) => prev.filter((c) => c.id !== deletingId));
-      if (activeId === deletingId) {
-        setActiveId(null);
-        setMessages([]);
-      }
-    } catch (e) {
-      toast({ title: s.deleteErr, description: e.message, variant: "destructive" });
-    } finally {
-      setDeletingId(null);
+    const hidden = getHidden();
+    hidden.add(deletingId);
+    saveHidden(hidden);
+    setConversations((prev) => prev.filter((c) => c.id !== deletingId));
+    if (activeId === deletingId) {
+      setActiveId(null);
+      setMessages([]);
     }
+    setDeletingId(null);
   };
 
   const handleSend = async (text) => {
     setSending(true);
     try {
-      let conv = conversations.find((c) => c.id === activeId);
-      if (!conv) conv = await base44.agents.getConversation(activeId);
+      const conv = await base44.agents.getConversation(activeId);
       await base44.agents.addMessage(conv, { role: "user", content: text });
     } catch (e) {
       toast({ title: s.createErr, description: e.message, variant: "destructive" });
