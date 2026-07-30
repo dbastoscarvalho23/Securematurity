@@ -9,12 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { UserPlus, Trash2, Loader2, Users, AlertTriangle, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const DEFAULT_SEAT_LIMIT = 5;
 
 export default function CustomerUsersPanel({ customer }) {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('user');
   const [inviting, setInviting] = useState(false);
@@ -44,7 +46,7 @@ export default function CustomerUsersPanel({ customer }) {
     if (!email.trim()) return;
 
     if (atLimit) {
-      toast.error('Seat limit reached. Request more seats first.');
+      toast.error(t('cup_seat_limit_invite'));
       return;
     }
 
@@ -59,13 +61,13 @@ export default function CustomerUsersPanel({ customer }) {
         customer_name: customer.name,
         status: 'inactive',
       });
-      toast.success(`Invitation sent to ${email.trim()}`);
+      toast.success(t('seat_invite_sent', { email: email.trim() }));
       setEmail('');
       setRole('user');
       queryClient.invalidateQueries({ queryKey: ['customerUsers', customer.id] });
       queryClient.invalidateQueries({ queryKey: ['pendingInvites', customer.id] });
     } catch (err) {
-      toast.error(err?.message || 'Failed to invite user');
+      toast.error(err?.message || t('seat_invite_failed'));
     } finally {
       setInviting(false);
     }
@@ -74,10 +76,10 @@ export default function CustomerUsersPanel({ customer }) {
   const handleRemove = async (userId) => {
     try {
       await base44.entities.User.update(userId, { customer_id: null });
-      toast.success('User removed from customer');
+      toast.success(t('cup_user_removed'));
       queryClient.invalidateQueries({ queryKey: ['customerUsers', customer.id] });
     } catch {
-      toast.error('Failed to remove user');
+      toast.error(t('seat_remove_failed'));
     }
   };
 
@@ -97,9 +99,9 @@ export default function CustomerUsersPanel({ customer }) {
         })
       ));
 
-      toast.success('Seat request sent to platform administrators.');
+      toast.success(t('cup_seat_request_sent'));
     } catch (err) {
-      toast.error('Failed to send request: ' + (err?.message || 'unknown error'));
+      toast.error(t('cup_seat_request_failed', { error: err?.message || 'unknown error' }));
     } finally {
       setRequestingSeat(false);
     }
@@ -113,15 +115,15 @@ export default function CustomerUsersPanel({ customer }) {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground font-medium flex items-center gap-1">
-            <Users className="w-3.5 h-3.5" /> User Seats
+            <Users className="w-3.5 h-3.5" /> {t('cup_user_seats')}
           </span>
           <span className={atLimit ? 'text-destructive font-bold' : 'text-muted-foreground'}>
-            {usedSeats} / {seatLimit} used
+            {t('cup_seats_used', { used: usedSeats, total: seatLimit })}
           </span>
         </div>
         <Progress value={seatPct} className={`h-2 ${atLimit ? '[&>div]:bg-destructive' : ''}`} />
         {pendingInvites.length > 0 && (
-          <p className="text-[10px] text-muted-foreground">{pendingInvites.length} pending invite{pendingInvites.length > 1 ? 's' : ''} counted toward limit</p>
+          <p className="text-[10px] text-muted-foreground">{t('cup_pending_invite', { count: pendingInvites.length })}</p>
         )}
       </div>
 
@@ -130,7 +132,7 @@ export default function CustomerUsersPanel({ customer }) {
         <div className="flex items-center justify-between gap-3 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800 px-3 py-2">
           <div className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-400">
             <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>Seat limit reached. Contact your platform administrator to add more seats.</span>
+            <span>{t('cup_seat_limit_contact')}</span>
           </div>
           <Button
             size="sm"
@@ -140,7 +142,7 @@ export default function CustomerUsersPanel({ customer }) {
             disabled={requestingSeat}
           >
             {requestingSeat ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-            Request More Seats
+            {t('cup_request_more_seats')}
           </Button>
         </div>
       )}
@@ -163,24 +165,24 @@ export default function CustomerUsersPanel({ customer }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="user">User</SelectItem>
-              <SelectItem value="customer_admin">Customer Admin</SelectItem>
+              <SelectItem value="user">{t('cup_role_user')}</SelectItem>
+              <SelectItem value="customer_admin">{t('cup_role_customer_admin')}</SelectItem>
             </SelectContent>
           </Select>
           <Button type="submit" size="sm" className="h-8 gap-1.5 text-xs" disabled={inviting}>
             {inviting ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
-            Invite
+            {t('cup_invite')}
           </Button>
         </form>
       )}
 
       {/* User list */}
       {isLoading ? (
-        <p className="text-xs text-muted-foreground py-2">Loading users…</p>
+        <p className="text-xs text-muted-foreground py-2">{t('cup_loading_users')}</p>
       ) : customerUsers.length === 0 && pendingInvites.length === 0 ? (
         <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
           <Users className="w-4 h-4 opacity-40" />
-          No users assigned to this customer yet.
+          {t('cup_no_users')}
         </div>
       ) : (
         <div className="space-y-1">
@@ -202,7 +204,7 @@ export default function CustomerUsersPanel({ customer }) {
                   <button
                     onClick={() => handleRemove(u.id)}
                     className="text-muted-foreground hover:text-destructive transition-colors"
-                    title="Remove from customer"
+                    title={t('seat_remove_user')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -219,7 +221,7 @@ export default function CustomerUsersPanel({ customer }) {
                 </div>
                 <p className="text-xs truncate">{inv.email}</p>
               </div>
-              <Badge variant="outline" className="text-[10px] px-1.5">Pending</Badge>
+              <Badge variant="outline" className="text-[10px] px-1.5">{t('cup_pending')}</Badge>
             </div>
           ))}
         </div>
