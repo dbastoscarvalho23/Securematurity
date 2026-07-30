@@ -3,6 +3,7 @@
 export const trainingEn = {
   nav_training: 'Training',
   training_page_title: 'Cybersecurity Training',
+  training_tab_summary: 'Summary',
   training_tab_users: 'People',
   training_tab_trainings: 'Trainings',
   training_subtitle_users: 'Import and manage the people to be trained',
@@ -89,6 +90,19 @@ export const trainingEn = {
   // Calendar
   training_tab_calendar: 'Calendar',
   training_calendar_subtitle: 'Visualize upcoming training sessions',
+
+  // Summary
+  training_summary_subtitle: 'Completion status by department and pending trainings',
+  training_summary_total_trainings: 'Total Trainings',
+  training_summary_scheduled: 'Scheduled',
+  training_summary_completed: 'Completed',
+  training_summary_completion_rate: 'Completion Rate',
+  training_summary_by_department: 'Completion by Department',
+  training_summary_no_departments: 'No department data yet.',
+  training_summary_pending: 'Pending',
+  training_summary_pending_collaborators: 'Collaborators with Pending Trainings',
+  training_summary_no_pending: 'All collaborators are up to date.',
+  training_summary_no_department: 'No department',
   training_calendar_today: 'Today',
   training_calendar_no_events: 'No trainings on this day',
   training_calendar_events_on: 'Trainings on {date}',
@@ -124,6 +138,7 @@ export const trainingEn = {
 export const trainingPt = {
   nav_training: 'Formação',
   training_page_title: 'Formação em Cibersegurança',
+  training_tab_summary: 'Resumo',
   training_tab_users: 'Utilizadores',
   training_tab_trainings: 'Formações',
   training_subtitle_users: 'Importe e gira as pessoas a formar',
@@ -210,6 +225,19 @@ export const trainingPt = {
   // Calendar
   training_tab_calendar: 'Calendário',
   training_calendar_subtitle: 'Visualize as próximas ações de formação',
+
+  // Summary
+  training_summary_subtitle: 'Estado de conclusão por departamento e formações pendentes',
+  training_summary_total_trainings: 'Total de Formações',
+  training_summary_scheduled: 'Agendadas',
+  training_summary_completed: 'Concluídas',
+  training_summary_completion_rate: 'Taxa de Conclusão',
+  training_summary_by_department: 'Conclusão por Departamento',
+  training_summary_no_departments: 'Sem dados de departamento.',
+  training_summary_pending: 'Pendentes',
+  training_summary_pending_collaborators: 'Colaboradores com Formações Pendentes',
+  training_summary_no_pending: 'Todos os colaboradores estão em dia.',
+  training_summary_no_department: 'Sem departamento',
   training_calendar_today: 'Hoje',
   training_calendar_no_events: 'Não há formações neste dia',
   training_calendar_events_on: 'Formações em {date}',

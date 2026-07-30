@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import PageHeader from '@/components/shared/PageHeader';
+import TrainingSummary from '@/components/training/TrainingSummary';
 import TrainingUserRoster from '@/components/training/TrainingUserRoster';
 import TrainingList from '@/components/training/TrainingList';
 import TrainingCalendar from '@/components/training/TrainingCalendar';
@@ -58,12 +59,16 @@ export default function Training() {
       )}
 
       {customer ? (
-        <Tabs defaultValue="users">
+        <Tabs defaultValue="summary">
           <TabsList>
+            <TabsTrigger value="summary">{t('training_tab_summary')}</TabsTrigger>
             <TabsTrigger value="users">{t('training_tab_users')}</TabsTrigger>
             <TabsTrigger value="trainings">{t('training_tab_trainings')}</TabsTrigger>
             <TabsTrigger value="calendar">{t('training_tab_calendar')}</TabsTrigger>
           </TabsList>
+          <TabsContent value="summary" className="mt-6">
+            <TrainingSummary customer={customer} />
+          </TabsContent>
           <TabsContent value="users" className="mt-6">
             <TrainingUserRoster customer={customer} />
           </TabsContent>
