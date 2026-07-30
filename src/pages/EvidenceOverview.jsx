@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { useLanguage } from '@/lib/LanguageContext';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
+import ComplianceGapsSummary from '@/components/evidence/ComplianceGapsSummary';
 
 function fileIcon(name = '') {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -127,6 +128,15 @@ export default function EvidenceOverview() {
 
   return (
     <div className="space-y-6">
+      {/* Compliance Gaps Summary */}
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">{t('evidence_gaps_title')}</h2>
+          <p className="text-sm text-muted-foreground">{t('evidence_gaps_subtitle')}</p>
+        </div>
+        <ComplianceGapsSummary />
+      </div>
+
       {/* Header stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <Card>
