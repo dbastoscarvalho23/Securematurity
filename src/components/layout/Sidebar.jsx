@@ -52,7 +52,6 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
     ...(isAdmin ? [{ path: '/customers', labelKey: 'nav_customers', icon: Building2 }] : []),
     { path: '/compliance-journey', labelKey: 'nav_compliance_journey', icon: MapPin },
     { path: '/assessments', labelKey: 'nav_assessments', icon: ClipboardCheck },
-    { path: '/framework-guide', labelKey: 'nav_framework_guide', icon: Bot },
     { path: '/evidence', labelKey: 'nav_evidence', icon: Paperclip },
     { path: '/tasks', labelKey: 'nav_tasks', icon: ListTodo },
     { path: '/task-analytics', labelKey: 'nav_task_analytics', icon: TrendingUp },
@@ -91,6 +90,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
     { path: '/incidents', labelKey: 'nav_incidents', icon: Siren },
     { path: '/compliance-metrics', labelKey: 'nav_compliance_metrics', icon: Gauge },
     { path: '/training', labelKey: 'nav_training', icon: GraduationCap },
+    { path: '/framework-guide', labelKey: 'nav_framework_guide', icon: Bot },
   ];
 
   const supplyChainItems = [
