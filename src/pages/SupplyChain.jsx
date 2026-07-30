@@ -5,24 +5,19 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, ChevronRight, Building2, CalendarDays, Layers, Loader2 } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, ChevronRight, Building2, CalendarDays, Layers } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import QuestionnaireFormDialog from '@/components/supplychain/QuestionnaireFormDialog';
 import QuestionnaireDetail from '@/components/supplychain/QuestionnaireDetail';
 import SupplierTierDistributionChart from '@/components/supplychain/SupplierTierDistributionChart';
 import { toast } from 'sonner';
-
-const STATUS_STYLES = {
-  draft: 'bg-muted text-muted-foreground',
-  sent: 'bg-primary/10 text-primary border-primary/20',
-  in_progress: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
-  completed: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
-  archived: 'bg-muted text-muted-foreground',
-};
+import PageHeader from '@/components/shared/PageHeader';
+import StatusBadge from '@/components/shared/StatusBadge';
+import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 
 export default function SupplyChain() {
   const { user } = useAuth();
@@ -94,16 +89,14 @@ export default function SupplyChain() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t('nav_supply_chain')}</h1>
-          <p className="text-sm text-muted-foreground">{t('sc_page_subtitle')}</p>
-        </div>
-        <Button onClick={() => { setEditing(null); setDialogOpen(true); }} className="gap-2">
-          <Plus className="w-4 h-4" />{t('sc_new_questionnaire')}
-        </Button>
-      </div>
+      <PageHeader
+        description={t('sc_page_subtitle')}
+        actions={
+          <Button onClick={() => { setEditing(null); setDialogOpen(true); }} className="gap-2">
+            <Plus className="w-4 h-4" />{t('sc_new_questionnaire')}
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -157,18 +150,9 @@ export default function SupplyChain() {
 
       {/* List */}
       {loadingQuestionnaires ? (
-        <Card>
-          <CardContent className="py-16 text-center text-muted-foreground">
-            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-            <p className="text-sm">{t('common_loading')}</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-0"><LoadingState label={t('common_loading')} className="py-16" /></CardContent></Card>
       ) : filtered.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center text-muted-foreground">
-            <p className="text-sm">{t('sc_empty')}</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-0"><EmptyState compact title={t('sc_empty')} /></CardContent></Card>
       ) : (
         <div className="space-y-3">
           {filtered.map(q => (
@@ -178,9 +162,7 @@ export default function SupplyChain() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold text-sm">{q.title}</p>
-                      <Badge variant="outline" className={STATUS_STYLES[q.status]}>
-                        {t(`sc_status_${q.status}`) || q.status?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                      </Badge>
+                      <StatusBadge status={q.status} label={t(`sc_status_${q.status}`) || q.status?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())} />
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
                       {q.supplier_name && (

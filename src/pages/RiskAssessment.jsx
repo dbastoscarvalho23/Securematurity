@@ -9,23 +9,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search, Pencil, Trash2, AlertTriangle, ShieldAlert, FileText, TrendingUp, FileSpreadsheet, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import RiskFormDialog from '@/components/risks/RiskFormDialog';
+import PageHeader from '@/components/shared/PageHeader';
+import StatusBadge from '@/components/shared/StatusBadge';
+import EmptyState from '@/components/shared/EmptyState';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import RiskExcelImportDialog from '@/components/risks/RiskExcelImportDialog';
 import RiskHeatmap from '@/components/risks/RiskHeatmap';
 import TaskHeatmap from '@/components/risks/TaskHeatmap';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
 
-const STATUS_STYLES = {
-  open: 'bg-destructive/10 text-destructive border-destructive/20',
-  in_treatment: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
-  accepted: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
-  closed: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
-};
 function riskScore(r) { return (r.impact || 0) * (r.likelihood || 0); }
 
 function RiskLevelBadge({ risk }) {
@@ -205,59 +199,59 @@ export default function RiskAssessment() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {t('risk_subtitle')} · <span className="text-foreground font-medium">{customerScoped.length}</span> {t('common_total')}
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* View toggle — segmented style */}
-          <div className="flex items-center rounded-lg border border-border bg-muted p-0.5 gap-0.5">
-            <button
-              onClick={() => setView('list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                view === 'list'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {t('risk_view_list')}
-            </button>
-            <button
-              onClick={() => setView('heatmap')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                view === 'heatmap'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {t('risk_view_heatmap')}
-            </button>
-            <button
-              onClick={() => setView('task_heatmap')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                view === 'task_heatmap'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {t('risk_view_task_heatmap')}
-            </button>
-          </div>
+      <PageHeader
+        description={<>{t('risk_subtitle')} · <span className="text-foreground font-medium">{customerScoped.length}</span> {t('common_total')}</>}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {/* View toggle — segmented style */}
+            <div className="flex items-center rounded-lg border border-border bg-muted p-0.5 gap-0.5">
+              <button
+                onClick={() => setView('list')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  view === 'list'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t('risk_view_list')}
+              </button>
+              <button
+                onClick={() => setView('heatmap')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  view === 'heatmap'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t('risk_view_heatmap')}
+              </button>
+              <button
+                onClick={() => setView('task_heatmap')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  view === 'task_heatmap'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t('risk_view_task_heatmap')}
+              </button>
+            </div>
 
-          {/* Action buttons */}
-          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="gap-2">
-            <FileSpreadsheet className="w-4 h-4" /> {t('risk_import_excel')}
-          </Button>
-          {customerScoped.length > 0 && (
-            <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(true)} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10">
-              <Trash2 className="w-4 h-4" /> {t('risk_delete_all')}
+            {/* Action buttons */}
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="gap-2">
+              <FileSpreadsheet className="w-4 h-4" /> {t('risk_import_excel')}
             </Button>
-          )}
-          <Button size="sm" onClick={handleNew} className="gap-2">
-            <Plus className="w-4 h-4" /> {t('risk_new')}
-          </Button>
-        </div>
-      </div>
+            {customerScoped.length > 0 && (
+              <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(true)} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10">
+                <Trash2 className="w-4 h-4" /> {t('risk_delete_all')}
+              </Button>
+            )}
+            <Button size="sm" onClick={handleNew} className="gap-2">
+              <Plus className="w-4 h-4" /> {t('risk_new')}
+            </Button>
+          </div>
+        }
+      />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -346,10 +340,7 @@ export default function RiskAssessment() {
           {/* Risk list */}
           <div className="space-y-3">
             {filtered.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <ShieldAlert className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">{t('risk_empty')}</p>
-              </div>
+              <EmptyState compact icon={ShieldAlert} title={t('risk_empty')} />
             ) : filtered.map(risk => {
               const score = riskScore(risk);
               const linkedDocs = getLinkedDocs(risk);
@@ -371,9 +362,7 @@ export default function RiskAssessment() {
                           {risk.risk_id && <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{risk.risk_id}</span>}
                           <p className="text-sm font-semibold">{risk.title}</p>
                           <RiskLevelBadge risk={risk} />
-                          <Badge variant="outline" className={`text-xs border ${STATUS_STYLES[risk.status]}`}>
-                            {STATUS_LABELS[risk.status]}
-                          </Badge>
+                          <StatusBadge status={risk.status} label={STATUS_LABELS[risk.status]} />
                           {risk.category && (
                             <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                               {CATEGORY_LABELS[risk.category]}
@@ -432,22 +421,15 @@ export default function RiskAssessment() {
         </>
       )}
 
-      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('risk_bulk_delete_title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('risk_bulk_delete_desc')} <strong>{customerScoped.length}</strong> {customerScoped.length !== 1 ? t('risk_risk_plural') : t('risk_risk_singular')}. {t('risk_bulk_delete_desc2')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {t('risk_delete_all')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title={t('risk_bulk_delete_title')}
+        description={`${t('risk_bulk_delete_desc')} ${customerScoped.length} ${customerScoped.length !== 1 ? t('risk_risk_plural') : t('risk_risk_singular')}. ${t('risk_bulk_delete_desc2')}`}
+        confirmLabel={t('risk_delete_all')}
+        cancelLabel={t('common_cancel')}
+        onConfirm={handleBulkDelete}
+      />
 
       <RiskExcelImportDialog
         open={importOpen}

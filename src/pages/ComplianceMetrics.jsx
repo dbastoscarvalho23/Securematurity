@@ -2,11 +2,11 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Bug, Users, Database, ShieldCheck, AlertOctagon, Clock, CheckCircle2, Activity, FileText } from 'lucide-react';
+import { AlertTriangle, Bug, Users, Database, AlertOctagon, Clock, CheckCircle2, Activity, FileText } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, RadialBarChart, RadialBar } from 'recharts';
 import { SEVERITY_STYLES, daysRemaining, hoursRemaining, slaStatus } from '@/lib/complianceUtils';
 import { useLanguage } from '@/lib/LanguageContext';
+import PageHeader from '@/components/shared/PageHeader';
 
 const INC_STATUS_LABELS = { detected: 'inc_status_detected', investigating: 'inc_status_investigating', contained: 'inc_status_contained', resolved: 'inc_status_resolved', closed: 'inc_status_closed' };
 const VULN_STATUS_LABELS = { open: 'vuln_status_open', in_progress: 'vuln_status_in_progress', remediated: 'vuln_status_remediated', verified: 'vuln_status_verified', accepted_risk: 'vuln_status_accepted_risk', false_positive: 'vuln_status_false_positive' };
@@ -83,10 +83,7 @@ export default function ComplianceMetrics() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2"><ShieldCheck className="w-6 h-6" /> {t('cm_title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('cm_subtitle')}</p>
-      </div>
+      <PageHeader description={t('cm_subtitle')} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

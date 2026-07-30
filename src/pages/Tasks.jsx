@@ -14,6 +14,7 @@ import BulkActionBar from '@/components/tasks/BulkActionBar';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
+import PageHeader from '@/components/shared/PageHeader';
 
 export default function Tasks() {
   const [search, setSearch] = useState('');
@@ -162,21 +163,25 @@ export default function Tasks() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span><strong className="text-foreground">{counts.todo}</strong> {t('tasks_count_todo')}</span>
-          <span>·</span>
-          <span><strong className="text-chart-4">{counts.in_progress}</strong> {t('tasks_count_in_progress')}</span>
-          <span>·</span>
-          <span><strong className="text-destructive">{counts.blocked}</strong> {t('tasks_count_blocked')}</span>
-          <span>·</span>
-          <span><strong className="text-accent">{counts.done}</strong> {t('tasks_count_done')}</span>
-        </div>
-        <Button onClick={handleNew} className="gap-2">
-          <Plus className="w-4 h-4" />
-          {t('tasks_new')}
-        </Button>
-      </div>
+      <PageHeader
+        description={
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <span><strong className="text-foreground">{counts.todo}</strong> {t('tasks_count_todo')}</span>
+            <span>·</span>
+            <span><strong className="text-chart-4">{counts.in_progress}</strong> {t('tasks_count_in_progress')}</span>
+            <span>·</span>
+            <span><strong className="text-destructive">{counts.blocked}</strong> {t('tasks_count_blocked')}</span>
+            <span>·</span>
+            <span><strong className="text-accent">{counts.done}</strong> {t('tasks_count_done')}</span>
+          </div>
+        }
+        actions={
+          <Button onClick={handleNew} className="gap-2">
+            <Plus className="w-4 h-4" />
+            {t('tasks_new')}
+          </Button>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
