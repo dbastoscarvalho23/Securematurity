@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, UserPlus, Upload, Pencil, Trash2, Users } from 'lucide-react';
+import { Search, UserPlus, Upload, Pencil, Trash2, Users, FileText } from 'lucide-react';
+import { exportTrainingReportPdf } from '@/lib/exportTrainingReportPdf';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
@@ -16,13 +17,14 @@ import TrainingUserFormDialog from './TrainingUserFormDialog';
 import TrainingUserExcelImportDialog from './TrainingUserExcelImportDialog';
 
 export default function TrainingUserRoster({ customer }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [generatingId, setGeneratingId] = useState(null);
 
   const enabled = !!customer?.id;
 
@@ -36,6 +38,22 @@ export default function TrainingUserRoster({ customer }) {
     queryFn: () => base44.entities.TrainingEnrollment.filter({ customer_id: customer.id }, '-created_date', 1000),
     enabled,
   });
+
+  const { data: trainings = [] } = useQuery({
+    queryKey: ['trainings', customer?.id],
+    queryFn: () => base44.entities.Training.filter({ customer_id: customer.id }, '-scheduled_date', 1000),
+    enabled,
+  });
+
+  const handleReport = (u) => {
+    setGeneratingId(u.id);
+    try {
+      const userEnr = enrollments.filter(e => e.training_user_id === u.id);
+      exportTrainingReportPdf(u, userEnr, trainings, customer, t, language);
+    } finally {
+      setGeneratingId(null);
+    }
+  };
 
   const countMap = useMemo(() => {
     const m = {};
@@ -127,6 +145,9 @@ export default function TrainingUserRoster({ customer }) {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" title={t('training_report_generate')} onClick={() => handleReport(u)} disabled={generatingId === u.id}>
+                            <FileText className="w-4 h-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => { setEditing(u); setFormOpen(true); }}>
                             <Pencil className="w-4 h-4" />
                           </Button>
