@@ -52,7 +52,10 @@ export default function CustomerUsersPanel({ customer }) {
 
     setInviting(true);
     try {
-      await base44.users.inviteUser(email.trim(), role);
+      // base44.users.inviteUser only accepts 'user' or 'admin' as role.
+      // We always invite as 'user' and track the desired role in InvitedUser
+      // so it can be upgraded (e.g. to customer_admin) after registration via Settings.
+      await base44.users.inviteUser(email.trim(), 'user');
       await base44.entities.InvitedUser.create({
         email: email.trim(),
         role,
