@@ -273,14 +273,17 @@ export default function Settings() {
     setIsInviting(true);
     try {
       const me = await base44.auth.me();
-      // customer_admin can only invite 'user' role, auto-assigned to their own customer
-      const effectiveRole = isCustomerAdmin ? 'user' : inviteRole;
-      await base44.users.inviteUser(inviteEmail, effectiveRole);
+      // base44.users.inviteUser only accepts 'user' or 'admin'.
+      // We map customer_admin -> 'user' (upgraded later via EditUserDialog)
+      // and keep the desired role tracked in InvitedUser.
+      const platformRole = inviteRole === 'admin' ? 'admin' : 'user';
+      const trackedRole = isCustomerAdmin ? 'user' : inviteRole;
+      await base44.users.inviteUser(inviteEmail, platformRole);
       const alreadyTracked = invitedUsers.find(u => u.email === inviteEmail);
       if (!alreadyTracked) {
         await base44.entities.InvitedUser.create({
           email: inviteEmail,
-          role: effectiveRole,
+          role: trackedRole,
           status: 'inactive',
           invited_by: me?.email || '',
         });
