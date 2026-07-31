@@ -114,7 +114,10 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
     if (!inviteEmail.trim() || atLimit) return;
     setInviting(true);
     try {
-      await base44.users.inviteUser(inviteEmail.trim(), inviteRole);
+      // base44.users.inviteUser only accepts 'user' or 'admin'.
+      // We invite as 'user' and track the desired role (e.g. customer_admin)
+      // in InvitedUser so it can be upgraded after registration.
+      await base44.users.inviteUser(inviteEmail.trim(), 'user');
       await base44.entities.InvitedUser.create({
         email: inviteEmail.trim(),
         role: inviteRole,
