@@ -21,8 +21,14 @@ export const AuthProvider = ({ children }) => {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
-      // Log user login to audit trail
+      // Log user login to audit trail (may also auto-assign customer_id / promote
+      // role for previously-invited users). Re-fetch the user afterwards so the
+      // frontend reflects those updates instead of staying with the stale record.
       await base44.functions.invoke('logUserLogin', {}).catch(() => {});
+      try {
+        const refreshedUser = await base44.auth.me();
+        setUser(refreshedUser);
+      } catch (_) {}
     } catch (error) {
       setIsAuthenticated(false);
       setUser(null);
