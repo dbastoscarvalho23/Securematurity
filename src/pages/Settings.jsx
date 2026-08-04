@@ -255,11 +255,8 @@ export default function Settings() {
     e.preventDefault();
     setIsSavingProfile(true);
     try {
-      const selectedCustomer = customers.find(c => c.id === profileCustomerId);
       await base44.auth.updateMe({
         display_name: profileName,
-        customer_id: profileCustomerId || null,
-        customer_name: selectedCustomer?.name || null,
       });
       await refreshUser();
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -561,25 +558,11 @@ export default function Settings() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>{t('settings_associated_customer')}</Label>
-                    {isAdmin ? (
-                      <Select value={profileCustomerId || ''} onValueChange={v => setProfileCustomerId(v === '__none__' ? '' : v)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="—" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">—</SelectItem>
-                          {customers.map(c => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        value={currentUser?.customer_name || '—'}
-                        disabled
-                        className="bg-muted/50 text-muted-foreground"
-                      />
-                    )}
+                    <Input
+                      value={currentUser?.customer_name || '—'}
+                      disabled
+                      className="bg-muted/50 text-muted-foreground"
+                    />
                     {currentUser?.role !== 'admin' && (
                       <p className="text-xs text-muted-foreground">{t('settings_customer_contact_admin')}</p>
                     )}
