@@ -1,47 +1,49 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Shield, ArrowLeft, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { base44 } from '@/api/base44Client';
-import { useLanguage } from '@/lib/LanguageContext';
-import { useAuth } from '@/lib/AuthContext';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
+import AuthLayout from "@/components/AuthLayout";
+import GoogleIcon from "@/components/GoogleIcon";
+import { safeReturnTo } from "@/lib/authReturnTo";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Register() {
-  const { t } = useLanguage();
-  const { checkAppState } = useAuth();
   const navigate = useNavigate();
+  const { checkAppState } = useAuth();
+  const returnTo = safeReturnTo();
 
-  const [step, setStep] = useState('details');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState("details");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     if (!email.trim() || !password || !confirm) {
-      setError(t('register_err_fields'));
+      setError("Please fill in all fields.");
       return;
     }
     if (password.length < 8) {
-      setError(t('register_err_weak_password'));
+      setError("Password must be at least 8 characters.");
       return;
     }
     if (password !== confirm) {
-      setError(t('register_err_password_mismatch'));
+      setError("Passwords do not match.");
       return;
     }
     setLoading(true);
     try {
       await base44.auth.register({ email: email.trim(), password });
-      setStep('otp');
+      setStep("otp");
     } catch (err) {
-      setError(err?.message || t('register_err_email'));
+      setError(err.message || "Unable to register with that email.");
     } finally {
       setLoading(false);
     }
@@ -49,9 +51,9 @@ export default function Register() {
 
   const handleVerify = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     if (!otp.trim()) {
-      setError(t('register_err_otp'));
+      setError("Please enter the verification code.");
       return;
     }
     setLoading(true);
@@ -59,131 +61,165 @@ export default function Register() {
       await base44.auth.verifyOtp({ email: email.trim(), otpCode: otp.trim() });
       await base44.auth.loginViaEmailPassword(email.trim(), password);
       await checkAppState();
-      navigate('/');
+      window.location.href = returnTo;
     } catch (err) {
-      setError(err?.message || t('register_err_otp'));
+      setError(err.message || "Invalid verification code.");
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left Panel (branding) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-sidebar flex-col justify-between p-12">
-        <div className="flex items-center gap-3">
-          <Shield className="w-9 h-9 text-primary" />
-          <div>
-            <p className="text-sidebar-foreground font-bold text-xl tracking-tight">AnkoraOne</p>
-            <p className="text-sidebar-foreground/40 text-xs">{t('landing_tagline')}</p>
+  const handleGoogle = () => {
+    base44.auth.loginWithProvider("google", returnTo);
+  };
+
+  if (step === "otp") {
+    return (
+      <AuthLayout
+        icon={Mail}
+        title="Verify your email"
+        subtitle={`Enter the code sent to ${email}`}
+        footer={
+          <Link to="/login" className="text-primary font-medium hover:underline">
+            Back to log in
+          </Link>
+        }
+      >
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+            {error}
           </div>
+        )}
+        <form onSubmit={handleVerify} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="otp">Verification code</Label>
+            <Input
+              id="otp"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              required
+              autoFocus
+              inputMode="numeric"
+              className="h-12"
+            />
+          </div>
+          <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              "Verify and continue"
+            )}
+          </Button>
+        </form>
+      </AuthLayout>
+    );
+  }
+
+  return (
+    <AuthLayout
+      icon={UserPlus}
+      title="Create your account"
+      subtitle="Get started with AnkoraOne"
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link
+            to={"/login" + (returnTo !== "/" ? "?returnTo=" + encodeURIComponent(returnTo) : "")}
+            className="text-primary font-medium hover:underline"
+          >
+            Log in
+          </Link>
+        </>
+      }
+    >
+      <Button
+        variant="outline"
+        className="w-full h-12 text-sm font-medium mb-6"
+        onClick={handleGoogle}
+      >
+        <GoogleIcon className="w-5 h-5 mr-2" />
+        Continue with Google
+      </Button>
+
+      <div className="relative mb-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
         </div>
-        <div className="space-y-4">
-          <h1 className="text-3xl font-bold text-sidebar-foreground leading-tight">
-            {t('register_title')}
-          </h1>
-          <p className="text-sidebar-foreground/60 text-base leading-relaxed">
-            {t('register_subtitle')}
-          </p>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-3 text-muted-foreground">or</span>
         </div>
-        <p className="text-xs text-sidebar-foreground/30">{t('landing_copyright')}</p>
       </div>
 
-      {/* Right Panel - Register form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-sm space-y-6">
-          <div className="flex lg:hidden items-center gap-3 justify-center">
-            <Shield className="w-8 h-8 text-primary" />
-            <p className="text-foreground font-bold text-xl">AnkoraOne</p>
-          </div>
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+          {error}
+        </div>
+      )}
 
-          {step === 'details' ? (
+      <form onSubmit={handleRegister} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              autoFocus
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="pl-10 h-12"
+              required
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Min. 8 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pl-10 h-12"
+              required
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirm">Confirm Password</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="confirm"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Re-enter password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              className="pl-10 h-12"
+              required
+            />
+          </div>
+        </div>
+        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+          {loading ? (
             <>
-              <div className="space-y-2 text-center">
-                <h2 className="text-2xl font-bold text-foreground">{t('register_title')}</h2>
-                <p className="text-muted-foreground text-sm">{t('register_subtitle')}</p>
-              </div>
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="reg-email">{t('register_email')}</Label>
-                  <Input
-                    id="reg-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoFocus
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="reg-pass">{t('register_password')}</Label>
-                  <Input
-                    id="reg-pass"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="reg-confirm">{t('register_confirm_password')}</Label>
-                  <Input
-                    id="reg-confirm"
-                    type="password"
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    required
-                  />
-                </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button
-                  type="submit"
-                  className="w-full h-11 text-base font-medium"
-                  disabled={loading}
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : t('register_button')}
-                </Button>
-              </form>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Creating account...
             </>
           ) : (
-            <>
-              <div className="space-y-2 text-center">
-                <h2 className="text-2xl font-bold text-foreground">{t('register_otp_label')}</h2>
-                <p className="text-muted-foreground text-sm">{t('register_otp_prompt')}</p>
-              </div>
-              <form onSubmit={handleVerify} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="reg-otp">{t('register_otp_label')}</Label>
-                  <Input
-                    id="reg-otp"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    required
-                    autoFocus
-                    inputMode="numeric"
-                  />
-                </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button
-                  type="submit"
-                  className="w-full h-11 text-base font-medium"
-                  disabled={loading}
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : t('register_otp_button')}
-                </Button>
-              </form>
-            </>
+            "Create account"
           )}
-
-          <button
-            onClick={() => navigate('/')}
-            className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            {t('register_back')}
-          </button>
-        </div>
-      </div>
-    </div>
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }
