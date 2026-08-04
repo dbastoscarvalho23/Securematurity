@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/lib/LanguageContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import MaintenanceGuard from '@/components/layout/MaintenanceGuard';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -64,6 +65,7 @@ const AuthenticatedApp = () => {
 
       {/* All app routes gated by ProtectedRoute — unauthenticated users redirect to /login */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+        <Route element={<MaintenanceGuard />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<RouteGuard path="/"><Dashboard /></RouteGuard>} />
           <Route path="/customers" element={<RouteGuard path="/customers"><Customers /></RouteGuard>} />
@@ -93,6 +95,7 @@ const AuthenticatedApp = () => {
           <Route path="/training" element={<RouteGuard path="/training"><Training /></RouteGuard>} />
           <Route path="/framework-guide" element={<RouteGuard path="/framework-guide"><FrameworkGuide /></RouteGuard>} />
           <Route path="/email-report" element={<RouteGuard path="/email-report"><EmailReport /></RouteGuard>} />
+        </Route>
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

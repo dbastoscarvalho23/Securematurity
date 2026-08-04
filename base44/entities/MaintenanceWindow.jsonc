@@ -1,0 +1,57 @@
+{
+  "name": "MaintenanceWindow",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the maintenance window is currently active"
+    },
+    "start_time": {
+      "type": "string",
+      "description": "Start time in HH:mm format (24h, local timezone)"
+    },
+    "end_time": {
+      "type": "string",
+      "description": "End time in HH:mm format (24h, local timezone)"
+    },
+    "days_of_week": {
+      "type": "array",
+      "description": "Days of week the window applies to (0=Sunday, 1=Monday, ... 6=Saturday). Empty = every day.",
+      "items": {
+        "type": "number"
+      }
+    },
+    "message": {
+      "type": "string",
+      "description": "Maintenance notice shown to blocked users"
+    },
+    "updated_by_email": {
+      "type": "string",
+      "description": "Email of the admin who last updated the configuration"
+    }
+  },
+  "required": [
+    "enabled",
+    "start_time",
+    "end_time"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
