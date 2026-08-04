@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Trash2, Loader2, Users, AlertTriangle, Send } from 'lucide-react';
+import { UserPlus, Trash2, Loader2, Users, AlertTriangle, Send, Clock, MailCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -21,6 +21,7 @@ export default function CustomerUsersPanel({ customer }) {
   const [role, setRole] = useState('user');
   const [inviting, setInviting] = useState(false);
   const [requestingSeat, setRequestingSeat] = useState(false);
+  const [resendingId, setResendingId] = useState(null);
 
   const isAdmin = currentUser?.role === 'admin';
   const seatLimit = (customer.user_seat_limit ?? DEFAULT_SEAT_LIMIT) + (customer.user_seat_addon_count ?? 0);
@@ -64,7 +65,7 @@ export default function CustomerUsersPanel({ customer }) {
         customer_name: customer.name,
         status: 'inactive',
       });
-      toast.success(t('seat_invite_sent', { email: email.trim() }));
+      toast.success(t('cup_invite_sent_password', { email: email.trim() }));
       setEmail('');
       setRole('user');
       queryClient.invalidateQueries({ queryKey: ['customerUsers', customer.id] });
@@ -76,8 +77,19 @@ export default function CustomerUsersPanel({ customer }) {
     }
   };
 
-  const handleRemove = async (userId) => {
+  const handleResend = async (inv) => {
+    setResendingId(inv.id);
     try {
+      await base44.users.inviteUser(inv.email, 'user');
+      toast.success(t('cup_invite_sent_password', { email: inv.email }));
+    } catch (err) {
+      toast.error(err?.message || t('cup_resend_failed'));
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const handleRemove = async (userId) => {    try {
       await base44.entities.User.update(userId, { customer_id: null });
       toast.success(t('cup_user_removed'));
       queryClient.invalidateQueries({ queryKey: ['customerUsers', customer.id] });
@@ -152,6 +164,7 @@ export default function CustomerUsersPanel({ customer }) {
 
       {/* Invite form */}
       {!atLimit && (
+        <>
         <form onSubmit={handleInvite} className="flex gap-2 items-end flex-wrap">
           <div className="flex-1 min-w-[160px]">
             <Input
@@ -177,6 +190,11 @@ export default function CustomerUsersPanel({ customer }) {
             {t('cup_invite')}
           </Button>
         </form>
+        <p className="text-[10px] text-muted-foreground flex items-center gap-1 pt-0.5">
+          <MailCheck className="w-3 h-3" />
+          {t('cup_invite_help')}
+        </p>
+        </>
       )}
 
       {/* User list */}
@@ -217,14 +235,31 @@ export default function CustomerUsersPanel({ customer }) {
           ))}
           {/* Pending invites */}
           {pendingInvites.map(inv => (
-            <div key={inv.id} className="flex items-center justify-between gap-2 py-1.5 border-b last:border-0 opacity-60">
+            <div key={inv.id} className="flex items-center justify-between gap-2 py-1.5 border-b last:border-0">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-bold flex-shrink-0">
+                <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 flex items-center justify-center text-xs font-bold flex-shrink-0">
                   {inv.email?.[0]?.toUpperCase()}
                 </div>
-                <p className="text-xs truncate">{inv.email}</p>
+                <div className="min-w-0">
+                  <p className="text-xs truncate">{inv.email}</p>
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-2.5 h-2.5" />
+                    {t('cup_pending_password')}
+                  </p>
+                </div>
               </div>
-              <Badge variant="outline" className="text-[10px] px-1.5">{t('cup_pending')}</Badge>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-[11px] gap-1 text-primary hover:text-primary"
+                  onClick={() => handleResend(inv)}
+                  disabled={resendingId === inv.id}
+                >
+                  {resendingId === inv.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                  {resendingId === inv.id ? t('cup_resending') : t('cup_resend_link')}
+                </Button>
+              </div>
             </div>
           ))}
         </div>

@@ -66,6 +66,12 @@ export const seatsEn = {
   cup_loading_users: 'Loading users…',
   cup_no_users: 'No users assigned to this customer yet.',
   cup_pending: 'Pending',
+  cup_pending_password: 'Awaiting password setup',
+  cup_invite_help: 'The invitee will receive an email with a link to set their initial password.',
+  cup_invite_sent_password: 'Invitation sent to {email}. They will receive a link to set their initial password.',
+  cup_resend_link: 'Resend link',
+  cup_resending: 'Resending…',
+  cup_resend_failed: 'Failed to resend invite',
 };
 
 export const seatsPt = {
@@ -136,4 +142,10 @@ export const seatsPt = {
   cup_loading_users: 'A carregar utilizadores…',
   cup_no_users: 'Ainda não há utilizadores atribuídos a este cliente.',
   cup_pending: 'Pendente',
+  cup_pending_password: 'A aguardar definição de password',
+  cup_invite_help: 'O convidado receberá um email com um link para definir a sua password inicial.',
+  cup_invite_sent_password: 'Convite enviado para {email}. Receberá um link para definir a password inicial.',
+  cup_resend_link: 'Reenviar link',
+  cup_resending: 'A reenviar…',
+  cup_resend_failed: 'Falha ao reenviar convite',
 };
