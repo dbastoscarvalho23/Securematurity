@@ -8,6 +8,7 @@ import { LanguageProvider } from '@/lib/LanguageContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Landing from '@/pages/Landing';
+import Register from '@/pages/Register';
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
 import Customers from '@/pages/Customers';
@@ -60,9 +61,14 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // Not authenticated - show landing page
+  // Not authenticated - show landing or register page
   if (!isAuthenticated) {
-    return <Landing />;
+    return (
+      <Routes>
+        <Route path="/register" element={<Register />} />
+        <Route path="*" element={<Landing />} />
+      </Routes>
+    );
   }
 
   // Render the main app

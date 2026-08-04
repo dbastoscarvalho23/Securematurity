@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Shield, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
@@ -6,6 +7,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 
 export default function Landing() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const features = [
     t('landing_feature_1'),
     t('landing_feature_2'),
@@ -68,6 +70,13 @@ export default function Landing() {
               onClick={() => base44.auth.redirectToLogin(window.location.href)}
             >
               {t('landing_signin')}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full h-11 text-base font-medium"
+              onClick={() => navigate('/register')}
+            >
+              {t('landing_signup')}
             </Button>
             <p className="text-center text-xs text-muted-foreground">
               {t('landing_access_note_1')}<br />
