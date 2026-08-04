@@ -82,6 +82,9 @@ export default function Settings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['customerUsers'] });
+      queryClient.invalidateQueries({ queryKey: ['pendingInvites'] });
+      queryClient.invalidateQueries({ queryKey: ['users-for-customer'] });
       toast.success(t('settings_user_deleted'));
       setUserToDelete(null);
       },
