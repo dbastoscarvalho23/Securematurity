@@ -99,13 +99,19 @@ export default function Suppliers() {
       toast.error(t('suppliers_required_missing'));
       return;
     }
+    const cleanForm = { ...form };
+    if (cleanForm.annual_value === '' || cleanForm.annual_value === null) delete cleanForm.annual_value;
+    if (cleanForm.contract_start_date === '') delete cleanForm.contract_start_date;
+    if (cleanForm.contract_renewal_date === '') delete cleanForm.contract_renewal_date;
+    if (cleanForm.access_to_personal_data === '' || cleanForm.access_to_personal_data === undefined) delete cleanForm.access_to_personal_data;
+    if (cleanForm.access_to_critical_systems === '' || cleanForm.access_to_critical_systems === undefined) delete cleanForm.access_to_critical_systems;
     setSaving(true);
     try {
       if (editing) {
-        await base44.entities.Supplier.update(editing.id, form);
+        await base44.entities.Supplier.update(editing.id, cleanForm);
         toast.success(t('suppliers_updated'));
       } else {
-        const payload = isAdmin && !customerId ? form : { ...form, customer_id: customerId };
+        const payload = isAdmin && !customerId ? cleanForm : { ...cleanForm, customer_id: customerId };
         await base44.entities.Supplier.create(payload);
         toast.success(t('suppliers_created'));
       }
