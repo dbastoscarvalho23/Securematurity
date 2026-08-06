@@ -8,20 +8,58 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const SUPPLIER_FIELDS = [
-  { key: 'name',          labelKey: 'suppliers_form_name',  required: true  },
-  { key: 'nif',           labelKey: 'suppliers_form_nif',   required: true  },
-  { key: 'contact_email', labelKey: 'suppliers_form_email', required: true  },
-  { key: 'contact_phone', labelKey: 'suppliers_form_phone', required: true  },
-  { key: 'website',       labelKey: 'suppliers_form_website', required: false },
-  { key: 'tier',          labelKey: 'suppliers_form_tier', required: false },
-  { key: 'notes',         labelKey: 'suppliers_form_notes', required: false },
-  { key: 'status',        labelKey: 'suppliers_form_status', required: false },
+  { key: 'name',                    labelKey: 'suppliers_form_name',                  required: true  },
+  { key: 'nif',                     labelKey: 'suppliers_form_nif',                   required: true  },
+  { key: 'contact_email',           labelKey: 'suppliers_form_email',                 required: true  },
+  { key: 'contact_phone',            labelKey: 'suppliers_form_phone',                required: true  },
+  { key: 'website',                 labelKey: 'suppliers_form_website',               required: false },
+  { key: 'tier',                    labelKey: 'suppliers_form_tier',                  required: false },
+  { key: 'country',                 labelKey: 'suppliers_form_country',              required: false },
+  { key: 'sector',                  labelKey: 'suppliers_form_sector',               required: false },
+  { key: 'service_provided',        labelKey: 'suppliers_form_service',              required: false },
+  { key: 'contract_start_date',     labelKey: 'suppliers_form_contract_start',       required: false },
+  { key: 'contract_renewal_date',   labelKey: 'suppliers_form_contract_renewal',     required: false },
+  { key: 'annual_value',            labelKey: 'suppliers_form_annual_value',         required: false },
+  { key: 'access_to_personal_data', labelKey: 'suppliers_form_access_personal_data', required: false },
+  { key: 'access_to_critical_systems', labelKey: 'suppliers_form_access_critical_systems', required: false },
+  { key: 'notes',                   labelKey: 'suppliers_form_notes',                required: false },
+  { key: 'status',                  labelKey: 'suppliers_form_status',                required: false },
 ];
 
 const STATUS_MAP = {
   'active': 'active', 'ativo': 'active', 'true': 'active', 'yes': 'active', 'sim': 'active',
   'inactive': 'inactive', 'inativo': 'inactive', 'false': 'inactive', 'no': 'inactive', 'nao': 'inactive', 'não': 'inactive',
 };
+
+const BOOL_MAP = {
+  'yes': true, 'sim': true, 'true': true, 'y': true, 's': true, 'verdadeiro': true, '1': true,
+  'no': false, 'nao': false, 'não': false, 'false': false, 'n': false, 'falso': false, '0': false,
+};
+
+function toBool(v) { return BOOL_MAP[String(v || '').toLowerCase().trim()] === true ? true : false; }
+
+function toNumber(v) {
+  const s = v === undefined || v === '' ? '' : String(v).replace(/[^\d.,-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
+  const parsed = parseFloat(s);
+  return isNaN(parsed) ? '' : parsed;
+}
+
+function toDate(v) {
+  if (v === undefined || v === '') return '';
+  if (typeof v === 'number') {
+    const utcDays = Math.floor(v - 25569);
+    const utcValue = utcDays * 86400;
+    const dateInfo = new Date(utcValue * 1000);
+    if (!isNaN(dateInfo.getTime())) {
+      return `${dateInfo.getUTCFullYear()}-${String(dateInfo.getUTCMonth() + 1).padStart(2, '0')}-${String(dateInfo.getUTCDate()).padStart(2, '0')}`;
+    }
+  }
+  const s = String(v).trim();
+  if (!s) return '';
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return s;
+}
 
 const TIER_MAP = {
   'tier_1': 'tier_1', 'tier1': 'tier_1', '1': 'tier_1', 't1': 'tier_1', 'tier 1': 'tier_1', 'nivel 1': 'tier_1', 'nível 1': 'tier_1',
@@ -31,11 +69,19 @@ const TIER_MAP = {
 
 const AUTO_HINTS = {
   name:          ['name', 'supplier name', 'supplier', 'nome', 'fornecedor', 'fornecedor nome'],
-  nif:           ['nif', 'tax id', 'vat', 'nif', 'tax', 'número fiscal'],
+  nif:           ['nif', 'tax id', 'vat', 'tax', 'número fiscal'],
   contact_email: ['email', 'contact email', 'e-mail', 'email contacto', 'contact_email'],
   contact_phone: ['phone', 'contact phone', 'telefone', 'tel', 'contact_phone', 'contacto'],
   website:       ['website', 'site', 'url', 'web', 'site web'],
   tier:          ['tier', 'level', 'nivel', 'nível', 'class', 'classe', 'tier level'],
+  country:       ['country', 'país', 'pais', 'nationality'],
+  sector:        ['sector', 'industry', 'setor', 'indústria'],
+  service_provided: ['service', 'service provided', 'serviço', 'servico', 'serviços prestados'],
+  contract_start_date: ['contract start', 'start date', 'data início', 'data inicio', 'início contrato', 'inicio contrato'],
+  contract_renewal_date: ['contract renewal', 'renewal date', 'renovação', 'renovacao', 'data renovação', 'data renovacao'],
+  annual_value:  ['annual value', 'annual', 'valor anual', 'valor', 'value', 'contract value'],
+  access_to_personal_data: ['access to personal data', 'personal data', 'acesso a dados pessoais', 'dados pessoais'],
+  access_to_critical_systems: ['access to critical systems', 'critical systems', 'acesso a sistemas críticos', 'sistemas criticos'],
   notes:         ['notes', 'note', 'notas', 'observações', 'observations', 'comments'],
   status:        ['status', 'estado', 'state', 'situação'],
 };
@@ -79,26 +125,35 @@ function buildSuppliersFromMapping(sheetData, mapping) {
     const rawTier = String(getField('tier') || '').toLowerCase().trim();
     suppliers.push({
       name,
-      nif:           String(getField('nif')           || '').trim(),
-      contact_email: String(getField('contact_email') || '').trim(),
-      contact_phone: String(getField('contact_phone') || '').trim(),
-      website:       String(getField('website')       || '').trim(),
-      tier:          TIER_MAP[rawTier] || 'tier_2',
-      notes:         String(getField('notes')         || '').trim(),
-      status:        STATUS_MAP[rawStatus] || 'active',
+      nif:                     String(getField('nif')            || '').trim(),
+      contact_email:           String(getField('contact_email')  || '').trim(),
+      contact_phone:           String(getField('contact_phone')  || '').trim(),
+      website:                 String(getField('website')        || '').trim(),
+      tier:                    TIER_MAP[rawTier] || 'tier_2',
+      country:                 String(getField('country')                 || '').trim(),
+      sector:                  String(getField('sector')                  || '').trim(),
+      service_provided:        String(getField('service_provided')        || '').trim(),
+      contract_start_date:     toDate(getField('contract_start_date')),
+      contract_renewal_date:   toDate(getField('contract_renewal_date')),
+      annual_value:            toNumber(getField('annual_value')),
+      access_to_personal_data: toBool(getField('access_to_personal_data')),
+      access_to_critical_systems: toBool(getField('access_to_critical_systems')),
+      notes:                   String(getField('notes')          || '').trim(),
+      status:                  STATUS_MAP[rawStatus] || 'active',
     });
   }
   return suppliers;
 }
 
 function downloadTemplate() {
+  const headers = ['Name', 'NIF', 'Email', 'Phone', 'Website', 'Tier', 'Country', 'Sector', 'Service Provided', 'Contract Start Date', 'Contract Renewal Date', 'Annual Value', 'Access to Personal Data', 'Access to Critical Systems', 'Notes', 'Status'];
   const ws = XLSX.utils.aoa_to_sheet([
-    ['Name', 'NIF', 'Email', 'Phone', 'Website', 'Tier', 'Notes', 'Status'],
-    ['Acme Security Ltd', 'PT500123456', 'contact@acmesecurity.pt', '+351210000000', 'https://acmesecurity.pt', 'Tier 1', 'Managed SOC provider', 'active'],
-    ['CloudGuard Inc', 'PT509876543', 'sales@cloudguard.pt', '+351220000000', 'https://cloudguard.pt', 'Tier 2', 'Penetration testing services', 'active'],
-    ['Office Supplies Co', 'PT501112223', 'info@officesupplies.pt', '+351230000000', 'https://officesupplies.pt', 'Tier 3', 'General office supplies', 'active'],
+    headers,
+    ['Acme Security Ltd', 'PT500123456', 'contact@acmesecurity.pt', '+351210000000', 'https://acmesecurity.pt', 'Tier 1', 'Portugal', 'Cybersecurity', 'Managed SOC services', '2023-01-15', '2025-01-15', 45000, 'No', 'Yes', 'Managed SOC provider', 'active'],
+    ['CloudGuard Inc', 'PT509876543', 'sales@cloudguard.pt', '+351220000000', 'https://cloudguard.pt', 'Tier 2', 'Spain', 'IT Services', 'Penetration testing', '2024-03-01', '2026-03-01', 28000, 'Yes', 'Yes', 'Annual pentest engagement', 'active'],
+    ['Office Supplies Co', 'PT501112223', 'info@officesupplies.pt', '+351230000000', 'https://officesupplies.pt', 'Tier 3', 'Portugal', 'Office Supplies', 'General office supplies', '2022-09-01', '2025-09-01', 5200, 'No', 'No', 'General office supplies', 'active'],
   ]);
-  ws['!cols'] = [{ wch: 24 }, { wch: 18 }, { wch: 28 }, { wch: 18 }, { wch: 28 }, { wch: 10 }, { wch: 32 }, { wch: 10 }];
+  ws['!cols'] = headers.map((h, i) => ({ wch: [24, 18, 28, 18, 28, 10, 14, 16, 24, 18, 18, 14, 20, 22, 32, 10][i] || 16 }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Suppliers');
   XLSX.writeFile(wb, 'suppliers_template.xlsx');

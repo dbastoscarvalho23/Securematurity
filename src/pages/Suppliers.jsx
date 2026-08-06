@@ -173,7 +173,14 @@ export default function Suppliers() {
 
   const handleExcelImport = async (rows) => {
     const valid = rows.filter(r => r.name && r.nif && r.contact_email && r.contact_phone);
-    const payload = valid.map(r => isAdmin && !customerId ? r : { ...r, customer_id: customerId });
+    const cleaned = valid.map(r => {
+      const c = { ...r };
+      if (c.annual_value === '' || c.annual_value === null) delete c.annual_value;
+      if (c.contract_start_date === '') delete c.contract_start_date;
+      if (c.contract_renewal_date === '') delete c.contract_renewal_date;
+      return c;
+    });
+    const payload = cleaned.map(r => isAdmin && !customerId ? r : { ...r, customer_id: customerId });
     if (!payload.length) {
       toast.error(t('suppliers_required_missing'));
       return;
