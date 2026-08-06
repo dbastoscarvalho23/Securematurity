@@ -43,6 +43,7 @@ export default function Suppliers() {
   ];
 
   const [search, setSearch] = useState('');
+  const [customerFilter, setCustomerFilter] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -72,6 +73,12 @@ export default function Suppliers() {
     enabled: isAdmin || !!customerId,
   });
 
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers-list'],
+    queryFn: () => base44.entities.Customer.list('name', 500),
+    enabled: isAdmin,
+  });
+
   const questionnaireByName = useMemo(() => {
     const map = new Map();
     for (const q of questionnaires) {
@@ -82,6 +89,13 @@ export default function Suppliers() {
   }, [questionnaires]);
 
   const filtered = suppliers.filter(s => {
+    if (isAdmin && customerFilter !== 'all') {
+      if (customerFilter === 'unassigned') {
+        if (s.customer_id) return false;
+      } else if (s.customer_id !== customerFilter) {
+        return false;
+      }
+    }
     const q = search.toLowerCase();
     return !q || s.name?.toLowerCase().includes(q) || s.nif?.toLowerCase().includes(q) || s.contact_email?.toLowerCase().includes(q);
   });
@@ -215,6 +229,20 @@ export default function Suppliers() {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('suppliers_search')} className="pl-9" />
         </div>
+        {isAdmin && (
+          <Select value={customerFilter} onValueChange={setCustomerFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder={t('suppliers_filter_all_customers')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('suppliers_filter_all_customers')}</SelectItem>
+              <SelectItem value="unassigned">{t('suppliers_unassigned_customer')}</SelectItem>
+              {customers.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Badge variant="outline" className="ml-auto">{filtered.length} {t('suppliers_total')}</Badge>
       </div>
 
