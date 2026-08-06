@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Truck, Globe, Mail, Phone, Loader2, FileSpreadsheet } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Truck, Globe, Mail, Phone, Loader2, FileSpreadsheet, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import SupplierExcelImportDialog from '@/components/suppliers/SupplierExcelImportDialog';
@@ -258,6 +258,7 @@ export default function Suppliers() {
                   </DropdownMenu>
                 </div>
                 <div className="mt-4 space-y-2 text-sm">
+                  {isAdmin && s.customer_name && <div className="flex items-center gap-2 text-muted-foreground"><Building2 className="w-3.5 h-3.5" /><span className="truncate font-medium">{s.customer_name}</span></div>}
                   {s.contact_email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-3.5 h-3.5" /><span className="truncate">{s.contact_email}</span></div>}
                   {s.contact_phone && <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-3.5 h-3.5" /><span>{s.contact_phone}</span></div>}
                   {s.website && <div className="flex items-center gap-2 text-muted-foreground"><Globe className="w-3.5 h-3.5" />{isSafeUrl(s.website) ? <a href={s.website} target="_blank" rel="noopener noreferrer" className="truncate hover:text-primary">{s.website}</a> : <span className="truncate">{s.website}</span>}</div>}
