@@ -25,7 +25,7 @@ import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
-const emptyForm = { name: '', nif: '', contact_email: '', contact_phone: '', website: '', tier: 'tier_2', country: '', sector: '', service_provided: '', contract_start_date: '', contract_renewal_date: '', annual_value: '', access_to_personal_data: '', access_to_critical_systems: '', notes: '', status: 'active' };
+const emptyForm = { customer_id: '', name: '', nif: '', contact_email: '', contact_phone: '', website: '', tier: 'tier_2', country: '', sector: '', service_provided: '', contract_start_date: '', contract_renewal_date: '', annual_value: '', access_to_personal_data: '', access_to_critical_systems: '', notes: '', status: 'active' };
 
 const isSafeUrl = (u) => typeof u === 'string' && /^https?:\/\//i.test(u);
 
@@ -128,10 +128,29 @@ export default function Suppliers() {
     setSaving(true);
     try {
       if (editing) {
+        if (isAdmin && !customerId) {
+          if (cleanForm.customer_id) {
+            const cust = customerById.get(cleanForm.customer_id);
+            if (cust) cleanForm.customer_name = cust.name;
+          } else {
+            cleanForm.customer_name = '';
+          }
+        }
         await base44.entities.Supplier.update(editing.id, cleanForm);
         toast.success(t('suppliers_updated'));
       } else {
-        const payload = isAdmin && !customerId ? cleanForm : { ...cleanForm, customer_id: customerId };
+        let payload;
+        if (isAdmin && !customerId) {
+          if (cleanForm.customer_id) {
+            const cust = customerById.get(cleanForm.customer_id);
+            if (cust) cleanForm.customer_name = cust.name;
+          }
+          payload = cleanForm;
+        } else {
+          payload = { ...cleanForm, customer_id: customerId };
+          const cust = customerById.get(customerId);
+          if (cust) payload.customer_name = cust.name;
+        }
         await base44.entities.Supplier.create(payload);
         toast.success(t('suppliers_created'));
       }
@@ -351,6 +370,23 @@ export default function Suppliers() {
             <DialogTitle>{editing ? t('suppliers_edit') : t('suppliers_new')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} noValidate className="space-y-4">
+            {isAdmin && !customerId && (
+              <div className="space-y-1.5">
+                <Label>{t('suppliers_filter_customer')} <span className="text-destructive">*</span></Label>
+                <Select
+                  value={form.customer_id || '__none__'}
+                  onValueChange={v => setForm({ ...form, customer_id: v === '__none__' ? '' : v })}
+                >
+                  <SelectTrigger><SelectValue placeholder={t('suppliers_unassigned_customer')} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{t('suppliers_unassigned_customer')}</SelectItem>
+                    {customers.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>{t('suppliers_name')} <span className="text-destructive">*</span></Label>
