@@ -300,11 +300,11 @@ export default function Suppliers() {
           <DialogHeader>
             <DialogTitle>{editing ? t('suppliers_edit') : t('suppliers_new')}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSave} className="space-y-4">
+          <form onSubmit={handleSave} noValidate className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>{t('suppliers_name')} <span className="text-destructive">*</span></Label>
-                <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+                <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
               </div>
               <div className="space-y-1.5">
                 <Label>{t('suppliers_nif')} <span className="text-destructive">*</span></Label>
