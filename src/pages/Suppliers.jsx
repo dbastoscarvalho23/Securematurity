@@ -79,6 +79,12 @@ export default function Suppliers() {
     enabled: isAdmin,
   });
 
+  const customerById = useMemo(() => {
+    const map = new Map();
+    for (const c of customers) map.set(c.id, c);
+    return map;
+  }, [customers]);
+
   const questionnaireByName = useMemo(() => {
     const map = new Map();
     for (const q of questionnaires) {
@@ -299,7 +305,16 @@ export default function Suppliers() {
                   </DropdownMenu>
                 </div>
                 <div className="mt-4 space-y-2 text-sm">
-                  {isAdmin && s.customer_name && <div className="flex items-center gap-2 text-muted-foreground"><Building2 className="w-3.5 h-3.5" /><span className="truncate font-medium">{s.customer_name}</span></div>}
+                  {(() => {
+                  const custName = s.customer_name || (isAdmin && s.customer_id ? customerById.get(s.customer_id)?.name : null);
+                  if (!custName) return null;
+                  return (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="truncate font-medium">{custName}</span>
+                    </div>
+                  );
+                })()}
                   {s.contact_email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-3.5 h-3.5" /><span className="truncate">{s.contact_email}</span></div>}
                   {s.contact_phone && <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-3.5 h-3.5" /><span>{s.contact_phone}</span></div>}
                   {s.website && <div className="flex items-center gap-2 text-muted-foreground"><Globe className="w-3.5 h-3.5" />{isSafeUrl(s.website) ? <a href={s.website} target="_blank" rel="noopener noreferrer" className="truncate hover:text-primary">{s.website}</a> : <span className="truncate">{s.website}</span>}</div>}
