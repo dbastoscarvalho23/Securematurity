@@ -25,7 +25,7 @@ import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
-const emptyForm = { name: '', nif: '', contact_email: '', contact_phone: '', website: '', tier: 'tier_2', notes: '', status: 'active' };
+const emptyForm = { name: '', nif: '', contact_email: '', contact_phone: '', website: '', tier: 'tier_2', country: '', sector: '', service_provided: '', contract_start_date: '', contract_renewal_date: '', annual_value: '', access_to_personal_data: '', access_to_critical_systems: '', notes: '', status: 'active' };
 
 const isSafeUrl = (u) => typeof u === 'string' && /^https?:\/\//i.test(u);
 
@@ -263,6 +263,21 @@ export default function Suppliers() {
                   {s.website && <div className="flex items-center gap-2 text-muted-foreground"><Globe className="w-3.5 h-3.5" />{isSafeUrl(s.website) ? <a href={s.website} target="_blank" rel="noopener noreferrer" className="truncate hover:text-primary">{s.website}</a> : <span className="truncate">{s.website}</span>}</div>}
                 </div>
                 {s.notes && <p className="mt-3 text-xs text-muted-foreground line-clamp-2">{s.notes}</p>}
+                {(s.country || s.sector || s.service_provided) && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    {[s.country, s.sector, s.service_provided].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+                {(s.access_to_personal_data !== undefined && s.access_to_personal_data !== '' || s.access_to_critical_systems !== undefined && s.access_to_critical_systems !== '') && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {s.access_to_personal_data !== undefined && s.access_to_personal_data !== '' && (
+                      <Badge variant="outline" className="text-xs">{t('suppliers_form_access_personal_data')}: {s.access_to_personal_data ? t('suppliers_yes') : t('suppliers_no')}</Badge>
+                    )}
+                    {s.access_to_critical_systems !== undefined && s.access_to_critical_systems !== '' && (
+                      <Badge variant="outline" className="text-xs">{t('suppliers_form_access_critical_systems')}: {s.access_to_critical_systems ? t('suppliers_yes') : t('suppliers_no')}</Badge>
+                    )}
+                  </div>
+                )}
                 <div className="mt-3 flex items-center gap-2">
                   <StatusBadge status={s.status} label={s.status === 'active' ? t('suppliers_status_active') : t('suppliers_status_inactive')} />
                 </div>
@@ -319,6 +334,55 @@ export default function Suppliers() {
                   <SelectContent>
                     <SelectItem value="active">{t('suppliers_status_active')}</SelectItem>
                     <SelectItem value="inactive">{t('suppliers_status_inactive')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>{t('suppliers_form_country')}</Label>
+                <Input value={form.country} onChange={e => setForm({ ...form, country: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('suppliers_form_sector')}</Label>
+                <Input value={form.sector} onChange={e => setForm({ ...form, sector: e.target.value })} />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>{t('suppliers_form_service')}</Label>
+                <Input value={form.service_provided} onChange={e => setForm({ ...form, service_provided: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('suppliers_form_contract_start')}</Label>
+                <Input type="date" value={form.contract_start_date || ''} onChange={e => setForm({ ...form, contract_start_date: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('suppliers_form_contract_renewal')}</Label>
+                <Input type="date" value={form.contract_renewal_date || ''} onChange={e => setForm({ ...form, contract_renewal_date: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('suppliers_form_annual_value')}</Label>
+                <Input type="number" min="0" step="0.01" value={form.annual_value ?? ''} onChange={e => setForm({ ...form, annual_value: e.target.value === '' ? '' : Number(e.target.value) })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('suppliers_form_access_personal_data')}</Label>
+                <Select value={form.access_to_personal_data || ''} onValueChange={v => setForm({ ...form, access_to_personal_data: v === '__none__' ? '' : v === 'true' })}>
+                  <SelectTrigger><SelectValue placeholder={t('suppliers_not_specified')} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{t('suppliers_not_specified')}</SelectItem>
+                    <SelectItem value="true">{t('suppliers_yes')}</SelectItem>
+                    <SelectItem value="false">{t('suppliers_no')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>{t('suppliers_form_access_critical_systems')}</Label>
+                <Select value={form.access_to_critical_systems || ''} onValueChange={v => setForm({ ...form, access_to_critical_systems: v === '__none__' ? '' : v === 'true' })}>
+                  <SelectTrigger><SelectValue placeholder={t('suppliers_not_specified')} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{t('suppliers_not_specified')}</SelectItem>
+                    <SelectItem value="true">{t('suppliers_yes')}</SelectItem>
+                    <SelectItem value="false">{t('suppliers_no')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

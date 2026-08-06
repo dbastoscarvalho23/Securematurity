@@ -40,6 +40,42 @@
       "default": "tier_2",
       "description": "Supplier tier classification (Tier 1 = strategic/critical, Tier 2 = important, Tier 3 = standard)"
     },
+    "country": {
+      "type": "string",
+      "description": "Supplier country"
+    },
+    "sector": {
+      "type": "string",
+      "description": "Supplier industry sector"
+    },
+    "service_provided": {
+      "type": "string",
+      "description": "Service(s) provided by the supplier"
+    },
+    "contract_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Contract start date"
+    },
+    "contract_renewal_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Contract renewal date"
+    },
+    "annual_value": {
+      "type": "number",
+      "description": "Annual contract value"
+    },
+    "access_to_personal_data": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the supplier has access to personal data"
+    },
+    "access_to_critical_systems": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the supplier has access to critical systems"
+    },
     "notes": {
       "type": "string",
       "description": "Additional information / notes"
