@@ -76,7 +76,7 @@ export default function Suppliers() {
   const { data: customers = [] } = useQuery({
     queryKey: ['customers-list'],
     queryFn: () => base44.entities.Customer.list('name', 500),
-    enabled: isAdmin,
+    enabled: isAdmin || !!customerId,
   });
 
   const customerById = useMemo(() => {
@@ -331,7 +331,7 @@ export default function Suppliers() {
                 </div>
                 <div className="mt-4 space-y-2 text-sm">
                   {(() => {
-                  const custName = s.customer_name || (isAdmin && s.customer_id ? customerById.get(s.customer_id)?.name : null);
+                  const custName = s.customer_name || (s.customer_id ? customerById.get(s.customer_id)?.name : null);
                   if (!custName) return null;
                   return (
                     <div className="flex items-center gap-2 text-muted-foreground">
