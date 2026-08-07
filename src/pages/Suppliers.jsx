@@ -246,6 +246,26 @@ export default function Suppliers() {
         }
       />
 
+      {isAdmin && (
+        <div className="flex items-end gap-3">
+          <div className="space-y-1.5 flex-1 max-w-xs">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5" /> {t('suppliers_filter_customer')}</Label>
+            <Select value={customerFilter} onValueChange={setCustomerFilter}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={t('suppliers_filter_all_customers')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('suppliers_filter_all_customers')}</SelectItem>
+                <SelectItem value="unassigned">{t('suppliers_unassigned_customer')}</SelectItem>
+                {customers.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Badge variant="outline" className="ml-auto">{filtered.length} {t('suppliers_total')}</Badge>
+        </div>
+      )}
       <div className="flex items-center gap-2">
         {canBulkAction && filtered.length > 0 && (
           <Checkbox checked={allFilteredSelected} onCheckedChange={toggleSelectAll} aria-label={t('bulk_select_all')} />
@@ -254,21 +274,7 @@ export default function Suppliers() {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('suppliers_search')} className="pl-9" />
         </div>
-        {isAdmin && (
-          <Select value={customerFilter} onValueChange={setCustomerFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder={t('suppliers_filter_all_customers')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('suppliers_filter_all_customers')}</SelectItem>
-              <SelectItem value="unassigned">{t('suppliers_unassigned_customer')}</SelectItem>
-              {customers.map(c => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-        <Badge variant="outline" className="ml-auto">{filtered.length} {t('suppliers_total')}</Badge>
+        {!isAdmin && <Badge variant="outline" className="ml-auto">{filtered.length} {t('suppliers_total')}</Badge>}
       </div>
 
       {canBulkAction && (
