@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollText, X, Loader2, ChevronDown } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -74,6 +75,7 @@ export default function AuditLog() {
   const [filterUser, setFilterUser] = useState('all');
   const [filterEntity, setFilterEntity] = useState('all');
   const [filterSearch, setFilterSearch] = useState('');
+  const [selectedLog, setSelectedLog] = useState(null);
 
   const PAGE_SIZE = 500;
 
@@ -198,7 +200,7 @@ export default function AuditLog() {
                   <TableCell colSpan={5}><EmptyState compact title={t('audit_no_match')} /></TableCell>
                 </TableRow>
               ) : filtered.map(log => (
-                <TableRow key={log.id}>
+                <TableRow key={log.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedLog(log)}>
                   <TableCell className="text-xs font-mono text-muted-foreground">
                     {formatLocalTimestamp(log.created_date)}
                   </TableCell>
@@ -225,6 +227,38 @@ export default function AuditLog() {
           </Button>
         </div>
       )}
+
+      <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="capitalize">{selectedLog?.action?.replace(/_/g, ' ') || 'Audit log entry'}</DialogTitle>
+          </DialogHeader>
+          {selectedLog && (
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-2">
+                <Badge className={actionColors[selectedLog.action] || 'bg-muted text-muted-foreground'}>
+                  {selectedLog.action?.replace(/_/g, ' ')}
+                </Badge>
+                <span className="text-xs font-mono text-muted-foreground">{formatLocalTimestamp(selectedLog.created_date)}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-muted-foreground">User</div>
+                <div className="col-span-2 font-medium break-all">{selectedLog.user_email || '—'}</div>
+                <div className="text-muted-foreground">Entity type</div>
+                <div className="col-span-2 font-medium">{selectedLog.entity_type || '—'}</div>
+                <div className="text-muted-foreground">Entity ID</div>
+                <div className="col-span-2 font-mono text-xs break-all">{selectedLog.entity_id || '—'}</div>
+                <div className="text-muted-foreground">Customer ID</div>
+                <div className="col-span-2 font-mono text-xs break-all">{selectedLog.customer_id || '—'}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground mb-1">Details</div>
+                <div className="rounded-md border bg-muted/40 p-3 text-sm whitespace-pre-wrap break-words">{selectedLog.details || '—'}</div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
