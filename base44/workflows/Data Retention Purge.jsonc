@@ -1,0 +1,46 @@
+{
+  "name": "Data Retention Purge",
+  "description": "Nightly scan for records past their retention expiry \u2014 purges or archives DataProcessingActivity and DataSubjectRequest records, logging each action to the audit trail.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 2 * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "data_retention_purge",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "dataRetentionPurge",
+            "args": {
+              "automation_secret": "cm-automation-7f3a9b2e1d8c4a6f0b5e2c9d1a7f4e3b"
+            }
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "dataRetentionPurge"
+  }
+}
