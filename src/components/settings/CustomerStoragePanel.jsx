@@ -1,0 +1,96 @@
+import React, { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { HardDrive, Loader2, Save } from 'lucide-react';
+import { toast } from 'sonner';
+import { useLanguage } from '@/lib/LanguageContext';
+
+export default function CustomerStoragePanel() {
+  const { t } = useLanguage();
+  const queryClient = useQueryClient();
+
+  const [provider, setProvider] = useState('base44');
+  const [saving, setSaving] = useState(false);
+
+  const { data: customer, isLoading } = useQuery({
+    queryKey: ['my-customer-storage'],
+    queryFn: async () => {
+      const list = await base44.entities.Customer.list();
+      return list[0] || null;
+    },
+  });
+
+  useEffect(() => {
+    setProvider(customer?.storage_provider || 'base44');
+  }, [customer?.id, customer?.storage_provider]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await base44.functions.invoke('updateCustomerStorage', { provider });
+      if (res.data?.error) throw new Error(res.data.error);
+      queryClient.invalidateQueries({ queryKey: ['my-customer-storage'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast.success(t('storage_customer_saved'));
+    } catch (err) {
+      toast.error(err?.message || t('storage_customer_error'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!isLoading && !customer) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          {t('storage_customer_no_customer')}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <HardDrive className="w-4 h-4" />
+          {t('storage_customer_title')}
+        </CardTitle>
+        <CardDescription>{t('storage_customer_desc')}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            <div className="space-y-1.5 max-w-md">
+              <Label>{t('storage_settings_provider')}</Label>
+              <Select value={provider} onValueChange={setProvider}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="base44">{t('storage_provider_base44')}</SelectItem>
+                  <SelectItem value="google_drive">{t('storage_provider_google_drive')}</SelectItem>
+                  <SelectItem value="one_drive">{t('storage_provider_one_drive')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">{t('storage_customer_help')}</p>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t">
+              <Button onClick={handleSave} disabled={saving} className="gap-2">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {t('storage_settings_save')}
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

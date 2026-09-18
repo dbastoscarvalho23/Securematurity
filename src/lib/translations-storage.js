@@ -14,6 +14,12 @@ export const storageEn = {
   storage_settings_saved: 'Storage settings saved',
   storage_settings_error: 'Failed to save storage settings',
   storage_settings_admin_only: 'Only administrators can configure the application storage.',
+  storage_customer_title: 'Organisation Storage',
+  storage_customer_desc: 'Choose where your organisation\u2019s uploaded and generated files are stored.',
+  storage_customer_help: 'Applies to your organisation only and overrides the application default.',
+  storage_customer_saved: 'Storage setting saved',
+  storage_customer_error: 'Failed to save the storage setting',
+  storage_customer_no_customer: 'Your account is not linked to an organisation yet.',
 };
 
 export const storagePt = {
@@ -32,4 +38,10 @@ export const storagePt = {
   storage_settings_saved: 'Definições de armazenamento guardadas',
   storage_settings_error: 'Erro ao guardar as definições de armazenamento',
   storage_settings_admin_only: 'Apenas administradores podem configurar o armazenamento da aplicação.',
+  storage_customer_title: 'Armazenamento da Organiza\u00e7\u00e3o',
+  storage_customer_desc: 'Escolha onde s\u00e3o guardados os ficheiros carregados e gerados pela sua organiza\u00e7\u00e3o.',
+  storage_customer_help: 'Aplica-se apenas \u00e0 sua organiza\u00e7\u00e3o e substitui a predefini\u00e7\u00e3o da aplica\u00e7\u00e3o.',
+  storage_customer_saved: 'Defini\u00e7\u00e3o de armazenamento guardada',
+  storage_customer_error: 'Erro ao guardar a defini\u00e7\u00e3o de armazenamento',
+  storage_customer_no_customer: 'A sua conta ainda n\u00e3o est\u00e1 associada a uma organiza\u00e7\u00e3o.',
 };

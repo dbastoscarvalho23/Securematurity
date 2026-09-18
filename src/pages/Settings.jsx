@@ -23,6 +23,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import EditUserDialog from '@/components/settings/EditUserDialog';
 import MaintenanceWindowPanel from '@/components/settings/MaintenanceWindowPanel';
 import StorageSettingsPanel from '@/components/settings/StorageSettingsPanel';
+import CustomerStoragePanel from '@/components/settings/CustomerStoragePanel';
 import ReminderSettingsPanel from '@/components/settings/ReminderSettingsPanel';
 import GeneratedReportsPanel from '@/components/genreports/GeneratedReportsPanel';
 import TrainingReportsPanel from '@/components/genreports/TrainingReportsPanel';
@@ -515,7 +516,7 @@ export default function Settings() {
           {isAdmin && (
             <TabsTrigger value="app" className="flex items-center gap-1.5"><SettingsIcon className="w-3.5 h-3.5" />{t('settings_tab_app')}</TabsTrigger>
           )}
-          {isAdmin && (
+          {(isAdmin || isCustomerAdmin) && (
             <TabsTrigger value="storage" className="flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" />{t('settings_tab_storage')}</TabsTrigger>
           )}
         </TabsList>
@@ -1162,9 +1163,10 @@ export default function Settings() {
         )}
 
         {/* Storage Tab — external storage configuration */}
-        {isAdmin && (
+        {(isAdmin || isCustomerAdmin) && (
           <TabsContent value="storage" className="space-y-4 mt-4">
-            <StorageSettingsPanel isAdmin={isAdmin} />
+            {isAdmin && <StorageSettingsPanel isAdmin={isAdmin} />}
+            {isCustomerAdmin && <CustomerStoragePanel />}
           </TabsContent>
         )}
       </Tabs>
