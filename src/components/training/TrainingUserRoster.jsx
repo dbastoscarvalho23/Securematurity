@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { uploadFile } from '@/lib/cloudStorage';
 import { useLanguage } from '@/lib/LanguageContext';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -52,7 +53,7 @@ export default function TrainingUserRoster({ customer }) {
       const result = exportTrainingReportPdf(u, userEnr, trainings, customer, t, language);
       if (result?.blob) {
         const file = new File([result.blob], result.filename, { type: 'application/pdf' });
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await uploadFile(file, customer?.id);
         await base44.entities.TrainingReport.create({
           customer_id: customer.id,
           customer_name: customer.name,

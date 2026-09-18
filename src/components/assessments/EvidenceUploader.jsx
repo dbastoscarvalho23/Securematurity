@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { uploadFile } from '@/lib/cloudStorage';
 import { Paperclip, X, Loader2, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -13,7 +13,7 @@ export default function EvidenceUploader({ attachments = [], onAttachmentsChange
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await uploadFile(file);
     const updated = [...attachments, { name: file.name, url: file_url }];
     onAttachmentsChange(updated);
     setUploading(false);

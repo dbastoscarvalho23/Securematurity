@@ -53,6 +53,7 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
     notes: customer?.notes || '',
     user_seat_limit: customer?.user_seat_limit ?? 5,
     user_seat_addon_count: customer?.user_seat_addon_count ?? 0,
+    storage_provider: customer?.storage_provider || 'base44',
   });
 
   const toggleFramework = (code) => {
@@ -156,6 +157,21 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
                   <span className="text-sm">{fw.name}</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label>{t('storage_provider_label')}</Label>
+              <Select value={form.storage_provider} onValueChange={v => set('storage_provider', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="base44">{t('storage_provider_base44')}</SelectItem>
+                  <SelectItem value="google_drive">{t('storage_provider_google_drive')}</SelectItem>
+                  <SelectItem value="one_drive">{t('storage_provider_one_drive')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">{t('storage_provider_help')}</p>
             </div>
           </div>
 

@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { base44 } from '@/api/base44Client';
+import { uploadFile } from '@/lib/cloudStorage';
 import { Upload, Loader2, FileText, X } from 'lucide-react';
 import { validators, validateForm, hasErrors } from '@/lib/validation';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -48,7 +49,7 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await uploadFile(file);
     set('file_url', file_url);
     set('file_name', file.name);
     setUploading(false);

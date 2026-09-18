@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Upload } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { uploadFile } from '@/lib/cloudStorage';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -53,7 +54,7 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await uploadFile(file, form.customer_id);
     set('file_url', file_url);
     set('file_name', file.name);
     setUploading(false);

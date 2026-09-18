@@ -97,6 +97,16 @@
       "type": "number",
       "default": 0,
       "description": "Additional paid seats granted by platform admin"
+    },
+    "storage_provider": {
+      "type": "string",
+      "enum": [
+        "base44",
+        "google_drive",
+        "one_drive"
+      ],
+      "default": "base44",
+      "description": "External cloud storage provider where this customer's uploaded and generated files are stored"
     }
   },
   "required": [

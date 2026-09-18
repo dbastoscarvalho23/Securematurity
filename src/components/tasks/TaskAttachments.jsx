@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { uploadFile } from '@/lib/cloudStorage';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,7 @@ export default function TaskAttachments({ attachments = [], onChange }) {
     try {
       const uploaded = [];
       for (const file of Array.from(files)) {
-        const res = await base44.integrations.Core.UploadFile({ file });
+        const res = await uploadFile(file);
         uploaded.push({
           name: file.name,
           url: res.file_url,
