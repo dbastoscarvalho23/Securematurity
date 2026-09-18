@@ -123,7 +123,9 @@ export default async function (req) {
       return Response.json({ error: 'A valid file_url is required' }, { status: 400 });
     }
 
-    let provider = 'base44';
+    // A customer pointed at an external provider overrides the app-wide default
+    // configured in Settings; otherwise the application default applies.
+    let provider = null;
     if (customerId) {
       let customer = null;
       try {
@@ -131,7 +133,16 @@ export default async function (req) {
       } catch (_) {
         customer = null;
       }
-      provider = (customer && customer.storage_provider) || 'base44';
+      const customerProvider = customer && customer.storage_provider;
+      if (customerProvider && customerProvider !== 'base44') provider = customerProvider;
+    }
+    if (!provider) {
+      try {
+        const settings = await base44.asServiceRole.entities.StorageSettings.list();
+        provider = (settings[0] && settings[0].provider) || 'base44';
+      } catch (_) {
+        provider = 'base44';
+      }
     }
 
     if (provider === 'base44') {

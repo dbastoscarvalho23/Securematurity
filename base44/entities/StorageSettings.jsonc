@@ -1,0 +1,41 @@
+{
+  "name": "StorageSettings",
+  "type": "object",
+  "properties": {
+    "provider": {
+      "type": "string",
+      "enum": [
+        "base44",
+        "google_drive",
+        "one_drive"
+      ],
+      "default": "base44",
+      "description": "Application-wide storage provider used for uploaded and generated files"
+    },
+    "updated_by_email": {
+      "type": "string",
+      "description": "Email of the admin who last updated the configuration"
+    }
+  },
+  "required": [
+    "provider"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

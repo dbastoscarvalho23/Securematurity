@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PageHeader from '@/components/shared/PageHeader';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
-import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight, Bell, Link, Upload, FileText, ExternalLink, FileBarChart, GraduationCap, Clock } from 'lucide-react';
+import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight, Bell, Link, Upload, FileText, ExternalLink, FileBarChart, GraduationCap, Clock, HardDrive } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
@@ -22,6 +22,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import EditUserDialog from '@/components/settings/EditUserDialog';
 import MaintenanceWindowPanel from '@/components/settings/MaintenanceWindowPanel';
+import StorageSettingsPanel from '@/components/settings/StorageSettingsPanel';
 import ReminderSettingsPanel from '@/components/settings/ReminderSettingsPanel';
 import GeneratedReportsPanel from '@/components/genreports/GeneratedReportsPanel';
 import TrainingReportsPanel from '@/components/genreports/TrainingReportsPanel';
@@ -513,6 +514,9 @@ export default function Settings() {
           )}
           {isAdmin && (
             <TabsTrigger value="app" className="flex items-center gap-1.5"><SettingsIcon className="w-3.5 h-3.5" />{t('settings_tab_app')}</TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="storage" className="flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" />{t('settings_tab_storage')}</TabsTrigger>
           )}
         </TabsList>
 
@@ -1154,6 +1158,13 @@ export default function Settings() {
         {isAdmin && (
           <TabsContent value="app" className="space-y-4 mt-4">
             <MaintenanceWindowPanel isAdmin={isAdmin} />
+          </TabsContent>
+        )}
+
+        {/* Storage Tab — external storage configuration */}
+        {isAdmin && (
+          <TabsContent value="storage" className="space-y-4 mt-4">
+            <StorageSettingsPanel isAdmin={isAdmin} />
           </TabsContent>
         )}
       </Tabs>
