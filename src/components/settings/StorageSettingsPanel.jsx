@@ -11,6 +11,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
 
+const ALL_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
+
 export default function StorageSettingsPanel({ isAdmin }) {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -27,9 +29,12 @@ export default function StorageSettingsPanel({ isAdmin }) {
     },
   });
 
+  const enabledProviders = config?.enabled_providers?.length ? config.enabled_providers : ALL_PROVIDERS;
+
   useEffect(() => {
-    if (config?.provider) setProvider(config.provider);
-  }, [config?.id, config?.provider]);
+    const saved = config?.provider || 'base44';
+    setProvider(enabledProviders.includes(saved) ? saved : 'base44');
+  }, [config?.id, config?.provider, config?.enabled_providers]);
 
   const handleSave = async () => {
     if (!isAdmin) return;
@@ -87,9 +92,9 @@ export default function StorageSettingsPanel({ isAdmin }) {
               <Select value={provider} onValueChange={setProvider}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="base44">{t('storage_provider_base44')}</SelectItem>
-                  <SelectItem value="google_drive">{t('storage_provider_google_drive')}</SelectItem>
-                  <SelectItem value="one_drive">{t('storage_provider_one_drive')}</SelectItem>
+                  {enabledProviders.includes('base44') && <SelectItem value="base44">{t('storage_provider_base44')}</SelectItem>}
+                  {enabledProviders.includes('google_drive') && <SelectItem value="google_drive">{t('storage_provider_google_drive')}</SelectItem>}
+                  {enabledProviders.includes('one_drive') && <SelectItem value="one_drive">{t('storage_provider_one_drive')}</SelectItem>}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">{t('storage_settings_provider_help')}</p>

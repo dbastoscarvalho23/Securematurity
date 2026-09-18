@@ -9,6 +9,8 @@ import { HardDrive, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 
+const ALL_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
+
 export default function CustomerStoragePanel() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
@@ -23,6 +25,18 @@ export default function CustomerStoragePanel() {
       return list[0] || null;
     },
   });
+
+  // Only providers the platform administrator enabled can be selected; the
+  // customer's current provider always stays visible so it can be changed.
+  const { data: config } = useQuery({
+    queryKey: ['storage-settings'],
+    queryFn: async () => {
+      const list = await base44.entities.StorageSettings.list();
+      return list[0] || null;
+    },
+  });
+  const enabledProviders = config?.enabled_providers?.length ? config.enabled_providers : ALL_PROVIDERS;
+  const providerOptions = Array.from(new Set([...enabledProviders, provider]));
 
   useEffect(() => {
     setProvider(customer?.storage_provider || 'base44');
@@ -74,9 +88,15 @@ export default function CustomerStoragePanel() {
               <Select value={provider} onValueChange={setProvider}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="base44">{t('storage_provider_base44')}</SelectItem>
-                  <SelectItem value="google_drive">{t('storage_provider_google_drive')}</SelectItem>
-                  <SelectItem value="one_drive">{t('storage_provider_one_drive')}</SelectItem>
+                  {providerOptions.map((id) => (
+                    <SelectItem key={id} value={id}>
+                      {id === 'google_drive'
+                        ? t('storage_provider_google_drive')
+                        : id === 'one_drive'
+                          ? t('storage_provider_one_drive')
+                          : t('storage_provider_base44')}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">{t('storage_customer_help')}</p>

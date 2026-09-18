@@ -123,6 +123,22 @@ export default async function (req) {
       return Response.json({ error: 'A valid file_url is required' }, { status: 400 });
     }
 
+    // Which third-party providers are enabled platform-wide. A disabled provider
+    // always falls back to app storage, whatever a customer or the default says.
+    let enabledProviders = null;
+    let defaultProvider = 'base44';
+    try {
+      const settings = await base44.asServiceRole.entities.StorageSettings.list();
+      const config = settings[0] || null;
+      defaultProvider = (config && config.provider) || 'base44';
+      enabledProviders = config && config.enabled_providers && config.enabled_providers.length
+        ? config.enabled_providers
+        : null;
+    } catch (_) {
+      enabledProviders = null;
+    }
+    const isEnabled = (id) => id === 'base44' || !enabledProviders || enabledProviders.includes(id);
+
     // A customer pointed at an external provider overrides the app-wide default
     // configured in Settings; otherwise the application default applies.
     let provider = null;
@@ -134,16 +150,12 @@ export default async function (req) {
         customer = null;
       }
       const customerProvider = customer && customer.storage_provider;
-      if (customerProvider && customerProvider !== 'base44') provider = customerProvider;
-    }
-    if (!provider) {
-      try {
-        const settings = await base44.asServiceRole.entities.StorageSettings.list();
-        provider = (settings[0] && settings[0].provider) || 'base44';
-      } catch (_) {
-        provider = 'base44';
+      if (customerProvider && customerProvider !== 'base44' && isEnabled(customerProvider)) {
+        provider = customerProvider;
       }
     }
+    if (!provider && isEnabled(defaultProvider)) provider = defaultProvider;
+    if (!provider) provider = 'base44';
 
     if (provider === 'base44') {
       return Response.json({ url: fileUrl, provider: 'base44' });

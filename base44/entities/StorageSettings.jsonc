@@ -12,6 +12,13 @@
       "default": "base44",
       "description": "Application-wide storage provider used for uploaded and generated files"
     },
+    "enabled_providers": {
+      "type": "array",
+      "description": "Third-party storage providers enabled platform-wide. Only these can be selected by an organisation; an empty value means all providers are available.",
+      "items": {
+        "type": "string"
+      }
+    },
     "updated_by_email": {
       "type": "string",
       "description": "Email of the admin who last updated the configuration"
