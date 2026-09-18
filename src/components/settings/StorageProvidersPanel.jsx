@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Cloud, HardDrive, Loader2, Save } from 'lucide-react';
+import { Cloud, HardDrive, Loader2, Save, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -139,6 +139,11 @@ export default function StorageProvidersPanel() {
                   </div>
                 );
               })}
+            </div>
+
+            <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
+              <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>{t('storage_providers_account_note')}</span>
             </div>
 
             <div className="flex justify-end pt-2 border-t">
