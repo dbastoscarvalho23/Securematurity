@@ -30,6 +30,11 @@ export const storageEn = {
   storage_providers_not_connected_hint: 'Not connected yet \u2014 files fall back to app storage until the connection is authorised.',
   storage_providers_saved: 'Storage providers updated',
   storage_providers_error: 'Failed to update storage providers',
+  storage_assignments_title: 'Customer Storage',
+  storage_assignments_desc: 'Set which storage provider each organisation uses. "Application default" follows the provider set above.',
+  storage_assignments_empty: 'No customers yet.',
+  storage_assignments_saved: 'Customer storage updated',
+  storage_assignments_error: 'Failed to update customer storage',
 };
 
 export const storagePt = {
@@ -64,4 +69,9 @@ export const storagePt = {
   storage_providers_not_connected_hint: 'Ainda n\u00e3o est\u00e1 ligado \u2014 os ficheiros usam o armazenamento da aplica\u00e7\u00e3o at\u00e9 a liga\u00e7\u00e3o ser autorizada.',
   storage_providers_saved: 'Fornecedores de armazenamento atualizados',
   storage_providers_error: 'Erro ao atualizar os fornecedores de armazenamento',
+  storage_assignments_title: 'Armazenamento por Cliente',
+  storage_assignments_desc: 'Defina qual o fornecedor de armazenamento usado por cada organiza\u00e7\u00e3o. "Predefinido da aplica\u00e7\u00e3o" segue o fornecedor definido acima.',
+  storage_assignments_empty: 'Ainda n\u00e3o existem clientes.',
+  storage_assignments_saved: 'Armazenamento do cliente atualizado',
+  storage_assignments_error: 'Erro ao atualizar o armazenamento do cliente',
 };

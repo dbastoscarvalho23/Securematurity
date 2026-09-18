@@ -25,6 +25,7 @@ import MaintenanceWindowPanel from '@/components/settings/MaintenanceWindowPanel
 import StorageSettingsPanel from '@/components/settings/StorageSettingsPanel';
 import CustomerStoragePanel from '@/components/settings/CustomerStoragePanel';
 import StorageProvidersPanel from '@/components/settings/StorageProvidersPanel';
+import CustomerStorageAssignmentsPanel from '@/components/settings/CustomerStorageAssignmentsPanel';
 import ReminderSettingsPanel from '@/components/settings/ReminderSettingsPanel';
 import GeneratedReportsPanel from '@/components/genreports/GeneratedReportsPanel';
 import TrainingReportsPanel from '@/components/genreports/TrainingReportsPanel';
@@ -1168,6 +1169,7 @@ export default function Settings() {
           <TabsContent value="storage" className="space-y-4 mt-4">
             {isAdmin && <StorageProvidersPanel />}
             {isAdmin && <StorageSettingsPanel isAdmin={isAdmin} />}
+            {isAdmin && <CustomerStorageAssignmentsPanel />}
             {isCustomerAdmin && <CustomerStoragePanel />}
           </TabsContent>
         )}
