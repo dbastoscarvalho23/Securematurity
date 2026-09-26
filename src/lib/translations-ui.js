@@ -2,21 +2,6 @@
 // Merged into translations via Object.assign at the bottom of translations.js.
 
 export const uiEn = {
-  // Landing page
-  landing_tagline: 'Security Assessment Platform',
-  landing_hero_title: 'Manage your cybersecurity maturity with confidence',
-  landing_hero_desc: 'A comprehensive platform for conducting compliance assessments, tracking remediation and generating actionable insights.',
-  landing_feature_1: 'Multi-framework cybersecurity assessments (NIS2, ISO 27001, NIST CSF, CIS v8, QNRC, GDPR)',
-  landing_feature_2: 'AI-generated recommendations and action plans',
-  landing_feature_3: 'Real-time maturity scoring and trend analysis',
-  landing_feature_4: 'Evidence management and audit trail',
-  landing_copyright: '© 2026 AnkoraOne Platform. All rights reserved.',
-  landing_welcome: 'Welcome back',
-  landing_signin_desc: 'Sign in to access your security dashboard',
-  landing_signin: 'Sign In',
-  landing_access_note_1: 'Access is restricted to invited users only.',
-  landing_access_note_2: 'Contact your administrator to request access.',
-  landing_signup: 'Sign Up',
   register_title: 'Create your account',
   register_subtitle: 'Set up your password to activate your access',
   register_email: 'Email',
@@ -390,21 +375,6 @@ export const uiEn = {
 };
 
 export const uiPt = {
-  // Landing page
-  landing_tagline: 'Plataforma de Avaliação de Segurança',
-  landing_hero_title: 'Gerir a maturidade de cibersegurança com confiança',
-  landing_hero_desc: 'Uma plataforma abrangente para realizar avaliações de conformidade, acompanhar a remediação e gerar insights acionáveis.',
-  landing_feature_1: 'Avaliações de cibersegurança multi-framework (NIS2, ISO 27001, NIST CSF, CIS v8, QNRC, RGPD)',
-  landing_feature_2: 'Recomendações e planos de ação gerados por IA',
-  landing_feature_3: 'Pontuação de maturidade e análise de tendências em tempo real',
-  landing_feature_4: 'Gestão de evidências e trilha de auditoria',
-  landing_copyright: '© 2026 Plataforma AnkoraOne. Todos os direitos reservados.',
-  landing_welcome: 'Bem-vindo de novo',
-  landing_signin_desc: 'Inicie sessão para aceder ao seu painel de segurança',
-  landing_signin: 'Iniciar Sessão',
-  landing_access_note_1: 'O acesso é restrito apenas a utilizadores convidados.',
-  landing_access_note_2: 'Contacte o seu administrador para pedir acesso.',
-  landing_signup: 'Criar Conta',
   register_title: 'Criar a sua conta',
   register_subtitle: 'Defina a sua palavra-passe para ativar o acesso',
   register_email: 'Email',

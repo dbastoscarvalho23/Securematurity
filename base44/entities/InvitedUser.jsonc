@@ -51,9 +51,16 @@
           }
         },
         {
-          "user_condition": {
-            "role": "customer_admin"
-          }
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
         }
       ]
     },
