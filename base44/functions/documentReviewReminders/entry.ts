@@ -1,9 +1,28 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { escapeHtml } from "../../shared/escapeHtml.ts";
+import { extractAutomationSecret } from '../../shared/automationSecret.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Authorization: scheduled automation passes the shared secret
+    // (body.args.automation_secret or x-automation-secret header); manual admin
+    // triggers authenticate via base44.auth.me(). Anonymous external callers are
+    // rejected before any service-role query / email dispatch.
+    const body = await req.json().catch(() => null);
+    let authorized = !!extractAutomationSecret(req, body);
+    if (!authorized) {
+      try {
+        const user = await base44.auth.me();
+        authorized = user?.role === 'admin';
+      } catch {
+        authorized = false;
+      }
+    }
+    if (!authorized) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     // This is a scheduled/system function — use service role
     const today = new Date();
