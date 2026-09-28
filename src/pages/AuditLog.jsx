@@ -11,6 +11,7 @@ import { ScrollText, X, Loader2, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import { canView, normalizeRole } from '@/lib/rbac';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
@@ -117,7 +118,9 @@ export default function AuditLog() {
     setFilterSearch('');
   };
 
-  if (user?.role !== 'admin') {
+  const role = normalizeRole(user?.role);
+
+  if (!canView(role, 'audit_log')) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center space-y-2">
         <ScrollText className="w-10 h-10 text-muted-foreground opacity-40" />
