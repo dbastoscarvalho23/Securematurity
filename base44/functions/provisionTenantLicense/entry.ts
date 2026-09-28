@@ -27,6 +27,12 @@ import { TIER_MODULES, LEGACY_TIER_ALIASES, getEffectiveLicense } from "../../sh
  * master_admin (qualquer cliente) e workspace_admin (só a sua carteira).
  *
  * Acções: create | update | suspend | resume | set_module | set_standard
+ *
+ * Cada acção deixa dois rastos: a entrada de `AuditLog` (trilha técnica) e uma
+ * linha em `LicenseChangeLog` com o autor, o motivo e o antes/depois do estado
+ * relevante (subscrição, módulos e standards) — é o que o cartão «Histórico de
+ * licenciamento» mostra em /licensing (FB1.12). Esta função é o único escritor
+ * dessa entidade.
  */
 const ACTIONS = ["create", "update", "suspend", "resume", "set_module", "set_standard"];
 
@@ -77,7 +83,7 @@ Deno.serve(async (req) => {
       case "suspend":
         return await suspendSubscription(base44, user, customer, body);
       case "resume":
-        return await resumeSubscription(base44, user, customer);
+        return await resumeSubscription(base44, user, customer, body);
       case "set_module":
         return await setModule(base44, user, customer, body);
       case "set_standard":
@@ -125,6 +131,8 @@ async function createSubscription(base44: any, user: any, customer: any, body: a
     return Response.json({ error: "seat_limit tem de ser um número positivo." }, { status: 400 });
   }
 
+  const beforeState = await licenseState(base44, customer.id);
+
   const subscription = await base44.asServiceRole.entities.TenantSubscription.create({
     customer_id: customer.id,
     customer_name: customer.name || "",
@@ -141,6 +149,15 @@ async function createSubscription(base44: any, user: any, customer: any, body: a
   await audit(base44, user, "license_subscription_created", customer, subscription.id, {
     tier_code: tier,
     seat_limit: seatLimit,
+  });
+  await recordChange(base44, user, {
+    action: "create",
+    customer,
+    entityType: "TenantSubscription",
+    entityId: subscription.id,
+    reason: body.reason,
+    beforeState,
+    afterState: await licenseState(base44, customer.id),
   });
 
   return await respond(base44, customer.id, subscription);
@@ -167,7 +184,9 @@ async function updateSubscription(base44: any, user: any, customer: any, body: a
     }
     patch.seat_limit = seatLimit;
   }
-  if (body.expires_date !== undefined) patch.expires_date = body.expires_date;
+  // Data vazia limpa a validade: `TenantSubscription.expires_date` declara o
+  // tipo união para o validador aceitar o null (limitação conhecida do emulador).
+  if (body.expires_date !== undefined) patch.expires_date = body.expires_date || null;
   if (body.started_date !== undefined) patch.started_date = body.started_date;
   if (body.notes !== undefined) patch.notes = body.notes;
 
@@ -175,8 +194,18 @@ async function updateSubscription(base44: any, user: any, customer: any, body: a
     return Response.json({ error: "Nada para alterar." }, { status: 400 });
   }
 
+  const beforeState = await licenseState(base44, customer.id);
   const updated = await base44.asServiceRole.entities.TenantSubscription.update(subscription.id, patch);
   await audit(base44, user, "license_subscription_updated", customer, subscription.id, patch);
+  await recordChange(base44, user, {
+    action: "update",
+    customer,
+    entityType: "TenantSubscription",
+    entityId: subscription.id,
+    reason: body.reason,
+    beforeState,
+    afterState: await licenseState(base44, customer.id),
+  });
   return await respond(base44, customer.id, updated);
 }
 
@@ -194,6 +223,7 @@ async function suspendSubscription(base44: any, user: any, customer: any, body: 
     return Response.json({ error: `grace_days tem de estar entre 0 e ${MAX_GRACE_DAYS}.` }, { status: 400 });
   }
 
+  const beforeState = await licenseState(base44, customer.id);
   const graceUntil = days > 0 ? new Date(Date.now() + days * 86400000).toISOString() : null;
   const updated = await base44.asServiceRole.entities.TenantSubscription.update(subscription.id, {
     status: "suspended",
@@ -206,20 +236,39 @@ async function suspendSubscription(base44: any, user: any, customer: any, body: 
     grace_days: days,
     reason: body.reason || "",
   });
+  await recordChange(base44, user, {
+    action: "suspend",
+    customer,
+    entityType: "TenantSubscription",
+    entityId: subscription.id,
+    reason: body.reason,
+    beforeState,
+    afterState: await licenseState(base44, customer.id),
+  });
 
   return await respond(base44, customer.id, updated);
 }
 
-async function resumeSubscription(base44: any, user: any, customer: any) {
+async function resumeSubscription(base44: any, user: any, customer: any, body: any = {}) {
   const subscription = await findByCustomer(base44, customer.id);
   if (!subscription) return Response.json({ error: "Cliente sem subscrição." }, { status: 404 });
 
+  const beforeState = await licenseState(base44, customer.id);
   const updated = await base44.asServiceRole.entities.TenantSubscription.update(subscription.id, {
     status: "active",
     grace_until: null,
   });
 
   await audit(base44, user, "license_subscription_resumed", customer, subscription.id, {});
+  await recordChange(base44, user, {
+    action: "resume",
+    customer,
+    entityType: "TenantSubscription",
+    entityId: subscription.id,
+    reason: body.reason,
+    beforeState,
+    afterState: await licenseState(base44, customer.id),
+  });
   return await respond(base44, customer.id, updated);
 }
 
@@ -238,6 +287,7 @@ async function setModule(base44: any, user: any, customer: any, body: any) {
   const expiresAt = body.expires_at || null;
   const nowIso = new Date().toISOString();
 
+  const beforeState = await licenseState(base44, customer.id);
   const existing = await base44.asServiceRole.entities.TenantModule.filter({
     customer_id: customer.id,
     module_code: moduleCode,
@@ -262,6 +312,15 @@ async function setModule(base44: any, user: any, customer: any, body: any) {
     reason,
     expires_at: expiresAt,
   });
+  await recordChange(base44, user, {
+    action: "set_module",
+    customer,
+    entityType: "TenantModule",
+    entityId: saved.id,
+    reason,
+    beforeState,
+    afterState: await licenseState(base44, customer.id),
+  });
 
   return await respond(base44, customer.id, await findByCustomer(base44, customer.id), { module: saved });
 }
@@ -271,6 +330,7 @@ async function setStandard(base44: any, user: any, customer: any, body: any) {
   if (!standardCode) return Response.json({ error: "standard_code is required" }, { status: 400 });
 
   const status = body.active === false ? "inactive" : "active";
+  const beforeState = await licenseState(base44, customer.id);
   const existing = await base44.asServiceRole.entities.TenantStandard.filter({
     customer_id: customer.id,
     standard_code: standardCode,
@@ -291,8 +351,108 @@ async function setStandard(base44: any, user: any, customer: any, body: any) {
     standard_code: standardCode,
     status,
   });
+  await recordChange(base44, user, {
+    action: "set_standard",
+    customer,
+    entityType: "TenantStandard",
+    entityId: saved.id,
+    reason: body.reason,
+    beforeState,
+    afterState: await licenseState(base44, customer.id),
+  });
 
   return await respond(base44, customer.id, await findByCustomer(base44, customer.id));
+}
+
+/**
+ * Estado relevante da licença de um tenant: subscrição, excepções por módulo e
+ * standards. É a matéria-prima do antes/depois que o histórico mostra.
+ */
+const SUBSCRIPTION_FIELDS = [
+  "tier_code",
+  "status",
+  "seat_limit",
+  "seats_used",
+  "started_date",
+  "expires_date",
+  "notes",
+  "grace_until",
+];
+
+async function licenseState(base44: any, customerId: string) {
+  const subs = await base44.asServiceRole.entities.TenantSubscription.filter({ customer_id: customerId });
+  const modules = await base44.asServiceRole.entities.TenantModule.filter({ customer_id: customerId });
+  const standards = await base44.asServiceRole.entities.TenantStandard.filter({ customer_id: customerId });
+
+  return {
+    subscription: subs[0] || null,
+    modules: modules.map((m: any) => ({
+      module_code: m.module_code,
+      status: m.status ?? null,
+      expires_at: m.expires_at ?? null,
+    })),
+    standards: standards.map((s: any) => ({
+      standard_code: s.standard_code,
+      status: s.status ?? null,
+    })),
+  };
+}
+
+/** Diff dos dois estados: códigos de campo alterados e os valores antes/depois. */
+function diffStates(before: any, after: any) {
+  const changedFields: string[] = [];
+  const beforeDiff: any = { subscription: null, modules: [], standards: [] };
+  const afterDiff: any = { subscription: null, modules: [], standards: [] };
+
+  for (const field of SUBSCRIPTION_FIELDS) {
+    const previous = before.subscription ? before.subscription[field] ?? null : null;
+    const next = after.subscription ? after.subscription[field] ?? null : null;
+    if (JSON.stringify(previous) === JSON.stringify(next)) continue;
+    changedFields.push(field);
+    beforeDiff.subscription = { ...(beforeDiff.subscription || {}), [field]: previous };
+    afterDiff.subscription = { ...(afterDiff.subscription || {}), [field]: next };
+  }
+
+  const keyed = (rows: any[], key: string) => new Map(rows.map((row: any) => [row[key], row]));
+  const collect = (beforeRows: any[], afterRows: any[], key: string, prefix: string) => {
+    const previous = keyed(beforeRows || [], key);
+    const next = keyed(afterRows || [], key);
+    for (const code of new Set([...previous.keys(), ...next.keys()])) {
+      const from = previous.get(code) || null;
+      const to = next.get(code) || null;
+      if (JSON.stringify(from) === JSON.stringify(to)) continue;
+      changedFields.push(`${prefix}${code}`);
+      if (from) beforeDiff[key === "module_code" ? "modules" : "standards"].push(from);
+      if (to) afterDiff[key === "module_code" ? "modules" : "standards"].push(to);
+    }
+  };
+  collect(before.modules, after.modules, "module_code", "module:");
+  collect(before.standards, after.standards, "standard_code", "standard:");
+
+  return { changedFields: changedFields.sort(), before: beforeDiff, after: afterDiff };
+}
+
+/**
+ * A linha de histórico da alteração. Sem campos alterados não se escreve nada:
+ * uma repetição da mesma operação não inventa histórico.
+ */
+async function recordChange(base44: any, user: any, change: any) {
+  const diff = diffStates(change.beforeState, change.afterState);
+  if (diff.changedFields.length === 0) return;
+
+  await base44.asServiceRole.entities.LicenseChangeLog.create({
+    customer_id: change.customer.id,
+    customer_name: change.customer.name || "",
+    action: change.action,
+    actor_email: user.email || "",
+    actor_role: normalizeRole(user.role),
+    entity_type: change.entityType,
+    entity_id: change.entityId || "",
+    reason: change.reason || "",
+    changed_fields: diff.changedFields,
+    before: change.action === "create" ? null : diff.before,
+    after: diff.after,
+  });
 }
 
 /** Todo o licenciamento fica registado: quem, o quê, em que cliente, quando. */

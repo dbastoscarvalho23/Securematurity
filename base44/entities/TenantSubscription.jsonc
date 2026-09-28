@@ -27,9 +27,9 @@
       "description": "Subscription start date"
     },
     "expires_date": {
-      "type": "string",
+      "type": ["string", "null"],
       "format": "date",
-      "description": "Subscription expiry date"
+      "description": "Subscription expiry date (null = sem validade definida)"
     },
     "trial_ends_at": {
       "type": "string",

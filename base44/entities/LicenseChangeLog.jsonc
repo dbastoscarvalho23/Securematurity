@@ -1,0 +1,148 @@
+{
+  "name": "LicenseChangeLog",
+  "type": "object",
+  "description": "Histórico de alterações de licenciamento (FB1.12). A escrita é exclusiva do provisionTenantLicense (papel de serviço) e a leitura passa por listLicenseChanges — nenhuma página escreve esta entidade.",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Tenant cuja licença foi alterada"
+    },
+    "customer_name": {
+      "type": ["string", "null"],
+      "description": "Nome do tenant (denormalizado, para a lista)"
+    },
+    "action": {
+      "type": "string",
+      "enum": ["create", "update", "suspend", "resume", "set_module", "set_standard"],
+      "description": "Operação de licenciamento que alterou a licença"
+    },
+    "actor_email": {
+      "type": "string",
+      "description": "Quem fez a alteração"
+    },
+    "actor_role": {
+      "type": ["string", "null"],
+      "description": "Papel canónico de quem fez a alteração, no momento da operação"
+    },
+    "entity_type": {
+      "type": ["string", "null"],
+      "description": "Entidade escrita pela operação (TenantSubscription, TenantModule, TenantStandard)"
+    },
+    "entity_id": {
+      "type": ["string", "null"],
+      "description": "Identificador do registo escrito"
+    },
+    "reason": {
+      "type": ["string", "null"],
+      "description": "Motivo indicado na operação"
+    },
+    "changed_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Códigos dos campos cujo valor mudou (p.ex. tier_code, module:supplier_management)"
+    },
+    "before": {
+      "type": ["object", "null"],
+      "description": "Estado anterior — só os campos alterados da subscrição, dos módulos e dos standards; null na criação",
+      "properties": {
+        "subscription": {
+          "type": ["object", "null"],
+          "description": "Campos alterados da subscrição",
+          "properties": {
+            "tier_code": { "type": ["string", "null"] },
+            "status": { "type": ["string", "null"] },
+            "seat_limit": { "type": ["number", "null"] },
+            "seats_used": { "type": ["number", "null"] },
+            "started_date": { "type": ["string", "null"] },
+            "expires_date": { "type": ["string", "null"] },
+            "notes": { "type": ["string", "null"] },
+            "grace_until": { "type": ["string", "null"] }
+          }
+        },
+        "modules": {
+          "type": ["array", "null"],
+          "description": "Excepções por módulo alteradas",
+          "items": {
+            "type": "object",
+            "properties": {
+              "module_code": { "type": "string" },
+              "status": { "type": ["string", "null"] },
+              "expires_at": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "standards": {
+          "type": ["array", "null"],
+          "description": "Standards alterados",
+          "items": {
+            "type": "object",
+            "properties": {
+              "standard_code": { "type": "string" },
+              "status": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "after": {
+      "type": ["object", "null"],
+      "description": "Estado novo — só os campos alterados da subscrição, dos módulos e dos standards",
+      "properties": {
+        "subscription": {
+          "type": ["object", "null"],
+          "description": "Campos alterados da subscrição",
+          "properties": {
+            "tier_code": { "type": ["string", "null"] },
+            "status": { "type": ["string", "null"] },
+            "seat_limit": { "type": ["number", "null"] },
+            "seats_used": { "type": ["number", "null"] },
+            "started_date": { "type": ["string", "null"] },
+            "expires_date": { "type": ["string", "null"] },
+            "notes": { "type": ["string", "null"] },
+            "grace_until": { "type": ["string", "null"] }
+          }
+        },
+        "modules": {
+          "type": ["array", "null"],
+          "description": "Excepções por módulo alteradas",
+          "items": {
+            "type": "object",
+            "properties": {
+              "module_code": { "type": "string" },
+              "status": { "type": ["string", "null"] },
+              "expires_at": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "standards": {
+          "type": ["array", "null"],
+          "description": "Standards alterados",
+          "items": {
+            "type": "object",
+            "properties": {
+              "standard_code": { "type": "string" },
+              "status": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["customer_id", "action", "actor_email"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "read": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "update": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "master_admin" }
+    }
+  }
+}

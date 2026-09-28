@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertTriangle, Loader2, ShieldPlus, SlidersHorizontal, PauseCircle, PlayCircle } from 'lucide-react';
+import { AlertTriangle, Loader2, ShieldPlus, SlidersHorizontal, PauseCircle, PlayCircle, ListChecks } from 'lucide-react';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
 
@@ -23,12 +23,13 @@ import EmptyState from '@/components/shared/EmptyState';
  * com o gating fail-closed, um cliente novo ficava com todos os módulos fechados
  * e abrir a operação exigia funções internas. Aqui o master_admin (e o
  * administrador de parceiro, dentro da sua carteira) cria a subscrição, escolhe
- * o nível e os lugares, suspende com tolerância e concede excepções por módulo
- * com motivo e validade.
+ * o nível, os lugares, a validade e as notas, concede excepções por módulo com
+ * motivo e validade, atribui standards e suspende com tolerância.
  *
  * Toda a escrita passa por `provisionTenantLicense` — nenhuma entidade de
  * licenciamento é escrita pelo frontend — e a leitura por `listTenantLicenses`,
- * que resolve o âmbito no servidor.
+ * que resolve o âmbito no servidor. Cada operação fica no histórico
+ * (`listLicenseChanges`), que o cartão seguinte mostra.
  */
 const TIER_LABEL_KEYS = {
   core: 'license_tier_core',
@@ -63,12 +64,14 @@ export default function TenantLicensePanel() {
   const tenants = data?.tenants || [];
   const tiers = data?.catalogue?.tiers || [];
   const modules = data?.catalogue?.modules || [];
+  const standards = data?.catalogue?.standards || [];
 
   const mutation = useMutation({
     mutationFn: (payload) => base44.functions.invoke('provisionTenantLicense', payload),
     onSuccess: (result) => {
       const license = result?.data?.license || result?.license;
       queryClient.invalidateQueries({ queryKey: ['tenant-licenses'] });
+      queryClient.invalidateQueries({ queryKey: ['license-changes'] });
       setDialog(null);
       setError('');
       toast.success(
@@ -89,9 +92,13 @@ export default function TenantLicensePanel() {
       tenant,
       tier_code: tenant.subscription?.tier_code || 'core',
       seat_limit: tenant.subscription?.seat_limit || 5,
+      expires_date: tenant.subscription?.expires_date || '',
+      notes: tenant.subscription?.notes || '',
       grace_days: 7,
       reason: '',
       module_code: modules[0]?.code || '',
+      standard_code: standards[0]?.code || '',
+      standard_active: true,
       expires_at: '',
     });
     setDialog(kind);
@@ -101,7 +108,15 @@ export default function TenantLicensePanel() {
     const customer_id = form.tenant.id;
     const payloads = {
       create: { action: 'create', customer_id, tier_code: form.tier_code, seat_limit: Number(form.seat_limit) },
-      update: { action: 'update', customer_id, tier_code: form.tier_code, seat_limit: Number(form.seat_limit) },
+      update: {
+        action: 'update',
+        customer_id,
+        tier_code: form.tier_code,
+        seat_limit: Number(form.seat_limit),
+        expires_date: form.expires_date || null,
+        notes: form.notes,
+        reason: form.reason,
+      },
       suspend: { action: 'suspend', customer_id, grace_days: Number(form.grace_days), reason: form.reason },
       resume: { action: 'resume', customer_id },
       override: {
@@ -111,6 +126,13 @@ export default function TenantLicensePanel() {
         active: true,
         reason: form.reason,
         expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+      },
+      standard: {
+        action: 'set_standard',
+        customer_id,
+        standard_code: form.standard_code,
+        active: form.standard_active,
+        reason: form.reason,
       },
     };
     mutation.mutate(payloads[dialog]);
@@ -141,6 +163,7 @@ export default function TenantLicensePanel() {
                 <TableHead>{t('licensing_col_status')}</TableHead>
                 <TableHead>{t('licensing_col_seats')}</TableHead>
                 <TableHead>{t('licensing_provision_col_modules')}</TableHead>
+                <TableHead>{t('licensing_standards')}</TableHead>
                 <TableHead className="text-right">{t('licensing_provision_col_actions')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -200,6 +223,18 @@ export default function TenantLicensePanel() {
                       </div>
                     </TableCell>
                     <TableCell>
+                      <div className="flex flex-wrap gap-1 max-w-xs">
+                        {(license.standards || []).map((code) => (
+                          <Badge key={code} variant="outline" className="text-[10px] font-normal">
+                            {standards.find((s) => s.code === code)?.name || code}
+                          </Badge>
+                        ))}
+                        {(license.standards || []).length === 0 && (
+                          <span className="text-xs text-muted-foreground">{t('licensing_provision_no_standards')}</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex flex-wrap gap-1.5 justify-end">
                         {!tenant.subscription && (
                           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openDialog('create', tenant)}>
@@ -209,6 +244,11 @@ export default function TenantLicensePanel() {
                         {tenant.subscription && (
                           <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openDialog('update', tenant)}>
                             <SlidersHorizontal className="w-3 h-3" /> {t('licensing_provision_change')}
+                          </Button>
+                        )}
+                        {tenant.subscription && (
+                          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openDialog('standard', tenant)}>
+                            <ListChecks className="w-3 h-3" /> {t('licensing_provision_standards')}
                           </Button>
                         )}
                         {tenant.subscription && !suspended && (
@@ -266,6 +306,73 @@ export default function TenantLicensePanel() {
                     min="1"
                     value={form.seat_limit}
                     onChange={(event) => setForm((f) => ({ ...f, seat_limit: event.target.value }))}
+                  />
+                </div>
+              </>
+            )}
+
+            {dialog === 'update' && (
+              <>
+                <div className="space-y-2">
+                  <Label>{t('licensing_col_expiry')}</Label>
+                  <Input
+                    type="date"
+                    value={form.expires_date}
+                    onChange={(event) => setForm((f) => ({ ...f, expires_date: event.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">{t('licensing_provision_expiry_help')}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('licensing_provision_notes')}</Label>
+                  <Textarea
+                    value={form.notes}
+                    onChange={(event) => setForm((f) => ({ ...f, notes: event.target.value }))}
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('licensing_provision_reason')}</Label>
+                  <Textarea
+                    value={form.reason}
+                    onChange={(event) => setForm((f) => ({ ...f, reason: event.target.value }))}
+                    rows={2}
+                  />
+                </div>
+              </>
+            )}
+
+            {dialog === 'standard' && (
+              <>
+                <div className="space-y-2">
+                  <Label>{t('licensing_provision_standard')}</Label>
+                  <Select value={form.standard_code} onValueChange={(value) => setForm((f) => ({ ...f, standard_code: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {standards.map((standard) => (
+                        <SelectItem key={standard.code} value={standard.code}>{standard.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('licensing_provision_standard_state')}</Label>
+                  <Select
+                    value={form.standard_active ? 'active' : 'inactive'}
+                    onValueChange={(value) => setForm((f) => ({ ...f, standard_active: value === 'active' }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">{t('licensing_provision_standard_grant')}</SelectItem>
+                      <SelectItem value="inactive">{t('licensing_provision_standard_revoke')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('licensing_provision_reason')}</Label>
+                  <Textarea
+                    value={form.reason}
+                    onChange={(event) => setForm((f) => ({ ...f, reason: event.target.value }))}
+                    rows={2}
                   />
                 </div>
               </>

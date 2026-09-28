@@ -39,6 +39,7 @@ Deno.serve(async (req) => {
 
     const moduleCatalogue = await base44.asServiceRole.entities.LicenseModule.list("display_order", 100);
     const moduleNames = new Map(moduleCatalogue.map((m: any) => [m.code, m.name]));
+    const standardCatalogue = await base44.asServiceRole.entities.LicenseStandard.list("code", 50);
 
     const tenants = [];
     for (const customer of scoped) {
@@ -76,6 +77,7 @@ Deno.serve(async (req) => {
         tiers: Object.entries(TIER_MODULES).map(([code, modules]) => ({ code, modules })),
         commercially_available: COMMERCIALLY_AVAILABLE_TIERS,
         modules: moduleCatalogue.map((m: any) => ({ code: m.code, name: m.name || moduleNames.get(m.code) || m.code })),
+        standards: standardCatalogue.map((s: any) => ({ code: s.code, name: s.name || s.code })),
       },
     });
   } catch (error) {

@@ -11,6 +11,7 @@ import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import ErrorState from '@/components/shared/ErrorState';
 import TenantLicensePanel from '@/components/licensing/TenantLicensePanel';
+import LicenseChangeHistory from '@/components/licensing/LicenseChangeHistory';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { canView } from '@/lib/rbac';
@@ -266,6 +267,9 @@ export default function Licensing() {
 
       {/* Provisionamento por cliente (FB1) — toda a escrita passa por função de backend. */}
       <TenantLicensePanel />
+
+      {/* Histórico de licenciamento (FB1.12) — o antes/depois de cada alteração. */}
+      <LicenseChangeHistory modules={modules} standards={standards} />
 
       {/* Catálogo de módulos */}
       <Card>

@@ -212,11 +212,45 @@ export async function runApiSuite(report) {
       ? { ok: true, detail: `200 — licença activa, tier ${lic.tier_code}` }
       : { ok: false, detail: `esperado activo sem aviso, obtido ${JSON.stringify({ licensed: lic.licensed, warning: lic.warning })}` };
   });
-  report.skip(
-    "FB1.12",
-    area2,
-    "trilha de auditoria: as acções de licença são escritas com o papel de serviço, mas a entidade AuditLog não é legível na sessão do emulador local (a RLS compara o papel canónico e o utilizador local guarda `admin`) e nenhuma função devolve as acções registadas: exige backend real",
-  );
+  // O histórico deixou de depender da entidade AuditLog (ilegível na sessão do
+  // emulador): `provisionTenantLicense` escreve `LicenseChangeLog` e
+  // `listLicenseChanges` é quem o lê, com o âmbito resolvido no servidor.
+  await report.case("FB1.12", area2, "histórico devolve as alterações com autor e antes/depois", async () => {
+    const res = await invoke("listLicenseChanges", {
+      actor: ids.master_admin,
+      body: { customer_id: tenants.tenant_delta, limit: 100 },
+    });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const entries = res.data.entries || [];
+    const recorded = new Set(entries.map((e) => e.action));
+    const expected = ["create", "update", "suspend", "resume", "set_module"];
+    const missing = expected.filter((action) => !recorded.has(action));
+    const withoutActor = entries.filter((e) => !e.actor_email).length;
+    const withoutDiff = entries.filter((e) => !(e.changed_fields || []).length || !e.after).length;
+    if (missing.length || withoutActor || withoutDiff) {
+      return {
+        ok: false,
+        detail: JSON.stringify({ total: entries.length, missing, withoutActor, withoutDiff }),
+      };
+    }
+    return {
+      ok: true,
+      detail: `200 — ${entries.length} alterações, todas com autor e antes/depois (${expected.join(", ")})`,
+    };
+  });
+  await report.case("FB1.13", area2, "histórico recusa quem não tem competência e esconde clientes fora da carteira", async () => {
+    const analyst = await invoke("listLicenseChanges", { actor: ids.grc_analyst_alfa });
+    if (analyst.status !== 403) return statusOf(analyst, 403, "analista GRC");
+    const partner = await invoke("listLicenseChanges", {
+      actor: ids.workspace_admin_alfa,
+      body: { customer_id: tenants.tenant_delta, limit: 100 },
+    });
+    if (partner.status !== 200) return statusOf(partner, 200, "administrador de parceiro");
+    const foreign = (partner.data.entries || []).length;
+    return foreign === 0
+      ? { ok: true, detail: "403 para o analista GRC; 0 alterações de um cliente fora da carteira" }
+      : { ok: false, detail: `${foreign} alterações de um cliente fora da carteira` };
+  });
 
   // ─── G3. Delegações: activa, expirada, revogada e restrição por módulo ───
   const area3 = "delegações";
