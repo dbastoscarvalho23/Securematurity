@@ -2,11 +2,16 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { AlertTriangle, Bug, Users, Database, AlertOctagon, Clock, CheckCircle2, Activity, FileText } from 'lucide-react';
+import { AlertTriangle, Bug, Users, Database, AlertOctagon, Clock, CheckCircle2, Activity, FileText, FileDown } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, RadialBarChart, RadialBar } from 'recharts';
 import { SEVERITY_STYLES, daysRemaining, hoursRemaining, slaStatus } from '@/lib/complianceUtils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
+import { can } from '@/lib/rbac';
+import { exportComplianceMetricsPdf } from '@/lib/exportAnalyticsPdf';
 import PageHeader from '@/components/shared/PageHeader';
+import ErrorState from '@/components/shared/ErrorState';
+import { Button } from '@/components/ui/button';
 
 const INC_STATUS_LABELS = { detected: 'inc_status_detected', investigating: 'inc_status_investigating', contained: 'inc_status_contained', resolved: 'inc_status_resolved', closed: 'inc_status_closed' };
 const VULN_STATUS_LABELS = { open: 'vuln_status_open', in_progress: 'vuln_status_in_progress', remediated: 'vuln_status_remediated', verified: 'vuln_status_verified', accepted_risk: 'vuln_status_accepted_risk', false_positive: 'vuln_status_false_positive' };
@@ -40,11 +45,23 @@ function KpiCard({ icon: Icon, label, value, sub, color = 'text-primary' }) {
 }
 
 export default function ComplianceMetrics() {
-  const { t } = useLanguage();
-  const { data: incidents = [] } = useQuery({ queryKey: ['incidents'], queryFn: () => base44.entities.Incident.list('-updated_date', 200) });
-  const { data: vulns = [] } = useQuery({ queryKey: ['vulnerabilities'], queryFn: () => base44.entities.Vulnerability.list('-updated_date', 200) });
-  const { data: dsrs = [] } = useQuery({ queryKey: ['dsrs'], queryFn: () => base44.entities.DataSubjectRequest.list('-updated_date', 200) });
-  const { data: ropas = [] } = useQuery({ queryKey: ['ropa'], queryFn: () => base44.entities.DataProcessingActivity.list('-updated_date', 200) });
+  const { t, language } = useLanguage();
+  const { user } = useAuth();
+
+  // FA4 — cada consulta expõe o seu erro: uma falha de leitura passa a ser
+  // distinguível de «sem dados» e tem repetição, em vez de cair no vazio.
+  const incidentsQuery = useQuery({ queryKey: ['incidents'], queryFn: () => base44.entities.Incident.list('-updated_date', 200) });
+  const vulnsQuery = useQuery({ queryKey: ['vulnerabilities'], queryFn: () => base44.entities.Vulnerability.list('-updated_date', 200) });
+  const dsrsQuery = useQuery({ queryKey: ['dsrs'], queryFn: () => base44.entities.DataSubjectRequest.list('-updated_date', 200) });
+  const ropasQuery = useQuery({ queryKey: ['ropa'], queryFn: () => base44.entities.DataProcessingActivity.list('-updated_date', 200) });
+
+  const incidents = incidentsQuery.data ?? [];
+  const vulns = vulnsQuery.data ?? [];
+  const dsrs = dsrsQuery.data ?? [];
+  const ropas = ropasQuery.data ?? [];
+  const queries = [incidentsQuery, vulnsQuery, dsrsQuery, ropasQuery];
+  const hasError = queries.some((q) => q.isError);
+  const retryAll = () => queries.forEach((q) => q.refetch());
 
   // ── Incident KPIs ──────────────────────────────────────────────────────
   const openIncidents = incidents.filter(i => i.status !== 'closed' && i.status !== 'resolved');
@@ -88,9 +105,55 @@ export default function ComplianceMetrics() {
     name: t(DSR_TYPE_LABELS[ty] || ty), count: dsrs.filter(d => d.request_type === ty).length,
   }));
 
+  // FA3 — a capacidade `export` de compliance_metrics existia na matriz sem
+  // recurso na interface. O controlo respeita a mesma matriz.
+  const canExport = can(user?.role, 'export', 'compliance_metrics');
+
+  const handleExport = () => {
+    exportComplianceMetricsPdf({
+      locale: language === 'pt' ? 'pt-PT' : 'en-GB',
+      kpis: [
+        { label: t('cm_open_incidents'), value: openIncidents.length, color: [234, 179, 8] },
+        { label: t('cm_open_vulns'), value: openVulns.length, color: [220, 38, 38] },
+        { label: t('cm_open_dsrs'), value: openDsrs.length, color: [59, 130, 246] },
+        { label: t('cm_active_ropa'), value: activeRopas.length, color: [16, 155, 133] },
+      ],
+      nis2: [
+        { label: t('cm_early_warning_overdue'), value: incidents.filter(i => !i.early_warning_sent && hoursRemaining(i.detected_at, 24) < 0 && i.status !== 'closed').length, color: [234, 179, 8] },
+        { label: t('cm_notification_overdue'), value: incidents.filter(i => !i.notification_sent && hoursRemaining(i.detected_at, 72) < 0 && i.status !== 'closed').length, color: [220, 38, 38] },
+        { label: t('cm_gdpr33_overdue'), value: incidents.filter(i => !i.supervisor_authority_notified && i.data_breach && hoursRemaining(i.detected_at, 72) < 0 && i.status !== 'closed').length, color: [220, 38, 38] },
+        { label: t('cm_fully_notified'), value: incidents.filter(i => i.early_warning_sent && i.notification_sent).length, color: [16, 155, 133] },
+      ],
+      incidentStatus: incidentStatusData.map(d => ({ label: d.name, value: d.count })),
+      vulnSeverity: ['critical', 'high', 'medium', 'low'].map(s => ({ label: t(SEVERITY_LABELS[s]), value: vulnsBySeverity.find(v => v.name === t(SEVERITY_LABELS[s]))?.value || 0, risk: s })),
+      vulnStatus: vulnStatusData.map(d => ({ label: d.name, value: d.count })),
+      dsrTypes: dsrTypeData.map(d => ({ label: d.name, value: d.count })),
+      sla: [
+        [t('cm_vuln_sla'), `${slaBreachedVulns.length} / ${openVulns.length}`],
+        [t('cm_dsr_sla'), `${overdueDsrs.length} / ${openDsrs.length}`],
+        [t('cm_data_retention'), `${ropas.filter(r => r.retention_expiry_date && daysRemaining(r.retention_expiry_date) <= 0 && r.status === 'active').length} ${t('cm_expired')}`],
+      ],
+    });
+  };
+
   return (
     <div className="space-y-6">
-      <PageHeader description={t('cm_subtitle')} />
+      <PageHeader
+        description={t('cm_subtitle')}
+        actions={canExport && (
+          <Button variant="outline" className="gap-2" onClick={handleExport}>
+            <FileDown className="w-4 h-4" /> {t('compliance_metrics_export_pdf')}
+          </Button>
+        )}
+      />
+
+      {hasError && (
+        <Card>
+          <CardContent className="p-0">
+            <ErrorState variant="inline" onRetry={retryAll} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

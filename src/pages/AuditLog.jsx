@@ -7,13 +7,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ScrollText, X, Loader2, ChevronDown } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { ScrollText, X, Loader2, ChevronDown, FileDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import { toast } from 'sonner';
 import { canView, normalizeRole } from '@/lib/rbac';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
 import LoadingState from '@/components/shared/LoadingState';
 
 const formatLocalTimestamp = (dateStr) => {
@@ -69,53 +72,121 @@ const actionColors = {
   settings_changed: 'bg-chart-4/10 text-chart-4',
 };
 
+const CSV_COLUMNS = ['created_date', 'action', 'user_email', 'entity_type', 'entity_id', 'customer_id', 'details'];
+const EXPORT_LIMIT = 1000;
+
+function toCsv(rows) {
+  const escape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  return [
+    CSV_COLUMNS.join(','),
+    ...rows.map((row) => CSV_COLUMNS.map((column) => escape(row[column])).join(',')),
+  ].join('\n');
+}
+
+function downloadCsv(rows) {
+  const blob = new Blob([`\uFEFF${toCsv(rows)}`], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `trilha-auditoria-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Trilha de auditoria (FB5).
+ *
+ * Os filtros passam a ser do servidor (`listAuditLog`), aplicados antes da
+ * paginação e com intervalo de datas; as opções dos seletores vêm das facetas
+ * do âmbito inteiro e não da página carregada; a pesquisa livre é um
+ * refinamento local do resultado já filtrado; e o resultado filtrado exporta-se
+ * em CSV — o recorte temporal deixa de depender do que está à vista.
+ */
 export default function AuditLog() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [filterAction, setFilterAction] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
   const [filterEntity, setFilterEntity] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [filterSearch, setFilterSearch] = useState('');
   const [selectedLog, setSelectedLog] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
-  const PAGE_SIZE = 500;
+  const PAGE_SIZE = 100;
+
+  // Filtros de servidor (os valores "all" não são enviados).
+  const serverFilters = useMemo(() => ({
+    action: filterAction === 'all' ? '' : filterAction,
+    user_email: filterUser === 'all' ? '' : filterUser,
+    entity_type: filterEntity === 'all' ? '' : filterEntity,
+    from: dateFrom,
+    to: dateTo,
+  }), [filterAction, filterUser, filterEntity, dateFrom, dateTo]);
 
   const {
     data,
     isLoading,
+    isError,
+    refetch,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['auditLogs'],
-    queryFn: ({ pageParam = 0 }) => base44.entities.AuditLog.list('-created_date', PAGE_SIZE, pageParam),
-    getNextPageParam: (lastPage, allPages) =>
-      lastPage.length === PAGE_SIZE ? allPages.length * PAGE_SIZE : undefined,
+    queryKey: ['auditLogs', serverFilters],
+    queryFn: ({ pageParam = 0 }) =>
+      base44.functions.invoke('listAuditLog', { ...serverFilters, cursor: pageParam, limit: PAGE_SIZE }),
+    getNextPageParam: (lastPage) => lastPage?.next_cursor ?? undefined,
   });
 
-  const logs = useMemo(() => data?.pages.flat() || [], [data]);
+  const pages = data?.pages || [];
+  const logs = useMemo(() => pages.flatMap((page) => page?.entries || []), [pages]);
+  const facets = pages[0]?.filters || { actions: [], users: [], entities: [] };
+  const total = pages[0]?.total ?? logs.length;
+  const truncated = pages[0]?.truncated;
 
-  const uniqueActions = useMemo(() => [...new Set(logs.map(l => l.action).filter(Boolean))].sort(), [logs]);
-  const uniqueUsers = useMemo(() => [...new Set(logs.map(l => l.user_email).filter(Boolean))].sort(), [logs]);
-  const uniqueEntities = useMemo(() => [...new Set(logs.map(l => l.entity_type).filter(Boolean))].sort(), [logs]);
+  // A pesquisa livre refina o resultado já filtrado pelo servidor (FB5).
+  const filtered = useMemo(() => {
+    if (!filterSearch) return logs;
+    const q = filterSearch.toLowerCase();
+    return logs.filter(log =>
+      log.details?.toLowerCase().includes(q) ||
+      log.user_email?.toLowerCase().includes(q) ||
+      log.action?.toLowerCase().includes(q) ||
+      log.entity_type?.toLowerCase().includes(q)
+    );
+  }, [logs, filterSearch]);
 
-  const filtered = useMemo(() => logs.filter(log => {
-    if (filterAction !== 'all' && log.action !== filterAction) return false;
-    if (filterUser !== 'all' && log.user_email !== filterUser) return false;
-    if (filterEntity !== 'all' && log.entity_type !== filterEntity) return false;
-    if (filterSearch && !log.details?.toLowerCase().includes(filterSearch.toLowerCase()) &&
-        !log.user_email?.toLowerCase().includes(filterSearch.toLowerCase()) &&
-        !log.action?.toLowerCase().includes(filterSearch.toLowerCase())) return false;
-    return true;
-  }), [logs, filterAction, filterUser, filterEntity, filterSearch]);
-
-  const hasFilters = filterAction !== 'all' || filterUser !== 'all' || filterEntity !== 'all' || filterSearch;
+  const hasFilters = filterAction !== 'all' || filterUser !== 'all' || filterEntity !== 'all' || !!dateFrom || !!dateTo || !!filterSearch;
 
   const clearFilters = () => {
     setFilterAction('all');
     setFilterUser('all');
     setFilterEntity('all');
+    setDateFrom('');
+    setDateTo('');
     setFilterSearch('');
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const result = await base44.functions.invoke('listAuditLog', { ...serverFilters, cursor: 0, limit: EXPORT_LIMIT });
+      const rows = result?.entries || [];
+      if (rows.length === 0) {
+        toast.warning(t('audit_export_empty'));
+        return;
+      }
+      downloadCsv(rows);
+      toast.success(`${rows.length} ${t('audit_exported')}`);
+    } catch {
+      toast.error(t('audit_export_error'));
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const role = normalizeRole(user?.role);
@@ -132,27 +203,42 @@ export default function AuditLog() {
   return (
     <div className="space-y-6">
       <PageHeader
-        description={<>{t('audit_subtitle')} · <span className="text-foreground font-medium">{filtered.length}</span> {t('audit_of')} {logs.length} {t('audit_entries')}</>}
-        actions={hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5 text-muted-foreground">
-            <X className="w-3.5 h-3.5" /> {t('audit_clear_filters')}
-          </Button>
-        )}
+        description={
+          <>
+            {t('audit_subtitle')} · <span className="text-foreground font-medium">{logs.length}</span> {t('audit_of')}{' '}
+            <span className="text-foreground font-medium">{total}</span> {t('audit_entries')}
+          </>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            {hasFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5 text-muted-foreground">
+                <X className="w-3.5 h-3.5" /> {t('audit_clear_filters')}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExport} disabled={isExporting}>
+              {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+              {t('audit_export_csv')}
+            </Button>
+          </div>
+        }
       />
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <Input
-          placeholder={t('audit_search_placeholder')}
-          value={filterSearch}
-          onChange={e => setFilterSearch(e.target.value)}
-          className="w-56"
-        />
+      {/* Filtros — aplicados no servidor, antes da paginação */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <Label htmlFor="audit-from" className="text-xs text-muted-foreground">{t('audit_date_from')}</Label>
+          <Input id="audit-from" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-40" />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="audit-to" className="text-xs text-muted-foreground">{t('audit_date_to')}</Label>
+          <Input id="audit-to" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-40" />
+        </div>
         <Select value={filterAction} onValueChange={setFilterAction}>
           <SelectTrigger className="w-48"><SelectValue placeholder={t('audit_all_actions')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('audit_all_actions')}</SelectItem>
-            {uniqueActions.map(a => (
+            {facets.actions.map(a => (
               <SelectItem key={a} value={a}>{a.replace(/_/g, ' ')}</SelectItem>
             ))}
           </SelectContent>
@@ -161,7 +247,7 @@ export default function AuditLog() {
           <SelectTrigger className="w-48"><SelectValue placeholder={t('audit_all_users')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('audit_all_users')}</SelectItem>
-            {uniqueUsers.map(u => (
+            {facets.users.map(u => (
               <SelectItem key={u} value={u}>{u}</SelectItem>
             ))}
           </SelectContent>
@@ -170,12 +256,22 @@ export default function AuditLog() {
           <SelectTrigger className="w-40"><SelectValue placeholder={t('audit_all_entities')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('audit_all_entities')}</SelectItem>
-            {uniqueEntities.map(e => (
+            {facets.entities.map(e => (
               <SelectItem key={e} value={e}>{e}</SelectItem>
             ))}
           </SelectContent>
         </Select>
+        <Input
+          placeholder={t('audit_search_placeholder')}
+          value={filterSearch}
+          onChange={e => setFilterSearch(e.target.value)}
+          className="w-56"
+        />
       </div>
+
+      {truncated && (
+        <p className="text-xs text-muted-foreground">{t('audit_truncated')}</p>
+      )}
 
       <Card>
         <CardContent className="p-0">
@@ -192,11 +288,15 @@ export default function AuditLog() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5}><LoadingState label={t('common_loading')} /></TableCell>
+                  <TableCell colSpan={5}><LoadingState variant="skeleton" rows={6} /></TableCell>
+                </TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={5}><ErrorState variant="inline" onRetry={() => refetch()} /></TableCell>
                 </TableRow>
               ) : logs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5}><EmptyState compact icon={ScrollText} title={t('audit_empty')} /></TableCell>
+                  <TableCell colSpan={5}><EmptyState compact icon={ScrollText} title={hasFilters ? t('audit_no_match') : t('audit_empty')} /></TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
@@ -226,7 +326,7 @@ export default function AuditLog() {
         <div className="flex justify-center">
           <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage} className="gap-2">
             {isFetchingNextPage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronDown className="w-4 h-4" />}
-            {isFetchingNextPage ? 'Loading...' : 'Load More'}
+            {t('audit_load_more')}
           </Button>
         </div>
       )}
@@ -234,7 +334,7 @@ export default function AuditLog() {
       <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="capitalize">{selectedLog?.action?.replace(/_/g, ' ') || 'Audit log entry'}</DialogTitle>
+            <DialogTitle className="capitalize">{selectedLog?.action?.replace(/_/g, ' ') || t('audit_col_details')}</DialogTitle>
           </DialogHeader>
           {selectedLog && (
             <div className="space-y-3 text-sm">
@@ -245,17 +345,17 @@ export default function AuditLog() {
                 <span className="text-xs font-mono text-muted-foreground">{formatLocalTimestamp(selectedLog.created_date)}</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
-                <div className="text-muted-foreground">User</div>
+                <div className="text-muted-foreground">{t('audit_col_user')}</div>
                 <div className="col-span-2 font-medium break-all">{selectedLog.user_email || '—'}</div>
-                <div className="text-muted-foreground">Entity type</div>
+                <div className="text-muted-foreground">{t('audit_col_entity')}</div>
                 <div className="col-span-2 font-medium">{selectedLog.entity_type || '—'}</div>
-                <div className="text-muted-foreground">Entity ID</div>
+                <div className="text-muted-foreground">ID</div>
                 <div className="col-span-2 font-mono text-xs break-all">{selectedLog.entity_id || '—'}</div>
-                <div className="text-muted-foreground">Customer ID</div>
+                <div className="text-muted-foreground">{t('common_customer')}</div>
                 <div className="col-span-2 font-mono text-xs break-all">{selectedLog.customer_id || '—'}</div>
               </div>
               <div>
-                <div className="text-muted-foreground mb-1">Details</div>
+                <div className="text-muted-foreground mb-1">{t('audit_col_details')}</div>
                 <div className="rounded-md border bg-muted/40 p-3 text-sm whitespace-pre-wrap break-words">{selectedLog.details || '—'}</div>
               </div>
             </div>

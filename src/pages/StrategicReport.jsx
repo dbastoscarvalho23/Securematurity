@@ -16,8 +16,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
+import { Button } from '@/components/ui/button';
+import { FileDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { isPlatformOwner } from '@/lib/rbac';
+import { isPlatformOwner, can } from '@/lib/rbac';
+import { useActiveCustomer } from '@/lib/tenantContext';
+import { exportStrategicReportPdf } from '@/lib/exportAnalyticsPdf';
 
 // Rótulos de maturidade por chave de tradução (FC3).
 const MATURITY_LABEL_KEYS = {
@@ -58,8 +63,10 @@ export default function StrategicReport() {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
-  const customerId = user?.customer_id;
-  const [selectedCustomer, setSelectedCustomer] = useState(customerId || 'all');
+  // FA2 — o contexto vem do resolvedor único (workspace selecionado → tenant
+  // próprio → delegações vivas), não de uma leitura directa de user.customer_id.
+  const { customerId, customerName } = useActiveCustomer();
+  const [selectedCustomer, setSelectedCustomer] = useState('all');
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -69,21 +76,21 @@ export default function StrategicReport() {
 
   const effectiveCustomerId = isAdmin ? (selectedCustomer === 'all' ? null : selectedCustomer) : customerId;
 
-  const { data: assessments = [], isLoading: loadingAssessments } = useQuery({
+  const assessmentsQuery = useQuery({
     queryKey: ['strategic-assessments', effectiveCustomerId],
     queryFn: () => isAdmin && !effectiveCustomerId
       ? base44.entities.Assessment.list('-completed_date', 200)
       : base44.entities.Assessment.filter({ customer_id: effectiveCustomerId }, '-completed_date', 200),
   });
 
-  const { data: recommendations = [], isLoading: loadingRecs } = useQuery({
+  const recommendationsQuery = useQuery({
     queryKey: ['strategic-recommendations', effectiveCustomerId],
     queryFn: () => isAdmin && !effectiveCustomerId
       ? base44.entities.Recommendation.list('-created_date', 200)
       : base44.entities.Recommendation.filter({ customer_id: effectiveCustomerId }, '-created_date', 200),
   });
 
-  const { data: checklistItems = [], isLoading: loadingChecklist } = useQuery({
+  const checklistQuery = useQuery({
     queryKey: ['strategic-checklist', effectiveCustomerId],
     queryFn: () => isAdmin && !effectiveCustomerId
       ? base44.entities.ComplianceChecklist.list('-created_date', 500)
@@ -91,7 +98,15 @@ export default function StrategicReport() {
     enabled: !!effectiveCustomerId,
   });
 
-  const isLoading = loadingAssessments || loadingRecs || loadingChecklist;
+  const assessments = assessmentsQuery.data ?? [];
+  const recommendations = recommendationsQuery.data ?? [];
+  const checklistItems = checklistQuery.data ?? [];
+  const isLoading = assessmentsQuery.isLoading || recommendationsQuery.isLoading || checklistQuery.isLoading;
+
+  // FA4 — uma falha de leitura deixa de passar por «sem dados».
+  const reportQueries = [assessmentsQuery, recommendationsQuery, checklistQuery];
+  const hasError = reportQueries.some((q) => q.isError);
+  const retryAll = () => reportQueries.forEach((q) => q.refetch());
 
   // ─── KPIs ──────────────────────────────────────────────────
   const completedAssessments = assessments.filter(a => a.status === 'completed');
@@ -142,22 +157,60 @@ export default function StrategicReport() {
 
   const localeStr = language === 'pt' ? 'pt-PT' : 'en-GB';
 
+  // FA3 — a capacidade `export` de strategic_report existia na matriz sem
+  // recurso na interface; o controlo respeita a mesma matriz.
+  const canExport = can(user?.role, 'export', 'strategic_report');
+
+  const handleExport = () => {
+    exportStrategicReportPdf({
+      locale: localeStr,
+      customerName: isAdmin && selectedCustomer === 'all' ? '' : (customerName || ''),
+      kpis: [
+        { label: t('strategic_avg_maturity'), value: avgMaturity.toFixed(1) },
+        { label: t('strategic_compliance_rate'), value: `${complianceRate.toFixed(0)}%` },
+        { label: t('strategic_open_recommendations'), value: pendingRecs.length },
+        { label: t('strategic_total_assessments'), value: assessments.length },
+      ],
+      frameworks: frameworkScores.map(fs => ({ label: fs.framework.replace(/_/g, ' '), value: fs.avgScore })),
+      trend: maturityTrend.map(item => [item.period, item.score.toFixed(1)]),
+      priorities: Object.entries(recByPriority).map(([priority, count]) => ({ label: priority, value: count })),
+      assessments: assessments.slice(0, 12).map(a => [a.title, a.overall_score != null ? a.overall_score.toFixed(1) : '—']),
+    });
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         description={t('strategic_report_subtitle')}
-        actions={isAdmin && (
-          <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-            <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('common_all')} — {t('common_customer')}</SelectItem>
-              {customers.map(c => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        actions={
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
+                <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common_all')} — {t('common_customer')}</SelectItem>
+                  {customers.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {canExport && (
+              <Button variant="outline" className="gap-2" onClick={handleExport}>
+                <FileDown className="w-4 h-4" /> {t('strategic_report_export_pdf')}
+              </Button>
+            )}
+          </div>
+        }
       />
+
+      {hasError && (
+        <Card>
+          <CardContent className="p-0">
+            <ErrorState variant="inline" onRetry={retryAll} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

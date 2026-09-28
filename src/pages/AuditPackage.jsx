@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, PackageCheck, Download, Lock, ExternalLink, FileText } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
 import LoadingState from '@/components/shared/LoadingState';
 import { useActiveCustomer } from '@/lib/tenantContext';
 
@@ -45,11 +46,15 @@ export default function AuditPackage() {
   const { customerId, isResolving } = useActiveCustomer();
   const [selectedId, setSelectedId] = useState('');
 
-  const { data: packages = [], isLoading } = useQuery({
+  // FA5 — o percurso do auditor deixa de falhar em silêncio: o erro da leitura
+  // é tratado (mensagem + repetição) em vez de conduzir a um ecrã sem conteúdo.
+  const packagesQuery = useQuery({
     queryKey: ['audit-packages', customerId],
     queryFn: () => base44.entities.AuditPackage.filter({ customer_id: customerId }, '-generated_at', 50),
     enabled: !!customerId,
   });
+  const packages = packagesQuery.data ?? [];
+  const isLoading = packagesQuery.isLoading;
 
   useEffect(() => {
     if (!selectedId && packages.length > 0) setSelectedId(packages[0].id);
@@ -152,6 +157,8 @@ export default function AuditPackage() {
 
       {isLoading ? (
         <Card><CardContent className="p-0"><LoadingState label={t('audit_package_loading')} className="py-16" /></CardContent></Card>
+      ) : packagesQuery.isError ? (
+        <Card><CardContent className="p-0"><ErrorState variant="inline" onRetry={() => packagesQuery.refetch()} /></CardContent></Card>
       ) : !selected ? (
         <Card>
           <CardContent className="p-0">

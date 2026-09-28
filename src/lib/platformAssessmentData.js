@@ -161,7 +161,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FA3',
     area: 'funcional',
     severity: 'media',
-    status: 'pendente',
+    status: 'corrigido',
+    statusNote:
+      'As duas exportações passaram a existir e são o controlo que a matriz já prometia: `src/lib/exportAnalyticsPdf.js` gera o PDF das métricas (`exportComplianceMetricsPdf`) e o do relatório estratégico (`exportStrategicReportPdf`), no mesmo padrão de `exportReportPdf.js` — capa, rodapé, texto em PT-PT e a escala de risco dos tokens. O botão de /compliance-metrics mostra-se a quem `can(role, \"export\", \"compliance_metrics\")` e o de /strategic-report a quem `can(role, \"export\", \"strategic_report\")`, pelo que a capacidade deixa de estar declarada sem recurso e o recurso não existe sem a capacidade. Um único gerador serve as duas páginas (sem código de desenho duplicado). Verificado no preview com o papel que a matriz atribui à exportação.',
     title: 'Capacidades de exportação declaradas na matriz sem recurso na interface',
     evidence: [
       'src/lib/rbac.js:148 e :156 — compliance_metrics declara export para T_EDIT/executive/auditor e strategic_report declara export para executive.',
@@ -179,7 +181,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FA4',
     area: 'funcional',
     severity: 'media',
-    status: 'pendente',
+    status: 'parcial',
+    statusNote:
+      'Os dois passos estão feitos na estrutura: (a) `ErrorState` (variante `inline`) é o estado de erro único, distinto do vazio, com mensagem própria e botão de repetir que chama o `refetch` da consulta; (b) a fronteira de erro passou para o `AppLayout`, com chave por rota, pelo que uma exceção numa página mostra um painel de erro e mantém menu e cabeçalho utilizáveis — as rotas que tinham fronteira própria passaram a depender da do layout. Consultas que já expõem o erro: ComplianceMetrics, StrategicReport, Reports, Assessments, RiskAssessment, AuditPackage e AuditLog (esta também com o estado de erro da leitura de servidor). Falta a passagem pelas restantes listas (Customers, Tasks, ActionPlan, Recommendations, EvidenceOverview, DocumentAuditTrail, PolicyAttestation, DSU/RoPA, Suppliers, Vulnerabilities, Training, Workspaces, Organization, Licensing), que mantêm o vazio como única saída.',
     title: 'Erros de leitura apresentados como listas vazias e sem possibilidade de repetir',
     evidence: [
       'Nenhuma página trata `isError` do useQuery (verificação em src/pages: só existem onError de mutações); uma falha de função/RLS deixa `data` vazio e a interface mostra o EmptyState de «sem dados».',
@@ -197,7 +201,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FA5',
     area: 'funcional',
     severity: 'alta',
-    status: 'pendente',
+    status: 'parcial',
+    statusNote:
+      'O percurso deixou de poder falhar em silêncio: a leitura dos pacotes passou a expor o próprio erro (painel de erro com mensagem e repetição, diferente do EmptyState) e a rota está coberta pela fronteira de erro do layout, que mostra um painel e mantém navegação e cabeçalho em vez do ecrã em branco. O contexto de tenant é resolvido pelo resolvedor único (workspace selecionado → tenant próprio → delegações vivas) e, sem cliente resolvido, a página mostra o estado vazio próprio — e não uma lista vazia nem um erro. Falta a reprodução com uma sessão real de auditor sobre um tenant com pacotes (o emulador local só tem uma sessão), que é o que confirma o fim do sintoma.',
     title: 'Pacote de auditoria com falha de página registada e não reproduzida por inspeção',
     persona: 'Auditor autorizado a /audit-package',
     flow: 'Preparação de auditoria — geração e consulta de pacotes',
@@ -240,7 +246,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FB2',
     area: 'administracao',
     severity: 'alta',
-    status: 'pendente',
+    status: 'corrigido',
+    statusNote:
+      'As três páginas passaram a estar no grupo «Gestão da plataforma» de `src/lib/sidebarGroups.js`, com o mesmo recurso `organization` que o `RouteGuard` já lhes aplicava — `/workspaces`, `/user-assignments` e `/admin` —, sem duplicar a entrada de Organização. Verificado no preview com o `master_admin`: os três itens aparecem no menu (Workspaces, Delegações, Administração) e a visibilidade continua a ser decidida pela matriz, pelo que os restantes papéis não os vêem.',
     title: 'Páginas de administração inalcançáveis pela navegação',
     evidence: [
       'src/lib/sidebarGroups.js — BASE_GROUPS não inclui /admin, /workspaces nem /user-assignments (verificação por item devolve zero ocorrências).',
@@ -297,7 +305,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FB5',
     area: 'administracao',
     severity: 'media',
-    status: 'pendente',
+    status: 'parcial',
+    statusNote:
+      'A decisão passou para o servidor: `base44/functions/listAuditLog` resolve o âmbito (master_admin vê tudo, auditor vê o seu tenant e as delegações vivas — registos sem `customer_id`, isto é de plataforma, só ao master_admin), aplica os filtros de ação, entidade, utilizador e intervalo de datas antes da paginação, devolve as facetas do âmbito inteiro (e não da página carregada), pagina por cursor opaco e devolve o total. /audit-log passou a usar a função: os seletores deixam de ser derivados da janela de 500 registos, há recorte temporal, a pesquisa livre é refinamento local do resultado já filtrado, o estado de erro da leitura é próprio e a exportação em CSV leva o resultado filtrado. Verificado localmente por chamada directa à função (200 com registos, facetas e intervalo de datas vazio a devolver zero), que é também o caminho que faz o master_admin voltar a ler a trilha no emulador; falta confirmar em backend real o âmbito do papel auditor, que o emulador de sessão única não distingue.',
     title: 'Trilha de auditoria sem filtros de servidor nem exportação',
     evidence: [
       'src/pages/AuditLog.jsx — useInfiniteQuery com páginas de 500 registos e filtragem em memória por ação/utilizador/entidade/texto; os filtros só abrangem a janela já carregada, a lista de valores possíveis (uniqueActions/uniqueUsers) é derivada desses mesmos registos e não há intervalo de datas.',
@@ -432,7 +442,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FC4',
     area: 'ux',
     severity: 'media',
-    status: 'pendente',
+    status: 'parcial',
+    statusNote:
+      'A decisão deixou de ser só heurística: o rótulo (ou o atributo explícito `data-capability`) apenas indica *que ação* o controlo representa, e quem decide é a matriz — `can(effectiveRole, ação, recurso)`, com o recurso vindo da rota atual. Sem recurso identificado não há bloqueio (era o falso positivo da heurística), a navegação nunca é bloqueada, e a submissão de formulário é intercetada no evento `submit` (por captura), pelo que o envio por teclado também é recusado. Falta a verificação no preview com uma simulação ativa a submeter um formulário (e a confirmar que a navegação continua livre), que é o critério do achado.',
     title: 'Bloqueio de escrita na simulação de papel por heurística de texto e ícone',
     evidence: [
       'src/components/layout/AppLayout.jsx — WriteBlocker interceta cliques por captura e decide pelo texto do botão (lista de palavras PT+EN: novo, editar, guardar, eliminar, criar, save, delete, edit, new, create, update, send, submit, upload, import, approve, reject) ou pela classe do ícone.',
@@ -489,7 +501,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FS1',
     area: 'seguranca',
     severity: 'baixa',
-    status: 'pendente',
+    status: 'corrigido',
+    statusNote:
+      '`isStandardLicensed` (src/lib/license.js) passou a fechar por omissão, exactamente como `isModuleLicensed`: sem licença resolvida, com a licença em estado de erro ou com um payload sem `standards` válido, nenhum standard fica licenciado. O helper continua sem consumidores na interface, mas deixou de haver um caminho permissivo com o nome da política de licenciamento. A política fica descrita num único sítio: AGENTS.md («Licensing is fail-closed») com os dois helpers lado a lado.',
     title: 'isStandardLicensed continua fail-open, ao contrário do gating de módulos',
     evidence: [
       'src/lib/license.js:71 — isStandardLicensed devolve true quando não há licença, quando `standards` não é array e quando a licença está em erro; só nega se o código estiver ausente de um array válido.',

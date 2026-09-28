@@ -18,8 +18,10 @@ import RecordDetailDialog from '@/components/reports/RecordDetailDialog';
 import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
 import LoadingState from '@/components/shared/LoadingState';
 import { isPlatformOwner } from '@/lib/rbac';
+import { useActiveCustomer } from '@/lib/tenantContext';
 
 const MATURITY_LABEL_KEYS = ['maturity_not_implemented', 'maturity_initial', 'maturity_developing', 'maturity_defined', 'maturity_managed', 'maturity_optimized'];
 
@@ -123,7 +125,9 @@ export default function Reports() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
-  const customerId = user?.customer_id;
+  // FA2 — contexto único de tenant (workspace selecionado → tenant próprio →
+  // delegações vivas), em vez de uma leitura directa de user.customer_id.
+  const { customerId } = useActiveCustomer();
 
   const [selectedCustomer, setSelectedCustomer] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
@@ -146,13 +150,14 @@ export default function Reports() {
     enabled: isAdmin,
   });
 
-  const { data: assessments = [] } = useQuery({
+  const assessmentsQuery = useQuery({
     queryKey: ['assessments', customerId],
     queryFn: () => isAdmin
       ? base44.entities.Assessment.list('-created_date', 100)
       : base44.entities.Assessment.filter({ customer_id: customerId }, '-created_date', 100),
     enabled: isAdmin || !!customerId,
   });
+  const assessments = assessmentsQuery.data ?? [];
 
   const completed = assessments
     .filter(a => a.status === 'completed')
@@ -193,6 +198,15 @@ export default function Reports() {
           </Select>
         )}
       />
+
+      {/* FA4 — erro de leitura distinto do vazio, com repetição. */}
+      {assessmentsQuery.isError && (
+        <Card>
+          <CardContent className="p-0">
+            <ErrorState variant="inline" onRetry={() => assessmentsQuery.refetch()} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Current vs Previous */}
       {latest && (

@@ -13,6 +13,7 @@ import RiskFormDialog from '@/components/risks/RiskFormDialog';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import RiskExcelImportDialog from '@/components/risks/RiskExcelImportDialog';
 import RiskHeatmap from '@/components/risks/RiskHeatmap';
@@ -66,10 +67,12 @@ export default function RiskAssessment() {
   const [filterCustomer, setFilterCustomer] = useState('');
   const [view, setView] = useState('list'); // 'list' | 'heatmap'
 
-  const { data: risks = [] } = useQuery({
+  // FA4 — a consulta expõe o erro: falha de leitura ≠ lista vazia.
+  const risksQuery = useQuery({
     queryKey: ['riskItems'],
     queryFn: () => base44.entities.RiskItem.list('-created_date', 5000),
   });
+  const risks = risksQuery.data ?? [];
 
   const { data: documents = [] } = useQuery({
     queryKey: ['securityDocuments'],
@@ -341,7 +344,9 @@ export default function RiskAssessment() {
 
           {/* Risk list */}
           <div className="space-y-3">
-            {filtered.length === 0 ? (
+            {risksQuery.isError ? (
+              <ErrorState variant="inline" onRetry={() => risksQuery.refetch()} />
+            ) : filtered.length === 0 ? (
               <EmptyState compact icon={ShieldAlert} title={t('risk_empty')} />
             ) : filtered.map(risk => {
               const score = riskScore(risk);

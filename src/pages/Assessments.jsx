@@ -15,11 +15,13 @@ import BulkActionBar from '@/components/shared/BulkActionBar';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
 import LoadingState from '@/components/shared/LoadingState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { format } from 'date-fns';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { exportReportPdf } from '@/lib/exportReportPdf';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
@@ -46,15 +48,18 @@ export default function Assessments() {
   const { t } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
   const canBulkAction = hasRole(user?.role, 'master_admin', 'customer_admin');
-  const customerId = user?.customer_id;
+  // FA2 — contexto único de tenant; FA4 — o erro da consulta fica visível.
+  const { customerId } = useActiveCustomer();
 
-  const { data: assessments = [], isLoading } = useQuery({
+  const assessmentsQuery = useQuery({
     queryKey: ['assessments', user?.email, customerId],
     queryFn: () => isAdmin
       ? base44.entities.Assessment.list('-created_date')
       : base44.entities.Assessment.filter({ customer_id: customerId }, '-created_date'),
     enabled: isAdmin || !!customerId,
   });
+  const assessments = assessmentsQuery.data ?? [];
+  const isLoading = assessmentsQuery.isLoading;
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Assessment.delete(id),
@@ -181,7 +186,13 @@ export default function Assessments() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8}><LoadingState label={t('common_loading')} /></TableCell>
+                  <TableCell colSpan={8}><LoadingState variant="skeleton" rows={5} /></TableCell>
+                </TableRow>
+              ) : assessmentsQuery.isError ? (
+                <TableRow>
+                  <TableCell colSpan={8}>
+                    <ErrorState variant="inline" onRetry={() => assessmentsQuery.refetch()} />
+                  </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
