@@ -124,9 +124,11 @@ export default function CommercialOfferHistory() {
   const [filterAction, setFilterAction] = useState('all');
   const [expanded, setExpanded] = useState([]);
 
+  // O filtro por acção é `change_action`: `action` é o selector da função
+  // multiplexada (`history`) e usá-lo aqui substituía o comando pelo filtro.
   const filters = useMemo(() => ({
     entity_type: filterEntity === 'all' ? '' : filterEntity,
-    action: filterAction === 'all' ? '' : filterAction,
+    change_action: filterAction === 'all' ? '' : filterAction,
   }), [filterEntity, filterAction]);
 
   const {

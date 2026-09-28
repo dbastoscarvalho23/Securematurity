@@ -484,6 +484,181 @@ export async function runApiSuite(report) {
     await invoke("manageAnnouncements", { actor: seedActor, body: { action: "archive", id } });
   }
 
+  // ─── G7. FM1/FM2 — oferta comercial e preço versionados ──────────
+  // O que se prova aqui é o ciclo comercial no limite do servidor: uma versão da
+  // oferta composta a partir do catálogo de código, um preço que só vigora contra
+  // uma oferta publicada, a substituição por vigência (uma só oferta e um só
+  // preço em vigor a qualquer data), o registo da oferta/preço vigentes na
+  // subscrição e a leitura do histórico com filtros e antes/depois. O filtro por
+  // acção chama-se `change_action`: `action` é o selector da função multiplexada
+  // e usar o mesmo nome para o filtro deixava o histórico a devolver zero linhas.
+  const area7 = "FM1/FM2 oferta e preço";
+  const offer = (body) => invoke("manageCommercialOffer", { actor: ids.master_admin, body });
+  const priceEntries = [
+    { tier_code: "core", amount_cents: 19000, included_seats: 5, extra_seat_amount_cents: 2500, annual_discount_pct: 10 },
+    { tier_code: "professional", amount_cents: 39000, included_seats: 15, extra_seat_amount_cents: 2000, annual_discount_pct: 12 },
+    { tier_code: "advanced", amount_cents: 69000, included_seats: 40, extra_seat_amount_cents: 1500, annual_discount_pct: 15 },
+  ];
+  const dayBefore = (iso) => {
+    const at = new Date(`${iso}T00:00:00.000Z`);
+    at.setUTCDate(at.getUTCDate() - 1);
+    return at.toISOString().split("T")[0];
+  };
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+
+  let offerD1 = "";
+  let offerD2 = "";
+  let priceA = "";
+  let priceB = "";
+  let priceC = "";
+
+  await report.case("FM1.1", area7, "o dono da plataforma compõe a versão da oferta a partir do catálogo em execução", async () => {
+    const res = await offer({ action: "create_offer_version", label: "Oferta de verificação (harness)", reason: "Verificação da camada comercial" });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const version = res.data.offer_version;
+    offerD1 = version.id;
+    const tiers = version.tiers || [];
+    const core = tiers.find((tier) => tier.tier_code === "core") || {};
+    const composed = tiers.length === 3 && (core.modules || []).length > 0 && core.commercially_available === true;
+    const signed = !!version.catalogue_signature && version.status === "draft";
+    return composed && signed
+      ? { ok: true, detail: `200 — ${version.code} em rascunho, ${tiers.length} tiers compostos e assinados pelo catálogo` }
+      : { ok: false, detail: `oferta inesperada: ${JSON.stringify({ n: tiers.length, core }).slice(0, 160)}` };
+  });
+
+  await report.case("FM2.1", area7, "publicar preço de uma oferta ainda em rascunho é recusado com 422", async () => {
+    const created = await offer({ action: "create_price_table", offer_version_id: offerD1, label: "Preços de verificação A", currency: "EUR", billing_period: "monthly", entries: priceEntries, reason: "Preço inicial" });
+    if (created.status !== 200) return statusOf(created, 200, "criação da tabela");
+    priceA = created.data.price_table.id;
+    const res = await offer({ action: "publish_price_table", id: priceA, reason: "Tentativa antes de a oferta vigorar" });
+    return res.status === 422 && res.data?.code === "offer_version_not_published"
+      ? { ok: true, detail: "422 offer_version_not_published — um preço não vigora sem oferta publicada" }
+      : { ok: false, detail: `esperado 422 offer_version_not_published, obtido ${res.status} ${JSON.stringify(res.data).slice(0, 120)}` };
+  });
+
+  await report.case("FM1.2", area7, "publicar a versão da oferta define a vigência", async () => {
+    const res = await offer({ action: "publish_offer_version", id: offerD1, reason: "Entrada em vigor" });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const version = res.data.offer_version;
+    return version.status === "published" && !!version.effective_from
+      ? { ok: true, detail: `200 — ${version.code} publicada, vigência desde ${version.effective_from}` }
+      : { ok: false, detail: JSON.stringify({ status: version.status, from: version.effective_from }) };
+  });
+
+  await report.case("FM2.2", area7, "publicar a tabela de preços contra a oferta publicada", async () => {
+    const res = await offer({ action: "publish_price_table", id: priceA, reason: "Entrada em vigor do preço A" });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const table = res.data.price_table;
+    return table.status === "published" && !!table.effective_from
+      ? { ok: true, detail: `200 — tabela publicada, vigência desde ${table.effective_from}` }
+      : { ok: false, detail: `esperado publicada: ${JSON.stringify(table).slice(0, 140)}` };
+  });
+
+  await report.case("FM2.3", area7, "o provisionamento regista na subscrição a oferta e o preço vigentes", async () => {
+    const res = await invoke("provisionTenantLicense", {
+      actor: ids.master_admin,
+      body: { action: "update", customer_id: tenants.tenant_alfa, tier_code: "advanced", reason: "Verificação do registo comercial" },
+    });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const sub = res.data.subscription || {};
+    const ok = !!sub.offer_version_id && !!sub.offer_version_code && sub.price_table_id === priceA && sub.price_amount_cents === 69000;
+    return ok
+      ? { ok: true, detail: `200 — subscrição com ${sub.offer_version_code}, tabela e ${sub.price_amount_cents} cêntimos do tier advanced` }
+      : { ok: false, detail: `registo inesperado: ${JSON.stringify({ v: sub.offer_version_code, t: sub.price_table_id, c: sub.price_amount_cents }).slice(0, 160)}` };
+  });
+
+  await report.case("FM1.3", area7, "publicar uma versão nova retira a anterior com data de fim", async () => {
+    const created = await offer({ action: "create_offer_version", label: "Oferta de verificação (harness 2)", reason: "Substituição da oferta" });
+    if (created.status !== 200) return statusOf(created, 200, "");
+    offerD2 = created.data.offer_version.id;
+    const res = await offer({ action: "publish_offer_version", id: offerD2, reason: "Substituição da versão anterior" });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const from = res.data.offer_version.effective_from;
+    const view = await offer({ action: "overview" });
+    const previous = (view.data.offer_versions || []).find((version) => version.id === offerD1) || {};
+    const superseded = res.data.superseded_versions || [];
+    const ok = superseded.includes(previous.code) && previous.status === "retired" && previous.effective_to === dayBefore(from);
+    return ok
+      ? { ok: true, detail: `200 — uma só oferta em vigor: ${previous.code} fecha em ${previous.effective_to}` }
+      : { ok: false, detail: JSON.stringify({ superseded, status: previous.status, to: previous.effective_to, expected: dayBefore(from) }) };
+  });
+
+  await report.case("FM2.4", area7, "uma tabela nova da mesma versão substitui a anterior com data de fim", async () => {
+    const first = await offer({ action: "create_price_table", offer_version_id: offerD2, label: "Preços de verificação B", currency: "EUR", billing_period: "annual", entries: priceEntries.map((entry) => ({ ...entry, amount_cents: entry.amount_cents * 10 })), reason: "Revisão anual" });
+    if (first.status !== 200) return statusOf(first, 200, "criação da tabela B");
+    priceB = first.data.price_table.id;
+    const pubB = await offer({ action: "publish_price_table", id: priceB, reason: "Entrada em vigor do preço B" });
+    if (pubB.status !== 200) return statusOf(pubB, 200, "publicação da tabela B");
+
+    const second = await offer({ action: "create_price_table", offer_version_id: offerD2, label: "Preços de verificação C", currency: "EUR", billing_period: "monthly", entries: priceEntries, reason: "Nova vigência do preço" });
+    if (second.status !== 200) return statusOf(second, 200, "criação da tabela C");
+    priceC = second.data.price_table.id;
+    const pubC = await offer({ action: "publish_price_table", id: priceC, reason: "Substituição do preço B", effective_from: tomorrow });
+    if (pubC.status !== 200) return statusOf(pubC, 200, "publicação da tabela C");
+
+    const view = await offer({ action: "overview" });
+    const previous = (view.data.price_tables || []).find((table) => table.id === priceB) || {};
+    const superseded = pubC.data.superseded_tables || [];
+    const ok = superseded.length === 1 && previous.status === "retired" && previous.effective_to === dayBefore(tomorrow);
+    return ok
+      ? { ok: true, detail: `200 — um só preço por versão: a anterior fecha em ${previous.effective_to}` }
+      : { ok: false, detail: JSON.stringify({ superseded, status: previous.status, to: previous.effective_to, expected: dayBefore(tomorrow) }) };
+  });
+
+  await report.case("FM2.5", area7, "retirar uma tabela de preços publicada", async () => {
+    const res = await offer({ action: "retire_price_table", id: priceC, reason: "Fim da verificação" });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    return res.data.price_table.status === "retired"
+      ? { ok: true, detail: `200 — retirada com fim de vigência em ${res.data.price_table.effective_to}` }
+      : { ok: false, detail: `esperado retirada, obtido ${res.data.price_table.status}` };
+  });
+
+  await report.case("FM2.6", area7, "o histórico comercial filtra no servidor e mostra autor, motivo e antes/depois", async () => {
+    const all = await offer({ action: "history", limit: 2 });
+    if (all.status !== 200) return statusOf(all, 200, "leitura sem filtros");
+    const entries = all.data.entries || [];
+    // A regressão do nome do filtro: `action: "history"` tem de devolver linhas,
+    // não filtrar por uma acção chamada «history».
+    if (all.data.total === 0 || entries.length === 0) {
+      return { ok: false, detail: `histórico vazio ou comando consumido como filtro: ${JSON.stringify(all.data).slice(0, 160)}` };
+    }
+    const missing = entries.filter((entry) => !entry.actor_email || !(entry.changed_fields || []).length).length;
+    const paged = all.data.total > entries.length ? !!all.data.next_cursor : true;
+
+    const byEntity = await offer({ action: "history", entity_type: "PriceTable", limit: 50 });
+    const byAction = await offer({ action: "history", change_action: "publish", limit: 50 });
+    const okEntity = byEntity.status === 200 && (byEntity.data.entries || []).every((entry) => entry.entity_type === "PriceTable");
+    const okAction = byAction.status === 200 && (byAction.data.entries || []).length > 0 && (byAction.data.entries || []).every((entry) => entry.action === "publish");
+    const diffs = (byEntity.data.entries || []).filter((entry) => entry.after && Object.keys(entry.after).length > 0).length;
+
+    if (missing || !paged || !okEntity || !okAction || diffs === 0) {
+      return { ok: false, detail: JSON.stringify({ total: all.data.total, missing, paged, okEntity, okAction, diffs }).slice(0, 200) };
+    }
+    return {
+      ok: true,
+      detail: `200 — ${all.data.total} alterações; filtros por registo e por acção e antes/depois legível em ${diffs} linhas`,
+    };
+  });
+
+  await report.case("FM2.7", area7, "sem oferta publicada o provisionamento não falha e deixa a subscrição como estava", async () => {
+    const first = await invoke("listTenantLicenses", { actor: ids.master_admin });
+    const before = ((first.data.tenants || []).find((tenant) => tenant.id === tenants.tenant_alfa) || {}).subscription || {};
+    const retired = await offer({ action: "retire_offer_version", id: offerD2, reason: "Fim da verificação" });
+    if (retired.status !== 200) return statusOf(retired, 200, "retirar a oferta");
+
+    const res = await invoke("provisionTenantLicense", {
+      actor: ids.master_admin,
+      body: { action: "update", customer_id: tenants.tenant_alfa, tier_code: "core", reason: "Provisionamento sem oferta publicada" },
+    });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const sub = res.data.subscription || {};
+    const unchanged = (sub.offer_version_code || "") === (before.offer_version_code || "") &&
+      (sub.price_table_id || "") === (before.price_table_id || "");
+    return unchanged
+      ? { ok: true, detail: "200 — provisionamento concluído; o registo comercial anterior ficou intacto" }
+      : { ok: false, detail: `o registo comercial mudou sem oferta vigente: ${JSON.stringify({ before: before.offer_version_code, after: sub.offer_version_code })}` };
+  });
+
   // ─── G4. RLS baseada em arrays (limitação local assumida) ─────────
   report.skip(
     "RLS1",

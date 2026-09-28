@@ -675,15 +675,22 @@ async function retirePriceTable(base44: any, user: any, body: any) {
 /**
  * Histórico comercial: mesma forma de `listLicenseChanges` — filtros aplicados
  * antes da paginação, cursor opaco, facetas do âmbito todo e o total.
+ *
+ * O filtro por acção chama-se `change_action` e não `action`: `action` é o
+ * selector desta função multiplexada (`history`, `publish_price_table`, …), pelo
+ * que usar o mesmo nome para o filtro fazia a chamada transportar sempre
+ * `action: "history"` (ou um código de acção inválido como comando) e o
+ * histórico nunca devolvia uma única linha.
  */
 async function readHistory(base44: any, body: any) {
-  const { entity_type = "", action = "", cursor = 0, limit = DEFAULT_LIMIT } = body || {};
+  const { entity_type = "", change_action = "", cursor = 0, limit = DEFAULT_LIMIT } = body || {};
   const pageSize = Math.min(Math.max(Number.parseInt(String(limit), 10) || DEFAULT_LIMIT, 1), MAX_LIMIT);
   const offset = Math.max(Number.parseInt(String(cursor), 10) || 0, 0);
 
   const all = (await base44.asServiceRole.entities.CommercialChangeLog.list("-created_date", MAX_SCAN)) || [];
   const matches = all.filter(
-    (entry: any) => (!entity_type || entry.entity_type === entity_type) && (!action || entry.action === action),
+    (entry: any) =>
+      (!entity_type || entry.entity_type === entity_type) && (!change_action || entry.action === change_action),
   );
 
   const entries = matches.slice(offset, offset + pageSize);
