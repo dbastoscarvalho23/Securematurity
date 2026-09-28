@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +11,7 @@ import { Loader2, PackageCheck, Download, Lock, ExternalLink, FileText } from 'l
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import { useActiveCustomer } from '@/lib/tenantContext';
 
 const SECTION_LABEL_KEYS = {
   versions: 'audit_package_section_versions',
@@ -27,16 +27,6 @@ const STATUS_STYLES = {
   not_applicable: 'bg-muted text-muted-foreground',
 };
 
-/** The customer in context: own tenant, else the first delegated customer. */
-function resolveCustomerId(user) {
-  if (user?.customer_id) return user.customer_id;
-  const delegated = [
-    ...(user?.delegated_edit_customer_ids || []),
-    ...(user?.delegated_view_customer_ids || []),
-  ];
-  return delegated[0] || '';
-}
-
 function downloadJson(pack) {
   const blob = new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -50,10 +40,9 @@ function downloadJson(pack) {
 }
 
 export default function AuditPackage() {
-  const { user } = useAuth();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
-  const customerId = resolveCustomerId(user);
+  const { customerId, isResolving } = useActiveCustomer();
   const [selectedId, setSelectedId] = useState('');
 
   const { data: packages = [], isLoading } = useQuery({
@@ -95,6 +84,18 @@ export default function AuditPackage() {
       toast.error(error?.response?.data?.error || error?.data?.error || t('audit_package_finalize_error'));
     },
   });
+
+  // O contexto ainda pode estar a resolver (delegações a chegar): não se
+  // conclui «sem cliente» antes disso, para não mostrar uma lista vazia que na
+  // verdade ainda não foi determinada.
+  if (!customerId && isResolving) {
+    return (
+      <div className="space-y-6">
+        <PageHeader description={t('audit_package_subtitle')} />
+        <Card><CardContent className="p-0"><LoadingState label={t('audit_package_loading')} className="py-16" /></CardContent></Card>
+      </div>
+    );
+  }
 
   if (!customerId) {
     return (

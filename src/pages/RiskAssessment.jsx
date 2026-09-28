@@ -20,6 +20,7 @@ import TaskHeatmap from '@/components/risks/TaskHeatmap';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
 import { isPlatformOwner } from '@/lib/rbac';
+import { useActiveCustomer } from '@/lib/tenantContext';
 
 function riskScore(r) { return (r.impact || 0) * (r.likelihood || 0); }
 
@@ -54,7 +55,7 @@ export default function RiskAssessment() {
   };
   const isAdmin = isPlatformOwner(user?.role);
   const isCustomerAdmin = user?.role === 'customer_admin';
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);

@@ -29,10 +29,12 @@ import {
  * an action is never duplicated for the same gap — and both share the exact
  * tenant/delegation authorization and module licence as completeAssessment.
  */
+import { resolveActor } from "../../shared/devActor.ts";
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));

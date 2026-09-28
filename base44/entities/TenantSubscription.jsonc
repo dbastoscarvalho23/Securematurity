@@ -56,6 +56,11 @@
       "format": "date",
       "description": "When the monthly usage counter resets"
     },
+    "grace_until": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "End of the suspension grace period: the tenant is warned and keeps the modules until this moment, after which they close"
+    },
     "notes": {
       "type": "string",
       "description": "Additional notes"

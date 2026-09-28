@@ -33,6 +33,29 @@ const CUSTOMERS = [
   { key: "tenant_gama", name: `${MARKER} Cliente Gama`, nif: "900000003", sector: "healthcare", partner: "partner_alfa", subscription: true },
   // Delta: delegação de edição mas sem subscrição → módulo não licenciado
   { key: "tenant_delta", name: `${MARKER} Cliente Delta`, nif: "900000004", sector: "manufacturing", partner: "partner_beta", subscription: false },
+  // Epsilon e Zeta existem para os estados negativos da delegação: cada um só é
+  // alcançável pela sua delegação, uma expirada e outra revogada, para que os
+  // três estados obrigatórios (activa / expirada / revogada) sejam distinguíveis.
+  { key: "tenant_epsilon", name: `${MARKER} Cliente Epsilon`, nif: "900000005", sector: "transport", partner: "partner_alfa", subscription: true },
+  { key: "tenant_zeta", name: `${MARKER} Cliente Zeta`, nif: "900000006", sector: "water", partner: "partner_beta", subscription: true },
+  // Eta: a única delegação é de edição mas nomeia apenas um módulo, para que a
+  // recusa venha da delegação (F4) e não da licença — tem, por isso, subscrição.
+  { key: "tenant_eta", name: `${MARKER} Cliente Eta`, nif: "900000007", sector: "digital", partner: "partner_beta", subscription: true },
+];
+
+/**
+ * Módulos que as delegações operacionais de teste autorizam.
+ *
+ * F4: uma delegação só autoriza os módulos que nomeia e uma lista vazia não
+ * autoriza nenhum, pelo que as delegações que devem permitir operar têm de
+ * nomear o conjunto Core. Sem isto, os cenários de delegação não autorizariam
+ * nada e a suíte de validação estaria a testar a recusa, não a permissão.
+ */
+const CORE_DELEGATION_MODULES = [
+  "nis2_journey",
+  "assessments_action_plan",
+  "documents_evidence",
+  "reporting_audit_prep",
 ];
 
 /** Assessment coverage mode per tenant. */
@@ -50,10 +73,12 @@ const DOMAINS = [
   { domain: "Supply Chain", domain_pt: "Cadeia de Abastecimento" },
 ];
 
+import { resolveActor } from "../../shared/devActor.ts";
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     if (normalizeRole(user.role) !== "master_admin") {
@@ -413,6 +438,37 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       reason: `${MARKER} Delegação restrita ao módulo de documentos.`,
     },
     {
+      key: "expired_only_tenant_epsilon",
+      customer: "tenant_epsilon",
+      assignment_type: "delegation",
+      access_level: "contributor",
+      status: "active",
+      expires_at: inDays(-5),
+      grant: null,
+      reason: `${MARKER} Delegação expirada (única via para este cliente) — não deve conceder acesso.`,
+    },
+    {
+      key: "revoked_only_tenant_zeta",
+      customer: "tenant_zeta",
+      assignment_type: "delegation",
+      access_level: "contributor",
+      status: "revoked",
+      expires_at: inDays(20),
+      grant: null,
+      reason: `${MARKER} Delegação revogada (única via para este cliente) — não deve conceder acesso.`,
+    },
+    {
+      key: "module_restricted_edit_tenant_eta",
+      customer: "tenant_eta",
+      assignment_type: "delegation",
+      access_level: "contributor",
+      status: "active",
+      expires_at: inDays(60),
+      grant: "edit",
+      authorized_modules: ["documents_evidence"],
+      reason: `${MARKER} Delegação de edição restrita ao módulo de documentos — não deve autorizar o percurso de avaliações.`,
+    },
+    {
       key: "onboarding_tenant_gama",
       customer: "tenant_gama",
       assignment_type: "onboarding",
@@ -448,7 +504,8 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       workspace_id: customer.workspace_id,
       assignment_type: scenario.assignment_type,
       access_level: scenario.access_level,
-      authorized_modules: scenario.authorized_modules || [],
+      authorized_modules:
+        scenario.authorized_modules || (scenario.grant ? CORE_DELEGATION_MODULES : []),
       status: scenario.status,
       is_legacy: false,
       expires_at: scenario.expires_at || "",
@@ -461,7 +518,11 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
     result[scenario.key] = created.id;
 
     if (scenario.grant) {
-      const target = await base44.asServiceRole.entities.User.get(user.id);
+      // A identidade que semeia pode não existir como registo na entidade User
+      // (no emulador local a criação de utilizadores é ignorada): a ausência do
+      // registo não pode derrubar o seed — os arrays denormalizados deixam
+      // simplesmente de ser escritos e as autorizações leem a atribuição.
+      const target = await base44.asServiceRole.entities.User.get(user.id).catch(() => null);
       if (target) {
         const field = scenario.grant === "view" ? "delegated_view_customer_ids" : "delegated_edit_customer_ids";
         await base44.asServiceRole.entities.User.update(target.id, {

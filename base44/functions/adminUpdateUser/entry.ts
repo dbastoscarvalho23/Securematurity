@@ -37,10 +37,12 @@ const PLATFORM_ROLES = ["admin", "master_admin", "workspace_admin", "partner_adm
 
 const ALLOWED_ROLES = [...TENANT_ROLES, ...PLATFORM_ROLES];
 
+import { resolveActor } from "../../shared/devActor.ts";
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const currentUser = await base44.auth.me();
+    const currentUser = await resolveActor(base44, req);
     if (!currentUser) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const currentRole = normalizeRole(currentUser.role);

@@ -25,6 +25,15 @@
       "type": "string",
       "format": "date-time",
       "description": "When the module was deactivated"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Why this module was activated or deactivated outside the tier (override)"
+    },
+    "expires_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "End of the override: after this moment the tier rules apply again"
     }
   },
   "required": ["customer_id", "module_code"],

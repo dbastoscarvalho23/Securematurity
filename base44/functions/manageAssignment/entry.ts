@@ -13,10 +13,12 @@ import { normalizeRole } from "../../shared/accessUtils.ts";
  *
  * Request body: { action, ...params }
  */
+import { resolveActor } from "../../shared/devActor.ts";
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const role = normalizeRole(user.role);

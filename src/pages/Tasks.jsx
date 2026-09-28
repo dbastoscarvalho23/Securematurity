@@ -16,6 +16,7 @@ import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 import { isPlatformOwner, hasRole } from '@/lib/rbac';
+import { useActiveCustomer } from '@/lib/tenantContext';
 
 export default function Tasks() {
   const [search, setSearch] = useState('');
@@ -29,7 +30,7 @@ export default function Tasks() {
   const { t } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
   const canBulkEdit = hasRole(user?.role, 'master_admin', 'customer_admin');
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks', customerId],

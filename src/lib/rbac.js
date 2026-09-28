@@ -110,6 +110,14 @@ const T_EDIT = ['customer_admin', 'grc_analyst'];
 const T_OPS  = ['customer_admin', 'grc_analyst', 'control_owner'];
 const T_VIEW = ['customer_admin', 'grc_analyst', 'control_owner', 'auditor'];
 
+// Consultor (FA1): trabalha num tenant de cliente por delegação — a RLS
+// concede-lhe leitura delegada, mas a matriz fechava-lhe todas as rotas
+// operacionais, deixando o papel reduzido a pedir e aceitar delegações. Passa a
+// ter LEITURA nos percursos que a delegação cobre (avaliações, riscos,
+// evidências, documentos, tarefas e relatórios) e nenhuma escrita: quem limita
+// os dados é a RLS, que só devolve os clientes delegados.
+const T_DELEGATED_READ = ['consultant'];
+
 // Content / catalogue tiers — the shared content catalogue (question database,
 // knowledge base) is managed by the platform & partner admins AND by the tenant
 // roles that curate the same content.
@@ -143,19 +151,19 @@ export const CAPABILITIES = {
   compliance_journey: { view: T_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
   framework_guide:    { view: T_EDIT },
   action_plan:        { view: T_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
-  assessments:        { view: [...T_VIEW, 'executive'], create: T_EDIT, edit: T_EDIT, delete: T_MGR, export: [...T_EDIT, 'executive', 'auditor'] },
+  assessments:        { view: [...T_VIEW, ...T_DELEGATED_READ, 'executive'], create: T_EDIT, edit: T_EDIT, delete: T_MGR, export: [...T_EDIT, 'executive', 'auditor'] },
   recommendations:    { view: T_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
   compliance_metrics: { view: [...T_EDIT, 'executive'], export: [...T_EDIT, 'executive', 'auditor'] },
-  tasks:              { view: [...T_OPS, 'employee'], create: T_OPS, edit: T_OPS, delete: T_MGR, approve: T_MGR },
+  tasks:              { view: [...T_OPS, ...T_DELEGATED_READ, 'employee'], create: T_OPS, edit: T_OPS, delete: T_MGR, approve: T_MGR },
   task_analytics:     { view: T_OPS },
-  documents:          { view: T_OPS, create: T_OPS, edit: T_OPS, delete: T_MGR },
-  evidence:           { view: T_VIEW, create: T_OPS, edit: T_OPS, delete: T_MGR },
+  documents:          { view: [...T_OPS, ...T_DELEGATED_READ], create: T_OPS, edit: T_OPS, delete: T_MGR },
+  evidence:           { view: [...T_VIEW, ...T_DELEGATED_READ], create: T_OPS, edit: T_OPS, delete: T_MGR },
   document_audit:     { view: [...T_EDIT, 'auditor'] },
-  reports:            { view: [...T_EDIT, 'auditor', 'executive'], export: [...T_EDIT, 'auditor', 'executive'] },
+  reports:            { view: [...T_EDIT, 'auditor', 'executive', ...T_DELEGATED_READ], export: [...T_EDIT, 'auditor', 'executive'] },
   audit_package:      { view: [...T_EDIT, 'auditor'], create: T_EDIT, export: [...T_EDIT, 'auditor'] },
   strategic_report:   { view: ['executive'], export: ['executive'] },
   email_report:       { view: T_EDIT, create: T_EDIT },
-  risks:              { view: [...T_VIEW, 'executive'], create: T_EDIT, edit: T_EDIT, delete: T_MGR },
+  risks:              { view: [...T_VIEW, ...T_DELEGATED_READ, 'executive'], create: T_EDIT, edit: T_EDIT, delete: T_MGR },
   vulnerabilities:    { view: T_VIEW, create: T_OPS, edit: T_OPS, delete: T_MGR },
   incidents:          { view: [...T_OPS, 'employee'], create: [...T_OPS, 'employee'], edit: T_OPS, delete: T_MGR },
   suppliers:          { view: T_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },

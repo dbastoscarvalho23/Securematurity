@@ -27,6 +27,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import { isPlatformOwner } from '@/lib/rbac';
+import { useActiveCustomer } from '@/lib/tenantContext';
 
 const STATUS_ICONS = {
   todo: <Circle className="w-4 h-4 text-muted-foreground" />,
@@ -167,7 +168,7 @@ export default function ActionPlan() {
   });
   const { user } = useAuth();
   const isAdmin = isPlatformOwner(user?.role);
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
   const { data: recommendations = [] } = useQuery({
     queryKey: ['recommendations', customerId],

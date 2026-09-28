@@ -107,6 +107,48 @@ export async function resolveScopeCustomerIds(
 }
 
 /**
+ * Resolve the customers a user may READ (not write).
+ *
+ * Wider than resolveScopeCustomerIds on purpose: besides the user's own tenant
+ * and a partner admin's carteira, it includes the tenants reached through
+ * delegation — the denormalized `delegated_view_customer_ids` /
+ * `delegated_edit_customer_ids` arrays and the user's own live delegations.
+ *
+ * Delegations are re-validated at read time: a record only counts when it is a
+ * delegation in the `active` state and its `expires_at` is still in the future,
+ * so a pending, revoked or expired assignment never widens the scope (F15 —
+ * entity RLS alone honours the denormalized arrays without checking the dates).
+ *
+ * Write paths must keep using resolveScopeCustomerIds.
+ */
+export async function resolveReadableCustomerIds(
+  base44: any,
+  user: any,
+): Promise<{ all: boolean; customerIds: string[] }> {
+  if (isPlatformOwner(user?.role)) return { all: true, customerIds: [] };
+
+  const scope = await resolveScopeCustomerIds(base44, user);
+  const ids = new Set<string>(scope.customerIds);
+
+  for (const field of ["delegated_view_customer_ids", "delegated_edit_customer_ids"]) {
+    for (const id of user?.[field] || []) ids.add(id);
+  }
+
+  if (user?.id || user?.email) {
+    const assignments = await base44.asServiceRole.entities.UserCustomerAssignment.list("-created_date", 500);
+    const now = Date.now();
+    for (const a of assignments) {
+      if (a.assignment_type !== "delegation" || a.status !== "active") continue;
+      if (a.expires_at && new Date(a.expires_at).getTime() <= now) continue;
+      const mine = a.user_id === user.id || (!!user.email && a.user_email === user.email);
+      if (mine && a.customer_id) ids.add(a.customer_id);
+    }
+  }
+
+  return { all: false, customerIds: Array.from(ids) };
+}
+
+/**
  * Add a value to a user's denormalized array field (deduplication guaranteed).
  * Returns the updated array.
  */

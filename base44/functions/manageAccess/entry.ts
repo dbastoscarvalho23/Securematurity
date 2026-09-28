@@ -45,10 +45,12 @@ const MAX_DELEGATION_DAYS = 365;
 const ONBOARDING_DAYS = 30;
 const ACCESS_LEVELS = ["viewer", "contributor", "admin"];
 
+import { resolveActor } from "../../shared/devActor.ts";
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();

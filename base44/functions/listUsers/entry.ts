@@ -1,10 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { normalizeRole } from '../../shared/accessUtils.ts';
 
+import { resolveActor } from "../../shared/devActor.ts";
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const currentUser = await base44.auth.me().catch(() => null);
+    const currentUser = await resolveActor(base44, req);
     const role = normalizeRole(currentUser?.role);
 
     if (!currentUser || (role !== 'master_admin' && role !== 'customer_admin')) {

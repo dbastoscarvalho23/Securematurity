@@ -46,6 +46,10 @@ export interface EffectiveLicense {
   seats_used: number;
   monthly_usage_count: number;
   monthly_usage_reset_date: string | null;
+  /** Aviso a mostrar na interface antes de a licença fechar (ex.: suspensão em curso). */
+  warning?: string | null;
+  /** Fim do período de tolerância de uma suspensão (ISO), quando aplicável. */
+  grace_until?: string | null;
 }
 
 /**
@@ -55,7 +59,10 @@ export interface EffectiveLicense {
 export async function getEffectiveLicense(base44: any, customerId: string): Promise<EffectiveLicense> {
   // Fetch subscription for this tenant
   const subs = await base44.asServiceRole.entities.TenantSubscription.filter({ customer_id: customerId });
-  const sub = subs.find((s: any) => s.status === "active" || s.status === "trial") || subs[0];
+  const sub =
+    subs.find((s: any) => s.status === "active" || s.status === "trial") ||
+    subs.find((s: any) => s.status === "suspended") ||
+    subs[0];
 
   if (!sub) {
     return {
@@ -83,6 +90,20 @@ export async function getEffectiveLicense(base44: any, customerId: string): Prom
     effectiveStatus = "expired";
   }
 
+  // Suspensão com tolerância: o tenant é avisado e os módulos só fecham no fim
+  // do período. Antes disso a licença continua válida (licensed) mas com aviso;
+  // depois disso fecha (fail-closed, sem aviso).
+  let warning: string | null = null;
+  let graceUntil: string | null = null;
+  if (sub.status === "suspended") {
+    const graceEnds = sub.grace_until ? new Date(sub.grace_until).getTime() : 0;
+    effectiveStatus = "suspended";
+    if (graceEnds > Date.now()) {
+      warning = "suspension_grace";
+      graceUntil = sub.grace_until;
+    }
+  }
+
   const tierCode = sub.tier_code || "core";
   const tierModules = modulesForTier(tierCode);
 
@@ -90,8 +111,12 @@ export async function getEffectiveLicense(base44: any, customerId: string): Prom
   const tenantModules = await base44.asServiceRole.entities.TenantModule.filter({ customer_id: customerId });
   const activatedModuleCodes = new Set(tierModules);
 
-  // Apply tenant module overrides
+  // Apply tenant module overrides. An override carries its own validity: once
+  // `expires_at` has passed it stops applying and the tier rules take over
+  // again, so a time-boxed exception cannot become permanent by accident.
+  const now = Date.now();
   for (const tm of tenantModules) {
+    if (tm.expires_at && new Date(tm.expires_at).getTime() <= now) continue;
     if (tm.status === "active") {
       activatedModuleCodes.add(tm.module_code);
     } else if (tm.status === "inactive") {
@@ -113,7 +138,10 @@ export async function getEffectiveLicense(base44: any, customerId: string): Prom
   const standards = tenantStandards.map((ts: any) => ts.standard_code);
 
   return {
-    licensed: effectiveStatus === "active" || effectiveStatus === "trial",
+    licensed:
+      effectiveStatus === "active" ||
+      effectiveStatus === "trial" ||
+      warning === "suspension_grace",
     status: effectiveStatus,
     modules,
     standards,
@@ -122,6 +150,8 @@ export async function getEffectiveLicense(base44: any, customerId: string): Prom
     seats_used: sub.seats_used || 0,
     monthly_usage_count: sub.monthly_usage_count || 0,
     monthly_usage_reset_date: sub.monthly_usage_reset_date || null,
+    warning,
+    grace_until: graceUntil,
   };
 }
 

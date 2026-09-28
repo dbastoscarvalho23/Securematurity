@@ -8,6 +8,7 @@ import { ShieldCheck, Layers, Package, Check, Minus, Info } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import EmptyState from '@/components/shared/EmptyState';
+import TenantLicensePanel from '@/components/licensing/TenantLicensePanel';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { canView } from '@/lib/rbac';
@@ -238,6 +239,9 @@ export default function Licensing() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Provisionamento por cliente (FB1) — toda a escrita passa por função de backend. */}
+      <TenantLicensePanel />
 
       {/* Catálogo de módulos */}
       <Card>

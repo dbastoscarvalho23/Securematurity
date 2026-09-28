@@ -35,10 +35,12 @@ import {
  * - complete: close the assessment with server-computed results
  * - reopen:   reopen a completed assessment, preserving the previous result
  */
+import { resolveActor } from "../../shared/devActor.ts";
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();

@@ -1,21 +1,24 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
-import { resolveScopeCustomerIds } from "../../shared/accessUtils.ts";
+import { resolveReadableCustomerIds } from "../../shared/accessUtils.ts";
 import { getEffectiveLicense } from "../../shared/licenseGuard.ts";
+import { resolveActor } from "../../shared/devActor.ts";
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const { customer_id } = await req.json();
     if (!customer_id) return Response.json({ error: "customer_id is required" }, { status: 400 });
 
-    // Tenant users only query their own licence; the platform owner queries any,
-    // and a partner admin only the customers of its own carteira. The role is
-    // normalised (a legacy `admin` is the platform owner), never compared to a
-    // literal (F7).
-    const scope = await resolveScopeCustomerIds(base44, user);
+    // A leitura da licença segue o âmbito de LEITURA: o próprio tenant, a
+    // carteira de um administrador de parceiro e os tenants a que o utilizador
+    // tem acesso por delegação viva — um consultor delegado precisa da licença
+    // do cliente para que os módulos contratados apareçam. O papel é
+    // normalizado (um legado `admin` é o dono da plataforma), nunca comparado
+    // com um literal (F7).
+    const scope = await resolveReadableCustomerIds(base44, user);
     if (!scope.all && !scope.customerIds.includes(customer_id)) {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }

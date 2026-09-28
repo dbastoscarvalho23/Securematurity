@@ -8,10 +8,12 @@ import { normalizeRole } from "../../shared/accessUtils.ts";
  * Response: { tree: WorkspaceNode[] }
  * WorkspaceNode = { ...workspace, children: WorkspaceNode[] }
  */
+import { resolveActor } from "../../shared/devActor.ts";
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
     if (normalizeRole(user.role) !== "master_admin") return Response.json({ error: "Forbidden" }, { status: 403 });
 

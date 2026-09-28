@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
 import { isPlatformOwner, hasRole } from '@/lib/rbac';
+import { useActiveCustomer } from '@/lib/tenantContext';
 
 const statusOptions = ['pending', 'in_progress', 'completed', 'dismissed'];
 
@@ -58,7 +59,7 @@ export default function Recommendations() {
   const { user } = useAuth();
   const isAdmin = isPlatformOwner(user?.role);
   const canBulkAction = hasRole(user?.role, 'master_admin', 'customer_admin');
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
   const { data: recommendations = [] } = useQuery({
     queryKey: ['recommendations', customerId],
