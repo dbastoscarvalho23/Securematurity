@@ -8,6 +8,7 @@ import { RoleSimulationProvider, useIsSimulating } from '@/lib/RoleSimulationCon
 import { useLanguage } from '@/lib/LanguageContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import ContextualHelpDrawer from '@/components/knowledge/ContextualHelpDrawer';
 
 // Write blocker — intercepts mutation buttons during role simulation
 const WRITE_BUTTON_TEXTS = ['novo', 'editar', 'apagar', 'guardar', 'eliminar', 'criar', 'atualizar', 'save', 'delete', 'edit', 'new', 'create', 'update', 'send', 'submit', 'upload', 'import', 'approve', 'reject'];
@@ -91,6 +92,7 @@ function LayoutContent() {
           </main>
         </div>
       </div>
+      <ContextualHelpDrawer />
     </div>
   );
 }

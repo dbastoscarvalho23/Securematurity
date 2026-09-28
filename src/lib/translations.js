@@ -14,6 +14,7 @@ import { trainingEn, trainingPt } from './translations-training';
 import { genReportsEn, genReportsPt } from './translations-genreports';
 import { storageEn, storagePt } from './translations-storage';
 import { licenseEn, licensePt } from './translations-license';
+import { dashboardEn, dashboardPt } from './translations-dashboard';
 export const translations = {
   en: {
     // assessments
@@ -691,3 +692,5 @@ Object.assign(translations.en, storageEn);
 Object.assign(translations.pt, storagePt);
 Object.assign(translations.en, licenseEn);
 Object.assign(translations.pt, licensePt);
+Object.assign(translations.en, dashboardEn);
+Object.assign(translations.pt, dashboardPt);
