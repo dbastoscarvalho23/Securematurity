@@ -58,6 +58,20 @@
         "required": ["tier_code"]
       }
     },
+    "addon_entries": {
+      "type": "array",
+      "description": "Preço dos packs/acréscimos desta tabela (FM2). Um pack sem linha aqui existe na oferta mas não tem preço nesta versão.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "addon_code": { "type": "string" },
+          "amount_cents": { "type": ["number", "null"], "description": "Preço do pack por período, em cêntimos" },
+          "included_ai_calls": { "type": ["number", "null"], "description": "Consumo de IA incluído no pack, por mês (soma-se à quota do tier, FM4) — sinalizado, nunca cobrado" },
+          "notes": { "type": ["string", "null"] }
+        },
+        "required": ["addon_code"]
+      }
+    },
     "notes": {
       "type": "string",
       "description": "Notas da tabela (condições comerciais)"

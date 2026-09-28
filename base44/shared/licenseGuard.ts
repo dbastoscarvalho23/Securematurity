@@ -33,6 +33,31 @@ export function modulesForTier(tierCode: string): string[] {
   return TIER_MODULES[resolved] || TIER_MODULES.core;
 }
 
+/**
+ * Packs / acréscimos (FM1): a composição **técnica** dos pacotes que se podem
+ * contratar como acréscimo a qualquer tier. Curada em código, como os tiers —
+ * é esta lista que a excepção por módulo de `provisionTenantLicense` (`set_addon`)
+ * abre. `privacy` vive aqui: não pertence a nenhum tier e vende-se como acréscimo.
+ */
+export const ADDON_PACKS: Record<string, { name: string; modules: string[] }> = {
+  privacy: { name: "Pack de Privacidade", modules: ["privacy"] },
+  risk: { name: "Pack de Risco e Incidentes", modules: ["risk_management", "incident_management"] },
+  suppliers: { name: "Pack de Fornecedores e Conhecimento", modules: ["supplier_management", "knowledge_guidance"] },
+};
+
+/** Códigos de pack do catálogo, pela ordem em que a oferta os apresenta. */
+export const ALL_ADDON_CODES = ["privacy", "risk", "suppliers"];
+
+/** Módulos que um pack abre. Um código desconhecido não abre nada. */
+export function modulesForAddon(code: string): string[] {
+  return ADDON_PACKS[code]?.modules || [];
+}
+
+/** Nome de um pack no catálogo de código. */
+export function addonName(code: string): string {
+  return ADDON_PACKS[code]?.name || code;
+}
+
 export const ALL_MODULE_CODES = [
   "nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep",
   "risk_management", "incident_management", "supplier_management", "knowledge_guidance", "privacy",

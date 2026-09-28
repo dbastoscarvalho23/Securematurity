@@ -86,6 +86,15 @@ export const licenseEn = {
   licensing_provision_dialog_suspend_title: 'Suspend subscription',
   licensing_provision_dialog_resume_title: 'Reactivate subscription',
   licensing_provision_dialog_override_title: 'Module exception',
+  licensing_provision_addon: 'Packs',
+  licensing_provision_dialog_addon_title: 'Packs and add-ons',
+  licensing_provision_addon_pack: 'Pack',
+  licensing_provision_addon_state: 'Contracting',
+  licensing_provision_addon_grant: 'Contract pack',
+  licensing_provision_addon_revoke: 'Withdraw pack',
+  licensing_provision_addon_help:
+    'Contracting a pack opens its modules as a module exception; withdrawing it closes only what the pack opened — a module the contracted tier already includes is never closed. The price in force is recorded on the subscription and nothing is charged in this phase.',
+  licensing_provision_addon_none: 'No pack contracted',
   // Oferta comercial e preço (FM1/FM2)
   commercial_offer_title: 'Commercial offer',
   commercial_offer_subtitle:
@@ -163,6 +172,19 @@ export const licenseEn = {
   commercial_field_billing_period: 'Period',
   commercial_field_tier: 'Tier',
   commercial_field_price: 'Price',
+  commercial_field_addon: 'Pack',
+  commercial_field_addon_price: 'Pack price',
+  addon_privacy: 'Privacy pack',
+  addon_risk: 'Risk and incident pack',
+  addon_suppliers: 'Suppliers and knowledge pack',
+  commercial_offer_addons_title: 'Packs and add-ons',
+  commercial_offer_addons_help:
+    'Packs are sold on top of a tier: the modules they open come from the code catalogue and are granted as a module exception when a customer contracts the pack. Only the packs marked here are on sale in this version.',
+  commercial_price_addons_title: 'Price per pack',
+  commercial_price_addons_help:
+    'Price of each pack of the selected offer version, per period. A pack left blank is on sale but has no price in this version.',
+  commercial_price_addons_none: 'No pack is on sale in this offer version.',
+  commercial_price_field_addon_ai: 'Included AI calls',
   commercial_status_draft: 'Draft',
   commercial_status_published: 'Published',
   commercial_status_retired: 'Retired',
@@ -426,6 +448,15 @@ export const licensePt = {
   licensing_provision_dialog_suspend_title: 'Suspender subscrição',
   licensing_provision_dialog_resume_title: 'Reativar subscrição',
   licensing_provision_dialog_override_title: 'Excepção de módulo',
+  licensing_provision_addon: 'Packs',
+  licensing_provision_dialog_addon_title: 'Packs e acréscimos',
+  licensing_provision_addon_pack: 'Pack',
+  licensing_provision_addon_state: 'Contratação',
+  licensing_provision_addon_grant: 'Contratar pack',
+  licensing_provision_addon_revoke: 'Retirar pack',
+  licensing_provision_addon_help:
+    'Contratar um pack abre os seus módulos como excepção por módulo; retirá-lo fecha apenas o que o pack abriu — um módulo que o nível contratado já inclui nunca fecha. O preço vigente fica registado na subscrição e nada é cobrado nesta fase.',
+  licensing_provision_addon_none: 'Nenhum pack contratado',
   // Oferta comercial e preço (FM1/FM2)
   commercial_offer_title: 'Oferta comercial',
   commercial_offer_subtitle:
@@ -503,6 +534,19 @@ export const licensePt = {
   commercial_field_billing_period: 'Periodicidade',
   commercial_field_tier: 'Nível',
   commercial_field_price: 'Preço',
+  commercial_field_addon: 'Pack',
+  commercial_field_addon_price: 'Preço do pack',
+  addon_privacy: 'Pack de Privacidade',
+  addon_risk: 'Pack de Risco e Incidentes',
+  addon_suppliers: 'Pack de Fornecedores e Conhecimento',
+  commercial_offer_addons_title: 'Packs e acréscimos',
+  commercial_offer_addons_help:
+    'Os packs vendem-se por cima de um nível: os módulos que abrem vêm do catálogo de código e são concedidos como excepção por módulo quando o cliente contrata o pack. Só os packs aqui marcados estão à venda nesta versão.',
+  commercial_price_addons_title: 'Preço por pack',
+  commercial_price_addons_help:
+    'Preço de cada pack da versão da oferta escolhida, por período. Um pack em branco está à venda mas fica sem preço nesta versão.',
+  commercial_price_addons_none: 'Nenhum pack está à venda nesta versão da oferta.',
+  commercial_price_field_addon_ai: 'Chamadas de IA incluídas',
   commercial_status_draft: 'Rascunho',
   commercial_status_published: 'Publicada',
   commercial_status_retired: 'Retirada',

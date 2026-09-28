@@ -10,10 +10,15 @@ import { resolveActor } from "../../shared/devActor.ts";
 import {
   TIER_MODULES,
   LEGACY_TIER_ALIASES,
+  addonName,
+  modulesForAddon,
   modulesForTier,
   getEffectiveLicense,
 } from "../../shared/licenseGuard.ts";
 import {
+  addonCatalogueCodes,
+  addonIncludedAiCalls,
+  addonPriceEntryFor,
   offerVersionInForce,
   priceEntryFor,
   priceTableInForce,
@@ -48,7 +53,7 @@ import {
  * master_admin (qualquer cliente) e workspace_admin (só a sua carteira).
  *
  * Acções de escrita por cliente: create | update | suspend | resume | set_module |
- * set_standard | renew | change_tier | close | set_quotas.
+ * set_addon | set_standard | renew | change_tier | close | set_quotas.
  * Acções de leitura/registo de âmbito: lifecycle | quota_overview |
  * record_quota_signals (leem a carteira inteira e não levam `customer_id`).
  *
@@ -69,6 +74,7 @@ const ACTIONS = [
   "suspend",
   "resume",
   "set_module",
+  "set_addon",
   "set_standard",
   "renew",
   "change_tier",
@@ -151,6 +157,8 @@ Deno.serve(async (req) => {
         return await resumeSubscription(base44, user, customer, body);
       case "set_module":
         return await setModule(base44, user, customer, body);
+      case "set_addon":
+        return await setAddon(base44, user, customer, body);
       case "set_standard":
         return await setStandard(base44, user, customer, body);
       case "renew":
@@ -642,11 +650,19 @@ async function closeSubscription(base44: any, user: any, customer: any, body: an
     await base44.asServiceRole.entities.TenantStandard.update(row.id, { status: "inactive" });
   }
 
+  // Os packs contratados ficam retirados com data: fechar um tenant não deixa
+  // nenhum acréscimo vivo, e nada é apagado (a linha fica como histórico).
+  const closedAddons = (subscription.addons || []).map((row: any) =>
+    row?.status === "active" ? { ...row, status: "inactive", ended_date: closedAt } : row
+  );
+
   const updated = await base44.asServiceRole.entities.TenantSubscription.update(subscription.id, {
     status: "cancelled",
     closed_at: closedAt,
     closed_reason: reason.reason,
     grace_until: null,
+    addons: closedAddons,
+    addon_amount_cents: addonTotalCents(closedAddons),
   });
 
   await audit(base44, user, "license_subscription_closed", customer, subscription.id, {
@@ -804,13 +820,17 @@ async function quotaDefaults(base44: any, subscription: any) {
     }
 
     const entry = priceEntryFor(table, subscription.tier_code);
+    // A quota de IA contratada é a do tier mais a dos packs activos: um pack que
+    // inclui consumo não pode deixar a quota prometida por medir (FM4).
+    const addonAiCalls = addonIncludedAiCalls(table, subscription.addons || []);
+    const tierAiCalls = entry?.included_ai_calls ?? null;
     return {
       price_table_id: table.id || null,
       price_table_label: table.label || null,
       billing_period: table.billing_period || null,
       currency: table.currency || "EUR",
       included_seats: entry?.included_seats ?? null,
-      included_ai_calls: entry?.included_ai_calls ?? null,
+      included_ai_calls: tierAiCalls === null && addonAiCalls === 0 ? null : (Number(tierAiCalls) || 0) + addonAiCalls,
       extra_seat_amount_cents: entry?.extra_seat_amount_cents ?? null,
     };
   } catch (_error) {
@@ -1157,6 +1177,129 @@ async function setModule(base44: any, user: any, customer: any, body: any) {
   return await respond(base44, customer.id, await findByCustomer(base44, customer.id), { module: saved });
 }
 
+/** Soma dos packs activos de uma subscrição, em cêntimos. */
+function addonTotalCents(addons: any[]) {
+  return (addons || [])
+    .filter((row: any) => row?.status === "active")
+    .reduce((total: number, row: any) => total + (Number(row?.amount_cents ?? 0) || 0), 0);
+}
+
+/**
+ * Oferta e tabela de preços através das quais se preça o que se contrata: a que
+ * a subscrição registou (o que ficou contratado) e, na falta dela, a vigente à
+ * data. Sem oferta nem preço, o pack contrata-se na mesma — fica sem valor, como
+ * o provisionamento sem oferta publicada.
+ */
+async function offerAndPrice(base44: any, subscription: any, at: string) {
+  const versions = await base44.asServiceRole.entities.OfferVersion.list("-created_date", 200);
+  let version = subscription?.offer_version_id
+    ? (versions || []).find((row: any) => row.id === subscription.offer_version_id) || null
+    : null;
+  if (!version) version = offerVersionInForce(versions || [], at);
+
+  let table: any = null;
+  if (subscription?.price_table_id) {
+    table = await base44.asServiceRole.entities.PriceTable.get(subscription.price_table_id).catch(() => null);
+  }
+  if (!table && version) {
+    const tables = await base44.asServiceRole.entities.PriceTable.list("-created_date", 200);
+    table = priceTableInForce(tables || [], version.id, at);
+  }
+  return { version, table };
+}
+
+/**
+ * Pack/acréscimo (FM1): contrata ou retira um pacote a um cliente.
+ *
+ * A unidade é o pack, não o módulo: o que abre são os módulos do catálogo de
+ * código (`ADDON_PACKS`), gravados como excepção por módulo — a mesma porta de
+ * `set_module`, pelo que o gating não ganha uma segunda regra. Revogar um pack
+ * fecha **apenas** o que o pack abriu: um módulo que o tier já inclui não é
+ * tocado. O preço vigente fica registado na subscrição (sem faturação nesta
+ * fase) e a soma dos packs activos entra na receita contratada.
+ */
+async function setAddon(base44: any, user: any, customer: any, body: any) {
+  const addonCode = String(body.addon_code || "");
+  if (!addonCatalogueCodes().includes(addonCode)) {
+    return Response.json({ error: "addon_code desconhecido." }, { status: 422 });
+  }
+  const reason = validateReason(body.reason);
+  if (reason.error) return Response.json({ error: reason.error }, { status: 422 });
+
+  const subscription = await findByCustomer(base44, customer.id);
+  if (!subscription) return Response.json({ error: "Cliente sem subscrição." }, { status: 404 });
+  if (subscription.status === "cancelled") {
+    return Response.json({ error: "Esta subscrição está fechada.", code: "subscription_closed" }, { status: 422 });
+  }
+
+  const active = body.active !== false;
+  const at = today();
+  const nowIso = new Date().toISOString();
+  const { version, table } = await offerAndPrice(base44, subscription, at);
+  const entry = addonPriceEntryFor(table, addonCode);
+
+  const beforeState = await licenseState(base44, customer.id);
+  const modules = modulesForAddon(addonCode);
+  const tierModules = new Set(modulesForTier(resolveTier(subscription.tier_code) || subscription.tier_code));
+
+  for (const moduleCode of modules) {
+    if (tierModules.has(moduleCode)) continue;
+    const rows = await base44.asServiceRole.entities.TenantModule.filter({
+      customer_id: customer.id,
+      module_code: moduleCode,
+    });
+    const data: any = {
+      customer_id: customer.id,
+      module_code: moduleCode,
+      status: active ? "active" : "inactive",
+      reason: `${active ? "Pack" : "Fim do pack"} ${addonName(addonCode)}`,
+      ...(active ? { activated_at: nowIso, expires_at: null } : { deactivated_at: nowIso }),
+    };
+    if (rows.length > 0) {
+      await base44.asServiceRole.entities.TenantModule.update(rows[0].id, data);
+    } else if (active) {
+      await base44.asServiceRole.entities.TenantModule.create(data);
+    }
+  }
+
+  const existing = (subscription.addons || []).find((row: any) => row.addon_code === addonCode) || null;
+  const row = {
+    addon_code: addonCode,
+    name: addonName(addonCode),
+    status: active ? "active" : "inactive",
+    amount_cents: active ? entry?.amount_cents ?? existing?.amount_cents ?? null : existing?.amount_cents ?? null,
+    started_date: existing?.started_date || (active ? at : null),
+    ended_date: active ? null : at,
+  };
+  const addons = [...(subscription.addons || []).filter((r: any) => r.addon_code !== addonCode), row]
+    .sort((a: any, b: any) => String(a.addon_code).localeCompare(String(b.addon_code)));
+
+  const updated = await base44.asServiceRole.entities.TenantSubscription.update(subscription.id, {
+    addons,
+    addon_amount_cents: addonTotalCents(addons),
+  });
+
+  await audit(base44, user, "license_addon_set", customer, subscription.id, {
+    addon_code: addonCode,
+    status: row.status,
+    amount_cents: row.amount_cents,
+    modules,
+    offer_version_code: version?.code || null,
+    reason: reason.reason,
+  });
+  await recordChange(base44, user, {
+    action: "set_addon",
+    customer,
+    entityType: "TenantSubscription",
+    entityId: subscription.id,
+    reason: reason.reason,
+    beforeState,
+    afterState: await licenseState(base44, customer.id),
+  });
+
+  return await respond(base44, customer.id, updated, { addon: row, modules });
+}
+
 async function setStandard(base44: any, user: any, customer: any, body: any) {
   const standardCode = body.standard_code;
   if (!standardCode) return Response.json({ error: "standard_code is required" }, { status: 400 });
@@ -1215,6 +1358,7 @@ const SUBSCRIPTION_FIELDS = [
   "closed_reason",
   "ai_quota_monthly",
   "quota_warn_pct",
+  "addon_amount_cents",
 ];
 
 async function licenseState(base44: any, customerId: string) {
@@ -1229,6 +1373,15 @@ async function licenseState(base44: any, customerId: string) {
       status: m.status ?? null,
       expires_at: m.expires_at ?? null,
     })),
+    // Os packs contratados fazem parte do estado relevante: contratação e
+    // revogação aparecem no histórico com o valor de cada um.
+    addons: ((subs[0]?.addons) || []).map((a: any) => ({
+      addon_code: a.addon_code,
+      status: a.status ?? null,
+      amount_cents: a.amount_cents ?? null,
+      started_date: a.started_date ?? null,
+      ended_date: a.ended_date ?? null,
+    })),
     standards: standards.map((s: any) => ({
       standard_code: s.standard_code,
       status: s.status ?? null,
@@ -1239,8 +1392,8 @@ async function licenseState(base44: any, customerId: string) {
 /** Diff dos dois estados: códigos de campo alterados e os valores antes/depois. */
 function diffStates(before: any, after: any) {
   const changedFields: string[] = [];
-  const beforeDiff: any = { subscription: null, modules: [], standards: [] };
-  const afterDiff: any = { subscription: null, modules: [], standards: [] };
+  const beforeDiff: any = { subscription: null, modules: [], addons: [], standards: [] };
+  const afterDiff: any = { subscription: null, modules: [], addons: [], standards: [] };
 
   for (const field of SUBSCRIPTION_FIELDS) {
     const previous = before.subscription ? before.subscription[field] ?? null : null;
@@ -1251,21 +1404,22 @@ function diffStates(before: any, after: any) {
     afterDiff.subscription = { ...(afterDiff.subscription || {}), [field]: next };
   }
 
-  const keyed = (rows: any[], key: string) => new Map(rows.map((row: any) => [row[key], row]));
-  const collect = (beforeRows: any[], afterRows: any[], key: string, prefix: string) => {
-    const previous = keyed(beforeRows || [], key);
-    const next = keyed(afterRows || [], key);
+  const keyed = (rows: any[], key: string) => new Map((rows || []).map((row: any) => [row[key], row]));
+  const collect = (beforeRows: any[], afterRows: any[], key: string, prefix: string, bucket: string) => {
+    const previous = keyed(beforeRows, key);
+    const next = keyed(afterRows, key);
     for (const code of new Set([...previous.keys(), ...next.keys()])) {
       const from = previous.get(code) || null;
       const to = next.get(code) || null;
       if (JSON.stringify(from) === JSON.stringify(to)) continue;
       changedFields.push(`${prefix}${code}`);
-      if (from) beforeDiff[key === "module_code" ? "modules" : "standards"].push(from);
-      if (to) afterDiff[key === "module_code" ? "modules" : "standards"].push(to);
+      if (from) beforeDiff[bucket].push(from);
+      if (to) afterDiff[bucket].push(to);
     }
   };
-  collect(before.modules, after.modules, "module_code", "module:");
-  collect(before.standards, after.standards, "standard_code", "standard:");
+  collect(before.modules, after.modules, "module_code", "module:", "modules");
+  collect(before.addons, after.addons, "addon_code", "addon:", "addons");
+  collect(before.standards, after.standards, "standard_code", "standard:", "standards");
 
   return { changedFields: changedFields.sort(), before: beforeDiff, after: afterDiff };
 }

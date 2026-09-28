@@ -13,7 +13,7 @@
     },
     "action": {
       "type": "string",
-      "enum": ["create", "update", "suspend", "resume", "set_module", "set_standard", "renew", "change_tier", "close", "set_quotas"],
+      "enum": ["create", "update", "suspend", "resume", "set_module", "set_addon", "set_standard", "renew", "change_tier", "close", "set_quotas"],
       "description": "Operação de licenciamento que alterou a licença"
     },
     "actor_email": {
@@ -64,7 +64,8 @@
             "closed_at": { "type": ["string", "null"] },
             "closed_reason": { "type": ["string", "null"] },
             "ai_quota_monthly": { "type": ["number", "null"] },
-            "quota_warn_pct": { "type": ["number", "null"] }
+            "quota_warn_pct": { "type": ["number", "null"] },
+            "addon_amount_cents": { "type": ["number", "null"] }
           }
         },
         "modules": {
@@ -87,6 +88,20 @@
             "properties": {
               "standard_code": { "type": "string" },
               "status": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "addons": {
+          "type": ["array", "null"],
+          "description": "Packs/acréscimos alterados",
+          "items": {
+            "type": "object",
+            "properties": {
+              "addon_code": { "type": "string" },
+              "status": { "type": ["string", "null"] },
+              "amount_cents": { "type": ["number", "null"] },
+              "started_date": { "type": ["string", "null"] },
+              "ended_date": { "type": ["string", "null"] }
             }
           }
         }
@@ -113,7 +128,8 @@
             "closed_at": { "type": ["string", "null"] },
             "closed_reason": { "type": ["string", "null"] },
             "ai_quota_monthly": { "type": ["number", "null"] },
-            "quota_warn_pct": { "type": ["number", "null"] }
+            "quota_warn_pct": { "type": ["number", "null"] },
+            "addon_amount_cents": { "type": ["number", "null"] }
           }
         },
         "modules": {
@@ -136,6 +152,20 @@
             "properties": {
               "standard_code": { "type": "string" },
               "status": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "addons": {
+          "type": ["array", "null"],
+          "description": "Packs/acréscimos alterados",
+          "items": {
+            "type": "object",
+            "properties": {
+              "addon_code": { "type": "string" },
+              "status": { "type": ["string", "null"] },
+              "amount_cents": { "type": ["number", "null"] },
+              "started_date": { "type": ["string", "null"] },
+              "ended_date": { "type": ["string", "null"] }
             }
           }
         }

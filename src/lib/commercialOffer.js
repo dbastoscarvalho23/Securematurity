@@ -11,6 +11,13 @@
 /** Tiers da oferta, na ordem cumulativa. */
 export const OFFER_TIER_ORDER = ['core', 'professional', 'advanced'];
 
+/**
+ * Packs/acréscimos da oferta, na ordem em que são apresentados. Os nomes vêm das
+ * chaves `addon_*` das traduções; o catálogo técnico (que módulos cada pack abre)
+ * é o de `src/lib/licenseModules.js`, espelho do backend.
+ */
+export const OFFER_ADDON_ORDER = ['privacy', 'risk', 'suppliers'];
+
 /** Estados de uma versão da oferta e de uma tabela de preços. */
 export const COMMERCIAL_STATUS_META = {
   draft: { labelKey: 'commercial_status_draft', className: 'bg-chart-3/10 text-chart-3' },
@@ -37,6 +44,21 @@ export const COMMERCIAL_ROW_FIELDS = {
   OfferVersion: 'tier:',
   PriceTable: 'price:',
 };
+
+/** Prefixos das linhas comparadas pelo histórico → rótulo do campo. */
+const ROW_PREFIX_LABELS = {
+  'tier:': 'commercial_field_tier',
+  'price:': 'commercial_field_price',
+  'addon:': 'commercial_field_addon',
+  'addon_price:': 'commercial_field_addon_price',
+};
+
+/** Nome de um pack pela chave de tradução (`privacy` → «Pack de Privacidade»). */
+export function addonLabel(code, t) {
+  const key = `addon_${code}`;
+  const translated = t(key);
+  return translated === key ? code : translated;
+}
 
 /** Preço guardado em cêntimos, mostrado na moeda da tabela. */
 export function formatMoney(cents, currency = 'EUR', locale = 'pt-PT') {
@@ -68,9 +90,10 @@ export function eurosFromCents(cents) {
  * Rótulo de um campo alterado no histórico: os escalares pela chave, as linhas
  * por tier com o nome do tier (`tier:core` → «Tier · Core»).
  */
-export function commercialFieldLabel(code, t, tierName = (value) => value) {
-  if (code.startsWith('tier:')) return `${t('commercial_field_tier')} · ${tierName(code.slice(5))}`;
-  if (code.startsWith('price:')) return `${t('commercial_field_price')} · ${tierName(code.slice(6))}`;
+export function commercialFieldLabel(code, t, nameOf = (value) => value) {
+  for (const [prefix, key] of Object.entries(ROW_PREFIX_LABELS)) {
+    if (code.startsWith(prefix)) return `${t(key)} · ${nameOf(code.slice(prefix.length))}`;
+  }
   return t(`commercial_field_${code}`);
 }
 

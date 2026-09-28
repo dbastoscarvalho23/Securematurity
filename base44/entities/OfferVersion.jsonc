@@ -52,6 +52,23 @@
         "required": ["tier_code"]
       }
     },
+    "addons": {
+      "type": "array",
+      "description": "Packs/acréscimos da oferta (FM1). Os módulos de cada pack são lidos do catálogo de código; o que esta versão decide é se o pack está à venda, e por que preço na tabela de preços.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "addon_code": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "commercially_available": { "type": "boolean", "default": false },
+          "modules": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["addon_code"]
+      }
+    },
     "notes": {
       "type": "string",
       "description": "Notas da versão (âmbito comercial, condições)"

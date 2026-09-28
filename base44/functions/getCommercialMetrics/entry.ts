@@ -88,7 +88,13 @@ Deno.serve(async (req) => {
     const monthlyOf = (subscription: any) => {
       const table = tableById.get(subscription.price_table_id);
       if (!table) return { cents: 0, priced: false, table: null };
-      const cents = monthlyCentsFor(table, subscription.tier_code, subscription.seat_limit);
+      // O valor contratado é o do tier mais os packs activos (FM1).
+      const cents = monthlyCentsFor(
+        table,
+        subscription.tier_code,
+        subscription.seat_limit,
+        subscription.addon_amount_cents,
+      );
       return { cents, priced: cents > 0, table };
     };
 

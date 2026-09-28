@@ -1,12 +1,17 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
 import { normalizeRole, isPlatformOwner, writeAccessAuditLog } from "../../shared/accessUtils.ts";
 import { resolveActor } from "../../shared/devActor.ts";
+import { addonName, modulesForAddon } from "../../shared/licenseGuard.ts";
 import {
   BILLING_PERIODS,
+  OFFER_ADDON_CODES,
   OFFER_TIER_CODES,
   catalogueSignature,
+  composeAddons,
   composeTiers,
   diffSnapshots,
+  normalizeAddonEntries,
+  normalizeAddons,
   normalizeCurrency,
   normalizeEntries,
   normalizeTiers,
@@ -158,6 +163,16 @@ async function catalogue(base44: any) {
     standards: activeStandards.map((s: any) => ({ code: s.code, name: s.name || s.code })),
     standard_codes: activeStandards.map((s: any) => s.code),
     modules: (modules || []).map((m: any) => ({ code: m.code, name: m.name })),
+    // Packs do catálogo de código: a consola mostra-os com os módulos que abrem,
+    // para que a decisão comercial (à venda ou não) seja tomada sobre o real.
+    addons: OFFER_ADDON_CODES.map((code) => ({
+      code,
+      name: addonName(code),
+      modules: modulesForAddon(code).map((moduleCode: string) => ({
+        code: moduleCode,
+        name: moduleNames.get(moduleCode) || moduleCode,
+      })),
+    })),
   };
 }
 
@@ -232,6 +247,7 @@ async function createOfferVersion(base44: any, user: any, body: any) {
       tierNames: catalogueSnapshot.tier_names,
       standardCodes: catalogueSnapshot.standard_codes,
     }),
+    addons: composeAddons(),
     notes: body.notes || "",
     author_email: user.email || "",
   });
@@ -275,12 +291,15 @@ async function updateOfferVersion(base44: any, user: any, body: any) {
 
   const tiers = normalizeTiers(body.tiers, { standardCodes: catalogueSnapshot.standard_codes });
   if (tiers.error) return Response.json({ error: tiers.error }, { status: 422 });
+  const addons = normalizeAddons(body.addons);
+  if (addons.error) return Response.json({ error: addons.error }, { status: 422 });
 
   const patch: any = {};
   for (const field of OFFER_EDITABLE) {
     if (body[field] !== undefined) patch[field] = body[field] === "" ? null : body[field];
   }
   if (tiers.tiers) patch.tiers = tiers.tiers;
+  if (addons.addons) patch.addons = addons.addons;
 
   if (Object.keys(patch).length === 0) return Response.json({ error: "Nada para alterar." }, { status: 400 });
 

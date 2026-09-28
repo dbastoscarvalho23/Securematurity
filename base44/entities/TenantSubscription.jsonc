@@ -108,6 +108,26 @@
       "type": ["number", "null"],
       "description": "Preço base da tabela vigente para o tier contratado, em cêntimos (registado, nunca cobrado nesta fase)"
     },
+    "addons": {
+      "type": "array",
+      "description": "Packs/acréscimos contratados (FM1). Cada linha é uma decisão comercial registada; os módulos do pack abrem por excepção (`TenantModule`), pelo que revogar o pack não toca no que o tier já abre.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "addon_code": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "status": { "type": ["string", "null"], "description": "active | inactive — inactivo é histórico, nada é apagado" },
+          "amount_cents": { "type": ["number", "null"], "description": "Preço do pack vigente à data da contratação, em cêntimos" },
+          "started_date": { "type": ["string", "null"], "format": "date" },
+          "ended_date": { "type": ["string", "null"], "format": "date" }
+        },
+        "required": ["addon_code"]
+      }
+    },
+    "addon_amount_cents": {
+      "type": ["number", "null"],
+      "description": "Soma dos packs activos, em cêntimos — entra na receita contratada (FM5)"
+    },
     "notes": {
       "type": "string",
       "description": "Additional notes"

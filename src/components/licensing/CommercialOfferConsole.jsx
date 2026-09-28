@@ -20,6 +20,7 @@ import CommercialOfferHistory from '@/components/licensing/CommercialOfferHistor
 import {
   COMMERCIAL_STATUS_META,
   OFFER_TIER_ORDER,
+  addonLabel,
   formatMoney,
   formatValidity,
 } from '@/lib/commercialOffer';
@@ -202,6 +203,17 @@ export default function CommercialOfferConsole() {
                                   {t('licensing_modules_count')}
                                 </Badge>
                               ))}
+                              {(version.addons || [])
+                                .filter((row) => row.commercially_available === true)
+                                .map((row) => (
+                                  <Badge
+                                    key={row.addon_code}
+                                    variant="outline"
+                                    className="text-xs border-chart-2/40 text-chart-2"
+                                  >
+                                    {addonLabel(row.addon_code, t)}
+                                  </Badge>
+                                ))}
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
@@ -265,6 +277,29 @@ export default function CommercialOfferConsole() {
                                   </div>
                                 ))}
                               </div>
+                              {/* Packs/acréscimos — o que se vende além do tier */}
+                              {(version.addons || []).length > 0 && (
+                                <div className="mt-3 space-y-2 border-t pt-3">
+                                  <p className="text-sm font-medium">{t('commercial_offer_addons_title')}</p>
+                                  <div className="grid gap-3 md:grid-cols-3">
+                                    {(version.addons || []).map((row) => (
+                                      <div key={row.addon_code} className="space-y-1">
+                                        <p className="text-sm font-medium">
+                                          {addonLabel(row.addon_code, t)}
+                                          <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                            {row.commercially_available
+                                              ? t('licensing_badge_available')
+                                              : t('licensing_badge_prepared')}
+                                          </span>
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {(row.modules || []).map((code) => moduleNames.get(code) || code).join(' · ') || '—'}
+                                        </p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </TableCell>
                           </TableRow>
                         )}
@@ -359,6 +394,15 @@ export default function CommercialOfferConsole() {
                                 </p>
                               );
                             })}
+                            {(table.addon_entries || [])
+                              .filter((entry) => entry.amount_cents !== null && entry.amount_cents !== undefined)
+                              .map((entry) => (
+                                <p key={entry.addon_code} className="text-xs text-muted-foreground whitespace-nowrap">
+                                  <span className="font-medium text-foreground">{addonLabel(entry.addon_code, t)}</span>
+                                  {' · '}
+                                  {formatMoney(entry.amount_cents, table.currency)}
+                                </p>
+                              ))}
                           </div>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground whitespace-nowrap">

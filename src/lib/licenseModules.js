@@ -142,6 +142,40 @@ export const LEGACY_TIER_ALIASES = { partner: "advanced" };
 /** Tiers commercially available at launch: Core only. */
 export const COMMERCIALLY_AVAILABLE_TIERS = ["core"];
 
+/**
+ * Packs/acréscimos (FM1) — espelho de `ADDON_PACKS` em
+ * `base44/shared/licenseGuard.ts`, que é a fonte do gating. Um pack abre módulos
+ * que nenhum tier inclui (`privacy` vende-se assim, fora da oferta de lançamento)
+ * ou antecipa a um cliente Core os módulos de um tier superior. Contratar um pack
+ * grava uma excepção por módulo (`provisionTenantLicense` `set_addon`), pelo que
+ * revogá-lo nunca fecha o que o tier já abre.
+ */
+export const ADDON_PACKS = {
+  privacy: {
+    name: "Pack de Privacidade",
+    description: "RoPA e pedidos de titulares — fora de todos os tiers, vende-se como acréscimo",
+    modules: ["privacy"],
+  },
+  risk: {
+    name: "Pack de Risco e Incidentes",
+    description: "Os módulos do nível Profissional, contratáveis por um cliente Core",
+    modules: ["risk_management", "incident_management"],
+  },
+  suppliers: {
+    name: "Pack de Fornecedores e Conhecimento",
+    description: "Os módulos do nível Avançado, contratáveis por um cliente Core",
+    modules: ["supplier_management", "knowledge_guidance"],
+  },
+};
+
+/** Códigos de pack do catálogo, pela ordem em que a oferta os apresenta. */
+export const ADDON_CODES = Object.keys(ADDON_PACKS);
+
+/** Módulos que um pack abre. */
+export function modulesForAddon(code) {
+  return ADDON_PACKS[code]?.modules || [];
+}
+
 /** Resolve a tier code (including legacy aliases) to its cumulative module list. */
 export function modulesForTier(tierCode) {
   const resolved = LEGACY_TIER_ALIASES[tierCode] || tierCode;

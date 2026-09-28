@@ -6,7 +6,14 @@ import {
   resolveScopeCustomerIds,
 } from "../../shared/accessUtils.ts";
 import { resolveActor } from "../../shared/devActor.ts";
-import { TIER_MODULES, COMMERCIALLY_AVAILABLE_TIERS, getEffectiveLicense } from "../../shared/licenseGuard.ts";
+import {
+  TIER_MODULES,
+  COMMERCIALLY_AVAILABLE_TIERS,
+  addonName,
+  modulesForAddon,
+  getEffectiveLicense,
+} from "../../shared/licenseGuard.ts";
+import { OFFER_ADDON_CODES } from "../../shared/commercialOffer.ts";
 
 /**
  * listTenantLicenses — a leitura que o painel de provisionamento (FB1) precisa.
@@ -46,11 +53,12 @@ Deno.serve(async (req) => {
       const subs = await base44.asServiceRole.entities.TenantSubscription.filter({ customer_id: customer.id });
       const license = await getEffectiveLicense(base44, customer.id);
       const overrides = await base44.asServiceRole.entities.TenantModule.filter({ customer_id: customer.id });
+      // Com um contrato fechado e outro criado depois, vale o contrato vivo.
+      const subscription = subs.find((sub: any) => sub.status !== "cancelled") || subs[0] || null;
       tenants.push({
         id: customer.id,
         name: customer.name || "",
-        // Com um contrato fechado e outro criado depois, vale o contrato vivo.
-        subscription: subs.find((sub: any) => sub.status !== "cancelled") || subs[0] || null,
+        subscription,
         license: {
           licensed: license.licensed,
           status: license.status,
@@ -68,6 +76,16 @@ Deno.serve(async (req) => {
           reason: o.reason || "",
           expires_at: o.expires_at || null,
         })),
+        // Packs contratados (FM1): o painel mostra-os como decisão comercial, e
+        // não apenas como o efeito que têm (as excepções por módulo acima).
+        addons: (subscription?.addons || []).map((a: any) => ({
+          addon_code: a.addon_code,
+          name: a.name || addonName(a.addon_code),
+          status: a.status || null,
+          amount_cents: a.amount_cents ?? null,
+          started_date: a.started_date ?? null,
+          ended_date: a.ended_date ?? null,
+        })),
       });
     }
 
@@ -79,6 +97,15 @@ Deno.serve(async (req) => {
         commercially_available: COMMERCIALLY_AVAILABLE_TIERS,
         modules: moduleCatalogue.map((m: any) => ({ code: m.code, name: m.name || moduleNames.get(m.code) || m.code })),
         standards: standardCatalogue.map((s: any) => ({ code: s.code, name: s.name || s.code })),
+        // Packs do catálogo de código: o painel mostra-os com os módulos que abrem.
+        addons: OFFER_ADDON_CODES.map((code) => ({
+          code,
+          name: addonName(code),
+          modules: modulesForAddon(code).map((moduleCode: string) => ({
+            code: moduleCode,
+            name: moduleNames.get(moduleCode) || moduleCode,
+          })),
+        })),
       },
     });
   } catch (error) {

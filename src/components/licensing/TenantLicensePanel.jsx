@@ -12,7 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertTriangle, Loader2, ShieldPlus, SlidersHorizontal, PauseCircle, PlayCircle, ListChecks } from 'lucide-react';
+import { AlertTriangle, Loader2, Package, ShieldPlus, SlidersHorizontal, PauseCircle, PlayCircle, ListChecks } from 'lucide-react';
+import { addonLabel, formatMoney } from '@/lib/commercialOffer';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
 
@@ -65,6 +66,7 @@ export default function TenantLicensePanel() {
   const tiers = data?.catalogue?.tiers || [];
   const modules = data?.catalogue?.modules || [];
   const standards = data?.catalogue?.standards || [];
+  const packs = data?.catalogue?.addons || [];
 
   const mutation = useMutation({
     mutationFn: (payload) => base44.functions.invoke('provisionTenantLicense', payload),
@@ -100,6 +102,8 @@ export default function TenantLicensePanel() {
       standard_code: standards[0]?.code || '',
       standard_active: true,
       expires_at: '',
+      addon_code: packs[0]?.code || '',
+      addon_active: true,
     });
     setDialog(kind);
   };
@@ -132,6 +136,13 @@ export default function TenantLicensePanel() {
         customer_id,
         standard_code: form.standard_code,
         active: form.standard_active,
+        reason: form.reason,
+      },
+      addon: {
+        action: 'set_addon',
+        customer_id,
+        addon_code: form.addon_code,
+        active: form.addon_active,
         reason: form.reason,
       },
     };
@@ -212,6 +223,19 @@ export default function TenantLicensePanel() {
                         {(license.module_codes || []).length === 0 && (
                           <span className="text-xs text-muted-foreground">{t('licensing_provision_no_modules')}</span>
                         )}
+                        {(tenant.addons || []).map((addon) => (
+                          <Badge
+                            key={`ad-${addon.addon_code}`}
+                            variant="outline"
+                            className={`text-[10px] font-normal ${addon.status === 'active' ? 'border-primary/40 text-primary' : 'text-muted-foreground'}`}
+                          >
+                            {addonLabel(addon.addon_code, t)}
+                            {addon.status === 'active' && addon.amount_cents ? ` · ${formatMoney(addon.amount_cents)}` : ''}
+                          </Badge>
+                        ))}
+                        {(tenant.addons || []).length === 0 && tenant.subscription && (
+                          <span className="text-[10px] text-muted-foreground">{t('licensing_provision_addon_none')}</span>
+                        )}
                         {(tenant.overrides || [])
                           .filter((o) => o.reason)
                           .map((o) => (
@@ -249,6 +273,11 @@ export default function TenantLicensePanel() {
                         {tenant.subscription && (
                           <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openDialog('standard', tenant)}>
                             <ListChecks className="w-3 h-3" /> {t('licensing_provision_standards')}
+                          </Button>
+                        )}
+                        {tenant.subscription && packs.length > 0 && (
+                          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openDialog('addon', tenant)}>
+                            <Package className="w-3 h-3" /> {t('licensing_provision_addon')}
                           </Button>
                         )}
                         {tenant.subscription && !suspended && (
@@ -423,6 +452,56 @@ export default function TenantLicensePanel() {
                   />
                   <p className="text-xs text-muted-foreground">{t('licensing_provision_override_help')}</p>
                 </div>
+                <div className="space-y-2">
+                  <Label>{t('licensing_provision_reason')}</Label>
+                  <Textarea
+                    value={form.reason}
+                    onChange={(event) => setForm((f) => ({ ...f, reason: event.target.value }))}
+                    rows={2}
+                  />
+                </div>
+              </>
+            )}
+
+            {dialog === 'addon' && (
+              <>
+                <div className="space-y-2">
+                  <Label>{t('licensing_provision_addon_pack')}</Label>
+                  <Select value={form.addon_code} onValueChange={(value) => setForm((f) => ({ ...f, addon_code: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {packs.map((pack) => (
+                        <SelectItem key={pack.code} value={pack.code}>
+                          {addonLabel(pack.code, t)} · {(pack.modules || []).map((module) => module.name).join(' · ')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">{t('licensing_provision_addon_help')}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('licensing_provision_addon_state')}</Label>
+                  <Select
+                    value={form.addon_active ? 'active' : 'inactive'}
+                    onValueChange={(value) => setForm((f) => ({ ...f, addon_active: value === 'active' }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">{t('licensing_provision_addon_grant')}</SelectItem>
+                      <SelectItem value="inactive">{t('licensing_provision_addon_revoke')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(form.tenant?.addons || []).length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {(form.tenant.addons || []).map((addon) => (
+                      <Badge key={addon.addon_code} variant="outline" className="text-[10px] font-normal">
+                        {addonLabel(addon.addon_code, t)}
+                        {addon.status === 'active' ? ` · ${t('license_status_active')}` : ''}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>{t('licensing_provision_reason')}</Label>
                   <Textarea

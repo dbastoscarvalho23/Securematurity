@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ChevronDown, ChevronRight, History, Loader2, X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { addonLabel } from '@/lib/commercialOffer';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
 import ErrorState from '@/components/shared/ErrorState';
@@ -31,6 +32,7 @@ const ACTION_META = {
   suspend: { labelKey: 'lch_action_suspend', className: 'bg-destructive/10 text-destructive' },
   resume: { labelKey: 'lch_action_resume', className: 'bg-chart-2/10 text-chart-2' },
   set_module: { labelKey: 'lch_action_set_module', className: 'bg-chart-4/10 text-chart-4' },
+  set_addon: { labelKey: 'lch_action_set_addon', className: 'bg-chart-2/10 text-chart-2' },
   set_standard: { labelKey: 'lch_action_set_standard', className: 'bg-chart-5/10 text-chart-5' },
   renew: { labelKey: 'lch_action_renew', className: 'bg-chart-2/10 text-chart-2' },
   change_tier: { labelKey: 'lch_action_change_tier', className: 'bg-chart-1/10 text-chart-1' },
@@ -55,6 +57,7 @@ function nameOf(list, code) {
 /** Rótulo do campo alterado: os fixos pela chave, os de módulo/standard pelo nome. */
 function fieldLabel(code, t, moduleName, standardName) {
   if (code.startsWith('module:')) return `${t('lch_field_module')} · ${moduleName(code.slice(7))}`;
+  if (code.startsWith('addon:')) return `${t('lch_field_addon')} · ${addonLabel(code.slice(6), t)}`;
   if (code.startsWith('standard:')) return `${t('lch_field_standard')} · ${standardName(code.slice(9))}`;
   return t(`lch_field_${code}`);
 }
@@ -78,6 +81,12 @@ function stateValue(state, code, t) {
     if (!row) return null;
     const status = formatValue(row.status, t);
     return row.expires_at ? `${status} · ${t('lch_value_until', { date: String(row.expires_at).slice(0, 10) })}` : status;
+  }
+  if (code.startsWith('addon:')) {
+    const row = (state.addons || []).find((a) => a.addon_code === code.slice(6));
+    if (!row) return null;
+    const status = formatValue(row.status, t);
+    return row.ended_date ? `${status} · ${t('lch_value_until', { date: String(row.ended_date).slice(0, 10) })}` : status;
   }
   if (code.startsWith('standard:')) {
     const row = (state.standards || []).find((s) => s.standard_code === code.slice(9));

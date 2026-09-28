@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
-import { OFFER_TIER_ORDER } from '@/lib/commercialOffer';
+import { OFFER_ADDON_ORDER, addonLabel } from '@/lib/commercialOffer';
 
 /**
  * Versão da oferta (FM1) — criar um rascunho a partir do catálogo em execução e
@@ -37,9 +37,34 @@ export default function OfferVersionDialog({ mode, record, catalogue, pending, e
   const [notes, setNotes] = useState(record?.notes || '');
   const [reason, setReason] = useState('');
   const [tiers, setTiers] = useState(() => (record?.tiers || []).map((row) => ({ ...row, standards: [...(row.standards || [])] })));
+  // Um rascunho criado antes dos packs não tem decisão sobre eles: nesse caso a
+  // composição nasce do catálogo em execução (nenhum à venda), para que a versão
+  // passe a ter decisão em vez de ficar sem ela.
+  const [addons, setAddons] = useState(() => {
+    const fromRecord = (record?.addons || []).map((row) => ({ ...row }));
+    if (fromRecord.length > 0) return fromRecord;
+    return (catalogue?.addons || []).map((addon) => ({
+      addon_code: addon.code,
+      commercially_available: false,
+      modules: (addon.modules || []).map((module) => module.code),
+    }));
+  });
 
   const standards = catalogue?.standards || [];
   const previewTiers = catalogue?.tiers || [];
+  const previewAddons = catalogue?.addons || [];
+
+  /** Nome de um módulo do pack (o catálogo traz o nome; o registo traz o código). */
+  const moduleNames = new Map(
+    previewAddons.flatMap((addon) => (addon.modules || []).map((module) => [module.code, module.name])),
+  );
+
+  /** Packs pela ordem da oferta; um código fora do catálogo fica no fim. */
+  const orderedAddons = (rows) => {
+    const byCode = new Map((rows || []).map((row) => [row.addon_code, row]));
+    const ordered = OFFER_ADDON_ORDER.map((code) => byCode.get(code)).filter(Boolean);
+    return [...ordered, ...(rows || []).filter((row) => !OFFER_ADDON_ORDER.includes(row.addon_code))];
+  };
 
   const toggleTier = (tierCode, field, value) => {
     setTiers((current) => current.map((row) => (row.tier_code === tierCode ? { ...row, [field]: value } : row)));
@@ -55,6 +80,12 @@ export default function OfferVersionDialog({ mode, record, catalogue, pending, e
     }));
   };
 
+  const toggleAddon = (addonCode, checked) => {
+    setAddons((current) => current.map((row) => (
+      row.addon_code === addonCode ? { ...row, commercially_available: checked } : row
+    )));
+  };
+
   const submit = () => {
     if (isEdit) {
       onSubmit({
@@ -66,6 +97,10 @@ export default function OfferVersionDialog({ mode, record, catalogue, pending, e
         notes,
         reason,
         tiers,
+        addons: addons.map((row) => ({
+          addon_code: row.addon_code,
+          commercially_available: row.commercially_available === true,
+        })),
       });
       return;
     }
@@ -194,6 +229,37 @@ export default function OfferVersionDialog({ mode, record, catalogue, pending, e
                 ))}
               </ul>
             )}
+
+            {/* Packs/acréscimos (FM1) — a decisão comercial desta versão */}
+            <div className="space-y-2 border-t pt-3">
+              <p className="text-sm font-medium">{t('commercial_offer_addons_title')}</p>
+              <p className="text-xs text-muted-foreground">{t('commercial_offer_addons_help')}</p>
+              <div className="space-y-2">
+                {orderedAddons(isEdit ? addons : previewAddons).map((row) => (
+                  <div key={row.addon_code} className="flex items-start justify-between gap-3 rounded-md border p-2.5">
+                    <div>
+                      <p className="text-sm font-medium">{addonLabel(row.addon_code, t)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(row.modules || [])
+                          .map((module) => (typeof module === 'string' ? moduleNames.get(module) || module : module.name))
+                          .join(' · ') || '—'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={`sale-addon-${row.addon_code}`} className="text-xs text-muted-foreground">
+                        {t('commercial_offer_field_commercially_available')}
+                      </Label>
+                      <Switch
+                        id={`sale-addon-${row.addon_code}`}
+                        checked={row.commercially_available === true}
+                        disabled={!isEdit}
+                        onCheckedChange={(checked) => toggleAddon(row.addon_code, checked)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
