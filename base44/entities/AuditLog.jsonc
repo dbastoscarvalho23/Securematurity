@@ -15,6 +15,7 @@
       "enum": [
         "assessment_created",
         "assessment_completed",
+        "assessment_reopened",
         "assessment_deleted",
         "customer_created",
         "customer_updated",
@@ -71,7 +72,8 @@
         "workspace_migrated",
         "user_assignment_created",
         "user_assignment_updated",
-        "user_assignment_deleted"
+        "user_assignment_deleted",
+        "test_conditions_seeded"
       ],
       "description": "Action type"
     },

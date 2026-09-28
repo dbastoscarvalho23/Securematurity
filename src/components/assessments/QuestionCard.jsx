@@ -22,24 +22,44 @@ export default function QuestionCard({ question, index, response, onSave, langua
   const { t } = useLanguage();
   const [notes, setNotes] = useState(response?.evidence_notes || '');
   const [showNotes, setShowNotes] = useState(!!response?.evidence_notes);
-  const selectedLevel = response?.maturity_level;
+  // "Not applicable" is a decision, not a score: it counts for coverage and is
+  // excluded from the maturity average (see base44/shared/assessmentScoring.ts).
+  const isNotApplicable = response?.answer_state === 'not_applicable';
+  const selectedLevel = isNotApplicable ? null : response?.maturity_level;
+
+  /** `maturity_level` is a number field: it is omitted (never null) when the question is not applicable. */
+  const save = ({ answer_state, maturity_level, attachments }) => {
+    const payload = {
+      answer_state,
+      evidence_notes: notes,
+      target_level: response?.target_level || 4,
+      attachments: attachments || response?.attachments || [],
+    };
+    if (maturity_level !== null && maturity_level !== undefined) payload.maturity_level = maturity_level;
+    onSave(payload);
+  };
 
   const handleSelect = (level) => {
-    onSave({ maturity_level: level, evidence_notes: notes, target_level: response?.target_level || 4, attachments: response?.attachments || [] });
+    save({ answer_state: 'answered', maturity_level: level });
+  };
+
+  // Selecting a maturity level always overrides a previous "not applicable".
+  const handleNotApplicable = () => {
+    save({ answer_state: 'not_applicable', maturity_level: null });
   };
 
   const handleNotesBlur = () => {
-    if (selectedLevel != null) {
-      onSave({ maturity_level: selectedLevel, evidence_notes: notes, target_level: response?.target_level || 4, attachments: response?.attachments || [] });
+    if (selectedLevel != null || isNotApplicable) {
+      save({ answer_state: isNotApplicable ? 'not_applicable' : 'answered', maturity_level: selectedLevel });
     }
   };
 
   const handleAttachmentsChange = (attachments) => {
-    onSave({ maturity_level: selectedLevel ?? 0, evidence_notes: notes, target_level: response?.target_level || 4, attachments });
+    save({ answer_state: isNotApplicable ? 'not_applicable' : 'answered', maturity_level: selectedLevel, attachments });
   };
 
   return (
-    <Card className={cn("transition-all", selectedLevel != null ? "border-l-2 border-l-primary" : "")}>
+    <Card className={cn("transition-all", (selectedLevel != null || isNotApplicable) ? "border-l-2 border-l-primary" : "")}>
       <CardContent className="p-5">
         <div className="flex items-start gap-3 mb-4">
           <span className="text-xs font-mono text-muted-foreground mt-0.5 flex-shrink-0">
@@ -65,7 +85,7 @@ export default function QuestionCard({ question, index, response, onSave, langua
               </Tooltip>
             </TooltipProvider>
           )}
-          {selectedLevel != null && (
+          {(selectedLevel != null || isNotApplicable) && (
             <Check className="w-4 h-4 text-accent flex-shrink-0" />
           )}
         </div>
@@ -86,6 +106,18 @@ export default function QuestionCard({ question, index, response, onSave, langua
               {ml.level} — {t(ml.labelKey)}
             </button>
           ))}
+          <button
+            onClick={handleNotApplicable}
+            title={t('question_not_applicable_hint')}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-medium border border-dashed transition-all",
+              isNotApplicable
+                ? "border-muted-foreground text-foreground bg-muted ring-2 ring-offset-1 ring-primary/30"
+                : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20"
+            )}
+          >
+            {t('question_not_applicable')}
+          </button>
         </div>
 
         {/* Evidence Notes */}

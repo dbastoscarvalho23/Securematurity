@@ -85,6 +85,139 @@
     },
     "notes": {
       "type": "string"
+    },
+    "completed_by": {
+      "type": "string",
+      "description": "Email of the user who completed the assessment (set by completeAssessment)"
+    },
+    "completion_type": {
+      "type": "string",
+      "enum": [
+        "full_coverage",
+        "partial_coverage"
+      ],
+      "description": "Whether every question was resolved or the assessment was closed with pending questions"
+    },
+    "coverage": {
+      "type": "object",
+      "description": "Server-computed coverage (kept separate from the score)",
+      "properties": {
+        "total_questions": { "type": "number" },
+        "answered": { "type": "number" },
+        "not_applicable": { "type": "number" },
+        "unanswered": { "type": "number" },
+        "resolved": { "type": "number" },
+        "coverage_pct": { "type": "number" },
+        "scored_coverage_pct": { "type": "number" }
+      }
+    },
+    "methodology": {
+      "type": "object",
+      "description": "Methodology snapshot: scoring model, framework versions, questions and weights actually used",
+      "properties": {
+        "scoring_model": { "type": "string" },
+        "captured_at": { "type": "string" },
+        "questions_count": { "type": "number" },
+        "weight_total": { "type": "number" },
+        "scale_max": { "type": "number" },
+        "framework_versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "version": { "type": "string" }
+            }
+          }
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "question_id": { "type": "string" },
+              "framework_code": { "type": "string" },
+              "domain": { "type": "string" },
+              "control_id": { "type": "string" },
+              "weight": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "status_history": {
+      "type": "array",
+      "description": "Append-only history of status transitions (completion and reopening)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": { "type": "string" },
+          "status": { "type": "string" },
+          "by": { "type": "string" },
+          "via": { "type": "string" },
+          "reason": { "type": "string" },
+          "coverage_pct": { "type": "number" },
+          "previous_coverage_pct": { "type": "number" },
+          "scoring_model": { "type": "string" }
+        }
+      }
+    },
+    "result_history": {
+      "type": "array",
+      "description": "Results preserved when an assessment is reopened",
+      "items": {
+        "type": "object",
+        "properties": {
+          "completed_date": { "type": "string" },
+          "completed_by": { "type": "string" },
+          "overall_score": { "type": "number" },
+          "reopened_at": { "type": "string" },
+          "reopened_by": { "type": "string" },
+          "reason": { "type": "string" },
+          "coverage": {
+            "type": "object",
+            "properties": {
+              "total_questions": { "type": "number" },
+              "answered": { "type": "number" },
+              "not_applicable": { "type": "number" },
+              "unanswered": { "type": "number" },
+              "resolved": { "type": "number" },
+              "coverage_pct": { "type": "number" },
+              "scored_coverage_pct": { "type": "number" }
+            }
+          },
+          "methodology": {
+            "type": "object",
+            "properties": {
+              "scoring_model": { "type": "string" },
+              "captured_at": { "type": "string" },
+              "questions_count": { "type": "number" },
+              "weight_total": { "type": "number" },
+              "scale_max": { "type": "number" }
+            }
+          },
+          "framework_scores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "framework_code": { "type": "string" },
+                "score": { "type": "number" },
+                "domain_scores": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "domain": { "type": "string" },
+                      "score": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "required": [

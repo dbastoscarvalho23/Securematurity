@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Download, Sparkles, FileText, Paperclip } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Download, Sparkles, FileText, Paperclip, RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import MaturityRadar from '@/components/dashboard/MaturityRadar';
 import FrameworkScoreCard from '@/components/dashboard/FrameworkScoreCard';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { exportReportPdf } from '@/lib/exportReportPdf';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
+import { can } from '@/lib/rbac';
 
 const FRAMEWORK_NAMES = {
   NIS2: 'NIS2 / DL 125/2025',
@@ -34,7 +41,15 @@ function timelineKey(timeline) {
 
 export default function AssessmentResults({ assessment, responses }) {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [isExporting, setIsExporting] = useState(false);
+  const [showReopen, setShowReopen] = useState(false);
+  const [reopenReason, setReopenReason] = useState('');
+  const [isReopening, setIsReopening] = useState(false);
+  const canReopen = can(user?.role, 'edit', 'assessments') && assessment.status === 'completed';
+  const coverage = assessment.coverage;
   const { data: recommendations = [] } = useQuery({
     queryKey: ['recommendations', assessment.id],
     queryFn: () => base44.entities.Recommendation.filter({ assessment_id: assessment.id }),
@@ -67,6 +82,28 @@ export default function AssessmentResults({ assessment, responses }) {
     });
   });
 
+  /** Reopening is a server operation: it preserves the previous result and audits the reason. */
+  const handleReopen = async () => {
+    if (!reopenReason.trim()) return;
+    setIsReopening(true);
+    try {
+      await base44.functions.invoke('completeAssessment', {
+        action: 'reopen',
+        assessment_id: assessment.id,
+        reason: reopenReason.trim(),
+      });
+      toast.success(t('assessment_reopen_success'));
+      setShowReopen(false);
+      setReopenReason('');
+      queryClient.invalidateQueries({ queryKey: ['assessment', assessment.id] });
+      navigate(`/assessments/${assessment.id}`);
+    } catch (error) {
+      toast.error(error?.response?.data?.error || error?.data?.error || t('assessment_reopen_error'));
+    } finally {
+      setIsReopening(false);
+    }
+  };
+
   const priorityColors = {
     critical: 'bg-destructive/10 text-destructive border-destructive/20',
     high: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
@@ -90,6 +127,12 @@ export default function AssessmentResults({ assessment, responses }) {
             {assessment.customer_name} · {assessment.period} · {t('assessment_results_score')}: {assessment.overall_score?.toFixed(1)}/5.0
           </p>
         </div>
+        {canReopen && (
+          <Button variant="ghost" className="gap-2" onClick={() => setShowReopen(true)}>
+            <RotateCcw className="w-4 h-4" />
+            {t('assessment_reopen')}
+          </Button>
+        )}
         <Button
           variant="outline"
           className="gap-2"
@@ -119,6 +162,36 @@ export default function AssessmentResults({ assessment, responses }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Coverage — reported separately from the score (server-computed) */}
+      {coverage && (
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex flex-wrap items-center gap-6">
+              <div>
+                <p className="text-sm text-muted-foreground">{t('assessment_coverage')}</p>
+                <p className="text-2xl font-semibold mt-0.5">{coverage.coverage_pct}%</p>
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <span><span className="font-semibold">{coverage.answered}</span> {t('assessment_coverage_answered')}</span>
+                <span><span className="font-semibold">{coverage.not_applicable}</span> {t('assessment_coverage_not_applicable')}</span>
+                <span><span className="font-semibold">{coverage.unanswered}</span> {t('assessment_coverage_unanswered')}</span>
+              </div>
+              <div className="flex-1 min-w-[160px]">
+                <Progress value={coverage.coverage_pct} className="h-2" />
+              </div>
+            </div>
+            {assessment.methodology && (
+              <p className="text-xs text-muted-foreground mt-3">
+                {t('assessment_methodology')}: {assessment.methodology.scoring_model}
+                {assessment.methodology.framework_versions?.length > 0 &&
+                  ` · ${assessment.methodology.framework_versions.map(f => `${f.code} ${f.version || ''}`.trim()).join(', ')}`}
+                {` · ${assessment.methodology.questions_count} ${t('assessment_wizard_question_plural')} · peso ${assessment.methodology.weight_total}`}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Framework Scores */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -224,6 +297,27 @@ export default function AssessmentResults({ assessment, responses }) {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={showReopen} onOpenChange={setShowReopen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('assessment_reopen_title')}</DialogTitle>
+            <DialogDescription>{t('assessment_reopen_desc')}</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={reopenReason}
+            onChange={(e) => setReopenReason(e.target.value)}
+            placeholder={t('assessment_reopen_reason_ph')}
+            rows={3}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReopen(false)}>{t('common_cancel')}</Button>
+            <Button onClick={handleReopen} disabled={isReopening || !reopenReason.trim()}>
+              {t('assessment_reopen_confirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

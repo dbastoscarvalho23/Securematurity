@@ -2,7 +2,18 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { ArrowLeft, ChevronRight, Check, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -22,6 +33,7 @@ export default function AssessmentDetail() {
   const [activeFramework, setActiveFramework] = useState(null);
   const [activeDomain, setActiveDomain] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showPartialDialog, setShowPartialDialog] = useState(false);
   const { language: globalLanguage, t } = useLanguage();
   const [language, setLanguage] = useState(globalLanguage);
 
@@ -77,6 +89,9 @@ export default function AssessmentDetail() {
           assessment_id: assessmentId,
           customer_id: assessment?.customer_id,
           question_id: questionId,
+          // Weight snapshot, so the methodology stays interpretable if the
+          // shared question catalogue changes later.
+          question_weight: questions.find(q => q.id === questionId)?.weight ?? 1,
         });
       }
     },
@@ -85,41 +100,13 @@ export default function AssessmentDetail() {
     },
   });
 
-  const completeMutation = useMutation({
-    mutationFn: async () => {
-      setIsAnalyzing(true);
-      // Calculate scores
-      const frameworkScores = [];
-      const fw_codes = assessment?.frameworks || [];
-      let totalScore = 0;
-      let totalCount = 0;
-
-      for (const fc of fw_codes) {
-        const fwResponses = responses.filter(r => r.framework_code === fc);
-        const domains = [...new Set(fwResponses.map(r => r.domain).filter(Boolean))];
-        const domainScores = domains.map(d => {
-          const dResponses = fwResponses.filter(r => r.domain === d);
-          const avg = dResponses.reduce((s, r) => s + (r.maturity_level || 0), 0) / (dResponses.length || 1);
-          return { domain: d, score: Math.round(avg * 10) / 10 };
-        });
-        const fwAvg = fwResponses.length > 0
-          ? fwResponses.reduce((s, r) => s + (r.maturity_level || 0), 0) / fwResponses.length
-          : 0;
-        frameworkScores.push({ framework_code: fc, score: Math.round(fwAvg * 10) / 10, domain_scores: domainScores });
-        totalScore += fwAvg;
-        totalCount++;
-      }
-
-      const overallScore = totalCount > 0 ? Math.round((totalScore / totalCount) * 10) / 10 : 0;
-
-      await base44.entities.Assessment.update(assessmentId, {
-        status: 'completed',
-        overall_score: overallScore,
-        framework_scores: frameworkScores,
-        completed_date: new Date().toISOString().split('T')[0],
-      });
-
-      // Generate AI recommendations
+  /**
+   * Optional AI suggestions. They are generated AFTER the server has already
+   * completed the assessment, so a failing AI service never blocks the Core
+   * journey — recommendations can be created manually instead.
+   */
+  const generateRecommendations = async () => {
+    try {
       const responseSummary = responses.map(r => ({
         framework: r.framework_code,
         domain: r.domain,
@@ -170,11 +157,44 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
             status: 'pending',
           }))
         );
+        queryClient.invalidateQueries({ queryKey: ['recommendations', assessmentId] });
       }
+    } catch (error) {
+      // The assessment is already completed — only the optional suggestions failed.
+      console.error('Recommendation generation failed', error);
+      toast.warning(t('assessment_complete_ai_unavailable'));
+    }
+  };
 
-      setIsAnalyzing(false);
+  /**
+   * Completion runs on the server (completeAssessment): it authorizes the actor,
+   * checks the licensed module, applies the coverage rules and recomputes the
+   * scores from the persisted responses.
+   */
+  const completeMutation = useMutation({
+    mutationFn: async (confirmPartial = false) => {
+      setIsAnalyzing(true);
+      return base44.functions.invoke('completeAssessment', {
+        action: 'complete',
+        assessment_id: assessmentId,
+        confirm_partial: confirmPartial,
+      });
+    },
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['assessment', assessmentId] });
       queryClient.invalidateQueries({ queryKey: ['assessments'] });
+      toast.success(t('assessment_complete_success'));
+      await generateRecommendations();
+      setIsAnalyzing(false);
+    },
+    onError: (error) => {
+      setIsAnalyzing(false);
+      const code = error?.response?.data?.code || error?.data?.code;
+      if (code === 'incomplete_coverage') {
+        setShowPartialDialog(true);
+        return;
+      }
+      toast.error(error?.response?.data?.error || error?.data?.error || error?.message || t('assessment_complete_error'));
     },
   });
 
@@ -260,7 +280,7 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
             <Progress value={progressPct} className="h-2" />
           </div>
           <Button
-            onClick={() => completeMutation.mutate()}
+            onClick={() => completeMutation.mutate(false)}
             disabled={completeMutation.isPending || isAnalyzing || answeredQuestions === 0}
             className="gap-2"
           >
@@ -386,6 +406,27 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
           )}
         </div>
       </div>
+
+      {/* Partial completion — only reachable when the server reports pending questions */}
+      <AlertDialog open={showPartialDialog} onOpenChange={setShowPartialDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('assessment_partial_title')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('assessment_partial_desc')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowPartialDialog(false);
+                completeMutation.mutate(true);
+              }}
+            >
+              {t('assessment_partial_confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

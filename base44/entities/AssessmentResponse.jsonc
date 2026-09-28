@@ -30,6 +30,19 @@
       "type": "number",
       "description": "Selected maturity level (0-5)"
     },
+    "answer_state": {
+      "type": "string",
+      "enum": [
+        "answered",
+        "not_applicable"
+      ],
+      "default": "answered",
+      "description": "Whether the question was answered or explicitly marked as not applicable (not applicable counts for coverage, never for the score)"
+    },
+    "question_weight": {
+      "type": "number",
+      "description": "Weight of the question at the moment of the answer (preserved for the methodology snapshot)"
+    },
     "evidence_notes": {
       "type": "string",
       "description": "Evidence or notes supporting the answer"
@@ -68,46 +81,41 @@
     "create": {
       "$or": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "data.customer_id": "{{user.data.customer_id}}"
         },
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
         }
       ]
     },
     "read": {
       "$or": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "data.customer_id": "{{user.data.customer_id}}"
         },
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "data.customer_id": "{{user.data.delegated_view_customer_ids}}"
+        },
+        {
+          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+        },
+        {
+          "data.customer_id": "{{user.data.onboarding_customer_ids}}"
         }
       ]
     },
     "update": {
       "$or": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "data.customer_id": "{{user.data.customer_id}}"
         },
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
         }
       ]
     },
     "delete": {
       "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
         {
           "data.customer_id": "{{user.data.customer_id}}"
         }
