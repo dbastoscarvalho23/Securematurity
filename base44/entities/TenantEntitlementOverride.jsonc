@@ -1,0 +1,37 @@
+{
+  "name": "TenantEntitlementOverride",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "entitlement_code": {
+      "type": "string",
+      "description": "Entitlement code"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this entitlement override is enabled"
+    }
+  },
+  "required": ["customer_id", "entitlement_code"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "admin" }
+    },
+    "read": {
+      "$or": [
+        { "user_condition": { "role": "admin" } },
+        { "data.customer_id": "{{user.data.customer_id}}" }
+      ]
+    },
+    "update": {
+      "user_condition": { "role": "admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "admin" }
+    }
+  }
+}

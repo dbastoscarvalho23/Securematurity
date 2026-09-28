@@ -1,0 +1,162 @@
+/**
+ * License module constants and route mapping.
+ * Maps app routes to the module that gates them.
+ */
+
+export const MODULE_CODES = [
+  "nis2_journey",
+  "assessments_action_plan",
+  "documents_evidence",
+  "reporting_audit_prep",
+  "risk_management",
+  "incident_management",
+  "supplier_management",
+  "knowledge_guidance",
+  "privacy",
+];
+
+/**
+ * Map each route to the module that gates it.
+ * null = admin-only route, gated by RBAC only (no module check).
+ */
+export const ROUTE_MODULE = {
+  "/": null,
+  "/dashboard": null,
+  "/customers": null,
+  "/admin": null,
+  "/audit-log": null,
+  "/settings": null,
+  "/question-bank": null,
+  "/email-report": null,
+  "/organization": null,
+  "/configuration": null,
+  "/licensing": null,
+  "/system-status": null,
+
+  // nis2_journey
+  "/compliance-journey": "nis2_journey",
+
+  // assessments_action_plan
+  "/assessments": "assessments_action_plan",
+  "/action-plan": "assessments_action_plan",
+  "/task-analytics": "assessments_action_plan",
+  "/recommendations": "assessments_action_plan",
+
+  // documents_evidence
+  "/security-documents": "documents_evidence",
+  "/document-audit-trail": "documents_evidence",
+  "/evidence": "documents_evidence",
+
+  // reporting_audit_prep
+  "/reports": "reporting_audit_prep",
+  "/compliance-metrics": "reporting_audit_prep",
+
+  // risk_management
+  "/risk-assessment": "risk_management",
+
+  // incident_management
+  "/incidents": "incident_management",
+  "/vulnerabilities": "incident_management",
+
+  // supplier_management
+  "/supply-chain": "supplier_management",
+  "/suppliers": "supplier_management",
+
+  // knowledge_guidance
+  "/framework-guide": "knowledge_guidance",
+
+  // privacy
+  "/ropa": "privacy",
+  "/dsr": "privacy",
+
+  // tasks — gated by assessments_action_plan (part of action plan workflow)
+  "/tasks": "assessments_action_plan",
+
+  // training — gated by knowledge_guidance
+  "/training": "knowledge_guidance",
+};
+
+/** Prefix-based fallback for dynamic routes (e.g. /assessments/:id). */
+const ROUTE_PREFIX_MODULE = [
+  { prefix: "/assessments", module: "assessments_action_plan" },
+];
+
+/**
+ * Resolve the module for a given route path.
+ * Returns null for admin-only routes (RBAC only).
+ */
+export function moduleForRoute(path) {
+  // Exact match
+  if (ROUTE_MODULE[path] !== undefined) return ROUTE_MODULE[path];
+
+  // Prefix fallback for dynamic routes
+  for (const { prefix, module } of ROUTE_PREFIX_MODULE) {
+    if (path.startsWith(prefix)) return module;
+  }
+
+  // Default: no module gating
+  return null;
+}
+
+/** Map each module to the RBAC resources it covers. */
+export const MODULE_RESOURCES = {
+  nis2_journey: ["compliance_journey"],
+  assessments_action_plan: ["assessments", "action_plan", "task_analytics", "recommendations", "tasks"],
+  documents_evidence: ["security_documents", "document_audit_trail", "evidence"],
+  reporting_audit_prep: ["reports", "compliance_metrics"],
+  risk_management: ["risk_assessment"],
+  incident_management: ["incidents", "vulnerabilities"],
+  supplier_management: ["supply_chain", "suppliers"],
+  knowledge_guidance: ["framework_guide", "training"],
+  privacy: ["ropa", "dsr"],
+};
+
+/** Cumulative tier → modules mapping. */
+export const TIER_MODULES = {
+  core: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep"],
+  professional: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management"],
+  advanced: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management", "supplier_management", "knowledge_guidance", "privacy"],
+  partner: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management", "supplier_management", "knowledge_guidance", "privacy"],
+};
+
+export const ALL_MODULE_CODES = [...MODULE_CODES];
+
+/** Module metadata (PT-PT names and descriptions). */
+export const MODULE_META = {
+  nis2_journey: {
+    name: "Jornada NIS2",
+    description: "Checklist de conformidade RJCS/NIS2 passo a passo",
+  },
+  assessments_action_plan: {
+    name: "Avaliações e Plano de Ação",
+    description: "Avaliações de maturidade, recomendações, tarefas e plano de ação",
+  },
+  documents_evidence: {
+    name: "Documentos e Evidências",
+    description: "Gestão de documentos de segurança e evidências",
+  },
+  reporting_audit_prep: {
+    name: "Relatórios e Preparação de Auditoria",
+    description: "Relatórios, métricas de conformidade e analytics",
+  },
+  risk_management: {
+    name: "Gestão de Risco",
+    description: "Avaliação e gestão de riscos de cibersegurança",
+  },
+  incident_management: {
+    name: "Gestão de Incidentes",
+    description: "Registo e gestão de incidentes e vulnerabilidades",
+  },
+  supplier_management: {
+    name: "Gestão de Fornecedores",
+    description: "Avaliação de fornecedores e cadeia de abastecimento",
+  },
+  knowledge_guidance: {
+    name: "Conhecimento e Orientação",
+    description: "Guia de frameworks e formação",
+  },
+  privacy: {
+    name: "Privacidade",
+    description: "Registo de atividades de tratamento e pedidos de titulares",
+  },
+};

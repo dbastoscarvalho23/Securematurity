@@ -1,0 +1,55 @@
+{
+  "name": "LicenseModule",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "nis2_journey",
+        "assessments_action_plan",
+        "documents_evidence",
+        "reporting_audit_prep",
+        "risk_management",
+        "incident_management",
+        "supplier_management",
+        "knowledge_guidance",
+        "privacy"
+      ],
+      "description": "Module code"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Module description"
+    },
+    "tier_code": {
+      "type": "string",
+      "description": "Minimum tier that includes this module"
+    },
+    "display_order": {
+      "type": "number",
+      "description": "Display order"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this module is active"
+    }
+  },
+  "required": ["code", "name", "tier_code", "display_order"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "admin" }
+    },
+    "read": {},
+    "update": {
+      "user_condition": { "role": "admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "admin" }
+    }
+  }
+}

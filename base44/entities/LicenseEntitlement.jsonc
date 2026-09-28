@@ -1,0 +1,40 @@
+{
+  "name": "LicenseEntitlement",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Entitlement code"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Entitlement description"
+    },
+    "module_code": {
+      "type": "string",
+      "description": "Module this entitlement belongs to"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this entitlement is active"
+    }
+  },
+  "required": ["code", "name", "module_code"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "admin" }
+    },
+    "read": {},
+    "update": {
+      "user_condition": { "role": "admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "admin" }
+    }
+  }
+}

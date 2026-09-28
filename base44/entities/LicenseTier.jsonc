@@ -1,0 +1,53 @@
+{
+  "name": "LicenseTier",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": ["core", "professional", "advanced", "partner"],
+      "description": "Tier code"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Tier description"
+    },
+    "is_partner_tier": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is the partner tier (all modules)"
+    },
+    "display_order": {
+      "type": "number",
+      "description": "Display order"
+    },
+    "modules": {
+      "type": "array",
+      "description": "Module codes included in this tier",
+      "items": {
+        "type": "string"
+      }
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this tier is active"
+    }
+  },
+  "required": ["code", "name", "display_order"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "admin" }
+    },
+    "read": {},
+    "update": {
+      "user_condition": { "role": "admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "admin" }
+    }
+  }
+}

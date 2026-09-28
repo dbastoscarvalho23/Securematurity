@@ -1,0 +1,36 @@
+{
+  "name": "LicenseStandard",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Standard code (e.g. NIS2, RJCS, ISO27001)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Standard description"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this standard is available"
+    }
+  },
+  "required": ["code", "name"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "admin" }
+    },
+    "read": {},
+    "update": {
+      "user_condition": { "role": "admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "admin" }
+    }
+  }
+}

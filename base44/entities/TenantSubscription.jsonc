@@ -1,0 +1,82 @@
+{
+  "name": "TenantSubscription",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "tier_code": {
+      "type": "string",
+      "enum": ["core", "professional", "advanced", "partner"],
+      "description": "Subscribed tier"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "suspended", "expired", "cancelled", "trial"],
+      "default": "active",
+      "description": "Subscription status"
+    },
+    "started_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Subscription start date"
+    },
+    "expires_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Subscription expiry date"
+    },
+    "trial_ends_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Trial end timestamp"
+    },
+    "seat_limit": {
+      "type": "number",
+      "default": 5,
+      "description": "Number of included seats"
+    },
+    "seats_used": {
+      "type": "number",
+      "default": 0,
+      "description": "Current seats in use"
+    },
+    "monthly_usage_count": {
+      "type": "number",
+      "default": 0,
+      "description": "AI usage count for current month"
+    },
+    "monthly_usage_reset_date": {
+      "type": "string",
+      "format": "date",
+      "description": "When the monthly usage counter resets"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": ["customer_id", "tier_code"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "admin" }
+    },
+    "read": {
+      "$or": [
+        { "user_condition": { "role": "admin" } },
+        { "data.customer_id": "{{user.data.customer_id}}" }
+      ]
+    },
+    "update": {
+      "user_condition": { "role": "admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "admin" }
+    }
+  }
+}

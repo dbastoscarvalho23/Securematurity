@@ -1,0 +1,43 @@
+{
+  "name": "TenantStandard",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "standard_code": {
+      "type": "string",
+      "description": "Standard code (e.g. NIS2, RJCS)"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "inactive"],
+      "default": "active",
+      "description": "Activation status"
+    },
+    "activated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the standard was activated"
+    }
+  },
+  "required": ["customer_id", "standard_code"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "admin" }
+    },
+    "read": {
+      "$or": [
+        { "user_condition": { "role": "admin" } },
+        { "data.customer_id": "{{user.data.customer_id}}" }
+      ]
+    },
+    "update": {
+      "user_condition": { "role": "admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "admin" }
+    }
+  }
+}
