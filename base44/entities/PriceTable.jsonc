@@ -1,0 +1,91 @@
+{
+  "name": "PriceTable",
+  "type": "object",
+  "description": "Tabela de preços versionada por vigência (FM2): valor por tier e periodicidade, lugares incluídos, lugar adicional e desconto de pré-pagamento anual. Uma alteração de preço entra sempre como versão nova — a anterior passa a «retirada» com data de fim —, para que o preço vigente a qualquer data seja reconstruível. Escrita exclusiva de manageCommercialOffer; nenhuma página escreve esta entidade. Sem faturação nem pagamentos nesta fase: o preço é o registo do que foi contratado, não uma cobrança.",
+  "properties": {
+    "offer_version_id": {
+      "type": "string",
+      "description": "Versão da oferta a que esta tabela se aplica"
+    },
+    "offer_version_code": {
+      "type": ["string", "null"],
+      "description": "Código da versão da oferta (denormalizado, para a lista)"
+    },
+    "label": {
+      "type": "string",
+      "description": "Nome da tabela de preços"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "published", "retired"],
+      "default": "draft",
+      "description": "Rascunho (editável), publicada (vigente) ou retirada (histórico)"
+    },
+    "currency": {
+      "type": "string",
+      "default": "EUR",
+      "description": "Moeda ISO de três letras"
+    },
+    "billing_period": {
+      "type": "string",
+      "enum": ["monthly", "annual"],
+      "description": "Periodicidade do preço base"
+    },
+    "effective_from": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Início da vigência (definido na publicação)"
+    },
+    "effective_to": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Fim da vigência (definido quando a tabela é substituída ou retirada)"
+    },
+    "entries": {
+      "type": "array",
+      "description": "Preço por tier desta tabela",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tier_code": { "type": "string" },
+          "amount_cents": { "type": ["number", "null"], "description": "Preço base por período, em cêntimos" },
+          "included_seats": { "type": ["number", "null"], "description": "Lugares incluídos no preço base" },
+          "extra_seat_amount_cents": { "type": ["number", "null"], "description": "Preço do lugar adicional por período, em cêntimos" },
+          "annual_discount_pct": { "type": ["number", "null"], "description": "Desconto de pré-pagamento anual (0–100)" },
+          "notes": { "type": ["string", "null"] }
+        },
+        "required": ["tier_code"]
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notas da tabela (condições comerciais)"
+    },
+    "author_email": {
+      "type": ["string", "null"],
+      "description": "Quem criou a tabela"
+    },
+    "published_by": {
+      "type": ["string", "null"],
+      "description": "Quem publicou a tabela"
+    },
+    "published_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Momento da publicação"
+    }
+  },
+  "required": ["offer_version_id", "label", "currency", "billing_period", "entries"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "read": {},
+    "update": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "master_admin" }
+    }
+  }
+}

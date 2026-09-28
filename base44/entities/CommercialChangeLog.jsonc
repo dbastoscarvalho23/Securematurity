@@ -1,0 +1,135 @@
+{
+  "name": "CommercialChangeLog",
+  "type": "object",
+  "description": "Histórico das alterações à oferta e ao preço (FM1/FM2). Espelha o papel do LicenseChangeLog, mas sem tenant: uma alteração de oferta é de plataforma e não tem customer_id, pelo que não pode viver no histórico por cliente. Escrita exclusiva de manageCommercialOffer e leitura pela acção `history` dessa função; nenhuma página escreve nem lê esta entidade diretamente.",
+  "properties": {
+    "entity_type": {
+      "type": "string",
+      "enum": ["OfferVersion", "PriceTable"],
+      "description": "Entidade alterada"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "Identificador do registo alterado"
+    },
+    "entity_label": {
+      "type": ["string", "null"],
+      "description": "Nome da versão da oferta ou da tabela de preços (denormalizado, para a lista)"
+    },
+    "action": {
+      "type": "string",
+      "enum": ["create", "update", "publish", "retire"],
+      "description": "Operação que alterou a oferta ou o preço"
+    },
+    "actor_email": {
+      "type": "string",
+      "description": "Quem fez a alteração"
+    },
+    "actor_role": {
+      "type": ["string", "null"],
+      "description": "Papel canónico de quem fez a alteração, no momento da operação"
+    },
+    "reason": {
+      "type": ["string", "null"],
+      "description": "Motivo indicado na operação"
+    },
+    "changed_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Códigos dos campos cujo valor mudou (p.ex. label, status, effective_from, tier:core)"
+    },
+    "before": {
+      "type": ["object", "null"],
+      "description": "Estado anterior — só os campos alterados; null na criação",
+      "properties": {
+        "label": { "type": ["string", "null"] },
+        "status": { "type": ["string", "null"] },
+        "effective_from": { "type": ["string", "null"] },
+        "effective_to": { "type": ["string", "null"] },
+        "currency": { "type": ["string", "null"] },
+        "billing_period": { "type": ["string", "null"] },
+        "notes": { "type": ["string", "null"] },
+        "tiers": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "object",
+            "properties": {
+              "tier_code": { "type": "string" },
+              "commercially_available": { "type": "boolean" },
+              "modules": { "type": "array", "items": { "type": "string" } },
+              "standards": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "entries": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "object",
+            "properties": {
+              "tier_code": { "type": "string" },
+              "amount_cents": { "type": ["number", "null"] },
+              "included_seats": { "type": ["number", "null"] },
+              "extra_seat_amount_cents": { "type": ["number", "null"] },
+              "annual_discount_pct": { "type": ["number", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "after": {
+      "type": ["object", "null"],
+      "description": "Estado novo — só os campos alterados",
+      "properties": {
+        "label": { "type": ["string", "null"] },
+        "status": { "type": ["string", "null"] },
+        "effective_from": { "type": ["string", "null"] },
+        "effective_to": { "type": ["string", "null"] },
+        "currency": { "type": ["string", "null"] },
+        "billing_period": { "type": ["string", "null"] },
+        "notes": { "type": ["string", "null"] },
+        "tiers": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "object",
+            "properties": {
+              "tier_code": { "type": "string" },
+              "commercially_available": { "type": "boolean" },
+              "modules": { "type": "array", "items": { "type": "string" } },
+              "standards": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "entries": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "object",
+            "properties": {
+              "tier_code": { "type": "string" },
+              "amount_cents": { "type": ["number", "null"] },
+              "included_seats": { "type": ["number", "null"] },
+              "extra_seat_amount_cents": { "type": ["number", "null"] },
+              "annual_discount_pct": { "type": ["number", "null"] }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["entity_type", "entity_id", "action", "actor_email"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "read": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "update": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "master_admin" }
+    }
+  }
+}

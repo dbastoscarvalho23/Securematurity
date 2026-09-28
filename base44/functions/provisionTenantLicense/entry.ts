@@ -8,6 +8,7 @@ import {
 } from "../../shared/accessUtils.ts";
 import { resolveActor } from "../../shared/devActor.ts";
 import { TIER_MODULES, LEGACY_TIER_ALIASES, getEffectiveLicense } from "../../shared/licenseGuard.ts";
+import { offerVersionInForce, priceTableInForce } from "../../shared/commercialOffer.ts";
 
 /**
  * provisionTenantLicense — operação comercial da plataforma (FB1).
@@ -114,6 +115,34 @@ async function respond(base44: any, customerId: string, subscription: any, extra
   return Response.json({ ...extra, subscription, license });
 }
 
+/**
+ * Registo comercial do provisionamento (FM1/FM2): a versão da oferta e a tabela
+ * de preços vigentes à data, para que o que ficou contratado seja reconstruível
+ * mais tarde. Não altera o gating — quem decide os módulos continua a ser o
+ * catálogo de código — e não é condição para provisionar: sem oferta publicada,
+ * a subscrição fica como antes (sem versão nem preço registados).
+ */
+async function commercialContext(base44: any, tierCode: string, at: string) {
+  try {
+    const versions = await base44.asServiceRole.entities.OfferVersion.list("-created_date", 200);
+    const offerVersion = offerVersionInForce(versions || [], at);
+    if (!offerVersion) return {};
+
+    const tables = await base44.asServiceRole.entities.PriceTable.list("-created_date", 200);
+    const table = priceTableInForce(tables || [], offerVersion.id, at);
+    const entry = (table?.entries || []).find((row: any) => row.tier_code === tierCode) || null;
+
+    return {
+      offer_version_id: offerVersion.id,
+      offer_version_code: offerVersion.code,
+      price_table_id: table?.id || null,
+      price_amount_cents: entry?.amount_cents ?? null,
+    };
+  } catch (_error) {
+    return {};
+  }
+}
+
 async function createSubscription(base44: any, user: any, customer: any, body: any) {
   const existing = await findByCustomer(base44, customer.id);
   if (existing) {
@@ -132,13 +161,15 @@ async function createSubscription(base44: any, user: any, customer: any, body: a
   }
 
   const beforeState = await licenseState(base44, customer.id);
+  const startedDate = body.started_date || new Date().toISOString().split("T")[0];
 
   const subscription = await base44.asServiceRole.entities.TenantSubscription.create({
     customer_id: customer.id,
     customer_name: customer.name || "",
     tier_code: tier,
     status: body.trial_ends_at ? "trial" : "active",
-    started_date: body.started_date || new Date().toISOString().split("T")[0],
+    started_date: startedDate,
+    ...(await commercialContext(base44, tier, startedDate)),
     ...(body.expires_date ? { expires_date: body.expires_date } : {}),
     ...(body.trial_ends_at ? { trial_ends_at: body.trial_ends_at } : {}),
     seat_limit: seatLimit,
@@ -192,6 +223,19 @@ async function updateSubscription(base44: any, user: any, customer: any, body: a
 
   if (Object.keys(patch).length === 0) {
     return Response.json({ error: "Nada para alterar." }, { status: 400 });
+  }
+
+  // Mudar de tier é contratar outra oferta: o registo comercial acompanha a
+  // decisão, para que a versão e o preço vigentes fiquem com a subscrição.
+  if (patch.tier_code) {
+    Object.assign(
+      patch,
+      await commercialContext(
+        base44,
+        patch.tier_code,
+        patch.started_date || subscription.started_date || new Date().toISOString().split("T")[0],
+      ),
+    );
   }
 
   const beforeState = await licenseState(base44, customer.id);

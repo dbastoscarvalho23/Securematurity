@@ -1,0 +1,86 @@
+{
+  "name": "OfferVersion",
+  "type": "object",
+  "description": "Versão da oferta comercial (FM1): o que a plataforma comercializa num intervalo de vigência — tiers cumulativos com estado comercializável/preparado e as normas que acompanham cada um. A composição técnica dos módulos por tier continua curada em código (base44/shared/licenseGuard.ts, espelho em src/lib/licenseModules.js) e é lida daqui em modo só-leitura: esta entidade é o REGISTO COMERCIAL versionado, nunca a fonte do gating. Escrita exclusiva de manageCommercialOffer e leitura por essa função; nenhuma página escreve esta entidade.",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Código da versão (v1, v2, …), atribuído pela função por ordem de criação"
+    },
+    "label": {
+      "type": "string",
+      "description": "Nome da versão da oferta"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "published", "retired"],
+      "default": "draft",
+      "description": "Rascunho (editável), publicada (vigente) ou retirada (histórico)"
+    },
+    "effective_from": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Início da vigência (definido na publicação)"
+    },
+    "effective_to": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Fim da vigência (definido quando a versão é substituída ou retirada)"
+    },
+    "catalogue_signature": {
+      "type": "string",
+      "description": "Assinatura da composição de código (tiers, módulos e comercializáveis) no momento da criação: mudando o código, a versão publicada deixa de coincidir e a consola assinala a divergência"
+    },
+    "tiers": {
+      "type": "array",
+      "description": "Composição da oferta por tier. Os módulos são lidos do catálogo de código; o estado comercializável e as normas são a decisão comercial desta versão.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tier_code": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "commercially_available": { "type": "boolean", "default": false },
+          "modules": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "standards": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["tier_code"]
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notas da versão (âmbito comercial, condições)"
+    },
+    "author_email": {
+      "type": ["string", "null"],
+      "description": "Quem criou a versão"
+    },
+    "published_by": {
+      "type": ["string", "null"],
+      "description": "Quem publicou a versão"
+    },
+    "published_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Momento da publicação"
+    }
+  },
+  "required": ["code", "label", "tiers"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "read": {},
+    "update": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "master_admin" }
+    }
+  }
+}

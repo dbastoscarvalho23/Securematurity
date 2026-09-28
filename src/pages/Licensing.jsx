@@ -12,9 +12,10 @@ import LoadingState from '@/components/shared/LoadingState';
 import ErrorState from '@/components/shared/ErrorState';
 import TenantLicensePanel from '@/components/licensing/TenantLicensePanel';
 import LicenseChangeHistory from '@/components/licensing/LicenseChangeHistory';
+import CommercialOfferConsole from '@/components/licensing/CommercialOfferConsole';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { canView } from '@/lib/rbac';
+import { canView, isPlatformOwner } from '@/lib/rbac';
 import {
   MODULE_CODES,
   MODULE_META,
@@ -50,6 +51,9 @@ export default function Licensing() {
   const { t } = useLanguage();
 
   const allowed = canView(user?.role, 'licensing');
+  // Compor a oferta e marcar preço é decisão de plataforma: a consola só aparece
+  // ao dono da plataforma (a função de escrita responde 403 aos restantes).
+  const isOwner = isPlatformOwner(user?.role);
 
   const { data: tiers = [] } = useQuery({
     queryKey: ['license-tiers'],
@@ -200,6 +204,9 @@ export default function Licensing() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Oferta comercial e preço (FM1/FM2) — versões com vigência e histórico. */}
+      {isOwner && <CommercialOfferConsole />}
 
       {/* Subscrições por cliente */}
       <Card>

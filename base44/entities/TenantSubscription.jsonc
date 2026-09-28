@@ -61,6 +61,22 @@
       "format": "date-time",
       "description": "End of the suspension grace period: the tenant is warned and keeps the modules until this moment, after which they close"
     },
+    "offer_version_id": {
+      "type": ["string", "null"],
+      "description": "Versão da oferta vigente no momento do provisionamento (OfferVersion) — o que estava à venda nessa data"
+    },
+    "offer_version_code": {
+      "type": ["string", "null"],
+      "description": "Código da versão da oferta (denormalizado, para a lista)"
+    },
+    "price_table_id": {
+      "type": ["string", "null"],
+      "description": "Tabela de preços vigente no momento do provisionamento (PriceTable)"
+    },
+    "price_amount_cents": {
+      "type": ["number", "null"],
+      "description": "Preço base da tabela vigente para o tier contratado, em cêntimos (registado, nunca cobrado nesta fase)"
+    },
     "notes": {
       "type": "string",
       "description": "Additional notes"
