@@ -61,6 +61,14 @@ export const dashboardEn = {
   kb_help_browse_kb: 'Browse Knowledge Base',
   kb_help_section_platform: 'Platform Guide',
   kb_help_section_compliance: 'Compliance',
+  // Executive dashboard
+  dashboard_read_only: 'Read Only',
+  dashboard_overall_maturity: 'Overall Maturity',
+  dashboard_out_of_5: 'out of 5',
+  dashboard_high_risks: 'High Risks',
+  dashboard_open_risks: 'open',
+  dashboard_risk_exposure: 'Risk Exposure',
+  dashboard_total_risks: 'total risks',
   // Common
   common_total: 'total',
 };
@@ -125,6 +133,14 @@ export const dashboardPt = {
   kb_help_browse_kb: 'Explorar Base de Conhecimento',
   kb_help_section_platform: 'Guia da Plataforma',
   kb_help_section_compliance: 'Conformidade',
+  // Executive dashboard
+  dashboard_read_only: 'Só Leitura',
+  dashboard_overall_maturity: 'Maturidade Geral',
+  dashboard_out_of_5: 'de 5',
+  dashboard_high_risks: 'Riscos Altos',
+  dashboard_open_risks: 'abertos',
+  dashboard_risk_exposure: 'Exposição a Risco',
+  dashboard_total_risks: 'total de riscos',
   // Common
   common_total: 'total',
 };

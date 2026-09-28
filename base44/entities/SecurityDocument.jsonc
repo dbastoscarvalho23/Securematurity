@@ -93,48 +93,55 @@
     "create": {
       "$or": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "data.customer_id": "{{user.data.customer_id}}"
         },
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+        },
+        {
+          "data.customer_id": "{{user.data.breakglass_customer_ids}}"
         }
       ]
     },
     "read": {
       "$or": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "data.customer_id": "{{user.data.customer_id}}"
         },
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "data.customer_id": "{{user.data.delegated_view_customer_ids}}"
+        },
+        {
+          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+        },
+        {
+          "data.customer_id": "{{user.data.onboarding_customer_ids}}"
+        },
+        {
+          "data.customer_id": "{{user.data.breakglass_customer_ids}}"
         }
       ]
     },
     "update": {
       "$or": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "data.customer_id": "{{user.data.customer_id}}"
         },
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+        },
+        {
+          "data.customer_id": "{{user.data.breakglass_customer_ids}}"
         }
       ]
     },
     "delete": {
       "$or": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "data.customer_id": "{{user.data.customer_id}}"
         },
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "data.customer_id": "{{user.data.breakglass_customer_ids}}"
         }
       ]
     }

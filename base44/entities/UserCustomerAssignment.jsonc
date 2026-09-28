@@ -22,64 +22,101 @@
       "type": "string",
       "description": "Reference to the Workspace (optional, for workspace-scoped delegation)"
     },
+    "assignment_type": {
+      "type": "string",
+      "enum": ["delegation", "onboarding", "breakglass"],
+      "default": "delegation",
+      "description": "Type of access assignment"
+    },
+    "access_level": {
+      "type": "string",
+      "enum": ["viewer", "contributor", "admin"],
+      "default": "viewer",
+      "description": "The access level this user has for this specific customer"
+    },
     "role_in_customer": {
       "type": "string",
-      "enum": [
-        "viewer",
-        "contributor",
-        "admin"
-      ],
+      "enum": ["viewer", "contributor", "admin"],
       "default": "viewer",
-      "description": "The role this user has for this specific customer (delegated access level)"
+      "description": "Legacy field — alias for access_level (backward compat)"
     },
-    "assigned_by": {
+    "authorized_modules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Module codes the user is authorized to access for this customer"
+    },
+    "onboarding_state": {
       "type": "string",
-      "description": "Email of the admin who created this assignment"
+      "enum": ["pending", "accepted", "revoked"],
+      "description": "State of onboarding flow (only for assignment_type=onboarding)"
     },
     "status": {
       "type": "string",
-      "enum": [
-        "active",
-        "revoked"
-      ],
+      "enum": ["pending", "active", "expired", "revoked"],
       "default": "active",
       "description": "Whether this assignment is currently active"
+    },
+    "is_legacy": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is a legacy assignment from the old delegation model"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this assignment expires (null = no expiry)"
+    },
+    "requested_by": {
+      "type": "string",
+      "description": "Email of the user who requested this assignment"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Email of the user who approved this assignment"
+    },
+    "assigned_by": {
+      "type": "string",
+      "description": "Email of the admin who created this assignment (legacy field)"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Justification for the assignment (required for breakglass)"
     }
   },
-  "required": [
-    "user_id",
-    "customer_id"
-  ],
+  "required": ["user_id", "customer_id", "assignment_type"],
   "rls": {
     "create": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "role": "master_admin" } },
+        { "user_condition": { "role": "workspace_admin" } },
+        { "user_condition": { "role": "partner_admin" } },
+        { "user_condition": { "role": "customer_admin" } },
+        { "data.user_id": "{{user.id}}" }
+      ]
     },
     "read": {
       "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.user_id": "{{user.id}}"
-        },
-        {
-          "data.customer_id": "{{user.data.customer_id}}"
-        }
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "role": "master_admin" } },
+        { "user_condition": { "role": "workspace_admin" } },
+        { "user_condition": { "role": "partner_admin" } },
+        { "data.user_id": "{{user.id}}" },
+        { "data.customer_id": "{{user.data.customer_id}}" }
       ]
     },
     "update": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "role": "master_admin" } },
+        { "user_condition": { "role": "workspace_admin" } },
+        { "user_condition": { "role": "partner_admin" } },
+        { "user_condition": { "role": "customer_admin" } },
+        { "data.user_id": "{{user.id}}" }
+      ]
     },
     "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "user_condition": { "role": "admin" }
     }
   }
 }

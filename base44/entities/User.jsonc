@@ -6,10 +6,20 @@
       "type": "string",
       "enum": [
         "admin",
+        "master_admin",
+        "workspace_admin",
+        "partner_admin",
         "customer_admin",
+        "grc_analyst",
+        "control_owner",
+        "executive",
+        "auditor",
+        "employee",
+        "consultant",
         "user"
       ],
-      "default": "user"
+      "default": "user",
+      "description": "User role (9-role tier system with legacy aliases)"
     },
     "display_name": {
       "type": "string",
@@ -29,17 +39,30 @@
     },
     "language": {
       "type": "string",
-      "enum": [
-        "en",
-        "pt"
-      ],
+      "enum": ["en", "pt"],
       "default": "en",
       "description": "Preferred UI language"
+    },
+    "delegated_view_customer_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Customer IDs this user has delegated view access to (denormalized from UserCustomerAssignment)"
+    },
+    "delegated_edit_customer_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Customer IDs this user has delegated edit access to (denormalized from UserCustomerAssignment)"
+    },
+    "onboarding_customer_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Customer IDs this user is being onboarded to (denormalized from UserCustomerAssignment)"
+    },
+    "breakglass_customer_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Customer IDs this user has break-glass access to (denormalized from UserCustomerAssignment, temporary)"
     }
   },
-  "required": [
-    "display_name",
-    "customer_id",
-    "customer_name"
-  ]
+  "required": ["display_name", "customer_id", "customer_name"]
 }

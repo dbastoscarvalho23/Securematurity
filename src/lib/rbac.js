@@ -140,7 +140,12 @@ export const CAPABILITIES = {
  */
 export function can(role, action, resource) {
   const normalized = normalizeRole(role);
-  if (normalized === 'master_admin') return true;
+
+  // NOTE: master_admin is NOT short-circuited here.
+  // The CAPABILITIES matrix uses tenant-only T_* tiers for compliance resources,
+  // which intentionally exclude master_admin. This enforces the delegation model:
+  // master_admin must use explicit UserCustomerAssignment to access tenant data.
+  // Route ACCESS for master_admin is still short-circuited in canAccessRoute().
 
   const caps = CAPABILITIES[resource];
   if (!caps) return false;

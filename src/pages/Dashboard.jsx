@@ -6,6 +6,7 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 const PlatformAdminDashboard = lazy(() => import('@/components/dashboard/PlatformAdminDashboard'));
 const PartnerDashboard = lazy(() => import('@/components/dashboard/PartnerDashboard'));
 const PlatformTenantDashboard = lazy(() => import('@/components/dashboard/PlatformTenantDashboard'));
+const ExecutiveDashboard = lazy(() => import('@/components/dashboard/ExecutiveDashboard'));
 const EmployeeDashboard = lazy(() => import('@/components/dashboard/EmployeeDashboard'));
 
 function DashboardFallback() {
@@ -37,8 +38,11 @@ export default function Dashboard() {
     case 'control_owner':
       DashboardComponent = PlatformTenantDashboard;
       break;
-    case 'auditor':
     case 'executive':
+      DashboardComponent = ExecutiveDashboard;
+      readOnly = true;
+      break;
+    case 'auditor':
       DashboardComponent = PlatformTenantDashboard;
       readOnly = true;
       break;
