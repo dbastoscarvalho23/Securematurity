@@ -139,7 +139,8 @@ async function resolveAuthority(base44: any, user: any, customerId: string, requ
   const active = assignments.find((a: any) => {
     const sameUser = a.user_id === user.id || (!!user.email && a.user_email === user.email);
     const live = !a.expires_at || new Date(a.expires_at).getTime() > now;
-    return sameUser && a.assignment_type === "delegation" && a.status === "approved" && live;
+    // "active" is the approved state of a delegation (see UserCustomerAssignment enum).
+    return sameUser && a.assignment_type === "delegation" && a.status === "active" && live;
   });
 
   if (active && (active.access_level === "admin" || active.access_level === "contributor")) {

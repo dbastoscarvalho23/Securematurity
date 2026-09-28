@@ -138,7 +138,7 @@ Preservar (não copiar da origem, mas manter aqui): armazenamento cloud
 | 5 | Administração consolidada (página Licenciamento real; aviso separado) | **Concluída** — ver evidências na secção 9 |
 | 6 | Jornada Core NIS2 completa (avaliações com cálculo no servidor, lacunas, ações) | **Concluída** — conclusão/reabertura, análise de lacunas e geração de ações no servidor (secção 9) |
 | 7 | Conteúdos, reporting e pacote de auditoria | **Concluída** — base de conhecimento editorial, pacote de auditoria congelado e integridade de evidências (secção 9) |
-| 8 | Testes de segurança, regressão, persistência e operação | Não iniciada |
+| 8 | Testes de segurança, regressão, persistência e operação | **Parcialmente concluída** — autorização, isolamento, licença, idempotência e regressão validados contra o ambiente de teste; persistência real e multi-identidade dependem de um backend real (secção 9) |
 
 ---
 
@@ -161,11 +161,19 @@ Preservar (não copiar da origem, mas manter aqui): armazenamento cloud
 
 - **Fontes Notion e app de origem não lidas** (secção 1). Nenhuma afirmação deste documento
   pressupõe comparação com a AnkoraOne.
-- **Ambiente de testes do pedido (secção 17) não existe ainda**: o backend local é em memória,
-  semeia **um único utilizador** (`victor.pereira@dcabconsulting.com`, papel `admin`) e as
-  entidades `User` create/delete são ignoradas localmente. Os testes 1–23 da secção 17 exigem
-  ambiente persistente com ≥2 tenants, ≥2 parceiros e 8 identidades distintas — **não podem ser
-  executados neste ambiente** e não são declarados como aprovados.
+- **Ambiente de testes (secção 17) parcialmente criado**: `seedTestEnvironment` monta a topologia
+  pedida (2 parceiros, 4 tenants — um sem subscrição, um só de leitura —, 9 cenários de atribuição e
+  avaliações com cobertura total e parcial). O que **continua em falta** é o número de identidades: o
+  backend local semeia **um único utilizador** (`victor.pereira@dcabconsulting.com`, papel `admin`) e
+  as entidades `User` create/delete são ignoradas localmente, pelo que os cenários de delegação são
+  todos associados ao mesmo utilizador. Os testes que exigem 8 identidades distintas com papéis
+  diferentes — e a separação entre quem pede e quem aprova — **não podem ser executados neste
+  ambiente** e não são declarados como aprovados.
+- **RLS por arrays de delegação não é verificável localmente**: o backend em memória honra o ramo
+  `delegated_view_customer_ids` das regras de leitura mas nega o ramo `delegated_edit_customer_ids`
+  (leitura escondida e escrita com `403 Permission denied`), apesar de as quatro entidades
+  operacionais declararem ambos. As definições são uniformes e corretas, pelo que se trata do
+  emulador local e não do repositório; a verificação correta exige um backend real.
 - **Persistência real** (testes 18, 19) fica dependente de configuração de base de dados de
   produção; não é demonstrável no preview em memória.
 - **MFA para contas privilegiadas** (secção 9): depende de configuração da plataforma; fica
@@ -174,6 +182,57 @@ Preservar (não copiar da origem, mas manter aqui): armazenamento cloud
 ---
 
 ## 9. Evidências de execução
+
+### Fase 8 — testes de segurança, regressão e operação (partes executáveis concluídas)
+
+Alterações: `base44/shared/assessmentAccess.ts` e `base44/functions/reviewDocument/entry.ts`
+(defeito 7 corrigido), `base44/functions/seedTestEnvironment/entry.ts` (defeito 8 e fixtures).
+
+Método: ambiente de `seedTestEnvironment {confirm:"create-test-conditions"}` invocado contra o
+backend local, com as funções chamadas por HTTP autenticado (o papel local `master_admin` não
+expõe os ecrãs de conformidade na UI).
+
+#### Defeitos encontrados e corrigidos nesta fase
+
+| # | Defeito | Efeito | Correção |
+|---|---|---|---|
+| 7 | `authorizeAssessmentOperational` (usado por `completeAssessment`, `manageActionPlan` e `generateAuditPackage`) e `reviewDocument` exigiam `status === "approved"` numa delegação | O enum de `UserCustomerAssignment` é `["pending","active","expired","revoked"]` e todos os escritores (`manageAccess`, `manageAssignment`, a UI de acesso externo) gravam `"active"`. Nenhuma delegação aprovada a sério autorizava seja o que for: o acesso externo estava inerte ponta a ponta | Passou a exigir `"active"`, o estado canónico de uma delegação aprovada |
+| 8 | `seedTestEnvironment` gravava `status: "approved"` (valor fora do enum) e deduplicava cenários apenas por `access_level` | O ambiente de teste não representava o ciclo real; e os cenários "pendente" e "restrito por módulo" reaproveitavam registos de outros cenários, pelo que **nunca existiam** | Estado canónico `"active"`, deduplicação pelo motivo exato do cenário e campo explícito `grant` (`edit`/`view`/nenhum) que espelha a via real de aprovação |
+
+#### Verificações executadas
+
+| Verificação | Método | Resultado |
+|---|---|---|
+| Estados das atribuições dentro do enum | 9 cenários semeados | **Passou** — `{active, pending, revoked}`, sem `"approved"` |
+| Delegação de edição autoriza a operação | `completeAssessment complete` em Alfa (edit ativo + Core) | **Passou** — 200 (antes da correção: 403) |
+| Conclusão parcial permitida com confirmação | `completeAssessment complete` em Beta (cobertura 60%) | **Passou** — 200, avaliação `completed` |
+| Delegação de leitura não escreve | `completeAssessment` em Gama (só `viewer`) | **Passou** — 403 `forbidden` |
+| Sem subscrição, sem operação | `completeAssessment` em Delta (edição ativa, sem subscrição) | **Passou** — 403 `module_not_licensed` |
+| O plano de ação respeita a mesma licença | `manageActionPlan identify_gaps` em Delta | **Passou** — 403 `module_not_licensed` |
+| Expiração preguiçosa | delegação ativa com prazo no passado + `manageAccess resolve` | **Passou** — registo marcado `expired` e auditoria `delegation_expired` |
+| Pendentes e revogadas não concedem | `manageAccess resolve` | **Passou** — devolve apenas atribuições `active`; a pendente de Gama e a revogada de Alfa ficam de fora |
+| Lacunas por tipo | `identify_gaps` em Alfa (total) e Beta (parcial) | **Passou** — Alfa 8 `below_target` / 0 `uncovered`; Beta 5 `below_target` / 4 `uncovered` (os 4 requisitos sem resposta) |
+| Idempotência das lacunas e ações | `identify_gaps` e `generate_actions` repetidos | **Passou** — 200 com 0 novas em cada repetição |
+| Pacote de auditoria com conteúdo | `generateAuditPackage generate` em Alfa (avaliação concluída) | **Passou** — `draft`, 12 controlos e âmbito NIS2 preenchidos |
+| Idempotência do ambiente de teste | `seedTestEnvironment` repetido | **Passou** — 0 criados / 29 reaproveitados |
+| Idempotência do catálogo | `seedKnowledgeBase` repetido | **Passou** — 0 criados / 20 reaproveitados |
+| Regressão do fluxo editorial | `transitionArticleStatus publish` sobre artigo publicado | **Passou** — 409 `invalid_transition` |
+| Trilho de auditoria | `AuditLog` após a bateria | **Passou** — `assessment_completed`, `assessment_gaps_identified`, `audit_package_generated`, `delegation_expired` |
+| Saúde do frontend após o reinício | consola, rede, overlay, raiz | **Passou** — 0 pedidos falhados, sem `vite-error-overlay`, raiz renderizada; só o ruído conhecido do websocket do SDK |
+
+#### Não verificado nesta fase (limitação do ambiente local)
+
+- **Persistência real** (testes 18 e 19): o backend local é em memória e é limpo em cada reinício;
+  a persistência entre reinícios não é demonstrável aqui.
+- **Multi-identidade**: 8 identidades com papéis distintos, a separação entre quem pede e quem
+  aprova delegações, e a proibição de aprovação por `workspace_admin` continuam a exigir um backend
+  real; a verificação é por leitura de código.
+- **RLS por arrays**: só o ramo `delegated_view_customer_ids` é honrado pelo emulador local; o ramo
+  `delegated_edit_customer_ids` é negado na leitura e na escrita (sonda: criação de um
+  `Recommendation` para um tenant presente no array de edição devolveu `403 Permission denied`).
+- **Integridade de evidências**: `reviewDocument` e os hashes SHA-256 continuam por exercitar (não há
+  documento nem papel operacional locais).
+- **MFA para contas privilegiadas**: depende de configuração da plataforma.
 
 ### Fase 7 — base de conhecimento editorial, pacote de auditoria e integridade de evidências (concluída)
 

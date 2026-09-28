@@ -336,9 +336,9 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       customer: "tenant_alfa",
       assignment_type: "delegation",
       access_level: "contributor",
-      status: "approved",
+      status: "active",
       expires_at: inDays(30),
-      granted: true,
+      grant: "edit",
       reason: `${MARKER} Delegação de edição aprovada (cenário de teste).`,
     },
     {
@@ -346,9 +346,9 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       customer: "tenant_beta",
       assignment_type: "delegation",
       access_level: "contributor",
-      status: "approved",
+      status: "active",
       expires_at: inDays(30),
-      granted: true,
+      grant: "edit",
       reason: `${MARKER} Delegação de edição aprovada (cenário de teste).`,
     },
     {
@@ -356,9 +356,9 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       customer: "tenant_gama",
       assignment_type: "delegation",
       access_level: "viewer",
-      status: "approved",
+      status: "active",
       expires_at: inDays(30),
-      granted: false,
+      grant: "view",
       reason: `${MARKER} Delegação apenas de leitura — não deve permitir escrita.`,
     },
     {
@@ -366,9 +366,9 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       customer: "tenant_delta",
       assignment_type: "delegation",
       access_level: "contributor",
-      status: "approved",
+      status: "active",
       expires_at: inDays(30),
-      granted: false,
+      grant: "edit",
       reason: `${MARKER} Delegação de edição sem subscrição — módulo não licenciado.`,
     },
     {
@@ -378,7 +378,7 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       access_level: "viewer",
       status: "pending",
       expires_at: inDays(15),
-      granted: false,
+      grant: null,
       reason: `${MARKER} Pedido pendente — não deve conceder acesso.`,
     },
     {
@@ -386,9 +386,9 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       customer: "tenant_beta",
       assignment_type: "delegation",
       access_level: "viewer",
-      status: "approved",
+      status: "active",
       expires_at: inDays(-2),
-      granted: false,
+      grant: null,
       reason: `${MARKER} Delegação de leitura expirada — não deve conceder acesso.`,
     },
     {
@@ -398,7 +398,7 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       access_level: "viewer",
       status: "revoked",
       expires_at: inDays(10),
-      granted: false,
+      grant: null,
       reason: `${MARKER} Delegação revogada — não deve conceder acesso.`,
     },
     {
@@ -406,9 +406,9 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       customer: "tenant_beta",
       assignment_type: "delegation",
       access_level: "viewer",
-      status: "approved",
+      status: "active",
       expires_at: inDays(10),
-      granted: false,
+      grant: "view",
       authorized_modules: ["documents_evidence"],
       reason: `${MARKER} Delegação restrita ao módulo de documentos.`,
     },
@@ -417,8 +417,8 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       customer: "tenant_gama",
       assignment_type: "onboarding",
       access_level: "viewer",
-      status: "approved",
-      granted: false,
+      status: "active",
+      grant: null,
       reason: `${MARKER} Onboarding (setup de conta) — não concede dados operacionais.`,
     },
   ];
@@ -430,7 +430,10 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       customer_id: customer.id,
       assignment_type: scenario.assignment_type,
     });
-    const match = existing.find((a: any) => (a.reason || "").startsWith(MARKER) && a.access_level === scenario.access_level);
+    // Match by the scenario's own reason: several scenarios share customer,
+    // type and access level (e.g. approved viewer vs. pending viewer), so a
+    // coarser key would reuse the wrong record and silently drop the scenario.
+    const match = existing.find((a: any) => a.reason === scenario.reason);
     if (match) {
       summary.reused[`assignment:${scenario.key}`] = match.id;
       result[scenario.key] = match.id;
@@ -450,17 +453,17 @@ async function ensureAssignments(base44: any, summary: any, user: any, customers
       is_legacy: false,
       expires_at: scenario.expires_at || "",
       requested_by: user.email || "",
-      approved_by: scenario.status === "approved" ? user.email || "" : "",
+      approved_by: scenario.status === "active" ? user.email || "" : "",
       assigned_by: user.email || "",
       reason: scenario.reason,
     });
     summary.created[`assignment:${scenario.key}`] = created.id;
     result[scenario.key] = created.id;
 
-    if (scenario.granted) {
+    if (scenario.grant) {
       const target = await base44.asServiceRole.entities.User.get(user.id);
       if (target) {
-        const field = scenario.access_level === "viewer" ? "delegated_view_customer_ids" : "delegated_edit_customer_ids";
+        const field = scenario.grant === "view" ? "delegated_view_customer_ids" : "delegated_edit_customer_ids";
         await base44.asServiceRole.entities.User.update(target.id, {
           [field]: addToArray(target[field], customer.id),
         });

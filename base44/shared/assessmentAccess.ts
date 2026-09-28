@@ -41,7 +41,9 @@ export async function authorizeAssessmentOperational(base44: any, user: any, cus
   const active = assignments.filter((a: any) => {
     const isSameUser = a.user_id === user.id || (!!user.email && a.user_email === user.email);
     const live = !a.expires_at || new Date(a.expires_at).getTime() > now;
-    return isSameUser && a.assignment_type === "delegation" && a.status === "approved" && live;
+    // "active" is the approved state of a delegation (see UserCustomerAssignment enum);
+    // "approved" is not a valid status, so requiring it denied every real delegation.
+    return isSameUser && a.assignment_type === "delegation" && a.status === "active" && live;
   });
 
   const canEdit = active.some((a: any) => a.access_level === "admin" || a.access_level === "contributor");
