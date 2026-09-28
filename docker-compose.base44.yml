@@ -6,7 +6,7 @@ services:
       - ./:/app
       - /app/node_modules
       - base44-cli-auth:/root/.base44
-    command: sh -c "command -v base44 >/dev/null 2>&1 || npm install -g base44@latest deno; npm install; export BASE44_APP_ID=\"$$VITE_BASE44_APP_ID\"; exec base44 dev"
+    command: sh /app/.base44/dev-entrypoint.sh
     ports:
       - "3000:5173"
     environment:
@@ -18,9 +18,10 @@ services:
       test:
         - CMD-SHELL
         - >-
-          node -e "const probe=async(name,url)=>{try{const r=await fetch(url);if(r.status>=500)throw new Error('status '+r.status);console.log(name+' ok ('+r.status+')');return true}catch(e){console.log(name+' FAIL: '+e.message);return false}};
+          node -e "const id=(process.env.VITE_BASE44_APP_ID||'').replace(/[^0-9a-f]/gi,'');
+          const probe=async(name,url)=>{try{const r=await fetch(url);if(r.status>=500)throw new Error('status '+r.status);console.log(name+' ok ('+r.status+')');return true}catch(e){console.log(name+' FAIL: '+e.message);return false}};
           (async()=>{const frontend=await probe('frontend','http://127.0.0.1:5173/');
-          const backend=await probe('backend','http://127.0.0.1:4400/api/apps/'+process.env.VITE_BASE44_APP_ID+'/entities/Customer');
+          const backend=await probe('backend','http://127.0.0.1:4400/api/apps/'+id+'/entities/Customer');
           process.exit(frontend&&backend?0:1)})()"
       interval: 20s
       timeout: 10s

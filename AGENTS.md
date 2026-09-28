@@ -10,7 +10,12 @@ Base44 app (Vite + React 18 frontend) that connects to the Base44 cloud backend.
 ```
 docker compose -f docker-compose.base44.yml up -d
 ```
-- Node 22 slim image, repo bind-mounted at `/app`, `npm install && npm run dev` (Vite dev server on port 5173, mapped to host 3000).
+- Node 22 slim image, repo bind-mounted at `/app`; `.base44/dev-entrypoint.sh` installs the Base44 CLI + Deno (dev-only tooling, never added to `package.json`), runs `npm install`, writes the gitignored `base44/.app.jsonc` link pointer from `VITE_BASE44_APP_ID`, then runs `base44 dev`.
+- `base44 dev` serves **this branch's backend locally**: functions run in Deno, entities in a local in-memory database, and it spawns vite (port 5173, mapped to host 3000) with `/api` proxied to `http://localhost:4400`. Branch entities/functions therefore work without merging to `main`. Verified: `Workspace` answers 200 locally where the deployed backend returns 404.
+- Auth: `base44 login` (device code) is already done; the token lives in the `base44-cli-auth` volume mounted at `/root/.base44`. To re-auth, run `docker compose -f docker-compose.base44.yml exec web base44 login`.
+- **Local data is in-memory and is wiped on every container restart** (and whenever an entity schema changes). Re-seed via the `seedLicenseData` / `migrateExistingWorkspaces` functions and any test records.
+- Local dev seeds exactly one user: the CLI account (`victor.pereira@dcabconsulting.com`), role `admin` → `normalizeRole()` maps it to `master_admin`. Any password works locally. `User` create/delete are ignored locally, so extra users cannot be created.
+- Local backend quirks: `migrateExistingWorkspaces` fails with `parent_id: Input should be a valid string` (it sets `parent_id: null` for root workspaces, which strict schema validation rejects); the SDK realtime websocket logs `connect_error` / `timeout` (REST and functions are unaffected).
 - Secrets (`VITE_BASE44_APP_ID`, `VITE_BASE44_APP_BASE_URL`) are delivered via `/run/base44/app.env`.
 - Vite `server.host: true` + `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS` env var handle the preview proxy hostname.
 
