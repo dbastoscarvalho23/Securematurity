@@ -48,6 +48,21 @@ import Organization from '@/pages/Organization';
 import Configuration from '@/pages/Configuration';
 import SystemStatus from '@/pages/SystemStatus';
 import UserAssignments from '@/pages/UserAssignments';
+import { Suspense, lazy } from 'react';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+
+const StrategicReport = lazy(() => import('@/pages/StrategicReport'));
+const KnowledgeBase = lazy(() => import('@/pages/KnowledgeBase'));
+const PolicyAttestation = lazy(() => import('@/pages/PolicyAttestation'));
+const ExternalAccess = lazy(() => import('@/pages/ExternalAccess'));
+
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <div className="animate-pulse text-muted-foreground">Loading…</div>
+    </div>
+  );
+}
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings } = useAuth();
@@ -107,6 +122,10 @@ const AuthenticatedApp = () => {
           <Route path="/configuration" element={<RouteGuard path="/configuration"><Configuration /></RouteGuard>} />
           <Route path="/system-status" element={<RouteGuard path="/system-status"><SystemStatus /></RouteGuard>} />
           <Route path="/user-assignments" element={<RouteGuard path="/user-assignments"><UserAssignments /></RouteGuard>} />
+          <Route path="/strategic-report" element={<RouteGuard path="/strategic-report"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><StrategicReport /></Suspense></ErrorBoundary></RouteGuard>} />
+          <Route path="/knowledge-base" element={<RouteGuard path="/knowledge-base"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense></ErrorBoundary></RouteGuard>} />
+          <Route path="/policy-attestation" element={<RouteGuard path="/policy-attestation"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><PolicyAttestation /></Suspense></ErrorBoundary></RouteGuard>} />
+          <Route path="/external-access" element={<RouteGuard path="/external-access"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><ExternalAccess /></Suspense></ErrorBoundary></RouteGuard>} />
         </Route>
         </Route>
       </Route>

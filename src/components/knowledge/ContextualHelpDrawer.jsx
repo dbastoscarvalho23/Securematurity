@@ -68,9 +68,6 @@ export default function ContextualHelpDrawer() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
-  // Don't render on /knowledge-base pages
-  if (location.pathname.startsWith('/knowledge-base')) return null;
-
   const routeContext = useMemo(() => getRouteContext(location.pathname), [location.pathname]);
   const matchedArticles = useMemo(() => getContextualArticles(routeContext), [routeContext]);
 
@@ -82,6 +79,9 @@ export default function ContextualHelpDrawer() {
       (a.summary || '').toLowerCase().includes(q)
     );
   }, [matchedArticles, search]);
+
+  // Don't render on /knowledge-base pages (after all hooks have been called)
+  if (location.pathname.startsWith('/knowledge-base')) return null;
 
   const platformArticles = filtered.filter(a => a.section === 'platform');
   const complianceArticles = filtered.filter(a => a.section === 'compliance');

@@ -32,10 +32,9 @@ export const ROUTE_MODULE = {
   "/configuration": null,
   "/licensing": null,
   "/workspaces": null,
-  "/organization": null,
-  "/configuration": null,
   "/system-status": null,
   "/user-assignments": null,
+  "/external-access": null,
 
   // nis2_journey
   "/compliance-journey": "nis2_journey",
@@ -53,6 +52,7 @@ export const ROUTE_MODULE = {
 
   // reporting_audit_prep
   "/reports": "reporting_audit_prep",
+  "/strategic-report": "reporting_audit_prep",
   "/compliance-metrics": "reporting_audit_prep",
 
   // risk_management
@@ -68,6 +68,8 @@ export const ROUTE_MODULE = {
 
   // knowledge_guidance
   "/framework-guide": "knowledge_guidance",
+  "/knowledge-base": "knowledge_guidance",
+  "/policy-attestation": "knowledge_guidance",
 
   // privacy
   "/ropa": "privacy",

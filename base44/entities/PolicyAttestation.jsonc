@@ -1,0 +1,146 @@
+{
+  "name": "PolicyAttestation",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "policy_title": {
+      "type": "string",
+      "description": "Title of the policy being attested"
+    },
+    "policy_version": {
+      "type": "string",
+      "description": "Version of the policy (e.g. 1.0, 2.1)"
+    },
+    "policy_document_id": {
+      "type": "string",
+      "description": "Reference to the SecurityDocument being attested (optional)"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who must attest"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Name of the user (denormalized)"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "accepted", "rejected", "expired"],
+      "default": "pending",
+      "description": "Attestation status"
+    },
+    "attested_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the user attested (accepted or rejected)"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Deadline for attestation"
+    },
+    "assigned_by": {
+      "type": "string",
+      "description": "Email of the admin who assigned this attestation"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or rejection reason"
+    }
+  },
+  "required": [
+    "customer_id",
+    "policy_title",
+    "user_email"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        },
+        {
+          "data.user_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        },
+        {
+          "data.user_email": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
