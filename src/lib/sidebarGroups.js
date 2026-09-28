@@ -104,6 +104,12 @@ export const BASE_GROUPS = [
       mk('/configuration', 'nav_configuration', 'Settings', 'settings'),
       mk('/system-status', 'nav_system_status', 'Activity', 'system_status'),
       mk('/audit-log', 'nav_audit_log', 'ScrollText', 'audit_log'),
+    ],
+  },
+  {
+    labelKey: 'nav_dev',
+    items: [
+      mk('/documentacao-tecnica', 'nav_technical_docs', 'FileCode', 'system_status'),
       // TEMPORÁRIO — relatório de validação (retirar com a página).
       mk('/validacao-seguranca', 'nav_validation_report', 'ShieldAlert', 'system_status'),
     ],

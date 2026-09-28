@@ -251,6 +251,8 @@ const ROUTE_RESOURCE = {
   '/configuration': 'settings',
   '/settings': 'settings',
   '/system-status': 'system_status',
+  // Separador «Dev» — documentação técnica e relatório de validação (master_admin).
+  '/documentacao-tecnica': 'system_status',
   // TEMPORÁRIO — relatório de validação, restrito ao master_admin (retirar com a página).
   '/validacao-seguranca': 'system_status',
   '/workspaces': 'organization',

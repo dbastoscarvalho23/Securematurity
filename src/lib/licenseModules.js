@@ -36,6 +36,7 @@ export const ROUTE_MODULE = {
   "/system-status": null,
   "/user-assignments": null,
   "/external-access": null,
+  "/documentacao-tecnica": null,
 
   // nis2_journey
   "/compliance-journey": "nis2_journey",
