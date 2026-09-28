@@ -495,9 +495,9 @@ export async function runApiSuite(report) {
   const area7 = "FM1/FM2 oferta e preço";
   const offer = (body) => invoke("manageCommercialOffer", { actor: ids.master_admin, body });
   const priceEntries = [
-    { tier_code: "core", amount_cents: 19000, included_seats: 5, extra_seat_amount_cents: 2500, annual_discount_pct: 10 },
-    { tier_code: "professional", amount_cents: 39000, included_seats: 15, extra_seat_amount_cents: 2000, annual_discount_pct: 12 },
-    { tier_code: "advanced", amount_cents: 69000, included_seats: 40, extra_seat_amount_cents: 1500, annual_discount_pct: 15 },
+    { tier_code: "core", amount_cents: 19000, included_seats: 5, extra_seat_amount_cents: 2500, annual_discount_pct: 10, included_ai_calls: 1000 },
+    { tier_code: "professional", amount_cents: 39000, included_seats: 15, extra_seat_amount_cents: 2000, annual_discount_pct: 12, included_ai_calls: 5000 },
+    { tier_code: "advanced", amount_cents: 69000, included_seats: 40, extra_seat_amount_cents: 1500, annual_discount_pct: 15, included_ai_calls: 20000 },
   ];
   const dayBefore = (iso) => {
     const at = new Date(`${iso}T00:00:00.000Z`);
@@ -657,6 +657,272 @@ export async function runApiSuite(report) {
     return unchanged
       ? { ok: true, detail: "200 — provisionamento concluído; o registo comercial anterior ficou intacto" }
       : { ok: false, detail: `o registo comercial mudou sem oferta vigente: ${JSON.stringify({ before: before.offer_version_code, after: sub.offer_version_code })}` };
+  });
+
+  // ─── G8. FM3/FM4 — ciclo de vida da subscrição e quotas contratuais ──
+  // O que se prova aqui é o resto do ciclo comercial no limite do servidor: a
+  // renovação que mantém o contratado, a coerência da mudança de nível (o que o
+  // novo nível não cobre só sai com confirmação explícita, e nada é apagado), o
+  // fecho que fecha o gating sem apagar nada, as quotas contratuais que SINALIZAM
+  // sem bloquear (o gating tem de continuar a abrir os módulos de quem está acima
+  // da quota) e os indicadores comerciais com o período anterior a fechar contas.
+  const area8 = "FM3/FM4 ciclo de vida e quotas";
+  const provision = (body, actor = ids.master_admin) =>
+    invoke("provisionTenantLicense", { actor, body });
+
+  // Preparação deste grupo — duas condições que o grupo precisa de medir e que
+  // os dados locais não garantem por si (o emulador local sobrevive entre
+  // execuções):
+  //   (1) uma oferta e um preço EM VIGOR — o caso FM2.7 retira-os de propósito,
+  //       e sem eles as quotas por omissão não teriam de onde vir;
+  //   (2) um tenant com contrato VIVO — o fecho do FM3.6 deixa o cliente fechado
+  //       na execução seguinte, e um contrato novo é a forma de o repor.
+  const prepOffer = await offer({
+    action: "create_offer_version",
+    label: "Oferta de verificação (ciclo de vida)",
+    reason: "Contexto comercial do ciclo de vida",
+  });
+  const offerD3 = prepOffer.status === 200 ? prepOffer.data.offer_version.id : "";
+  if (offerD3) {
+    await offer({ action: "publish_offer_version", id: offerD3, reason: "Entrada em vigor para o ciclo de vida" });
+  }
+  const prepPrice = await offer({
+    action: "create_price_table",
+    offer_version_id: offerD3,
+    label: "Preços de verificação D",
+    currency: "EUR",
+    billing_period: "monthly",
+    entries: priceEntries,
+    reason: "Preço do ciclo de vida",
+  });
+  const priceD = prepPrice.status === 200 ? prepPrice.data.price_table.id : "";
+  if (priceD) {
+    await offer({ action: "publish_price_table", id: priceD, reason: "Entrada em vigor do preço D" });
+  }
+
+  const licences = await invoke("listTenantLicenses", { actor: ids.master_admin });
+  const alfaSubscription = ((licences.data.tenants || []).find((tenant) => tenant.id === tenants.tenant_alfa) || {}).subscription;
+  if (!alfaSubscription || alfaSubscription.status === "cancelled") {
+    await provision({
+      action: "create",
+      customer_id: tenants.tenant_alfa,
+      tier_code: "core",
+      seat_limit: 5,
+      reason: "Reposição da subscrição de verificação",
+    });
+  }
+  // O registo comercial da subscrição passa a apontar a oferta e o preço em
+  // vigor, para que as quotas por omissão e a receita contratada sejam medíveis.
+  await provision({
+    action: "update",
+    customer_id: tenants.tenant_alfa,
+    tier_code: "core",
+    reason: "Registo da oferta e do preço em vigor",
+    confirm_removals: true,
+  });
+
+  await report.case("FM3.1", area8, "renovar sem motivo é recusado com 422", async () => {
+    const res = await provision({ action: "renew", customer_id: tenants.tenant_alfa, months: 12 });
+    return statusOf(res, 422, "422 — o motivo é obrigatório na renovação");
+  });
+
+  await report.case("FM3.2", area8, "renovar acrescenta um período novo e mantém o contratado", async () => {
+    const before = await invoke("listTenantLicenses", { actor: ids.master_admin });
+    const previous = ((before.data.tenants || []).find((tenant) => tenant.id === tenants.tenant_alfa) || {}).subscription || {};
+    const res = await provision({
+      action: "renew",
+      customer_id: tenants.tenant_alfa,
+      months: 12,
+      reason: "Renovação anual de verificação",
+    });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const sub = res.data.subscription || {};
+    const renewed = (sub.renewal_count || 0) === ((previous.renewal_count || 0) + 1) &&
+      !!sub.expires_date && sub.expires_date > new Date().toISOString().split("T")[0] &&
+      sub.tier_code === previous.tier_code;
+    return renewed && res.data.license?.licensed === true
+      ? { ok: true, detail: `200 — válida até ${sub.expires_date}, tier ${sub.tier_code} mantido, licença activa` }
+      : { ok: false, detail: `renovação inesperada: ${JSON.stringify({ before: previous.expires_date, after: sub.expires_date, tier: sub.tier_code, count: sub.renewal_count }).slice(0, 180)}` };
+  });
+
+  await report.case("FM3.3", area8, "uma renovação não contrata outro nível (422 use_change_tier)", async () => {
+    const res = await provision({
+      action: "renew",
+      customer_id: tenants.tenant_alfa,
+      months: 12,
+      tier_code: "advanced",
+      reason: "Tentativa de contratar outro nível pela renovação",
+    });
+    return res.status === 422 && res.data?.code === "use_change_tier"
+      ? { ok: true, detail: "422 use_change_tier — renovar mantém o nível contratado" }
+      : { ok: false, detail: `esperado 422 use_change_tier, obtido ${res.status} ${JSON.stringify(res.data).slice(0, 120)}` };
+  });
+
+  await report.case("FM3.4", area8, "descer de nível retira o que o novo nível não cobre, mas só com confirmação", async () => {
+    const up = await provision({
+      action: "change_tier",
+      customer_id: tenants.tenant_alfa,
+      tier_code: "advanced",
+      reason: "Subida para preparar a descida",
+    });
+    if (up.status !== 200) return statusOf(up, 200, "subida de nível");
+
+    const granted = await provision({
+      action: "set_module",
+      customer_id: tenants.tenant_alfa,
+      module_code: "knowledge_guidance",
+      active: true,
+      reason: "Excepção de verificação fora do Core",
+    });
+    if (granted.status !== 200) return statusOf(granted, 200, "excepção por módulo");
+
+    const refused = await provision({
+      action: "change_tier",
+      customer_id: tenants.tenant_alfa,
+      tier_code: "core",
+      reason: "Descida para o Core sem confirmar retiradas",
+    });
+    const leaving = refused.data?.leaving || {};
+    const listed = (leaving.modules || []).includes("knowledge_guidance");
+    if (refused.status !== 422 || refused.data?.code !== "removals_required" || !listed) {
+      return {
+        ok: false,
+        detail: `esperado 422 removals_required com knowledge_guidance: ${refused.status} ${JSON.stringify(refused.data).slice(0, 160)}`,
+      };
+    }
+
+    const applied = await provision({
+      action: "change_tier",
+      customer_id: tenants.tenant_alfa,
+      tier_code: "core",
+      reason: "Descida para o Core com retirada confirmada",
+      confirm_removals: true,
+    });
+    if (applied.status !== 200) return statusOf(applied, 200, "descida confirmada");
+    const modules = (applied.data.license?.modules || []).map((module) => module.code);
+    return applied.data.tier_code === "core" && !modules.includes("knowledge_guidance")
+      ? { ok: true, detail: "200 — Core aplicado e a excepção fora do nível retirada (inactiva com data)" }
+      : { ok: false, detail: `módulos inesperados: ${JSON.stringify(modules).slice(0, 140)}` };
+  });
+
+  await report.case("FM3.5", area8, "a consola de ciclo de vida só mostra a carteira do administrador de parceiro", async () => {
+    const partner = await provision({ action: "lifecycle" }, ids.workspace_admin_alfa);
+    if (partner.status !== 200) return statusOf(partner, 200, "leitura da carteira");
+    const ids_ = (partner.data.tenants || []).map((tenant) => tenant.id);
+    const foreign = ids_.filter((id) => id === tenants.tenant_beta || id === tenants.tenant_zeta);
+    if (foreign.length > 0) return { ok: false, detail: `tenants fora da carteira presentes: ${foreign.length}` };
+
+    const refused = await provision({ action: "lifecycle" }, ids.grc_analyst_alfa);
+    return refused.status === 403
+      ? { ok: true, detail: `200 para o parceiro (${ids_.length} clientes) e 403 para o analista GRC` }
+      : { ok: false, detail: `esperado 403 para o analista, obtido ${refused.status}` };
+  });
+
+  await report.case("FM4.1", area8, "definir quotas sem motivo é recusado com 422", async () => {
+    const res = await provision({ action: "set_quotas", customer_id: tenants.tenant_alfa, seat_limit: 5 });
+    return statusOf(res, 422, "422 — o motivo é obrigatório nas quotas");
+  });
+
+  await report.case("FM4.2", area8, "as quotas por omissão vêm da tabela de preços em vigor", async () => {
+    const res = await provision({
+      action: "set_quotas",
+      customer_id: tenants.tenant_alfa,
+      reason: "Quotas contratadas de verificação",
+    });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const sub = res.data.subscription || {};
+    const fromTable = sub.quota_source_price_table_id === priceD &&
+      sub.seat_limit === 5 &&
+      sub.ai_quota_monthly === 1000 &&
+      (sub.quota_warn_pct || 0) > 0;
+    return fromTable
+      ? { ok: true, detail: `200 — ${sub.seat_limit} lugares e ${sub.ai_quota_monthly} chamadas de IA, limiar ${sub.quota_warn_pct}% (da tabela ${res.data.defaults?.price_table_label || priceD})` }
+      : { ok: false, detail: `quotas inesperadas: ${JSON.stringify({ seats: sub.seat_limit, ai: sub.ai_quota_monthly, warn: sub.quota_warn_pct, src: sub.quota_source_price_table_id, expected: priceD }).slice(0, 180)}` };
+  });
+
+  await report.case("FM4.3", area8, "a leitura das quotas resolve o âmbito no servidor e não bloqueia ninguém", async () => {
+    const res = await provision({ action: "quota_overview" });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const tenant = (res.data.tenants || []).find((row) => row.id === tenants.tenant_alfa) || {};
+    const quota = tenant.seats?.quota === 5 && tenant.ai?.quota === 1000;
+    const notBlocking = ["ok", "warning", "excess"].includes(tenant.seats?.level);
+    const refused = await provision({ action: "quota_overview" }, ids.grc_analyst_alfa);
+    if (!quota || !notBlocking || refused.status !== 403) {
+      return { ok: false, detail: JSON.stringify({ quota, notBlocking, refused: refused.status, tenant: tenant.seats }).slice(0, 200) };
+    }
+    return { ok: true, detail: "200 — quotas contratadas legíveis no âmbito; 403 ao analista GRC" };
+  });
+
+  await report.case("FM4.4", area8, "o registo das sinalizações do período é idempotente", async () => {
+    // Período fixo e distinto do corrente: o caso tem de poder repetir-se (o
+    // registo é idempotente por cliente, período e grandeza, e o período
+    // corrente já foi registado por uma execução anterior).
+    const period = "2020-01";
+    const first = await provision({ action: "record_quota_signals", period });
+    if (first.status !== 200) return statusOf(first, 200, "primeiro registo");
+    const recorded = first.data.totals?.recorded || 0;
+    const second = await provision({ action: "record_quota_signals", period });
+    if (second.status !== 200) return statusOf(second, 200, "segundo registo");
+    const again = second.data.totals?.recorded || 0;
+    return recorded > 0 && again === 0
+      ? { ok: true, detail: `200 — ${recorded} linhas registadas; repetir não duplica (0 novas)` }
+      : { ok: false, detail: `esperado registo idempotente: ${JSON.stringify({ recorded, again }).slice(0, 120)}` };
+  });
+
+  await report.case("FM5.1", area8, "os indicadores comerciais comparam com o período anterior e não inventam receita", async () => {
+    const res = await invoke("getCommercialMetrics", { actor: ids.master_admin, body: {} });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const data = res.data || {};
+    const revenue = data.revenue || {};
+    const priced = revenue.mrr_cents > 0 && revenue.arr_cents === revenue.mrr_cents * 12;
+    const honest = data.contracted_not_invoiced === true && (revenue.unpriced_subscriptions || 0) >= 1;
+    const previous = ["new", "renewals", "upgrades", "downgrades", "closed"].every(
+      (key) => typeof data.movement?.previous?.[key] === "number",
+    );
+    const coherent = (data.totals?.subscriptions || 0) > 0 &&
+      (data.cohorts || []).length === 5 &&
+      (data.conversion?.tiers || []).length === 3;
+
+    if (!priced || !honest || !previous || !coherent) {
+      return { ok: false, detail: JSON.stringify({ mrr: revenue.mrr_cents, arr: revenue.arr_cents, unpriced: revenue.unpriced_subscriptions, previous, cohorts: (data.cohorts || []).length }).slice(0, 220) };
+    }
+    return {
+      ok: true,
+      detail: `200 — MRR contratado ${revenue.mrr_cents} cêntimos (${revenue.unpriced_subscriptions} subscrições sem preço), movimento do período com ${data.movement.new} novas e ${data.movement.closed} fechos`,
+    };
+  });
+
+  await report.case("FM5.2", area8, "os indicadores comerciais são do dono da plataforma", async () => {
+    const partner = await invoke("getCommercialMetrics", { actor: ids.workspace_admin_alfa, body: {} });
+    const tenant = await invoke("getCommercialMetrics", { actor: ids.customer_admin_alfa, body: {} });
+    return partner.status === 403 && tenant.status === 403
+      ? { ok: true, detail: "403 — nem o administrador de parceiro nem o do cliente lêem os indicadores" }
+      : { ok: false, detail: `esperado 403 nos dois: parceiro ${partner.status}, cliente ${tenant.status}` };
+  });
+
+  await report.case("FM3.6", area8, "fechar o tenant fecha o gating e deixa o trabalho a tratar registado", async () => {
+    const res = await provision({
+      action: "close",
+      customer_id: tenants.tenant_alfa,
+      reason: "Fim do contrato de verificação",
+    });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const closed = res.data.subscription?.status === "cancelled" && !!res.data.subscription?.closed_at;
+    const failClosed = res.data.license?.licensed === false && (res.data.license?.modules || []).length === 0;
+    const handover = typeof res.data.handover?.live_delegations === "number" &&
+      typeof res.data.handover?.pending_audit_packages === "number";
+    const again = await provision({ action: "close", customer_id: tenants.tenant_alfa, reason: "Repetição do fecho" });
+
+    if (!closed || !failClosed || !handover || again.status !== 409) {
+      return {
+        ok: false,
+        detail: JSON.stringify({ closed, failClosed, handover, again: again.status }).slice(0, 200),
+      };
+    }
+    return {
+      ok: true,
+      detail: `200 — fechado sem apagar nada: nenhum módulo abre, ${res.data.handover.live_delegations} delegações vivas e ${res.data.handover.pending_audit_packages} pacotes em rascunho a tratar; repetir dá 409`,
+    };
   });
 
   // ─── G4. RLS baseada em arrays (limitação local assumida) ─────────

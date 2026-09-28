@@ -13,7 +13,7 @@
     },
     "action": {
       "type": "string",
-      "enum": ["create", "update", "suspend", "resume", "set_module", "set_standard"],
+      "enum": ["create", "update", "suspend", "resume", "set_module", "set_standard", "renew", "change_tier", "close", "set_quotas"],
       "description": "Operação de licenciamento que alterou a licença"
     },
     "actor_email": {
@@ -58,7 +58,13 @@
             "started_date": { "type": ["string", "null"] },
             "expires_date": { "type": ["string", "null"] },
             "notes": { "type": ["string", "null"] },
-            "grace_until": { "type": ["string", "null"] }
+            "grace_until": { "type": ["string", "null"] },
+            "renewal_count": { "type": ["number", "null"] },
+            "last_renewed_at": { "type": ["string", "null"] },
+            "closed_at": { "type": ["string", "null"] },
+            "closed_reason": { "type": ["string", "null"] },
+            "ai_quota_monthly": { "type": ["number", "null"] },
+            "quota_warn_pct": { "type": ["number", "null"] }
           }
         },
         "modules": {
@@ -101,7 +107,13 @@
             "started_date": { "type": ["string", "null"] },
             "expires_date": { "type": ["string", "null"] },
             "notes": { "type": ["string", "null"] },
-            "grace_until": { "type": ["string", "null"] }
+            "grace_until": { "type": ["string", "null"] },
+            "renewal_count": { "type": ["number", "null"] },
+            "last_renewed_at": { "type": ["string", "null"] },
+            "closed_at": { "type": ["string", "null"] },
+            "closed_reason": { "type": ["string", "null"] },
+            "ai_quota_monthly": { "type": ["number", "null"] },
+            "quota_warn_pct": { "type": ["number", "null"] }
           }
         },
         "modules": {

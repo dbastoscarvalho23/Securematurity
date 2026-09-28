@@ -1,0 +1,84 @@
+{
+  "name": "QuotaSignal",
+  "type": "object",
+  "description": "Sinalização de excedente de quota contratual (FM4): lugares ou consumo de IA acima do contratado, registada para histórico. A marcação é de negócio — SINALIZA, nunca bloqueia o acesso nem cobra nada (a fronteira do FM6 continua de pé). O estado corrente é sempre derivado da subscrição; esta entidade guarda o registo do que foi assinalado em cada período, escrito exclusivamente por provisionTenantLicense (nenhuma página escreve esta entidade).",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Tenant a que a sinalização se refere"
+    },
+    "customer_name": {
+      "type": ["string", "null"],
+      "description": "Nome do tenant (denormalizado, para a lista)"
+    },
+    "period": {
+      "type": "string",
+      "description": "Período da sinalização (AAAA-MM)"
+    },
+    "metric": {
+      "type": "string",
+      "enum": ["seats", "ai_usage"],
+      "description": "Grandeza em causa: lugares ocupados ou consumo de IA no mês"
+    },
+    "level": {
+      "type": "string",
+      "enum": ["ok", "warning", "excess"],
+      "description": "Sem sinalização no período (ok), aviso (limiar atingido) ou excedente (quota ultrapassada). O registo do período volta a «ok» quando o consumo baixa — a marcação é reversível"
+    },
+    "quota": {
+      "type": "number",
+      "description": "Quota contratada no momento da sinalização"
+    },
+    "consumed": {
+      "type": "number",
+      "description": "Consumo observado no período"
+    },
+    "excess": {
+      "type": "number",
+      "description": "Diferença acima da quota (0 quando só houve aviso)"
+    },
+    "used_pct": {
+      "type": ["number", "null"],
+      "description": "Percentagem da quota consumida (arredondada), para leitura rápida"
+    },
+    "threshold_pct": {
+      "type": ["number", "null"],
+      "description": "Limiar configurado na subscrição a partir do qual se assinala"
+    },
+    "detected_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Momento em que a sinalização foi registada"
+    },
+    "recorded_by": {
+      "type": ["string", "null"],
+      "description": "Quem registou a sinalização"
+    },
+    "recorded_by_role": {
+      "type": ["string", "null"],
+      "description": "Papel canónico de quem registou"
+    },
+    "note": {
+      "type": ["string", "null"],
+      "description": "Nota da sinalização — a indicação de que não há cobrança nesta fase vive aqui"
+    }
+  },
+  "required": ["customer_id", "period", "metric", "level", "quota", "consumed"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "read": {
+      "$or": [
+        { "user_condition": { "role": "master_admin" } },
+        { "data.customer_id": "{{user.data.customer_id}}" }
+      ]
+    },
+    "update": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "master_admin" }
+    }
+  }
+}

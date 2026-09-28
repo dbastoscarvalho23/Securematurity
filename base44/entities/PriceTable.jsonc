@@ -51,6 +51,7 @@
           "amount_cents": { "type": ["number", "null"], "description": "Preço base por período, em cêntimos" },
           "included_seats": { "type": ["number", "null"], "description": "Lugares incluídos no preço base" },
           "extra_seat_amount_cents": { "type": ["number", "null"], "description": "Preço do lugar adicional por período, em cêntimos" },
+          "included_ai_calls": { "type": ["number", "null"], "description": "Consumo de IA incluído por mês (quota contratual por omissão, FM4) — sinalizado, nunca cobrado" },
           "annual_discount_pct": { "type": ["number", "null"], "description": "Desconto de pré-pagamento anual (0–100)" },
           "notes": { "type": ["string", "null"] }
         },

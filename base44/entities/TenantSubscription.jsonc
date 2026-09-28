@@ -61,6 +61,37 @@
       "format": "date-time",
       "description": "End of the suspension grace period: the tenant is warned and keeps the modules until this moment, after which they close"
     },
+    "renewal_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Renovações já registadas nesta subscrição (FM3)"
+    },
+    "last_renewed_at": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Data da última renovação (FM3)"
+    },
+    "closed_at": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Data efectiva do fecho do tenant (FM3) — nada é apagado, os módulos e as normas ficam retirados"
+    },
+    "closed_reason": {
+      "type": ["string", "null"],
+      "description": "Motivo do fecho do tenant (FM3)"
+    },
+    "ai_quota_monthly": {
+      "type": ["number", "null"],
+      "description": "Quota contratual de consumo de IA por mês (FM4) — sinalizada, nunca bloqueada nem cobrada"
+    },
+    "quota_warn_pct": {
+      "type": ["number", "null"],
+      "description": "Limiar (0–100) a partir do qual o consumo passa a ser sinalizado (FM4)"
+    },
+    "quota_source_price_table_id": {
+      "type": ["string", "null"],
+      "description": "Tabela de preços de onde vieram os valores por omissão das quotas contratadas (FM4)"
+    },
     "offer_version_id": {
       "type": ["string", "null"],
       "description": "Versão da oferta vigente no momento do provisionamento (OfferVersion) — o que estava à venda nessa data"

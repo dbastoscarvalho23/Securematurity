@@ -13,6 +13,8 @@ import ErrorState from '@/components/shared/ErrorState';
 import TenantLicensePanel from '@/components/licensing/TenantLicensePanel';
 import LicenseChangeHistory from '@/components/licensing/LicenseChangeHistory';
 import CommercialOfferConsole from '@/components/licensing/CommercialOfferConsole';
+import SubscriptionLifecycleCard from '@/components/licensing/SubscriptionLifecycleCard';
+import QuotaConsole from '@/components/licensing/QuotaConsole';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { canView, isPlatformOwner } from '@/lib/rbac';
@@ -207,6 +209,13 @@ export default function Licensing() {
 
       {/* Oferta comercial e preço (FM1/FM2) — versões com vigência e histórico. */}
       {isOwner && <CommercialOfferConsole />}
+
+      {/* Ciclo de vida da subscrição (FM3) — vigência, renovação, nível e fecho. */}
+      <SubscriptionLifecycleCard />
+
+      {/* Quotas contratuais (FM4) — lugares e consumo face ao contratado,
+          sinalizados e nunca bloqueados. */}
+      <QuotaConsole />
 
       {/* Subscrições por cliente */}
       <Card>

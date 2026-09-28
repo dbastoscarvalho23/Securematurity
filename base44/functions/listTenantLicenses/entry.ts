@@ -49,7 +49,8 @@ Deno.serve(async (req) => {
       tenants.push({
         id: customer.id,
         name: customer.name || "",
-        subscription: subs[0] || null,
+        // Com um contrato fechado e outro criado depois, vale o contrato vivo.
+        subscription: subs.find((sub: any) => sub.status !== "cancelled") || subs[0] || null,
         license: {
           licensed: license.licensed,
           status: license.status,

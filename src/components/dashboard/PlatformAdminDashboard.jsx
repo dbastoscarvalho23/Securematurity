@@ -18,6 +18,7 @@ import TenantGrowthWidget from '@/components/dashboard/platform/TenantGrowthWidg
 import AuditVolumeWidget from '@/components/dashboard/platform/AuditVolumeWidget';
 import TopAIConsumersWidget from '@/components/dashboard/platform/TopAIConsumersWidget';
 import ExpiringSubscriptionsWidget from '@/components/dashboard/platform/ExpiringSubscriptionsWidget';
+import CommercialMetricsWidget from '@/components/dashboard/platform/CommercialMetricsWidget';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 
@@ -109,6 +110,10 @@ export default function PlatformAdminDashboard() {
 
       {/* Business analytics */}
       <PlatformOverview />
+
+      {/* Indicadores comerciais (FM5) — receita contratada, movimento, churn e
+          coortes; a operação comercial vive em /licensing. */}
+      <CommercialMetricsWidget />
 
       {/* Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

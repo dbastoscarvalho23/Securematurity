@@ -5,6 +5,8 @@
  * TenantEntitlementOverride + trial dates into a single effective license object.
  */
 
+import { periodOf, quotaState, validityState, type QuotaState, type ValidityInfo } from "./quotaState.ts";
+
 /**
  * Cumulative tier → module mapping (single source of truth for the backend).
  * Exactly three commercial client tiers (Core ⊂ Profissional ⊂ Avançado).
@@ -50,6 +52,17 @@ export interface EffectiveLicense {
   warning?: string | null;
   /** Fim do período de tolerância de uma suspensão (ISO), quando aplicável. */
   grace_until?: string | null;
+  /**
+   * Vigência da subscrição (FM3) — estado, validade e dias restantes. É o que a
+   * renovação e o fecho alteram e o que a consola comercial mostra.
+   */
+  validity: ValidityInfo;
+  /**
+   * Quotas contratuais do período corrente (FM4): lugares e consumo de IA face ao
+   * contratado. Leitura de negócio — SINALIZA, nunca bloqueia: o acesso continua
+   * a depender apenas de `licensed` e da lista de módulos acima.
+   */
+  quota: { period: string; seats: QuotaState; ai: QuotaState };
 }
 
 /**
@@ -75,6 +88,8 @@ export async function getEffectiveLicense(base44: any, customerId: string): Prom
       seats_used: 0,
       monthly_usage_count: 0,
       monthly_usage_reset_date: null,
+      validity: { state: "none", expires_date: null, days_left: null },
+      quota: { period: periodOf(), seats: quotaState(0, null, null), ai: quotaState(0, null, null) },
     };
   }
 
@@ -142,6 +157,22 @@ export async function getEffectiveLicense(base44: any, customerId: string): Prom
     effectiveStatus === "trial" ||
     warning === "suspension_grace";
 
+  // Quotas contratuais do período corrente (FM4). O consumo de IA lê-se do
+  // contador mensal (`LicenseUsageRecord`, o mesmo número que a subscrição
+  // denormaliza e que `enforceUsageLimit` escreve) — uma só fonte por número.
+  // Este bloco é puramente informativo: nada aqui abre ou fecha um módulo.
+  const period = periodOf();
+  const usageRecords = await base44.asServiceRole.entities.LicenseUsageRecord.filter({
+    customer_id: customerId,
+    month: period,
+  });
+  const aiConsumed = usageRecords[0]?.usage_count || 0;
+  const quota = {
+    period,
+    seats: quotaState(sub.seats_used || 0, sub.seat_limit ?? null, sub.quota_warn_pct),
+    ai: quotaState(aiConsumed, sub.ai_quota_monthly ?? null, sub.quota_warn_pct),
+  };
+
   // Fail-closed: a licence that is not active opens NO module. The module list
   // is what the gating (`assertModule` / `isModuleLicensed`) and the interface
   // read, so without this a suspended tenant kept receiving its tier's module
@@ -158,6 +189,8 @@ export async function getEffectiveLicense(base44: any, customerId: string): Prom
     monthly_usage_reset_date: sub.monthly_usage_reset_date || null,
     warning,
     grace_until: graceUntil,
+    validity: validityState(sub),
+    quota,
   };
 }
 

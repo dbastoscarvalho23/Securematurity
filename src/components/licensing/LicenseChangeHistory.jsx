@@ -32,6 +32,10 @@ const ACTION_META = {
   resume: { labelKey: 'lch_action_resume', className: 'bg-chart-2/10 text-chart-2' },
   set_module: { labelKey: 'lch_action_set_module', className: 'bg-chart-4/10 text-chart-4' },
   set_standard: { labelKey: 'lch_action_set_standard', className: 'bg-chart-5/10 text-chart-5' },
+  renew: { labelKey: 'lch_action_renew', className: 'bg-chart-2/10 text-chart-2' },
+  change_tier: { labelKey: 'lch_action_change_tier', className: 'bg-chart-1/10 text-chart-1' },
+  close: { labelKey: 'lch_action_close', className: 'bg-destructive/10 text-destructive' },
+  set_quotas: { labelKey: 'lch_action_set_quotas', className: 'bg-chart-3/10 text-chart-3' },
 };
 
 const PAGE_SIZE = 25;

@@ -23,6 +23,15 @@ export const OFFER_TIER_CODES = ["core", "professional", "advanced"];
 /** Periodicidade do preço base. */
 export const BILLING_PERIODS = ["monthly", "annual"];
 
+/** Ordem cumulativa dos tiers comerciais (Core ⊂ Profissional ⊂ Avançado). */
+export const TIER_ORDER = OFFER_TIER_CODES;
+
+/** Posição de um tier na escala cumulativa (-1 se não pertence à oferta). */
+export function tierRank(tierCode: string): number {
+  const resolved = LEGACY_TIER_ALIASES[tierCode] || tierCode;
+  return TIER_ORDER.indexOf(resolved);
+}
+
 /** Estados de uma versão de oferta e de uma tabela de preços. */
 export const COMMERCIAL_STATUSES = ["draft", "published", "retired"];
 
@@ -148,6 +157,8 @@ export function normalizeEntries(raw: any) {
     if (extra.error) return { error: extra.error, entries: undefined };
     const discount = priceNumber(row?.annual_discount_pct, "annual_discount_pct", { max: 100 });
     if (discount.error) return { error: discount.error, entries: undefined };
+    const aiCalls = priceNumber(row?.included_ai_calls, "included_ai_calls");
+    if (aiCalls.error) return { error: aiCalls.error, entries: undefined };
 
     entries.push({
       tier_code: code,
@@ -155,6 +166,7 @@ export function normalizeEntries(raw: any) {
       included_seats: seats.value,
       extra_seat_amount_cents: extra.value,
       annual_discount_pct: discount.value,
+      included_ai_calls: aiCalls.value,
       notes: row?.notes ? String(row.notes) : null,
     });
   }
@@ -237,6 +249,41 @@ export function offerVersionInForce(versions: any[], at: string) {
     .filter((version: any) => !version.effective_from || version.effective_from <= when)
     .filter((version: any) => !version.effective_to || version.effective_to >= when);
   return candidates.sort((a: any, b: any) => String(b.effective_from || "").localeCompare(String(a.effective_from || "")))[0] || null;
+}
+
+/**
+ * Normas que uma versão da oferta faz acompanhar de um tier. `null` quando a
+ * versão (ou o tier) não declara uma lista — não há então regra comercial para
+ * comparar, e a coerência do downgrade não se pronuncia.
+ */
+export function standardsForTier(offerVersion: any, tierCode: string): string[] | null {
+  const tier = (offerVersion?.tiers || []).find((row: any) => row.tier_code === tierCode);
+  if (!tier || !Array.isArray(tier.standards)) return null;
+  return tier.standards.map((code: any) => String(code));
+}
+
+/** Linha de preço de um tier numa tabela (null quando a tabela não o preça). */
+export function priceEntryFor(table: any, tierCode: string) {
+  const resolved = LEGACY_TIER_ALIASES[tierCode] || tierCode;
+  return (table?.entries || []).find((row: any) => row.tier_code === resolved) || null;
+}
+
+/**
+ * Valor mensal contratado de uma subscrição, a partir da tabela de preços que
+ * lhe está associada: preço base do tier (anual convertido a mês) mais os
+ * lugares acima dos incluídos. Sem faturação nesta fase — é receita contratada,
+ * não faturada, e é o mesmo número que os indicadores comerciais mostram.
+ */
+export function monthlyCentsFor(table: any, tierCode: string, seatLimit: number): number {
+  const entry = priceEntryFor(table, tierCode);
+  if (!entry) return 0;
+  const annual = table?.billing_period === "annual";
+  const base = Number(entry.amount_cents) || 0;
+  const included = Number(entry.included_seats ?? 0) || 0;
+  const extraSeats = Math.max(0, (Number(seatLimit) || 0) - included);
+  const extra = extraSeats * (Number(entry.extra_seat_amount_cents) || 0);
+  const total = base + extra;
+  return annual ? Math.round(total / 12) : total;
 }
 
 /** Tabela de preços vigente para uma versão da oferta numa data. */

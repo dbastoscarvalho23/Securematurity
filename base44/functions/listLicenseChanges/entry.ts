@@ -28,7 +28,18 @@ const MAX_SCAN = 5000;
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 200;
 
-const ACTIONS = ["create", "update", "suspend", "resume", "set_module", "set_standard"];
+const ACTIONS = [
+  "create",
+  "update",
+  "suspend",
+  "resume",
+  "set_module",
+  "set_standard",
+  "renew",
+  "change_tier",
+  "close",
+  "set_quotas",
+];
 
 function inScope(entry: any, scope: { all: boolean; customerIds: string[] }): boolean {
   if (scope.all) return true;
