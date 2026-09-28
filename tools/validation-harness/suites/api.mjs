@@ -281,6 +281,133 @@ export async function runApiSuite(report) {
     return statusOf(res, 403, "403 — sem delegação para o cliente");
   });
 
+  // ─── G5. Anúncios da plataforma (FB8) ─────────────────────────────
+  // O âmbito (global / tier / cliente) tem de ser decidido no servidor: quem
+  // publica vê tudo, um utilizador de tenant só vê o que lhe pertence. Os
+  // anúncios publicados aqui são arquivados no fim para não poluírem a faixa
+  // das corridas seguintes.
+  const area4 = "anúncios";
+  const annMarker = "HARNESS-ANN";
+  const publishedAnnouncements = [];
+  const publishAnnouncement = async (announcement) => {
+    const res = await invoke("manageAnnouncements", { actor: seedActor, body: { action: "publish", announcement } });
+    if (res.status === 200) publishedAnnouncements.push(res.data.announcement.id);
+    return res;
+  };
+  const activeIds = async (actor) => {
+    const res = await invoke("manageAnnouncements", { actor, body: { action: "active" } });
+    return (res.data?.announcements || []).map((a) => a.id);
+  };
+
+  await report.case("ANN1", area4, "anúncio global chega a um utilizador de tenant", async () => {
+    const res = await publishAnnouncement({
+      title: `${annMarker} global`,
+      message: "Manutenção programada",
+      severity: "info",
+      scope: "global",
+    });
+    if (res.status !== 200) return { ok: false, detail: `publicação devolveu ${res.status}` };
+    const idsSeen = await activeIds(ids.employee_beta);
+    return idsSeen.includes(res.data.announcement.id)
+      ? { ok: true, detail: "200 — visível fora do âmbito de plataforma" }
+      : { ok: false, detail: "o anúncio global não apareceu ao utilizador do tenant" };
+  });
+
+  await report.case("ANN2", area4, "anúncio de tier só chega a quem tem esse tier", async () => {
+    const advanced = await publishAnnouncement({
+      title: `${annMarker} avançado`,
+      message: "Só para o tier avançado",
+      severity: "warning",
+      scope: "tier",
+      tier_code: "advanced",
+    });
+    const core = await publishAnnouncement({
+      title: `${annMarker} core`,
+      message: "Só para o tier core",
+      severity: "info",
+      scope: "tier",
+      tier_code: "core",
+    });
+    if (advanced.status !== 200 || core.status !== 200) return { ok: false, detail: `publicação devolveu ${advanced.status}/${core.status}` };
+
+    const seenByCore = await activeIds(ids.customer_admin_alfa);
+    const seenByOwner = await activeIds(seedActor);
+    const hidesAdvanced = !seenByCore.includes(advanced.data.announcement.id);
+    const showsCore = seenByCore.includes(core.data.announcement.id);
+    const ownerSeesBoth =
+      seenByOwner.includes(advanced.data.announcement.id) && seenByOwner.includes(core.data.announcement.id);
+    if (hidesAdvanced && showsCore && ownerSeesBoth) {
+      return { ok: true, detail: "tier core vê o seu, não vê o avançado; o dono vê ambos" };
+    }
+    return { ok: false, detail: JSON.stringify({ hidesAdvanced, showsCore, ownerSeesBoth }) };
+  });
+
+  await report.case("ANN3", area4, "anúncio de cliente só chega a esse cliente", async () => {
+    const res = await publishAnnouncement({
+      title: `${annMarker} cliente`,
+      message: "Aviso apenas do cliente Alfa",
+      severity: "maintenance",
+      scope: "customer",
+      customer_id: tenants.tenant_alfa,
+      customer_name: "Cliente Alfa",
+    });
+    if (res.status !== 200) return { ok: false, detail: `publicação devolveu ${res.status}` };
+    const id = res.data.announcement.id;
+    const alfaSees = (await activeIds(ids.customer_admin_alfa)).includes(id);
+    const betaSees = (await activeIds(ids.employee_beta)).includes(id);
+    return alfaSees && !betaSees
+      ? { ok: true, detail: "visível ao cliente Alfa, invisível ao cliente Beta" }
+      : { ok: false, detail: JSON.stringify({ alfaSees, betaSees }) };
+  });
+
+  await report.case("ANN4", area4, "janela de exibição futura mantém o anúncio escondido", async () => {
+    const res = await publishAnnouncement({
+      title: `${annMarker} agendado`,
+      message: "Só amanhã",
+      severity: "info",
+      scope: "global",
+      starts_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+    if (res.status !== 200) return { ok: false, detail: `publicação devolveu ${res.status}` };
+    const seen = (await activeIds(ids.employee_beta)).includes(res.data.announcement.id);
+    return seen ? { ok: false, detail: "anúncio agendado apareceu antes da janela" } : { ok: true, detail: "escondido fora da janela" };
+  });
+
+  await report.case("ANN5", area4, "arquivar retira o anúncio da faixa", async () => {
+    const res = await publishAnnouncement({
+      title: `${annMarker} efémero`,
+      message: "Publicado e arquivado",
+      severity: "info",
+      scope: "global",
+    });
+    if (res.status !== 200) return { ok: false, detail: `publicação devolveu ${res.status}` };
+    const id = res.data.announcement.id;
+    const archived = await invoke("manageAnnouncements", { actor: seedActor, body: { action: "archive", id } });
+    if (archived.status !== 200) return { ok: false, detail: `arquivo devolveu ${archived.status}` };
+    const stillThere = (await activeIds(ids.employee_beta)).includes(id);
+    return stillThere ? { ok: false, detail: "continuou visível depois de arquivado" } : { ok: true, detail: "deixou de ser devolvido por `active`" };
+  });
+
+  await report.case("ANN6", area4, "publicar exige o dono da plataforma", async () => {
+    const res = await invoke("manageAnnouncements", {
+      actor: ids.customer_admin_alfa,
+      body: { action: "publish", announcement: { title: "x", message: "y", severity: "info", scope: "global" } },
+    });
+    return statusOf(res, 403, "403 — um administrador de cliente não publica");
+  });
+
+  await report.case("ANN7", area4, "âmbito incompleto é recusado (tier sem tier_code)", async () => {
+    const res = await invoke("manageAnnouncements", {
+      actor: seedActor,
+      body: { action: "publish", announcement: { title: "x", message: "y", severity: "info", scope: "tier" } },
+    });
+    return statusOf(res, 422, "422 — tier_code obrigatório no âmbito por tier");
+  });
+
+  for (const id of publishedAnnouncements) {
+    await invoke("manageAnnouncements", { actor: seedActor, body: { action: "archive", id } });
+  }
+
   // ─── G4. RLS baseada em arrays (limitação local assumida) ─────────
   report.skip(
     "RLS1",
