@@ -5,13 +5,31 @@
  * TenantEntitlementOverride + trial dates into a single effective license object.
  */
 
-/** Cumulative tier → module mapping. */
+/**
+ * Cumulative tier → module mapping (single source of truth for the backend).
+ * Exactly three commercial client tiers (Core ⊂ Profissional ⊂ Avançado).
+ * `privacy` is preserved in the codebase but belongs to no tier (outside the launch offering).
+ */
 export const TIER_MODULES: Record<string, string[]> = {
   core: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep"],
   professional: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management"],
-  advanced: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management", "supplier_management", "knowledge_guidance", "privacy"],
-  partner: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management", "supplier_management", "knowledge_guidance", "privacy"],
+  advanced: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management", "supplier_management", "knowledge_guidance"],
 };
+
+/**
+ * Legacy tier codes kept only so pre-existing records still resolve to a module set.
+ * NOT commercial tiers: "partner" is an organization type and service channel.
+ */
+export const LEGACY_TIER_ALIASES: Record<string, string> = { partner: "advanced" };
+
+/** Tiers commercially available at launch: Core only. */
+export const COMMERCIALLY_AVAILABLE_TIERS: string[] = ["core"];
+
+/** Resolve a tier code (including legacy aliases) to its cumulative module list. */
+export function modulesForTier(tierCode: string): string[] {
+  const resolved = LEGACY_TIER_ALIASES[tierCode] || tierCode;
+  return TIER_MODULES[resolved] || TIER_MODULES.core;
+}
 
 export const ALL_MODULE_CODES = [
   "nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep",
@@ -66,7 +84,7 @@ export async function getEffectiveLicense(base44: any, customerId: string): Prom
   }
 
   const tierCode = sub.tier_code || "core";
-  const tierModules = TIER_MODULES[tierCode] || TIER_MODULES.core;
+  const tierModules = modulesForTier(tierCode);
 
   // Fetch tenant module activations (exceptions)
   const tenantModules = await base44.asServiceRole.entities.TenantModule.filter({ customer_id: customerId });

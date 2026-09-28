@@ -1,5 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
-import { writeLicenseAuditLog } from "../../shared/licenseGuard.ts";
+import { writeLicenseAuditLog, modulesForTier } from "../../shared/licenseGuard.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -59,15 +59,9 @@ Deno.serve(async (req) => {
         notes: `Migrated from old license (seats: ${totalSeats}, frameworks: ${frameworks.join(", ")})`,
       });
 
-      // Create TenantModule records for tier modules
-      const tierModules: Record<string, string[]> = {
-        core: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep"],
-        professional: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management"],
-        advanced: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management", "supplier_management", "knowledge_guidance", "privacy"],
-        partner: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management", "supplier_management", "knowledge_guidance", "privacy"],
-      };
-
-      for (const moduleCode of tierModules[tierCode] || tierModules.core) {
+      // Create TenantModule records for the tier's cumulative modules
+      // (single source of truth: shared/licenseGuard.ts — spec §4)
+      for (const moduleCode of modulesForTier(tierCode)) {
         await base44.asServiceRole.entities.TenantModule.create({
           customer_id: customer.id,
           module_code: moduleCode,

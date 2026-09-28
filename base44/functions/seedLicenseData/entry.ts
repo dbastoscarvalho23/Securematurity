@@ -1,15 +1,20 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
-import { writeLicenseAuditLog } from "../../shared/licenseGuard.ts";
+import { writeLicenseAuditLog, modulesForTier } from "../../shared/licenseGuard.ts";
 
 /**
  * seedLicenseData — Seeds the licensing system with default data.
  *
  * Creates in order:
- * 1. LicenseTier (4 records: core, professional, advanced, partner)
- * 2. LicenseModule (9 records with new module codes)
- * 3. LicenseEntitlement (~22 records pointing to module codes)
+ * 1. LicenseTier (3 commercial client tiers: core, professional, advanced)
+ * 2. LicenseModule (9 records; `privacy` preserved but outside the launch offering)
+ * 3. LicenseEntitlement (~24 records pointing to module codes)
  * 4. LicenseStandard (3 records: NIS2, RJCS, ISO27001)
  * 5. TenantSubscription (1 per customer with tier_code and status)
+ *
+ * Exactly three commercial client tiers exist (Core ⊂ Profissional ⊂ Avançado).
+ * Only `core` is commercially available at launch; professional and advanced are
+ * prepared in the catalogue for later activation. There is no `partner` tier —
+ * partner is an organization type and service channel, not a commercial tier.
  *
  * Idempotent: skips records that already exist.
  *
@@ -37,42 +42,33 @@ Deno.serve(async (req) => {
       subscriptions_skipped: 0,
     };
 
-    // ─── 1. LicenseTier (4 records) ────────────────────────────
+    // ─── 1. LicenseTier (3 commercial client tiers) ────────────
     const tiers = [
       {
         code: "core",
         name: "Core",
         description: "Essential NIS2 compliance journey, assessments, documents, and reporting",
-        is_partner_tier: false,
         display_order: 1,
-        modules: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep"],
+        modules: modulesForTier("core"),
+        commercially_available: true,
         is_active: true,
       },
       {
         code: "professional",
         name: "Professional",
         description: "Core plus risk management and incident management",
-        is_partner_tier: false,
         display_order: 2,
-        modules: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management"],
+        modules: modulesForTier("professional"),
+        commercially_available: false,
         is_active: true,
       },
       {
         code: "advanced",
         name: "Advanced",
-        description: "Full platform with supplier management, knowledge guidance, and privacy",
-        is_partner_tier: false,
+        description: "Professional plus supplier management and knowledge guidance",
         display_order: 3,
-        modules: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management", "supplier_management", "knowledge_guidance", "privacy"],
-        is_active: true,
-      },
-      {
-        code: "partner",
-        name: "Partner",
-        description: "All modules — for partner organizations managing multiple tenants",
-        is_partner_tier: true,
-        display_order: 4,
-        modules: ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep", "risk_management", "incident_management", "supplier_management", "knowledge_guidance", "privacy"],
+        modules: modulesForTier("advanced"),
+        commercially_available: false,
         is_active: true,
       },
     ];
@@ -97,7 +93,8 @@ Deno.serve(async (req) => {
       { code: "incident_management", name: "Gestão de Incidentes", description: "Registo e gestão de incidentes e vulnerabilidades", tier_code: "professional", display_order: 6, is_active: true },
       { code: "supplier_management", name: "Gestão de Fornecedores", description: "Avaliação de fornecedores e cadeia de abastecimento", tier_code: "advanced", display_order: 7, is_active: true },
       { code: "knowledge_guidance", name: "Conhecimento e Orientação", description: "Guia de frameworks e formação", tier_code: "advanced", display_order: 8, is_active: true },
-      { code: "privacy", name: "Privacidade", description: "Registo de atividades de tratamento e pedidos de titulares", tier_code: "advanced", display_order: 9, is_active: true },
+      // Preserved in the codebase, outside the launch offering: member of no tier.
+      { code: "privacy", name: "Privacidade", description: "Preservado — RoPA e DSR fora da oferta de lançamento", tier_code: "outside_offering", display_order: 9, is_active: false },
     ];
 
     for (const mod of modules) {
@@ -110,7 +107,7 @@ Deno.serve(async (req) => {
       results.modules_created++;
     }
 
-    // ─── 3. LicenseEntitlement (~22 records) ───────────────────
+    // ─── 3. LicenseEntitlement (~24 records) ───────────────────
     const entitlements = [
       // nis2_journey
       { code: "nis2_checklist", name: "NIS2 Checklist", description: "Step-by-step NIS2 compliance checklist", module_code: "nis2_journey", is_active: true },
@@ -142,7 +139,7 @@ Deno.serve(async (req) => {
       // knowledge_guidance
       { code: "framework_guide", name: "Framework Guide", description: "AI-powered framework guidance", module_code: "knowledge_guidance", is_active: true },
       { code: "knowledge_base", name: "Knowledge Base", description: "Compliance knowledge base", module_code: "knowledge_guidance", is_active: true },
-      // privacy
+      // privacy (preserved outside the launch offering)
       { code: "ropa_management", name: "RoPA Management", description: "Record of Processing Activities", module_code: "privacy", is_active: true },
       { code: "dsr_management", name: "DSR Management", description: "Data Subject Request management", module_code: "privacy", is_active: true },
     ];
@@ -202,7 +199,7 @@ Deno.serve(async (req) => {
       });
 
       // Create TenantModule records for core modules
-      for (const moduleCode of ["nis2_journey", "assessments_action_plan", "documents_evidence", "reporting_audit_prep"]) {
+      for (const moduleCode of modulesForTier("core")) {
         await base44.asServiceRole.entities.TenantModule.create({
           customer_id: customer.id,
           module_code: moduleCode,

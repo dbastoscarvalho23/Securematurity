@@ -5,7 +5,12 @@
     "code": {
       "type": "string",
       "enum": ["core", "professional", "advanced", "partner"],
-      "description": "Tier code"
+      "description": "Tier code. Three commercial client tiers exist (core, professional, advanced). The value 'partner' is kept only so pre-existing records remain readable; it is never offered or seeded as a commercial tier (partner is an organization type and service channel)."
+    },
+    "commercially_available": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this tier is offered commercially at launch (only core is)"
     },
     "name": {
       "type": "string",
