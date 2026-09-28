@@ -32,6 +32,13 @@ const STATUS_STYLE = {
   failed: { key: 'ops_status_failed', variant: 'outline', className: 'bg-destructive/10 text-destructive border-destructive/20' },
 };
 
+// Acções suportadas por entidade, enquanto o catálogo do servidor não chega —
+// a fonte é RETENTION_ENTITIES em managePlatformOperations (devolvido no `overview`).
+const ENTITY_ACTIONS = {
+  DataProcessingActivity: ['purge', 'archive', 'anonymise'],
+  DataSubjectRequest: ['purge'],
+};
+
 function formatDuration(ms, fallback) {
   if (typeof ms !== 'number') return fallback;
   return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
@@ -56,7 +63,10 @@ export default function PlatformOperations() {
 
   const overview = useQuery({
     queryKey: ['platform-operations'],
-    queryFn: () => base44.functions.invoke('managePlatformOperations', { action: 'overview' }),
+    queryFn: async () => {
+      const result = await base44.functions.invoke('managePlatformOperations', { action: 'overview' });
+      return result?.data || result;
+    },
     enabled: allowed,
   });
 
@@ -87,7 +97,7 @@ export default function PlatformOperations() {
       action: 'simulate',
       policy: { ...form, customer_id: form.customer_id || null },
     }),
-    onSuccess: (result) => setSimulation(result),
+    onSuccess: (result) => setSimulation(result?.data || result),
     onError: () => toast({ title: t('ops_simulation_error'), variant: 'destructive' }),
   });
 
@@ -105,6 +115,14 @@ export default function PlatformOperations() {
   const workflows = data.workflows || [];
   const policies = data.policies || [];
   const entities = data.entities || [];
+  const entityActions = (name) =>
+    entities.find((e) => e.name === name)?.actions || ENTITY_ACTIONS[name] || ['purge', 'archive', 'anonymise'];
+  const chooseEntity = (name) =>
+    setForm((f) => ({
+      ...f,
+      entity_name: name,
+      action: entityActions(name).includes(f.action) ? f.action : entityActions(name)[0],
+    }));
 
   return (
     <div className="space-y-6">
@@ -199,7 +217,7 @@ export default function PlatformOperations() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end border-t pt-4">
             <div className="space-y-1.5">
               <Label className="text-xs">{t('ops_policy_entity')}</Label>
-              <Select value={form.entity_name} onValueChange={(v) => setForm((f) => ({ ...f, entity_name: v }))}>
+              <Select value={form.entity_name} onValueChange={chooseEntity}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {(entities.length ? entities : [{ name: 'DataProcessingActivity' }, { name: 'DataSubjectRequest' }]).map((e) => (
@@ -232,9 +250,9 @@ export default function PlatformOperations() {
               <Select value={form.action} onValueChange={(v) => setForm((f) => ({ ...f, action: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="purge">{t('ops_action_purge')}</SelectItem>
-                  <SelectItem value="archive">{t('ops_action_archive')}</SelectItem>
-                  <SelectItem value="anonymise">{t('ops_action_anonymise')}</SelectItem>
+                  {entityActions(form.entity_name).map((code) => (
+                    <SelectItem key={code} value={code}>{t(`ops_action_${code}`)}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -262,7 +280,7 @@ export default function PlatformOperations() {
                 <p className="text-sm text-muted-foreground">{t('ops_simulation_no_action')}</p>
               ) : (
                 <ul className="text-xs text-muted-foreground space-y-1">
-                  {simulation.sample.map((row) => (
+                  {(simulation.sample || []).map((row) => (
                     <li key={row.id} className="truncate">
                       {row.label} · {row.date ? row.date.slice(0, 10) : '—'} {row.customer_name ? `· ${row.customer_name}` : ''}
                     </li>

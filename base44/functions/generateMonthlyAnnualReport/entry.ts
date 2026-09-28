@@ -359,7 +359,7 @@ function buildPdf(reportData, monthLabel, customerName) {
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
-Deno.serve(withWorkflowRun('generateMonthlyAnnualReport', 'scheduled', req, async () => {
+Deno.serve((req) => withWorkflowRun('generateMonthlyAnnualReport', 'scheduled', req, async () => {
   try {
     const base44 = createClientFromRequest(req);
 

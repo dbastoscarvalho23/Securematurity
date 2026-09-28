@@ -11,7 +11,7 @@ function scoreLevel(score) {
   return 'Low';
 }
 
-Deno.serve(withWorkflowRun('riskDueDateReminders', 'scheduled', req, async () => {
+Deno.serve((req) => withWorkflowRun('riskDueDateReminders', 'scheduled', req, async () => {
   const base44 = createClientFromRequest(req);
 
   // Authorization: scheduled automation passes the shared secret (body.args.automation_secret

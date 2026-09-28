@@ -14,7 +14,7 @@ async function getSettings(base44ServiceRole, customerId) {
   };
 }
 
-Deno.serve(withWorkflowRun('documentNotifications', 'event', req, async () => {
+Deno.serve((req) => withWorkflowRun('documentNotifications', 'event', req, async () => {
   const base44 = createClientFromRequest(req);
 
   const body = await req.json();

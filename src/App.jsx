@@ -60,6 +60,8 @@ const ExternalAccess = lazy(() => import('@/pages/ExternalAccess'));
 const TechnicalDocs = lazy(() => import('@/pages/TechnicalDocs'));
 // TEMPORÁRIO — relatório de validação (documento de inspeção; retirar quando as correções forem aplicadas).
 const ValidationReport = lazy(() => import('@/pages/ValidationReport'));
+// Consola de automações e conservação (FB4).
+const PlatformOperations = lazy(() => import('@/pages/PlatformOperations'));
 
 function PageFallback() {
   const { t } = useLanguage();
@@ -129,6 +131,7 @@ const AuthenticatedApp = () => {
           <Route path="/organization" element={<RouteGuard path="/organization"><Organization /></RouteGuard>} />
           <Route path="/configuration" element={<RouteGuard path="/configuration"><Configuration /></RouteGuard>} />
           <Route path="/system-status" element={<RouteGuard path="/system-status"><SystemStatus /></RouteGuard>} />
+          <Route path="/platform-operations" element={<RouteGuard path="/platform-operations"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><PlatformOperations /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/user-assignments" element={<RouteGuard path="/user-assignments"><UserAssignments /></RouteGuard>} />
           <Route path="/strategic-report" element={<RouteGuard path="/strategic-report"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><StrategicReport /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/knowledge-base" element={<RouteGuard path="/knowledge-base"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense></ErrorBoundary></RouteGuard>} />

@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { escapeHtml } from "../../shared/escapeHtml.ts";
 import { withWorkflowRun } from "../../shared/workflowRuns.ts";
 
-Deno.serve(withWorkflowRun('documentReviewReminders', 'scheduled', req, async () => {
+Deno.serve((req) => withWorkflowRun('documentReviewReminders', 'scheduled', req, async () => {
   try {
     const base44 = createClientFromRequest(req);
 

@@ -7,7 +7,7 @@ const ENTITY_MAP = {
   SecurityDocument: 'SecurityDocument',
 };
 
-Deno.serve(withWorkflowRun('createNotifications', 'event', req, async () => {
+Deno.serve((req) => withWorkflowRun('createNotifications', 'event', req, async () => {
   try {
     const base44 = createClientFromRequest(req);
     const payload = await req.json();

@@ -107,6 +107,8 @@ export const BASE_GROUPS = [
       mk('/licensing', 'nav_licensing', 'ShieldCheck', 'licensing'),
       mk('/configuration', 'nav_configuration', 'Settings', 'settings'),
       mk('/system-status', 'nav_system_status', 'Activity', 'system_status'),
+      // FB4 — visibilidade e configuração das automações e da conservação.
+      mk('/platform-operations', 'nav_platform_operations', 'Timer', 'system_status'),
       mk('/audit-log', 'nav_audit_log', 'ScrollText', 'audit_log'),
     ],
   },

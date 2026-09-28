@@ -286,7 +286,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FB4',
     area: 'administracao',
     severity: 'media',
-    status: 'pendente',
+    status: 'corrigido',
+    statusNote:
+      'Existe consola: `/platform-operations` (automações e conservação), ligada ao grupo «Gestão da Plataforma» com o recurso `system_status` — o mesmo que o RouteGuard já aplicava —, pelo que só o master_admin a alcança. Mostra a última execução, a duração, o estado e o erro de cada uma das oito automações (a partir de `WorkflowRun`, escrito pelo `withWorkflowRun`), guarda a política de conservação por entidade e por tenant (com as acções suportadas por entidade — um pedido de titular não tem arquivo: 422) e simula a purga sem apagar nada. A política deixou de ser decorativa: `dataRetentionPurge` passou a aplicá-la com a mesma regra da simulação (prazo contado desde a entrada do registo, política do tenant sobre a global) e mantém a regra por registo quando não há política. Verificado no preview: oito automações listadas, execução da automação de purga registada (Sucesso, 11 ms), política gravada e simulação apresentada. Ao fechar o achado apareceu um defeito maior: as oito automações envolvidas pelo `withWorkflowRun` referenciavam `req` fora do âmbito do pedido (`Deno.serve(withWorkflowRun(…, req, …))`), pelo que falhavam ao carregar e **nunca corriam nem registavam execução** — a assinatura passou a `Deno.serve((req) => withWorkflowRun(…, req, …))`. Residual: a aplicação da política a registos reais não é reproduzível no emulador local, que recusa a criação de `DataProcessingActivity`/`DataSubjectRequest` (403 Permission denied) — confirma-se em backend real.',
     title: 'Conservação de dados e automações agendadas sem configuração nem visibilidade',
     evidence: [
       'base44/workflows/Data Retention Purge.jsonc — trigger agendado (cron 0 2 * * *) que chama dataRetentionPurge.',

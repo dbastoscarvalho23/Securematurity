@@ -20,6 +20,7 @@ export const phase3En = {
   audit_load_more: 'Load more',
 
   // ─── Automações e conservação (FB4) ───
+  nav_platform_operations: 'Automations',
   platform_ops_title: 'Automations and retention',
   platform_ops_subtitle: 'Workflow runs, retention policies and purge simulation',
   ops_automations_title: 'Scheduled automations',
@@ -86,6 +87,7 @@ export const phase3Pt = {
   audit_load_more: 'Carregar mais',
 
   // ─── Automações e conservação (FB4) ───
+  nav_platform_operations: 'Automações',
   platform_ops_title: 'Automações e conservação',
   platform_ops_subtitle: 'Execuções das automações, políticas de conservação e simulação de purga',
   ops_automations_title: 'Automações agendadas',

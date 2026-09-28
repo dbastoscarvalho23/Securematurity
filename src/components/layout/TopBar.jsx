@@ -62,6 +62,7 @@ export const PAGE_TITLE_KEYS = {
   '/organization': 'page_organization',
   '/configuration': 'page_configuration',
   '/system-status': 'page_system_status',
+  '/platform-operations': 'nav_platform_operations',
   '/user-assignments': 'page_user_assignments',
   '/licensing': 'page_licensing',
   '/license-unavailable': 'page_license_unavailable',

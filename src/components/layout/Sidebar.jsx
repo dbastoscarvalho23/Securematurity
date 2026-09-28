@@ -5,7 +5,7 @@ import {
   Settings, ChevronLeft, ChevronRight, ScrollText, BookOpen, ShieldAlert,
   ListTodo, Target, TrendingUp, FolderLock, Activity, TriangleAlert,
   Paperclip, MapPin, MailCheck, Truck, Database, Siren, Users, Bug,
-  Gauge, GraduationCap, Bot, Network, UserCog, PackageCheck, FileCode,
+  Gauge, GraduationCap, Bot, Network, UserCog, PackageCheck, FileCode, Timer,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -22,7 +22,7 @@ const ICON_MAP = {
   Settings, ChevronLeft, ChevronRight, ScrollText, BookOpen, ShieldAlert,
   ListTodo, Target, TrendingUp, FolderLock, Activity, TriangleAlert,
   Paperclip, MapPin, MailCheck, Truck, Database, Siren, Users, Bug,
-  Gauge, GraduationCap, Bot, Network, UserCog, PackageCheck, FileCode,
+  Gauge, GraduationCap, Bot, Network, UserCog, PackageCheck, FileCode, Timer,
 };
 
 export default function Sidebar({ collapsed, mobileOpen = false, onCloseMobile }) {

@@ -36,10 +36,13 @@ const RETENTION_ENTITIES = {
     // Campo de data de entrada do registo, usado pela simulação.
     date_field: "created_date",
     label: "RoPA — actividades de tratamento",
+    actions: ["purge", "archive", "anonymise"],
   },
   DataSubjectRequest: {
     date_field: "created_date",
     label: "DSR — pedidos de titulares",
+    // O pedido de titular só tem eliminação: o estado da entidade não prevê arquivo.
+    actions: ["purge"],
   },
 };
 
@@ -98,36 +101,43 @@ Deno.serve(async (req) => {
         return Response.json({ error: "invalid_retention_days" }, { status: 422 });
       }
       const action_code = ["purge", "archive", "anonymise"].includes(policy.action) ? policy.action : "purge";
+      if (!RETENTION_ENTITIES[entityName].actions.includes(action_code)) {
+        return Response.json({ error: "unsupported_action_for_entity" }, { status: 422 });
+      }
       const customerId = policy.customer_id || null;
 
       const existing = (await base44.asServiceRole.entities.RetentionPolicy.filter({
         entity_name: entityName,
-        customer_id: customerId,
-      }))[0];
+      })).find((p: any) => (p.customer_id || null) === customerId);
 
-      const payload = {
+      const payload: Record<string, any> = {
         entity_name: entityName,
-        customer_id: customerId,
-        customer_name: policy.customer_name || "",
         retention_days: days,
         action: action_code,
         is_active: policy.is_active !== false,
         notes: policy.notes || "",
         updated_by: user.email || user.id || "unknown",
       };
+      // A política de todos os tenants fica sem a chave: `AuditLog.customer_id` é
+      // string simples e o emulador local recusa `null` em ambos os campos.
+      if (customerId) {
+        payload.customer_id = customerId;
+        payload.customer_name = policy.customer_name || "";
+      }
 
       const saved = existing
         ? await base44.asServiceRole.entities.RetentionPolicy.update(existing.id, payload)
         : await base44.asServiceRole.entities.RetentionPolicy.create(payload);
 
-      await base44.asServiceRole.entities.AuditLog.create({
+      const auditEntry: Record<string, any> = {
         action: existing ? "retention_policy_updated" : "retention_policy_created",
         user_email: user.email || "unknown",
         entity_type: "RetentionPolicy",
         entity_id: saved?.id,
-        customer_id: customerId,
         details: `Retention policy ${entityName} = ${days} days (${action_code})${customerId ? ` for tenant ${customerId}` : " for all tenants"}`,
-      });
+      };
+      if (customerId) auditEntry.customer_id = customerId;
+      await base44.asServiceRole.entities.AuditLog.create(auditEntry);
 
       return Response.json({ policy: saved });
     }
