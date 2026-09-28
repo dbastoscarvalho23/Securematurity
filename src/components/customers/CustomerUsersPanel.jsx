@@ -89,8 +89,10 @@ export default function CustomerUsersPanel({ customer }) {
     }
   };
 
-  const handleRemove = async (userId) => {    try {
-      await base44.entities.User.update(userId, { customer_id: null });
+  const handleRemove = async (userId) => {
+    try {
+      const res = await base44.functions.invoke('adminUpdateUser', { userId, data: { customer_id: null } });
+      if (res.data?.error) throw new Error(res.data.error);
       toast.success(t('cup_user_removed'));
       queryClient.invalidateQueries({ queryKey: ['customerUsers', customer.id] });
     } catch {

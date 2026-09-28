@@ -74,11 +74,10 @@ export function accessLevelToField(accessLevel: string): string {
 
 /**
  * Map assignment_type to the denormalized array field name on User.
+ * Only delegations grant operational access; onboarding is account set-up only.
  */
 export function assignmentTypeToField(assignmentType: string): string {
   switch (assignmentType) {
-    case "breakglass":
-      return "breakglass_customer_ids";
     case "onboarding":
       return "onboarding_customer_ids";
     case "delegation":
@@ -89,11 +88,11 @@ export function assignmentTypeToField(assignmentType: string): string {
 
 /**
  * Get the denormalized array field for an assignment.
- * Breakglass and onboarding have their own fields; delegation uses access_level.
+ * Only an approved delegation writes the operational access arrays; onboarding
+ * keeps to onboarding_customer_ids and never grants compliance data access.
  */
 export function getDenormalizedField(assignmentType: string, accessLevel?: string): string {
-  if (assignmentType === "breakglass") return "breakglass_customer_ids";
-  if (assignmentType === "onboarding") return "onboarding_customer_ids";
+  if (assignmentType !== "delegation") return "";
   return accessLevelToField(accessLevel || "viewer");
 }
 

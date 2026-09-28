@@ -61,8 +61,28 @@
     "breakglass_customer_ids": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Customer IDs this user has break-glass access to (denormalized from UserCustomerAssignment, temporary)"
+      "description": "Reserved: break-glass/support access is out of the Core MVP scope and nothing writes this array"
     }
   },
-  "required": ["display_name", "customer_id", "customer_name"]
+  "required": ["display_name", "customer_id", "customer_name"],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "role": "master_admin" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "user_condition": { "role": "master_admin" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "user_condition": { "role": "master_admin" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
 }

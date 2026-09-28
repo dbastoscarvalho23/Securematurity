@@ -382,7 +382,7 @@ export const translations = {
     pa_attestation_updated: 'Attestation updated',
     pa_attestation_created: 'Attestation created',
     // external access
-    ea_subtitle: 'Manage delegated user-to-customer access (breakglass & external)',
+    ea_subtitle: 'Manage time-boxed delegations and user onboarding per customer',
     ea_new_delegation: 'New Delegation',
     ea_active_delegations: 'Active Delegations',
     ea_revoked_delegations: 'Revoked',
@@ -799,7 +799,7 @@ export const translations = {
     pa_attestation_updated: 'Atestação atualizada',
     pa_attestation_created: 'Atestação criada',
     // external access
-    ea_subtitle: 'Gerir acessos delegados utilizador-cliente (breakglass e externos)',
+    ea_subtitle: 'Gerir delegações com prazo e integrações de utilizadores por cliente',
     ea_new_delegation: 'Nova Delegação',
     ea_active_delegations: 'Delegações Ativas',
     ea_revoked_delegations: 'Revogadas',

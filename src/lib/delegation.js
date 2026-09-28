@@ -24,28 +24,17 @@ export async function listAssignments({ userId, customerId, assignmentType, stat
 }
 
 /**
- * List active break-glass assignments (master_admin only).
+ * Request delegation — a user requests time-boxed access to a customer
+ * (pending; the customer's own admin must approve it).
  */
-export async function listBreakGlass() {
-  try {
-    const result = await base44.functions.invoke("breakGlassAccess", { action: "list" });
-    return result.assignments || [];
-  } catch (error) {
-    console.error("Failed to list break-glass:", error);
-    return [];
-  }
-}
-
-/**
- * Request delegation — a user requests access to a customer (pending, needs approval).
- */
-export async function requestDelegation({ customerId, customerName, accessLevel, authorizedModules, reason }) {
+export async function requestDelegation({ customerId, customerName, accessLevel, authorizedModules, expiresAt, reason }) {
   return base44.functions.invoke("manageAccess", {
     action: "request_delegation",
     customer_id: customerId,
     customer_name: customerName,
     access_level: accessLevel || "viewer",
     authorized_modules: authorizedModules || [],
+    expires_at: expiresAt,
     reason,
   });
 }
@@ -81,9 +70,11 @@ export async function revokeDelegation(assignmentId) {
 }
 
 /**
- * Create onboarding — platform admin onboards a user to a customer (auto-approved).
+ * Create onboarding — platform admin onboards a user to a customer.
+ * Onboarding covers account set-up only: it grants no access to compliance data,
+ * so the user still needs an approved delegation to operate on the customer.
  */
-export async function createOnboarding({ userId, userEmail, customerId, customerName, workspaceId, accessLevel, authorizedModules, expiresAt, reason }) {
+export async function createOnboarding({ userId, userEmail, customerId, customerName, workspaceId, authorizedModules, reason }) {
   return base44.functions.invoke("manageAccess", {
     action: "create_onboarding",
     user_id: userId,
@@ -91,9 +82,7 @@ export async function createOnboarding({ userId, userEmail, customerId, customer
     customer_id: customerId,
     customer_name: customerName,
     workspace_id: workspaceId,
-    access_level: accessLevel || "contributor",
     authorized_modules: authorizedModules || [],
-    expires_at: expiresAt,
     reason,
   });
 }
@@ -114,29 +103,6 @@ export async function acceptOnboarding(assignmentId) {
 export async function revokeOnboarding(assignmentId) {
   return base44.functions.invoke("manageAccess", {
     action: "revoke_onboarding",
-    assignment_id: assignmentId,
-  });
-}
-
-/**
- * Start break-glass access (master_admin only).
- */
-export async function startBreakGlass({ customerId, customerName, durationHours, reason }) {
-  return base44.functions.invoke("breakGlassAccess", {
-    action: "start",
-    customer_id: customerId,
-    customer_name: customerName,
-    duration_hours: durationHours || 1,
-    reason,
-  });
-}
-
-/**
- * End break-glass access (master_admin only).
- */
-export async function endBreakGlass(assignmentId) {
-  return base44.functions.invoke("breakGlassAccess", {
-    action: "end",
     assignment_id: assignmentId,
   });
 }
@@ -204,7 +170,6 @@ export const DELEGATION_ROLES = {
 export const ASSIGNMENT_TYPES = {
   delegation: { label: "Delegation", icon: "Network" },
   onboarding: { label: "Onboarding", icon: "UserPlus" },
-  breakglass: { label: "Break-Glass", icon: "ShieldAlert" },
 };
 
 /**
@@ -216,5 +181,4 @@ export const STATUS_BADGES = {
   expired: { variant: "outline", label: "Expired" },
   revoked: { variant: "destructive", label: "Revoked" },
   onboarding: { variant: "secondary", label: "Onboarding" },
-  breakglass: { variant: "destructive", label: "Break-Glass" },
 };

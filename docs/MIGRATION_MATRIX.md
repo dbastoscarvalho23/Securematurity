@@ -79,11 +79,11 @@ Estado: ✅ cumpre · 🟡 parcial · ❌ em falta/violação.
 | 6 | Contexto ativo (org/tenant/papel/módulo/ação); troca de tenant limpa caches | Autorização assente em `user.customer_id` + arrays desnormalizados; não há selector de contexto de tenant | Troca de tenant sem separação de caches/pesquisas | ❌ | 3 |
 | 7 | Matriz central de papéis aplicada na UI **e no servidor** | `src/lib/rbac.js` é central e usado por `RouteGuard`/`Sidebar`; o servidor **não** usa a mesma matriz | Matriz só no cliente | 🟡 | 3 |
 | 7 | Admins de plataforma/parceiro sem acesso operacional automático | `CAPABILITIES` usa tiers `T_*` só de tenant e `can()` não faz curto-circuito de `master_admin` | Alinhado | ✅ | — |
-| 8 | Onboarding limitado a configuração de conta/utilizadores | `manageAccess.create_onboarding` cria atribuição auto-aprovada (`approved_by: user.email`) e `accept_onboarding` move o utilizador para `delegated_view/edit_customer_ids` — **acesso operacional** | Violação: onboarding abre dados operacionais | ❌ | 3 |
-| 8 | Delegação com motivo, módulos, nível, início/expiração, solicitante/aprovador | `request_delegation` guarda motivo/módulos/nível, mas **não define datas**; `handleResolve` filtra só por `status === "active"` | Delegação sem prazo e sem verificação de expiração | ❌ | 3 |
-| 8 | Consultor não aprova nem prolonga o próprio acesso | `handleApproveDelegation` permite aprovar a `isPlatformAdmin` (inclui `workspace_admin`) — o administrador de **parceiro** aprova em nome do cliente | Violação da regra de aprovação | ❌ | 3 |
-| 8 | Sem break-glass/suporte autoaprovado no MVP | `breakGlassAccess` cria acesso com `approved_by: user.email` e `access_level: "admin"`, exposto em `/external-access` | Funcionalidade a retirar do MVP | ❌ | 3 |
-| 9 | Não usar arrays de clientes no utilizador como única fonte | 12 entidades operacionais têm RLS assente em `delegated_*_customer_ids`; os arrays não exprimem prazo nem âmbito | Fronteira de segurança sem prazo/âmbito | ❌ | 3 |
+| 8 | Onboarding limitado a configuração de conta/utilizadores | `create_onboarding` cria a atribuição **pendente** (sem `approved_by` automático) e `accept_onboarding` **não** escreve `delegated_*_customer_ids`; `resolve` passou a devolver apenas delegações | Corrigido na Fase 3 (secção 9) | ✅ | 3 |
+| 8 | Delegação com motivo, módulos, nível, início/expiração, solicitante/aprovador | `request_delegation` exige motivo e `expires_at` (futuro, ≤ 365 dias); `approved_by` registado na aprovação; `list`/`resolve` expiram automaticamente o que passou do prazo e retiram o acesso | Corrigido na Fase 3 (secção 9) | ✅ | 3 |
+| 8 | Consultor não aprova nem prolonga o próprio acesso | `approve/reject/revoke_delegation` exigem `master_admin` ou `customer_admin` **do próprio cliente** (o `workspace_admin` deixou de poder aprovar); o requerente não pode aprovar o seu próprio pedido | Corrigido na Fase 3 (secção 9) | ✅ | 3 |
+| 8 | Sem break-glass/suporte autoaprovado no MVP | `breakGlassAccess` **removido** (função, botão, diálogo, banner e wrappers de frontend); `breakglass` saiu do enum de `assignment_type`; `breakglass_customer_ids` fica reservado e sem escrita | Retirado do MVP na Fase 3 (secção 9) | ✅ | 3 |
+| 9 | Não usar arrays de clientes no utilizador como única fonte | Os 12 RLS operacionais continuam assentes em `delegated_*_customer_ids`, mas `User` passou a ter RLS de escrita reservado ao serviço/`master_admin` (as mutações de utilizador passam por `adminUpdateUser`), e o prazo é aplicado na leitura (`list`/`resolve`) | Parcial: a fronteira continua a ser arrays, já não escrevíveis pelo cliente | 🟡 | 3 |
 | 9 | Acesso direto às entidades não contorna as funções | `AuditLog.create` no cliente (`src/lib/auditLog.js`) grava `user_email` fornecido pelo chamador | Frontend pode falsificar o ator | ❌ | 8 |
 | 10 | Avaliações: resultados calculados no servidor; conclusão validada | Sem função `completeAssessment`; não há cálculo de resultados no servidor | Conclusão apenas no cliente | ❌ | 6 |
 | 10 | Lacunas → ações com responsável, prazo, prioridade, estado, evidência | `Recommendation`, `Task`, `MitigationTask`, `ActionPlan` existem; ligação lacuna→requisito não é explícita | Rastreabilidade parcial | 🟡 | 6 |
@@ -104,22 +104,21 @@ Estado: ✅ cumpre · 🟡 parcial · ❌ em falta/violação.
 ## 5. Defeitos identificados no destino (a corrigir, não a copiar)
 
 Confirmados por leitura de código nesta branch — correspondem à lista "não copiar sem correção"
-da secção 13 do pedido:
+da secção 13 do pedido. Os defeitos 1–4 e 6 foram fechados na Fase 3 (evidências na secção 9);
+o defeito 5 fica para a Fase 6.
 
-1. **Onboarding com acesso operacional** — `base44/functions/manageAccess/entry.ts`
-   (`handleCreateOnboarding`: `approved_by: user.email` // auto-approved; `handleAcceptOnboarding`
-   promove para `delegated_view/edit_customer_ids`).
-2. **Delegações sem prazo nem âmbito verificados** — `handleRequestDelegation` não grava
-   `expires_at`; `handleResolve` filtra apenas por `status: "active"`; `authorized_modules: []`
-   não é distinguido de "todos".
-3. **Aprovação por administrador de parceiro** — `handleApproveDelegation` aceita
-   `isPlatformAdmin(userRole)`, que inclui `workspace_admin` (parceiro).
-4. **Suporte autoaprovado** — `breakGlassAccess` (`approved_by: user.email`, `access_level: "admin"`).
-5. **Conclusão de avaliações protegida apenas por autenticação** — não existe função de
-   conclusão; o `AuditLog` tem `assessment_completed` mas a escrita é do cliente.
-6. **Regras que permitem modificar diretamente autorizações críticas** — `User` tem
-   `delegated_*_customer_ids` e o RLS de 12 entidades operacionais depende desses arrays, que
-   qualquer escrita com `role: admin` no cliente pode alterar.
+1. **Onboarding com acesso operacional** — ✅ **corrigido na Fase 3**: `create_onboarding` já não
+   aprova automaticamente e `accept_onboarding` não escreve os arrays de acesso operacional.
+2. **Delegações sem prazo nem âmbito verificados** — ✅ **corrigido na Fase 3**.
+3. **Aprovação por administrador de parceiro** — ✅ **corrigido na Fase 3**.
+4. **Suporte autoaprovado** — ✅ **retirado do MVP na Fase 3**.
+5. **Conclusão de avaliações protegida apenas por autenticação** — em falta: não existe função de
+   conclusão; o `AuditLog` tem `assessment_completed` mas a escrita é do cliente. **(Fase 6.)**
+6. **Regras que permitem modificar diretamente autorizações críticas** — ✅ **corrigido na Fase 3**:
+   `User` passou a ter RLS de escrita (`create`/`update`/`delete` reservados a `master_admin`/serviço),
+   pelo que os arrays `delegated_*_customer_ids` deixaram de ser alteráveis por um cliente com
+   `role: admin`; a gestão de utilizadores passa pela função `adminUpdateUser` (service role, com as
+   regras reaplicadas em código e registo de auditoria).
 
 Preservar (não copiar da origem, mas manter aqui): armazenamento cloud
 (`storeFileToCloud`, `getStorageProviders`, `updateCustomerStorage`, `StorageSettings`).
@@ -132,7 +131,7 @@ Preservar (não copiar da origem, mas manter aqui): armazenamento cloud
 |---|---|---|
 | 1 | Inventário e matriz de diferenças com versões de referência | **Concluída** (este documento) |
 | 2 | Modelo de dados e migrações compatíveis (Workspace canónico, NIS2/versão, funções em falta) | Não iniciada |
-| 3 | Autorização, isolamento, onboarding e delegação (fechar defeitos 1–4, 6) | Não iniciada |
+| 3 | Autorização, isolamento, onboarding e delegação (fechar defeitos 1–4, 6) | **Concluída** — ver evidências na secção 9 |
 | 4 | Catálogo de 3 tiers e ativação comercial só do Core | **Concluída** — ver evidências na secção 9 |
 | 5 | Administração consolidada (página Licenciamento real; aviso separado) | **Concluída** — ver evidências na secção 9 |
 | 6 | Jornada Core NIS2 completa (avaliações com cálculo no servidor, lacunas, ações) | Não iniciada |
@@ -221,6 +220,41 @@ e sem gating de módulo (`licenseModules.js`).
 exercitado ponta a ponta porque o ambiente local tem um único utilizador (`master_admin`), para
 quem a verificação de módulo é dispensada; o destino foi validado por leitura de código e por
 navegação direta. Não há testes de RBAC por papel nesta fase.
+
+### Fase 3 — autorização, onboarding e delegação (concluída)
+
+Alterações: `base44/functions/manageAccess/entry.ts` (prazo obrigatório, expiração automática,
+autoridade de aprovação, onboarding sem acesso operacional), `base44/functions/adminUpdateUser/entry.ts`
+(única via de escrita de `User`, com papéis normalizados e auditoria), `base44/entities/User.jsonc`
+(RLS de escrita), `base44/entities/UserCustomerAssignment.jsonc` (`breakglass` removido do enum),
+`base44/shared/accessUtils.ts`, remoção de `base44/functions/breakGlassAccess/`, `src/lib/delegation.js`,
+`src/pages/ExternalAccess.jsx`, `src/components/customers/CustomerSeatSection.jsx`, `src/lib/translations.js`.
+
+| Verificação | Método | Resultado |
+|---|---|---|
+| Delegação exige motivo e prazo | `manageAccess request_delegation` sem `expires_at` / com prazo no passado / sem `reason` | **Passou** — 400 com mensagem explícita em cada caso |
+| Delegação válida fica pendente e com prazo | pedido com `expires_at` a 7 dias | **Passou** — `status: "pending"`, `expires_at` gravado |
+| Autoaprovação bloqueada | `approve_delegation` do próprio pedido | **Passou** — 403 "you cannot approve your own delegation request" |
+| Expiração automática | atribuição ativa com `expires_at` no passado + `resolve` | **Passou** — cliente excluído de `customer_ids` e registo marcado `expired` |
+| Onboarding sem acesso operacional | `create_onboarding` → `accept_onboarding` → `resolve` | **Passou** — `approved_by` vazio na criação, `onboarding_customer_ids` preenchido, `delegated_view/edit_customer_ids` **não** preenchidos, cliente ausente de `customer_ids` |
+| Revogação de onboarding limpa os arrays | `revoke_onboarding` | **Passou** — `onboarding_customer_ids` sem o cliente |
+| Escrita de utilizador pela via suportada | `adminUpdateUser` (nome e papel) | **Passou** — 200; papel inválido devolve 400 |
+| Break-glass retirado | botão, texto e diálogo em `/external-access`; lista de funções do backend | **Passou** — nenhum vestígio na página, `breakGlassAccess` já não é carregada, 0 pedidos falhados |
+| Saúde do frontend após as alterações | consola, rede, overlay, raiz | **Passou** — sem `vite-error-overlay`, raiz renderizada; só o ruído conhecido do websocket do SDK |
+
+**Não verificado nesta fase (limitação do ambiente local):**
+- O **RLS de escrita de `User`** não pode ser exercitado: o backend local semeia um único utilizador
+  (`role: admin`, que o RLS permite). A regra está declarada e o schema carrega, mas o bloqueio de uma
+  escrita de cliente por um papel não-admin não foi observado.
+- A **proibição de aprovação por `workspace_admin`** não foi exercitada por não existir localmente
+  uma identidade de parceiro; a verificação é por leitura de código.
+- O **diálogo de pedido de delegação** para o papel `consultant` (campo "Access until" obrigatório)
+  não foi verificado na UI — o limite de verificações de preview da sessão esgotou-se antes.
+- O fluxo de **assentos** (`CustomerSeatSection`) passou a invocar `adminUpdateUser`; a função foi
+  verificada por chamada direta, mas o clique na UI não foi exercitado (o backend local não cria
+  utilizadores, pelo que não há como listar/alterar um utilizador num cliente).
+- Ficaram registos de teste ("Teste Fase3/Exp/Onb", 3 clientes + 3 atribuições) na base de dados
+  **em memória** local: desaparecem em qualquer reinício ou mudança de schema.
 
 ### Descobertas de ambiente registadas
 

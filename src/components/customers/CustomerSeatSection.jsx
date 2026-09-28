@@ -140,7 +140,8 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
   const handleRemoveUser = async (userId, userName) => {
     setRemovingId(userId);
     try {
-      await base44.entities.User.update(userId, { customer_id: null });
+      const res = await base44.functions.invoke('adminUpdateUser', { userId, data: { customer_id: null } });
+      if (res.data?.error) throw new Error(res.data.error);
       toast.success(t('seat_user_removed').replace('{name}', userName).replace('{customer}', customer.name));
       invalidate();
     } catch {
@@ -166,7 +167,8 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
   const handleRoleChange = async (userId, newRole) => {
     setUpdatingRoleId(userId);
     try {
-      await base44.entities.User.update(userId, { role: newRole });
+      const res = await base44.functions.invoke('adminUpdateUser', { userId, data: { role: newRole } });
+      if (res.data?.error) throw new Error(res.data.error);
       toast.success(t('seat_role_updated'));
       invalidate();
     } catch {

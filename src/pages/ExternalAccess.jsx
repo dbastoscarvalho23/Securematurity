@@ -2,10 +2,12 @@
  * ExternalAccess — manage delegated user-to-customer access.
  *
  * Role-specific views:
- * - master_admin:    Break-glass banner, all assignments, break-glass/onboarding/delegation buttons
- * - workspace_admin: Onboarding/delegation buttons, authorized tenants
+ * - master_admin:    All assignments, pending approvals, onboarding button
+ * - workspace_admin: Onboarding button, authorized tenants
  * - customer_admin:  Pending requests (approve/reject), active onboarding (accept/revoke), active delegations (revoke)
  * - consultant:      Authorized tenants or empty state, request delegation button
+ *
+ * Break-glass/support access is out of the Core MVP scope.
  */
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -15,7 +17,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { normalizeRole } from '@/lib/rbac';
 import {
   Network, Plus, ShieldOff, ShieldCheck, Loader2, UserCog,
-  ShieldAlert, UserPlus, Clock, Check, X, KeyRound, AlertTriangle,
+  UserPlus, Clock, Check, X,
 } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,21 +31,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import EmptyState from '@/components/shared/EmptyState';
 import { toast } from 'sonner';
 import {
-  listAssignments, listBreakGlass,
+  listAssignments,
   requestDelegation, approveDelegation, rejectDelegation, revokeDelegation,
   createOnboarding, acceptOnboarding, revokeOnboarding,
-  startBreakGlass, endBreakGlass,
   DELEGATION_ROLES, STATUS_BADGES,
 } from '@/lib/delegation';
 
 // ─── Status badge ──────────────────────────────────────────────
 function StatusBadge({ status, assignmentType }) {
-  let variant = STATUS_BADGES[status]?.variant || 'secondary';
+  const variant = STATUS_BADGES[status]?.variant || 'secondary';
   let label = STATUS_BADGES[status]?.label || status;
-  if (assignmentType === 'breakglass' && status === 'active') {
-    variant = 'destructive';
-    label = 'Break-Glass';
-  }
   if (assignmentType === 'onboarding' && status === 'pending') {
     label = 'Onboarding';
   }
@@ -58,20 +55,29 @@ function OrgBadge({ isLegacy }) {
 
 // ─── Delegation Request Dialog ──────────────────────────────────
 function DelegationRequestDialog({ open, onOpenChange, customers }) {
-  const [form, setForm] = useState({ customer_id: '', access_level: 'viewer', reason: '' });
+  const defaultExpiry = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().slice(0, 16);
+  };
+  const emptyForm = { customer_id: '', access_level: 'viewer', expires_at: defaultExpiry(), reason: '' };
+  const [form, setForm] = useState(emptyForm);
   const queryClient = useQueryClient();
+
+  const canSubmit = form.customer_id && form.expires_at && form.reason.trim();
 
   const mutation = useMutation({
     mutationFn: () => requestDelegation({
       customerId: form.customer_id,
       customerName: customers.find(c => c.id === form.customer_id)?.name || '',
       accessLevel: form.access_level,
+      expiresAt: new Date(form.expires_at).toISOString(),
       reason: form.reason,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['external-access'] });
       onOpenChange(false);
-      setForm({ customer_id: '', access_level: 'viewer', reason: '' });
+      setForm(emptyForm);
       toast.success('Delegation request sent');
     },
     onError: (err) => toast.error(err?.message || 'Failed to request delegation'),
@@ -107,13 +113,18 @@ function DelegationRequestDialog({ open, onOpenChange, customers }) {
             </Select>
           </div>
           <div className="space-y-1.5">
+            <Label>Access until (required)</Label>
+            <Input type="datetime-local" value={form.expires_at} onChange={e => setForm(prev => ({ ...prev, expires_at: e.target.value }))} />
+            <p className="text-xs text-muted-foreground">Delegations are time-boxed — the customer admin must approve the request before it takes effect.</p>
+          </div>
+          <div className="space-y-1.5">
             <Label>Reason</Label>
             <Textarea value={form.reason} onChange={e => setForm(prev => ({ ...prev, reason: e.target.value }))} placeholder="Justification for access request" rows={3} />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !form.customer_id}>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !canSubmit}>
             {mutation.isPending ? 'Sending...' : 'Send Request'}
           </Button>
         </DialogFooter>
@@ -124,7 +135,8 @@ function DelegationRequestDialog({ open, onOpenChange, customers }) {
 
 // ─── Onboarding Dialog ──────────────────────────────────────────
 function OnboardingDialog({ open, onOpenChange, users, customers }) {
-  const [form, setForm] = useState({ user_id: '', customer_id: '', access_level: 'contributor', expires_at: '', reason: '' });
+  const emptyForm = { user_id: '', customer_id: '', reason: '' };
+  const [form, setForm] = useState(emptyForm);
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -133,14 +145,12 @@ function OnboardingDialog({ open, onOpenChange, users, customers }) {
       userEmail: users.find(u => u.id === form.user_id)?.email || '',
       customerId: form.customer_id,
       customerName: customers.find(c => c.id === form.customer_id)?.name || '',
-      accessLevel: form.access_level,
-      expiresAt: form.expires_at ? new Date(form.expires_at).toISOString() : null,
       reason: form.reason,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['external-access'] });
       onOpenChange(false);
-      setForm({ user_id: '', customer_id: '', access_level: 'contributor', expires_at: '', reason: '' });
+      setForm(emptyForm);
       toast.success('Onboarding created');
     },
     onError: (err) => toast.error(err?.message || 'Failed to create onboarding'),
@@ -171,20 +181,8 @@ function OnboardingDialog({ open, onOpenChange, users, customers }) {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
-            <Label>Access Level</Label>
-            <Select value={form.access_level} onValueChange={v => setForm(prev => ({ ...prev, access_level: v }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(DELEGATION_ROLES).map(([key, { label }]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Expires At (optional)</Label>
-            <Input type="datetime-local" value={form.expires_at} onChange={e => setForm(prev => ({ ...prev, expires_at: e.target.value }))} />
+          <div className="rounded-lg bg-muted/40 border p-3 text-xs text-muted-foreground">
+            Onboarding covers account set-up only. It does not grant access to the customer's compliance data — that requires a time-boxed delegation approved by the customer.
           </div>
           <div className="space-y-1.5">
             <Label>Reason</Label>
@@ -195,71 +193,6 @@ function OnboardingDialog({ open, onOpenChange, users, customers }) {
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !form.user_id || !form.customer_id}>
             {mutation.isPending ? 'Creating...' : 'Create Onboarding'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ─── Break-Glass Dialog ─────────────────────────────────────────
-function BreakGlassDialog({ open, onOpenChange, customers }) {
-  const [form, setForm] = useState({ customer_id: '', duration_hours: 1, reason: '' });
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: () => startBreakGlass({
-      customerId: form.customer_id,
-      customerName: customers.find(c => c.id === form.customer_id)?.name || '',
-      durationHours: parseInt(form.duration_hours),
-      reason: form.reason,
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['external-access'] });
-      queryClient.invalidateQueries({ queryKey: ['breakglass'] });
-      onOpenChange(false);
-      setForm({ customer_id: '', duration_hours: 1, reason: '' });
-      toast.success('Break-glass access activated');
-    },
-    onError: (err) => toast.error(err?.message || 'Failed to start break-glass'),
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-destructive" />
-            Break-Glass Access
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 text-sm text-destructive">
-            <p className="font-medium">Emergency access only</p>
-            <p className="text-xs mt-1">This will grant temporary admin access to the customer's compliance data. Customer admins will be notified. All actions are audit-logged.</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Customer</Label>
-            <Select value={form.customer_id} onValueChange={v => setForm(prev => ({ ...prev, customer_id: v }))}>
-              <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
-              <SelectContent>
-                {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Duration (1-8 hours)</Label>
-            <Input type="number" min={1} max={8} value={form.duration_hours} onChange={e => setForm(prev => ({ ...prev, duration_hours: e.target.value }))} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Reason (required)</Label>
-            <Textarea value={form.reason} onChange={e => setForm(prev => ({ ...prev, reason: e.target.value }))} placeholder="Emergency justification" rows={3} />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button variant="destructive" onClick={() => mutation.mutate()} disabled={mutation.isPending || !form.customer_id || !form.reason}>
-            {mutation.isPending ? 'Activating...' : 'Activate Break-Glass'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -300,19 +233,11 @@ export default function ExternalAccess() {
 
   const [delegationDialog, setDelegationDialog] = useState(false);
   const [onboardingDialog, setOnboardingDialog] = useState(false);
-  const [breakGlassDialog, setBreakGlassDialog] = useState(false);
 
   // Fetch assignments
   const { data: assignments = [], isLoading } = useQuery({
     queryKey: ['external-access', user?.id],
     queryFn: () => listAssignments({ userId: role === 'consultant' ? user?.id : undefined }),
-  });
-
-  // Fetch break-glass assignments (master_admin only)
-  const { data: breakGlassAssignments = [] } = useQuery({
-    queryKey: ['breakglass'],
-    queryFn: listBreakGlass,
-    enabled: role === 'master_admin',
   });
 
   // Fetch customers (for dialogs)
@@ -360,12 +285,6 @@ export default function ExternalAccess() {
     onError: (err) => toast.error(err?.message || 'Failed to revoke'),
   });
 
-  const endBreakGlassMut = useMutation({
-    mutationFn: endBreakGlass,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['breakglass'] }); queryClient.invalidateQueries({ queryKey: ['external-access'] }); toast.success('Break-glass ended'); },
-    onError: (err) => toast.error(err?.message || 'Failed to end break-glass'),
-  });
-
   // ─── Categorize assignments ─────────────────────────────────
   const pendingDelegations = assignments.filter(a => a.assignment_type === 'delegation' && a.status === 'pending');
   const activeDelegations = assignments.filter(a => a.assignment_type === 'delegation' && a.status === 'active');
@@ -378,9 +297,6 @@ export default function ExternalAccess() {
     const buttons = [];
     if (role === 'master_admin') {
       buttons.push(
-        <Button key="bg" variant="destructive" className="gap-2" onClick={() => setBreakGlassDialog(true)}>
-          <ShieldAlert className="w-4 h-4" /> Break-Glass
-        </Button>,
         <Button key="ob" variant="outline" className="gap-2" onClick={() => setOnboardingDialog(true)}>
           <UserPlus className="w-4 h-4" /> Onboard
         </Button>,
@@ -406,31 +322,6 @@ export default function ExternalAccess() {
   return (
     <div className="space-y-6">
       <PageHeader title={t('nav_external_access')} description={t('ea_subtitle')} actions={headerActions} />
-
-      {/* ─── Break-Glass Banner (master_admin only) ─────────────── */}
-      {role === 'master_admin' && breakGlassAssignments.length > 0 && (
-        <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-4">
-          <div className="flex items-center gap-3 mb-2">
-            <ShieldAlert className="w-5 h-5 text-destructive" />
-            <h3 className="font-semibold text-destructive">Active Break-Glass Sessions ({breakGlassAssignments.length})</h3>
-          </div>
-          <div className="space-y-2">
-            {breakGlassAssignments.map(bg => (
-              <div key={bg.id} className="flex items-center justify-between bg-card rounded-lg p-3">
-                <div>
-                  <p className="text-sm font-medium">{bg.customer_name || bg.customer_id}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Reason: {bg.reason} · Expires: {bg.expires_at ? new Date(bg.expires_at).toLocaleString() : 'N/A'}
-                  </p>
-                </div>
-                <Button size="sm" variant="destructive" className="gap-1.5" onClick={() => endBreakGlassMut.mutate(bg.id)} disabled={endBreakGlassMut.isPending}>
-                  <ShieldOff className="w-3.5 h-3.5" /> End
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ─── Summary Stats ──────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -465,7 +356,7 @@ export default function ExternalAccess() {
       ) : (
         <>
           {/* ─── Pending Delegation Requests (customer_admin) ──── */}
-          {role === 'customer_admin' && pendingDelegations.length > 0 && (
+          {(role === 'customer_admin' || role === 'master_admin') && pendingDelegations.length > 0 && (
             <Card>
               <CardContent className="p-0">
                 <div className="p-4 border-b"><h3 className="text-sm font-semibold flex items-center gap-2"><Clock className="w-4 h-4 text-amber-500" /> Pending Delegation Requests</h3></div>
@@ -577,7 +468,6 @@ export default function ExternalAccess() {
       {/* ─── Dialogs ─────────────────────────────────────────────── */}
       <DelegationRequestDialog open={delegationDialog} onOpenChange={setDelegationDialog} customers={customers} />
       <OnboardingDialog open={onboardingDialog} onOpenChange={setOnboardingDialog} users={users} customers={customers} />
-      <BreakGlassDialog open={breakGlassDialog} onOpenChange={setBreakGlassDialog} customers={customers} />
     </div>
   );
 }

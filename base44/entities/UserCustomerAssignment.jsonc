@@ -24,7 +24,7 @@
     },
     "assignment_type": {
       "type": "string",
-      "enum": ["delegation", "onboarding", "breakglass"],
+      "enum": ["delegation", "onboarding"],
       "default": "delegation",
       "description": "Type of access assignment"
     },
