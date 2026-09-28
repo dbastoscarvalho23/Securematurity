@@ -492,6 +492,14 @@ async function buildPricePatch(base44: any, body: any, { requireOffer }: { requi
     patch.entries = entries.entries;
   }
 
+  // Preço dos packs (FM2). É opcional: uma tabela pode não preçar pack nenhum
+  // (o pack existe na oferta, mas ainda não tem valor nesta versão).
+  if (body.addon_entries !== undefined) {
+    const addonEntries = normalizeAddonEntries(body.addon_entries);
+    if (addonEntries.error) return { error: addonEntries.error, patch: null };
+    if (addonEntries.addon_entries !== undefined) patch.addon_entries = addonEntries.addon_entries;
+  }
+
   if (body.effective_from !== undefined) patch.effective_from = body.effective_from || null;
   if (body.effective_to !== undefined) patch.effective_to = body.effective_to || null;
   if (body.notes !== undefined) patch.notes = body.notes || "";

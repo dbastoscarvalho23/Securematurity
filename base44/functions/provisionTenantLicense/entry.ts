@@ -17,6 +17,7 @@ import {
 } from "../../shared/licenseGuard.ts";
 import {
   addonCatalogueCodes,
+  addonForSale,
   addonIncludedAiCalls,
   addonPriceEntryFor,
   offerVersionInForce,
@@ -1237,6 +1238,22 @@ async function setAddon(base44: any, user: any, customer: any, body: any) {
   const nowIso = new Date().toISOString();
   const { version, table } = await offerAndPrice(base44, subscription, at);
   const entry = addonPriceEntryFor(table, addonCode);
+
+  // A decisão comercial da oferta manda na contratação: um pack que a versão em
+  // vigor não põe à venda não se contrata (a retirada é sempre possível, para
+  // nenhum cliente ficar preso ao que deixou de estar à venda). Sem oferta
+  // publicada não há decisão para consultar e o pack contrata-se na mesma — o
+  // registo comercial não é condição para provisionar (FM2.7).
+  if (active && version && !addonForSale(version, addonCode)) {
+    return Response.json(
+      {
+        error: `O pack ${addonName(addonCode)} não está à venda na oferta vigente.`,
+        code: "addon_not_for_sale",
+        offer_version_code: version.code || "",
+      },
+      { status: 422 },
+    );
+  }
 
   const beforeState = await licenseState(base44, customer.id);
   const modules = modulesForAddon(addonCode);

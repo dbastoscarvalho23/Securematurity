@@ -550,8 +550,46 @@ export async function runApiSuite(report) {
       : { ok: false, detail: `oferta inesperada: ${JSON.stringify({ n: tiers.length, core }).slice(0, 160)}` };
   });
 
+  // Preço dos packs da tabela de verificação: o campo que a escrita descartava
+  // (ver FM2.8) e que a publicação tem de preservar.
+  const packEntries = [{ addon_code: "privacy", amount_cents: 4900, included_ai_calls: 500 }];
+
+  await report.case("FM1.4", area7, "a decisão comercial sobre os packs fica registada na versão da oferta", async () => {
+    const res = await offer({
+      action: "update_offer_version",
+      id: offerD1,
+      addons: [
+        { addon_code: "privacy", commercially_available: true },
+        { addon_code: "risk", commercially_available: false },
+        { addon_code: "suppliers", commercially_available: false },
+      ],
+      reason: "Decisão comercial sobre os packs",
+    });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const addons = res.data.offer_version.addons || [];
+    const privacy = addons.find((row) => row.addon_code === "privacy") || {};
+    const risk = addons.find((row) => row.addon_code === "risk") || {};
+    // Os módulos vêm do catálogo de código: a versão decide se o pack está à
+    // venda, nunca o que ele abre.
+    const recorded = addons.length === 3 &&
+      privacy.commercially_available === true &&
+      (privacy.modules || []).includes("privacy") &&
+      risk.commercially_available === false;
+
+    const refused = await offer({
+      action: "update_offer_version",
+      id: offerD1,
+      addons: [{ addon_code: "inexistente", commercially_available: true }],
+      reason: "Pack fora do catálogo",
+    });
+    if (!recorded || refused.status !== 422) {
+      return { ok: false, detail: JSON.stringify({ recorded, refused: refused.status, addons }).slice(0, 200) };
+    }
+    return { ok: true, detail: "200 — privacidade à venda com os módulos do catálogo, restantes retidos; 422 para um pack fora do catálogo" };
+  });
+
   await report.case("FM2.1", area7, "publicar preço de uma oferta ainda em rascunho é recusado com 422", async () => {
-    const created = await offer({ action: "create_price_table", offer_version_id: offerD1, label: "Preços de verificação A", currency: "EUR", billing_period: "monthly", entries: priceEntries, reason: "Preço inicial" });
+    const created = await offer({ action: "create_price_table", offer_version_id: offerD1, label: "Preços de verificação A", currency: "EUR", billing_period: "monthly", entries: priceEntries, addon_entries: packEntries, reason: "Preço inicial" });
     if (created.status !== 200) return statusOf(created, 200, "criação da tabela");
     priceA = created.data.price_table.id;
     const res = await offer({ action: "publish_price_table", id: priceA, reason: "Tentativa antes de a oferta vigorar" });
@@ -578,6 +616,73 @@ export async function runApiSuite(report) {
       : { ok: false, detail: `esperado publicada: ${JSON.stringify(table).slice(0, 140)}` };
   });
 
+  await report.case("FM2.8", area7, "o preço do pack persiste na tabela e entra no histórico", async () => {
+    // O caminho de escrita do preço do pack esteve desligado: `normalizeAddonEntries`
+    // existia e nunca era chamada, pelo que `addon_entries` era aceite no corpo do
+    // pedido e descartado pelo validador da entidade (campo declarado, nunca
+    // preenchido) — a consola mostrava a tabela sem preço de pack nenhum e sem
+    // erro nenhum. Este caso é a guarda dessa regressão: o preço tem de voltar na
+    // tabela publicada, o pack fora do catálogo tem de ser recusado e o campo
+    // alterado tem de aparecer no antes/depois do histórico.
+    const view = await offer({ action: "overview" });
+    const table = (view.data.price_tables || []).find((row) => row.id === priceA) || {};
+    const pack = (table.addon_entries || []).find((row) => row.addon_code === "privacy") || {};
+    if (!(pack.amount_cents === 4900 && pack.included_ai_calls === 500)) {
+      return { ok: false, detail: `o preço do pack não persistiu: ${JSON.stringify(table.addon_entries).slice(0, 160)}` };
+    }
+
+    const refused = await offer({
+      action: "create_price_table",
+      offer_version_id: offerD1,
+      label: "Preços de verificação (pack fora do catálogo)",
+      currency: "EUR",
+      billing_period: "monthly",
+      entries: priceEntries,
+      addon_entries: [{ addon_code: "inexistente", amount_cents: 100 }],
+      reason: "Pack fora do catálogo",
+    });
+    if (refused.status !== 422) {
+      return { ok: false, detail: `esperado 422 para um pack fora do catálogo, obtido ${refused.status}` };
+    }
+
+    // A edição do preço de um pack num rascunho, e o campo que o histórico
+    // nomeia por pack. Um registo de criação muda `["*"]` (o registo inteiro),
+    // pelo que é na edição que o antes/depois tem de nomear `addon_price:<código>`.
+    const draft = await offer({
+      action: "create_price_table",
+      offer_version_id: offerD1,
+      label: "Preços de verificação (packs)",
+      currency: "EUR",
+      billing_period: "monthly",
+      entries: priceEntries,
+      addon_entries: [
+        { addon_code: "privacy", amount_cents: 4900, included_ai_calls: 500 },
+        { addon_code: "risk", amount_cents: 5900, included_ai_calls: 800 },
+      ],
+      reason: "Preço dos packs em rascunho",
+    });
+    if (draft.status !== 200) return statusOf(draft, 200, "rascunho com preço de pack");
+
+    const edited = await offer({
+      action: "update_price_table",
+      id: draft.data.price_table.id,
+      addon_entries: [{ addon_code: "suppliers", amount_cents: 6900, included_ai_calls: 900 }],
+      reason: "Ajuste do preço do pack",
+    });
+    if (edited.status !== 200) return statusOf(edited, 200, "edição do preço do pack");
+    const kept = (edited.data.price_table.addon_entries || []).map((row) => row.addon_code);
+    if (!(kept.length === 1 && kept[0] === "suppliers")) {
+      return { ok: false, detail: `a edição não substituiu o preço do pack: ${JSON.stringify(kept)}` };
+    }
+
+    const history = await offer({ action: "history", entity_type: "PriceTable", change_action: "update", limit: 50 });
+    const fields = (history.data.entries || []).flatMap((entry) => entry.changed_fields || []);
+    const named = ["addon_price:privacy", "addon_price:risk", "addon_price:suppliers"].every((field) => fields.includes(field));
+    return named
+      ? { ok: true, detail: "200 — preço do pack na tabela publicada e na edição, campos addon_price:* no antes/depois; 422 fora do catálogo" }
+      : { ok: false, detail: `o histórico não nomeou os campos do pack: ${JSON.stringify(fields.slice(0, 12))}` };
+  });
+
   await report.case("FM2.3", area7, "o provisionamento regista na subscrição a oferta e o preço vigentes", async () => {
     const res = await invoke("provisionTenantLicense", {
       actor: ids.master_admin,
@@ -589,6 +694,37 @@ export async function runApiSuite(report) {
     return ok
       ? { ok: true, detail: `200 — subscrição com ${sub.offer_version_code}, tabela e ${sub.price_amount_cents} cêntimos do tier advanced` }
       : { ok: false, detail: `registo inesperado: ${JSON.stringify({ v: sub.offer_version_code, t: sub.price_table_id, c: sub.price_amount_cents }).slice(0, 160)}` };
+  });
+
+  await report.case("FM1.5", area7, "só se contrata o pack que a oferta em vigor põe à venda", async () => {
+    // A decisão comercial da versão passa a ter efeito operacional: o pack que ela
+    // marca como comercializável abre os seus módulos no cliente e fica registado
+    // na subscrição com o preço da tabela em vigor; um pack que a oferta não vende
+    // é recusado com 422 `addon_not_for_sale`. Retirar é sempre possível — nenhum
+    // cliente fica preso a um pack que saiu da oferta.
+    const grant = (addonCode, active, reason) =>
+      invoke("provisionTenantLicense", {
+        actor: ids.master_admin,
+        body: { action: "set_addon", customer_id: tenants.tenant_alfa, addon_code: addonCode, active, reason },
+      });
+
+    const granted = await grant("privacy", true, "Contratação do pack de privacidade");
+    if (granted.status !== 200) return statusOf(granted, 200, "contratação do pack à venda");
+    const row = (granted.data.subscription?.addons || []).find((addon) => addon.addon_code === "privacy") || {};
+    const opened = hasModule(granted.data.license, "privacy");
+
+    const refused = await grant("risk", true, "Contratação de um pack fora da oferta");
+    const revoked = await grant("privacy", false, "Fim do pack de privacidade");
+    const closed = revoked.status === 200 && !hasModule(revoked.data.license, "privacy");
+
+    if (!opened || row.status !== "active" || row.amount_cents !== 4900 || refused.status !== 422 ||
+      refused.data?.code !== "addon_not_for_sale" || !closed) {
+      return {
+        ok: false,
+        detail: JSON.stringify({ opened, row, refused: refused.status, code: refused.data?.code, closed }).slice(0, 220),
+      };
+    }
+    return { ok: true, detail: "200 — pack à venda aberto com o preço da tabela (4900) e retirado depois; 422 addon_not_for_sale para o restante" };
   });
 
   await report.case("FM1.3", area7, "publicar uma versão nova retira a anterior com data de fim", async () => {

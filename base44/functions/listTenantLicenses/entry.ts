@@ -13,7 +13,7 @@ import {
   modulesForAddon,
   getEffectiveLicense,
 } from "../../shared/licenseGuard.ts";
-import { OFFER_ADDON_CODES } from "../../shared/commercialOffer.ts";
+import { OFFER_ADDON_CODES, addonForSale, offerVersionInForce } from "../../shared/commercialOffer.ts";
 
 /**
  * listTenantLicenses — a leitura que o painel de provisionamento (FB1) precisa.
@@ -47,6 +47,11 @@ Deno.serve(async (req) => {
     const moduleCatalogue = await base44.asServiceRole.entities.LicenseModule.list("display_order", 100);
     const moduleNames = new Map(moduleCatalogue.map((m: any) => [m.code, m.name]));
     const standardCatalogue = await base44.asServiceRole.entities.LicenseStandard.list("code", 50);
+
+    // A oferta em vigor diz quais dos packs do catálogo estão à venda: é essa a
+    // decisão comercial que o painel mostra e a que `set_addon` obedece.
+    const offerVersions = await base44.asServiceRole.entities.OfferVersion.list("-created_date", 200);
+    const offerVersion = offerVersionInForce(offerVersions || [], new Date().toISOString().split("T")[0]);
 
     const tenants = [];
     for (const customer of scoped) {
@@ -97,15 +102,19 @@ Deno.serve(async (req) => {
         commercially_available: COMMERCIALLY_AVAILABLE_TIERS,
         modules: moduleCatalogue.map((m: any) => ({ code: m.code, name: m.name || moduleNames.get(m.code) || m.code })),
         standards: standardCatalogue.map((s: any) => ({ code: s.code, name: s.name || s.code })),
-        // Packs do catálogo de código: o painel mostra-os com os módulos que abrem.
+        // Packs do catálogo de código: o painel mostra-os com os módulos que abrem
+        // e diz quais a oferta em vigor põe à venda (`for_sale`) — os restantes
+        // existem no código mas não se contratam.
         addons: OFFER_ADDON_CODES.map((code) => ({
           code,
           name: addonName(code),
+          for_sale: addonForSale(offerVersion, code) !== null,
           modules: modulesForAddon(code).map((moduleCode: string) => ({
             code: moduleCode,
             name: moduleNames.get(moduleCode) || moduleCode,
           })),
         })),
+        offer_version_code: offerVersion?.code || null,
       },
     });
   } catch (error) {

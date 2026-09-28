@@ -67,6 +67,9 @@ export default function TenantLicensePanel() {
   const modules = data?.catalogue?.modules || [];
   const standards = data?.catalogue?.standards || [];
   const packs = data?.catalogue?.addons || [];
+  // Só se contrata o que a oferta em vigor põe à venda (`for_sale`): os restantes
+  // packs existem no catálogo de código mas não estão comercializados.
+  const sellablePacks = packs.filter((pack) => pack.for_sale);
 
   const mutation = useMutation({
     mutationFn: (payload) => base44.functions.invoke('provisionTenantLicense', payload),
@@ -102,7 +105,7 @@ export default function TenantLicensePanel() {
       standard_code: standards[0]?.code || '',
       standard_active: true,
       expires_at: '',
-      addon_code: packs[0]?.code || '',
+      addon_code: sellablePacks[0]?.code || '',
       addon_active: true,
     });
     setDialog(kind);
@@ -148,6 +151,11 @@ export default function TenantLicensePanel() {
     };
     mutation.mutate(payloads[dialog]);
   };
+
+  // Packs do diálogo: os que a oferta em vigor vende, mais os que este cliente já
+  // tem contratado — um pack que saiu da oferta continua a poder ser retirado.
+  const contractedAddonCodes = new Set((form.tenant?.addons || []).map((addon) => addon.addon_code));
+  const addonChoices = packs.filter((pack) => pack.for_sale || contractedAddonCodes.has(pack.code));
 
   if (isLoading) {
     return <Card><CardContent className="p-0"><LoadingState label={t('licensing_provision_loading')} className="py-12" /></CardContent></Card>;
@@ -275,7 +283,7 @@ export default function TenantLicensePanel() {
                             <ListChecks className="w-3 h-3" /> {t('licensing_provision_standards')}
                           </Button>
                         )}
-                        {tenant.subscription && packs.length > 0 && (
+                        {tenant.subscription && (sellablePacks.length > 0 || (tenant.addons || []).length > 0) && (
                           <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openDialog('addon', tenant)}>
                             <Package className="w-3 h-3" /> {t('licensing_provision_addon')}
                           </Button>
@@ -470,7 +478,7 @@ export default function TenantLicensePanel() {
                   <Select value={form.addon_code} onValueChange={(value) => setForm((f) => ({ ...f, addon_code: value }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {packs.map((pack) => (
+                      {addonChoices.map((pack) => (
                         <SelectItem key={pack.code} value={pack.code}>
                           {addonLabel(pack.code, t)} · {(pack.modules || []).map((module) => module.name).join(' · ')}
                         </SelectItem>
