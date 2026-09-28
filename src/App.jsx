@@ -127,6 +127,7 @@ const AuthenticatedApp = () => {
           <Route path="/user-assignments" element={<RouteGuard path="/user-assignments"><UserAssignments /></RouteGuard>} />
           <Route path="/strategic-report" element={<RouteGuard path="/strategic-report"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><StrategicReport /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/knowledge-base" element={<RouteGuard path="/knowledge-base"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense></ErrorBoundary></RouteGuard>} />
+          <Route path="/knowledge-base/:slug" element={<RouteGuard path="/knowledge-base"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/policy-attestation" element={<RouteGuard path="/policy-attestation"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><PolicyAttestation /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/external-access" element={<RouteGuard path="/external-access"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><ExternalAccess /></Suspense></ErrorBoundary></RouteGuard>} />
         </Route>

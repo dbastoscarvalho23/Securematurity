@@ -137,7 +137,7 @@ Preservar (não copiar da origem, mas manter aqui): armazenamento cloud
 | 4 | Catálogo de 3 tiers e ativação comercial só do Core | **Concluída** — ver evidências na secção 9 |
 | 5 | Administração consolidada (página Licenciamento real; aviso separado) | **Concluída** — ver evidências na secção 9 |
 | 6 | Jornada Core NIS2 completa (avaliações com cálculo no servidor, lacunas, ações) | **Concluída** — conclusão/reabertura, análise de lacunas e geração de ações no servidor (secção 9) |
-| 7 | Conteúdos, reporting e pacote de auditoria | Não iniciada |
+| 7 | Conteúdos, reporting e pacote de auditoria | **Concluída** — base de conhecimento editorial, pacote de auditoria congelado e integridade de evidências (secção 9) |
 | 8 | Testes de segurança, regressão, persistência e operação | Não iniciada |
 
 ---
@@ -174,6 +174,55 @@ Preservar (não copiar da origem, mas manter aqui): armazenamento cloud
 ---
 
 ## 9. Evidências de execução
+
+### Fase 7 — base de conhecimento editorial, pacote de auditoria e integridade de evidências (concluída)
+
+Alterações: `base44/entities/KnowledgeArticle.jsonc` e `base44/entities/AuditPackage.jsonc` (novas),
+`base44/entities/SecurityDocument.jsonc` / `DocumentVersion.jsonc` (`content_hash`, `review_note`),
+`base44/entities/AssessmentResponse.jsonc` / `Task.jsonc` (hashes de ficheiro anexado),
+`base44/shared/contentUtils.ts` (novo — papéis de curadoria, transições legais, auditoria),
+`base44/functions/seedKnowledgeBase/`, `base44/functions/transitionArticleStatus/`,
+`base44/functions/generateAuditPackage/`, `base44/functions/reviewDocument/`,
+`src/lib/fileHash.js` (SHA-256 no cliente), `src/lib/kbFrameworks.js`, `src/lib/useKnowledgeArticles.js`,
+`src/pages/KnowledgeBase.jsx` (catálogo + detalhe + separador editorial),
+`src/components/knowledge/ArticleEditorialPanel.jsx`, `src/pages/AuditPackage.jsx`,
+rota `/knowledge-base/:slug` em `src/App.jsx`, integração em RBAC/licenças/sidebar.
+
+A escrita do catálogo é **só no servidor**: `KnowledgeArticle` não tem RLS de escrita por tenant
+(o catálogo é transversal à plataforma), pelo que toda a mutação passa por `transitionArticleStatus`
+(estado nunca vem do corpo; `save` de um artigo publicado reenvia-o para revisão em vez de o
+substituir em silêncio) e por `seedKnowledgeBase`. O pacote de auditoria é **congelado**: 
+`generateAuditPackage` monta âmbito (âmbito), índice, versões, controlos, evidências (com hash) e
+decisões num único registo imutável depois de `finalize`; a autorização reutiliza
+`authorizeAssessmentOperational` (papel do tenant ou delegação de edição aprovada e não expirada) e
+exige o módulo `reporting_audit_prep`.
+
+| Verificação | Método | Resultado |
+|---|---|---|
+| Semente idempotente do catálogo | `seedKnowledgeBase` | **Passou** — 20 artigos criados (8 `platform`, 12 `compliance`), `reused: 0` numa base limpa |
+| Fluxo editorial completo | `transitionArticleStatus`: `save` → `submit_review` → `publish` → `archive` → `restore` → `submit_review` → `reject` | **Passou** — `draft` → `in_review` → `published` → `archived` → `draft` → `in_review` → `draft` |
+| Transição ilegal recusada | `publish` sobre artigo já `published` | **Passou** — 409 `invalid_transition` |
+| Rejeição exige motivo | `reject` sem `note` | **Passou** — 400 `note_required` |
+| Pacote de auditoria gerado | `generateAuditPackage generate` (cliente Core + delegação de edição) | **Passou** — 200, pacote `draft` com âmbito, índice e quatro secções (versões, controlos, evidências, decisões) |
+| Pacote congelado | `generateAuditPackage finalize` (1.ª e 2.ª vez) | **Passou** — 200 `final`; segunda tentativa 409 `already_final` |
+| Pacote exige cliente | `generate` sem `customer_id` | **Passou** — 422 `customer_required` |
+| Catálogo no browser | `/knowledge-base`: 21 cartões, separador Editorial com etiquetas de estado e ações legais | **Passou** — "Rascunho"/"Publicado" e botões Publicar/Arquivar conforme o estado |
+| Ligação profunda do artigo | clique num cartão do catálogo | **Passou** — navega para `/knowledge-base/<slug>` e apresenta o detalhe (título + corpo) |
+| Saúde do frontend | consola, rede, overlay, raiz | **Passou** — 0 erros, 0 pedidos falhados, sem `vite-error-overlay` |
+
+**Não verificado nesta fase (limitação do ambiente local):**
+- A **geração do pacote pelo painel** (`src/pages/AuditPackage.jsx`) não foi exercitada por clique: o
+  papel local (`master_admin`) não é operacional por definição da matriz, pelo que o ecrã não está
+  acessível na sessão de pré-visualização; a função foi validada por chamada direta (com uma
+  delegação de edição criada para o efeito).
+- O **pacote com conteúdo real** (controlos, evidências e decisões) não foi observado ponta a ponta:
+  o pacote de teste saiu sem avaliação concluída, logo com as quatro secções vazias — a derivação
+  das secções a partir da avaliação ancora está verificada por leitura de código.
+- A **leitura do `AuditPackage` pelo browser** devolveu lista vazia por RLS (o registo é escrito com
+  o papel de serviço e o utilizador não tem o `customer_id` nos arrays desnormalizados); o registo
+  existe e é lido pelo servidor.
+- A **revisão de documentos** (`reviewDocument`, `content_hash`/`review_note`) foi implementada e os
+  schemas carregam, mas não foi exercitada por falta de um documento e de um papel operacional locais.
 
 ### Fase 6 — conclusão de avaliações no servidor (concluída)
 
@@ -339,8 +388,9 @@ autoridade de aprovação, onboarding sem acesso operacional), `base44/functions
 
 ### Descobertas de ambiente registadas
 
-- `getPlatformMetrics` mapeia `knowledge_article` → entidade `KnowledgeArticle`, **que não existe**
-  (erro 403/404 no arranque). Corrigir na Fase 7, com a entidade de artigos e o fluxo editorial.
+- **Resolvido na Fase 7:** `getPlatformMetrics` mapeia `knowledge_article` → entidade `KnowledgeArticle`,
+  que não existia (erro 403/404 no arranque). A entidade de artigos e o fluxo editorial foram criados
+  na Fase 7; a contagem responde 200.
 - **Resolvido na Fase 6:** o Dashboard consultava `IntegrationUsage` e `Risk`, entidades inexistentes
   (404 na consola). Passou a consultar `RiskItem` e `LicenseUsageRecord` (o contador mensal por cliente
   escrito por `enforceUsageLimit`); o widget de consumo de IA passou a listar clientes.
