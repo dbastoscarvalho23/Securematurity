@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Info, TriangleAlert, Wrench, X } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ function readDismissed() {
 
 export default function AnnouncementBanner() {
   const { t, language } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const [dismissed, setDismissed] = useState(readDismissed);
 
   const { data: announcements = [] } = useQuery({
@@ -43,7 +45,10 @@ export default function AnnouncementBanner() {
       const payload = result?.data || result;
       return payload?.announcements || [];
     },
-    refetchInterval: 60000,
+    // Sem sessão iniciada não há audiência a resolver — `active` responderia 401,
+    // pelo que a faixa não chega a pedir nada antes de haver utilizador.
+    enabled: isAuthenticated,
+    refetchInterval: 300000,
     staleTime: 30000,
   });
 
