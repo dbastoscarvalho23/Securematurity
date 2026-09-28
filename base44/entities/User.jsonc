@@ -39,50 +39,82 @@
     },
     "language": {
       "type": "string",
-      "enum": ["en", "pt"],
+      "enum": [
+        "en",
+        "pt"
+      ],
       "default": "en",
       "description": "Preferred UI language"
     },
     "delegated_view_customer_ids": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Customer IDs this user has delegated view access to (denormalized from UserCustomerAssignment)"
     },
     "delegated_edit_customer_ids": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Customer IDs this user has delegated edit access to (denormalized from UserCustomerAssignment)"
     },
     "onboarding_customer_ids": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Customer IDs this user is being onboarded to (denormalized from UserCustomerAssignment)"
     },
     "breakglass_customer_ids": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Reserved: break-glass/support access is out of the Core MVP scope and nothing writes this array"
     }
   },
-  "required": ["display_name", "customer_id", "customer_name"],
+  "required": [
+    "display_name",
+    "customer_id",
+    "customer_name"
+  ],
   "rls": {
     "create": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "read": {
       "$or": [
-        { "user_condition": { "role": "master_admin" } },
-        { "user_condition": { "role": "admin" } }
+        {
+          "user_condition": {
+            "role": "master_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "workspace_admin"
+          }
+        },
+        {
+          "id": "{{user.id}}"
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
       ]
     },
     "update": {
-      "$or": [
-        { "user_condition": { "role": "master_admin" } },
-        { "user_condition": { "role": "admin" } }
-      ]
+      "user_condition": {
+        "role": "master_admin"
+      }
     },
     "delete": {
-      "$or": [
-        { "user_condition": { "role": "master_admin" } },
-        { "user_condition": { "role": "admin" } }
-      ]
+      "user_condition": {
+        "role": "master_admin"
+      }
     }
   }
 }

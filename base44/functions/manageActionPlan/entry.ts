@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
 import { AssessmentError } from "../../shared/assessmentScoring.ts";
 import {
+  ASSESSMENT_MODULE,
   authorizeAssessmentOperational,
   assertAssessmentModuleLicensed,
   loadAssessmentQuestions,
@@ -58,7 +59,7 @@ async function loadContext(base44: any, user: any, body: any) {
   const assessment = await base44.asServiceRole.entities.Assessment.get(assessment_id);
   if (!assessment) throw new AssessmentError("not_found", "Assessment not found", 404);
 
-  const authorization = await authorizeAssessmentOperational(base44, user, assessment.customer_id);
+  const authorization = await authorizeAssessmentOperational(base44, user, assessment.customer_id, ASSESSMENT_MODULE);
   await assertAssessmentModuleLicensed(base44, assessment.customer_id);
 
   return { assessment, authorization };

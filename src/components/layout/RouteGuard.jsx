@@ -24,7 +24,7 @@ export default function RouteGuard({ path, children }) {
   const moduleCode = moduleForRoute(path);
 
   // Always call useQuery (Rules of Hooks) — only fetches for tenant users on module-gated routes
-  const { data: license } = useQuery({
+  const { data: license, isLoading: isLicenseLoading, isError: isLicenseError } = useQuery({
     queryKey: ['effective-license', user?.customer_id],
     queryFn: () => base44.functions.invoke('getEffectiveLicense', { customer_id: user.customer_id }),
     enabled: !!user?.customer_id && !isWorkspaceOrAbove(realRole) && !!moduleCode,
@@ -47,10 +47,23 @@ export default function RouteGuard({ path, children }) {
   // manage (Question DB, Knowledge Base) is not commercially gated for them.
   if (isWorkspaceOrAbove(effectiveRole)) return children;
 
-  if (!isModuleLicensed(license, moduleCode)) {
-    const reason = moduleDenialReason(license, moduleCode);
+  // Fail closed while the licence is unresolved: the module content is not
+  // rendered until the licence is known (F13).
+  if (isLicenseLoading) return <LicenseGatePlaceholder />;
+
+  if (isLicenseError || !isModuleLicensed(license, moduleCode)) {
+    const reason = isLicenseError ? 'license_unresolved' : moduleDenialReason(license, moduleCode);
     return <Navigate to="/license-unavailable" replace state={{ reason, module: moduleCode }} />;
   }
 
   return children;
+}
+
+/** Neutral placeholder shown while the licence is being resolved. */
+function LicenseGatePlaceholder() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]" aria-busy="true">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+    </div>
+  );
 }

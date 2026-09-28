@@ -1,5 +1,9 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
-import { normalizeRole, writeAccessAuditLog } from "../../shared/accessUtils.ts";
+import {
+  normalizeRole,
+  resolveScopeCustomerIds,
+  writeAccessAuditLog,
+} from "../../shared/accessUtils.ts";
 
 /**
  * adminUpdateUser — the only supported write path for User records.
@@ -40,7 +44,9 @@ Deno.serve(async (req) => {
     if (!currentUser) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const currentRole = normalizeRole(currentUser.role);
-    const isPlatformAdmin = currentRole === "master_admin" || currentRole === "workspace_admin";
+    const isOwner = currentRole === "master_admin";
+    const isPartner = currentRole === "workspace_admin";
+    const isPlatformAdmin = isOwner || isPartner;
 
     if (!isPlatformAdmin && currentRole !== "customer_admin") {
       return Response.json({ error: "Forbidden: admin access required" }, { status: 403 });
@@ -65,6 +71,33 @@ Deno.serve(async (req) => {
     const { role, full_name, display_name, customer_id, customer_name } = data;
 
     // ─── Authorization ─────────────────────────────────────────
+    // Nobody grants themselves a role or a tenant through this API (F6): the
+    // self-escalation guard comes before every other check, including the
+    // platform owner's.
+    if (userId === currentUser.id && (role !== undefined || customer_id !== undefined)) {
+      return Response.json(
+        { error: "Forbidden: you cannot change your own role or customer" },
+        { status: 403 },
+      );
+    }
+
+    // A partner admin assigns roles — but only tenant roles, and only to users
+    // inside its own carteira. Platform roles stay with the platform owner.
+    if (isPartner && !isOwner) {
+      if (role !== undefined && !TENANT_ROLES.includes(role)) {
+        return Response.json(
+          { error: "Forbidden: a partner admin cannot assign platform roles" },
+          { status: 403 },
+        );
+      }
+      if (target.customer_id) {
+        const scope = await resolveScopeCustomerIds(base44, currentUser);
+        if (!scope.all && !scope.customerIds.includes(target.customer_id)) {
+          return Response.json({ error: "Forbidden: user outside your carteira" }, { status: 403 });
+        }
+      }
+    }
+
     if (!isPlatformAdmin) {
       if (!currentUser.customer_id || target.customer_id !== currentUser.customer_id) {
         return Response.json({ error: "Forbidden: you can only edit users of your own customer" }, { status: 403 });

@@ -9,6 +9,7 @@ import {
   assertCompletionAllowed,
 } from "../../shared/assessmentScoring.ts";
 import {
+  ASSESSMENT_MODULE,
   authorizeAssessmentOperational,
   assertAssessmentModuleLicensed,
   loadAssessmentQuestions,
@@ -70,7 +71,7 @@ async function handleComplete(base44: any, user: any, body: any) {
   const assessment = await base44.asServiceRole.entities.Assessment.get(assessment_id);
   if (!assessment) return Response.json({ error: "Assessment not found" }, { status: 404 });
 
-  const authorization = await authorizeAssessmentOperational(base44, user, assessment.customer_id);
+  const authorization = await authorizeAssessmentOperational(base44, user, assessment.customer_id, ASSESSMENT_MODULE);
   await assertAssessmentModuleLicensed(base44, assessment.customer_id);
 
   if (assessment.status === "completed") {
@@ -150,7 +151,7 @@ async function handleReopen(base44: any, user: any, body: any) {
   const assessment = await base44.asServiceRole.entities.Assessment.get(assessment_id);
   if (!assessment) return Response.json({ error: "Assessment not found" }, { status: 404 });
 
-  const authorization = await authorizeAssessmentOperational(base44, user, assessment.customer_id);
+  const authorization = await authorizeAssessmentOperational(base44, user, assessment.customer_id, ASSESSMENT_MODULE);
 
   if (assessment.status !== "completed") {
     return Response.json(

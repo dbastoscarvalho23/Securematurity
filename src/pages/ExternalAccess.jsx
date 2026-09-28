@@ -28,7 +28,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import EmptyState from '@/components/shared/EmptyState';
+import { MODULE_META } from '@/lib/licenseModules';
 import { toast } from 'sonner';
 import {
   listAssignments,
@@ -60,17 +62,18 @@ function DelegationRequestDialog({ open, onOpenChange, customers }) {
     d.setDate(d.getDate() + 30);
     return d.toISOString().slice(0, 16);
   };
-  const emptyForm = { customer_id: '', access_level: 'viewer', expires_at: defaultExpiry(), reason: '' };
+  const emptyForm = { customer_id: '', access_level: 'viewer', expires_at: defaultExpiry(), authorized_modules: [], reason: '' };
   const [form, setForm] = useState(emptyForm);
   const queryClient = useQueryClient();
 
-  const canSubmit = form.customer_id && form.expires_at && form.reason.trim();
+  const canSubmit = form.customer_id && form.expires_at && form.reason.trim() && form.authorized_modules.length > 0;
 
   const mutation = useMutation({
     mutationFn: () => requestDelegation({
       customerId: form.customer_id,
       customerName: customers.find(c => c.id === form.customer_id)?.name || '',
       accessLevel: form.access_level,
+      authorizedModules: form.authorized_modules,
       expiresAt: new Date(form.expires_at).toISOString(),
       reason: form.reason,
     }),
@@ -111,6 +114,30 @@ function DelegationRequestDialog({ open, onOpenChange, customers }) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Authorized modules (at least one)</Label>
+            <div className="grid gap-2 rounded-lg border p-3">
+              {Object.entries(MODULE_META).map(([code, meta]) => (
+                <label key={code} className="flex items-start gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={form.authorized_modules.includes(code)}
+                    onCheckedChange={(checked) => setForm(prev => ({
+                      ...prev,
+                      authorized_modules: checked
+                        ? [...prev.authorized_modules, code]
+                        : prev.authorized_modules.filter(c => c !== code),
+                    }))}
+                    className="mt-0.5"
+                  />
+                  <span className="flex flex-col">
+                    <span>{meta.name}</span>
+                    <span className="text-xs text-muted-foreground">{meta.description}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">A delegation authorises only the modules selected here — an empty selection would grant no module at all.</p>
           </div>
           <div className="space-y-1.5">
             <Label>Access until (required)</Label>

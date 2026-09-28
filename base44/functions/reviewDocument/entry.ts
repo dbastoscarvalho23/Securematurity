@@ -110,7 +110,10 @@ Deno.serve(async (req) => {
   }
 });
 
-/** Own tenant with an operating role, or an approved non-expired edit delegation. */
+/**
+ * Own tenant with an operating role, or an approved non-expired edit delegation
+ * that names this module.
+ */
 async function resolveAuthority(base44: any, user: any, customerId: string, requiresApprover: boolean) {
   if (!customerId) throw new ReviewError("customer_required", "O documento não tem cliente associado.", 422);
 
@@ -143,7 +146,11 @@ async function resolveAuthority(base44: any, user: any, customerId: string, requ
     return sameUser && a.assignment_type === "delegation" && a.status === "active" && live;
   });
 
-  if (active && (active.access_level === "admin" || active.access_level === "contributor")) {
+  // The delegation must name this module: an empty authorized_modules list means
+  // no module, never "every module" (F4).
+  const coversModule = !!active && (active.authorized_modules || []).includes(MODULE);
+
+  if (active && coversModule && (active.access_level === "admin" || active.access_level === "contributor")) {
     if (requiresApprover && active.access_level !== "admin") {
       throw new ReviewError("forbidden", "A aprovação exige delegação de administração.", 403);
     }

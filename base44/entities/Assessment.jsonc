@@ -43,7 +43,10 @@
       "default": "draft"
     },
     "overall_score": {
-      "type": ["number", "null"],
+      "type": [
+        "number",
+        "null"
+      ],
       "description": "Overall maturity score (0-5). Null while the assessment is not completed (cleared on reopen)"
     },
     "framework_scores": {
@@ -76,7 +79,10 @@
       }
     },
     "completed_date": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date"
     },
     "assessor_email": {
@@ -87,11 +93,17 @@
       "type": "string"
     },
     "completed_by": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "description": "Email of the user who completed the assessment (set by completeAssessment, cleared on reopen)"
     },
     "completion_type": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "enum": [
         "full_coverage",
         "partial_coverage",
@@ -100,34 +112,71 @@
       "description": "Whether every question was resolved or the assessment was closed with pending questions (cleared on reopen)"
     },
     "coverage": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "description": "Server-computed coverage (kept separate from the score), cleared on reopen",
       "properties": {
-        "total_questions": { "type": "number" },
-        "answered": { "type": "number" },
-        "not_applicable": { "type": "number" },
-        "unanswered": { "type": "number" },
-        "resolved": { "type": "number" },
-        "coverage_pct": { "type": "number" },
-        "scored_coverage_pct": { "type": "number" }
+        "total_questions": {
+          "type": "number"
+        },
+        "answered": {
+          "type": "number"
+        },
+        "not_applicable": {
+          "type": "number"
+        },
+        "unanswered": {
+          "type": "number"
+        },
+        "resolved": {
+          "type": "number"
+        },
+        "coverage_pct": {
+          "type": "number"
+        },
+        "scored_coverage_pct": {
+          "type": "number"
+        }
       }
     },
     "methodology": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "description": "Methodology snapshot: scoring model, framework versions, questions and weights actually used (cleared on reopen)",
       "properties": {
-        "scoring_model": { "type": "string" },
-        "captured_at": { "type": "string" },
-        "questions_count": { "type": "number" },
-        "weight_total": { "type": "number" },
-        "scale_max": { "type": "number" },
+        "scoring_model": {
+          "type": "string"
+        },
+        "captured_at": {
+          "type": "string"
+        },
+        "questions_count": {
+          "type": "number"
+        },
+        "weight_total": {
+          "type": "number"
+        },
+        "scale_max": {
+          "type": "number"
+        },
         "framework_versions": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
-              "code": { "type": "string" },
-              "version": { "type": ["string", "null"] }
+              "code": {
+                "type": "string"
+              },
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             }
           }
         },
@@ -136,11 +185,30 @@
           "items": {
             "type": "object",
             "properties": {
-              "question_id": { "type": "string" },
-              "framework_code": { "type": ["string", "null"] },
-              "domain": { "type": ["string", "null"] },
-              "control_id": { "type": ["string", "null"] },
-              "weight": { "type": "number" }
+              "question_id": {
+                "type": "string"
+              },
+              "framework_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "domain": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "control_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "weight": {
+                "type": "number"
+              }
             }
           }
         }
@@ -152,14 +220,33 @@
       "items": {
         "type": "object",
         "properties": {
-          "at": { "type": "string" },
-          "status": { "type": "string" },
-          "by": { "type": "string" },
-          "via": { "type": "string" },
-          "reason": { "type": "string" },
-          "coverage_pct": { "type": "number" },
-          "previous_coverage_pct": { "type": ["number", "null"] },
-          "scoring_model": { "type": "string" }
+          "at": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "by": {
+            "type": "string"
+          },
+          "via": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "coverage_pct": {
+            "type": "number"
+          },
+          "previous_coverage_pct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "scoring_model": {
+            "type": "string"
+          }
         }
       }
     },
@@ -169,36 +256,88 @@
       "items": {
         "type": "object",
         "properties": {
-          "completed_date": { "type": ["string", "null"] },
-          "completed_by": { "type": ["string", "null"] },
-          "overall_score": { "type": ["number", "null"] },
-          "reopened_at": { "type": "string" },
-          "reopened_by": { "type": "string" },
-          "reason": { "type": "string" },
+          "completed_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "completed_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "overall_score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "reopened_at": {
+            "type": "string"
+          },
+          "reopened_by": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
           "coverage": {
-            "type": ["object", "null"],
+            "type": [
+              "object",
+              "null"
+            ],
             "properties": {
-              "total_questions": { "type": "number" },
-              "answered": { "type": "number" },
-              "not_applicable": { "type": "number" },
-              "unanswered": { "type": "number" },
-              "resolved": { "type": "number" },
-              "coverage_pct": { "type": "number" },
-              "scored_coverage_pct": { "type": "number" }
+              "total_questions": {
+                "type": "number"
+              },
+              "answered": {
+                "type": "number"
+              },
+              "not_applicable": {
+                "type": "number"
+              },
+              "unanswered": {
+                "type": "number"
+              },
+              "resolved": {
+                "type": "number"
+              },
+              "coverage_pct": {
+                "type": "number"
+              },
+              "scored_coverage_pct": {
+                "type": "number"
+              }
             }
           },
           "methodology": {
-            "type": ["object", "null"],
+            "type": [
+              "object",
+              "null"
+            ],
             "properties": {
-              "scoring_model": { "type": "string" },
-              "captured_at": { "type": "string" },
+              "scoring_model": {
+                "type": "string"
+              },
+              "captured_at": {
+                "type": "string"
+              },
               "framework_versions": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "string" },
-                    "version": { "type": ["string", "null"] }
+                    "code": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
                   }
                 }
               },
@@ -207,17 +346,42 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "question_id": { "type": "string" },
-                    "framework_code": { "type": ["string", "null"] },
-                    "domain": { "type": ["string", "null"] },
-                    "control_id": { "type": ["string", "null"] },
-                    "weight": { "type": "number" }
+                    "question_id": {
+                      "type": "string"
+                    },
+                    "framework_code": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "domain": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "control_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "weight": {
+                      "type": "number"
+                    }
                   }
                 }
               },
-              "questions_count": { "type": "number" },
-              "weight_total": { "type": "number" },
-              "scale_max": { "type": "number" }
+              "questions_count": {
+                "type": "number"
+              },
+              "weight_total": {
+                "type": "number"
+              },
+              "scale_max": {
+                "type": "number"
+              }
             }
           },
           "framework_scores": {
@@ -225,15 +389,23 @@
             "items": {
               "type": "object",
               "properties": {
-                "framework_code": { "type": "string" },
-                "score": { "type": "number" },
+                "framework_code": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "number"
+                },
                 "domain_scores": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "domain": { "type": "string" },
-                      "score": { "type": "number" }
+                      "domain": {
+                        "type": "string"
+                      },
+                      "score": {
+                        "type": "number"
+                      }
                     }
                   }
                 }
@@ -252,15 +424,33 @@
   ],
   "rls": {
     "create": {
-      "$or": [
+      "$and": [
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$or": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "grc_analyst"
+              }
+            }
+          ]
         },
         {
-          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
-        },
-        {
-          "data.customer_id": "{{user.data.breakglass_customer_ids}}"
+          "$or": [
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            },
+            {
+              "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+            },
+            {
+              "data.customer_id": "{{user.data.breakglass_customer_ids}}"
+            }
+          ]
         }
       ]
     },
@@ -276,33 +466,61 @@
           "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
         },
         {
-          "data.customer_id": "{{user.data.onboarding_customer_ids}}"
-        },
-        {
           "data.customer_id": "{{user.data.breakglass_customer_ids}}"
         }
       ]
     },
     "update": {
-      "$or": [
+      "$and": [
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$or": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "grc_analyst"
+              }
+            }
+          ]
         },
         {
-          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
-        },
-        {
-          "data.customer_id": "{{user.data.breakglass_customer_ids}}"
+          "$or": [
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            },
+            {
+              "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+            },
+            {
+              "data.customer_id": "{{user.data.breakglass_customer_ids}}"
+            }
+          ]
         }
       ]
     },
     "delete": {
-      "$or": [
+      "$and": [
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$or": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            }
+          ]
         },
         {
-          "data.customer_id": "{{user.data.breakglass_customer_ids}}"
+          "$or": [
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            },
+            {
+              "data.customer_id": "{{user.data.breakglass_customer_ids}}"
+            }
+          ]
         }
       ]
     }

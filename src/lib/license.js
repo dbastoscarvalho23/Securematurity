@@ -7,7 +7,8 @@ import { moduleForRoute } from "@/lib/licenseModules";
 
 /**
  * Fetch the effective license for a customer.
- * Returns a license object or a permissive default if the call fails.
+ * Returns the license object, or an explicit `status: "error"` license when the
+ * call fails — never a permissive one (see isModuleLicensed).
  */
 export async function fetchEffectiveLicense(customerId) {
   if (!customerId) return null;
@@ -18,13 +19,13 @@ export async function fetchEffectiveLicense(customerId) {
     return license;
   } catch (error) {
     console.error("Failed to fetch effective license:", error);
-    // Return a permissive default so the app doesn't lock up on error
+    // Fail closed: an unresolved licence must not unlock any module.
     return {
-      licensed: true,
-      status: "active",
+      licensed: false,
+      status: "error",
       modules: [],
       standards: [],
-      tier_code: "core",
+      tier_code: "",
       seat_limit: 0,
       seats_used: 0,
       monthly_usage_count: 0,
@@ -44,19 +45,22 @@ export function hasEntitlement(license, code) {
 
 /**
  * Check if a module is licensed.
- * Permissive (true) if license is loading, not enforced, or module is null.
- * Otherwise checks if the module is in the license's modules array.
+ * Fail closed: an unresolved licence (still loading, error state or no tenant)
+ * never declares a module licensed. Callers that must not decide during loading
+ * read `isLoading` from useLicense and wait (see RouteGuard).
  */
 export function isModuleLicensed(license, moduleCode) {
   // No module code = admin route, always allowed
   if (!moduleCode) return true;
 
-  // No license or license not loaded — permissive (don't block on loading)
-  if (!license) return true;
+  // Licence not resolved yet (loading or missing tenant) — no module.
+  if (!license) return false;
 
-  // If license is not active but we got one, check anyway
-  // If license has no modules array (error state), be permissive
-  if (!license.modules || !Array.isArray(license.modules)) return true;
+  // The licence could not be resolved — no module.
+  if (license.status === "error") return false;
+
+  // Malformed licence payload — no module.
+  if (!Array.isArray(license.modules)) return false;
 
   return license.modules.some((m) => m.code === moduleCode);
 }
@@ -83,9 +87,9 @@ export function licenseDenialReason(license, code) {
  */
 export function moduleDenialReason(license, moduleCode) {
   if (!moduleCode) return null;
-  if (!license) return null;
   if (isModuleLicensed(license, moduleCode)) return null;
 
+  if (!license || license.status === "error") return "license_unresolved";
   if (!license.licensed) return "license_not_active";
   return "license_module_not_licensed";
 }

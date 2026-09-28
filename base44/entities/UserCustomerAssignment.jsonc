@@ -24,35 +24,57 @@
     },
     "assignment_type": {
       "type": "string",
-      "enum": ["delegation", "onboarding"],
+      "enum": [
+        "delegation",
+        "onboarding"
+      ],
       "default": "delegation",
       "description": "Type of access assignment"
     },
     "access_level": {
       "type": "string",
-      "enum": ["viewer", "contributor", "admin"],
+      "enum": [
+        "viewer",
+        "contributor",
+        "admin"
+      ],
       "default": "viewer",
       "description": "The access level this user has for this specific customer"
     },
     "role_in_customer": {
       "type": "string",
-      "enum": ["viewer", "contributor", "admin"],
+      "enum": [
+        "viewer",
+        "contributor",
+        "admin"
+      ],
       "default": "viewer",
       "description": "Legacy field — alias for access_level (backward compat)"
     },
     "authorized_modules": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Module codes the user is authorized to access for this customer"
     },
     "onboarding_state": {
       "type": "string",
-      "enum": ["pending", "accepted", "revoked"],
+      "enum": [
+        "pending",
+        "accepted",
+        "revoked"
+      ],
       "description": "State of onboarding flow (only for assignment_type=onboarding)"
     },
     "status": {
       "type": "string",
-      "enum": ["pending", "active", "expired", "revoked"],
+      "enum": [
+        "pending",
+        "active",
+        "expired",
+        "revoked"
+      ],
       "default": "active",
       "description": "Whether this assignment is currently active"
     },
@@ -83,40 +105,65 @@
       "description": "Justification for the assignment (required for breakglass)"
     }
   },
-  "required": ["user_id", "customer_id", "assignment_type"],
+  "required": [
+    "user_id",
+    "customer_id",
+    "assignment_type"
+  ],
   "rls": {
     "create": {
       "$or": [
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "role": "master_admin" } },
-        { "user_condition": { "role": "workspace_admin" } },
-        { "user_condition": { "role": "partner_admin" } },
-        { "user_condition": { "role": "customer_admin" } },
-        { "data.user_id": "{{user.id}}" }
+        {
+          "user_condition": {
+            "role": "master_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "customer_admin"
+          }
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        }
       ]
     },
     "read": {
       "$or": [
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "role": "master_admin" } },
-        { "user_condition": { "role": "workspace_admin" } },
-        { "user_condition": { "role": "partner_admin" } },
-        { "data.user_id": "{{user.id}}" },
-        { "data.customer_id": "{{user.data.customer_id}}" }
+        {
+          "user_condition": {
+            "role": "master_admin"
+          }
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
       ]
     },
     "update": {
       "$or": [
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "role": "master_admin" } },
-        { "user_condition": { "role": "workspace_admin" } },
-        { "user_condition": { "role": "partner_admin" } },
-        { "user_condition": { "role": "customer_admin" } },
-        { "data.user_id": "{{user.id}}" }
+        {
+          "user_condition": {
+            "role": "master_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "customer_admin"
+          }
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        }
       ]
     },
     "delete": {
-      "user_condition": { "role": "admin" }
+      "user_condition": {
+        "role": "master_admin"
+      }
     }
   }
 }

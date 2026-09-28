@@ -1,7 +1,9 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
 import {
   normalizeRole,
-  isPlatformAdmin,
+  isPlatformOwner,
+  isPartnerAdmin,
+  resolveScopeCustomerIds,
   addToArray,
   removeFromArray,
   getDenormalizedField,
@@ -18,8 +20,13 @@ import {
  *   (workspace_admin) cannot approve on the customer's behalf.
  * - Onboarding is limited to account set-up (users/configuration). Accepting an
  *   onboarding never grants operational access to compliance data — only an
- *   approved delegation does.
- * - Expired assignments are retired lazily whenever access is resolved or listed.
+ *   approved delegation does. It is time-boxed as well, and onboarding_customer_ids
+ *   is written on acceptance and cleared when the onboarding ends — it is a
+ *   bookkeeping marker, never an access grant (F1).
+ * - A partner admin (workspace_admin) is scoped to its carteira (the customers of
+ *   its own workspace subtree); only the platform owner acts platform-wide (F3).
+ * - Expired assignments are retired whenever access is resolved or listed, and at
+ *   session bootstrap through `prune` (F15).
  * - Break-glass/support access is out of the MVP (removed with this phase).
  *
  * Actions:
@@ -27,13 +34,15 @@ import {
  * - approve_delegation:  Customer admin (or master_admin) approves a pending delegation
  * - reject_delegation:   Customer admin (or master_admin) rejects a pending delegation
  * - revoke_delegation:   Customer admin, master_admin or the delegated user revokes
- * - create_onboarding:   Platform admin creates an onboarding (account set-up only)
+ * - create_onboarding:   Platform/partner admin creates an onboarding (account set-up only)
  * - accept_onboarding:   The assigned user accepts the onboarding (no data access)
- * - revoke_onboarding:   Platform admin revokes an onboarding assignment
- * - list:                List assignments (filtered by role)
+ * - revoke_onboarding:   Platform/partner admin revokes an onboarding assignment
+ * - list:                List assignments (filtered by role and carteira)
  * - resolve:             Resolve the customers a user really can operate on
+ * - prune:               Retire the caller's expired assignments (session bootstrap)
  */
 const MAX_DELEGATION_DAYS = 365;
+const ONBOARDING_DAYS = 30;
 const ACCESS_LEVELS = ["viewer", "contributor", "admin"];
 
 Deno.serve(async (req) => {
@@ -54,6 +63,11 @@ Deno.serve(async (req) => {
     // ─── Resolve user's accessible customers ──────────────────
     if (action === "resolve") {
       return await handleResolve(base44, user, body, userRole);
+    }
+
+    // ─── Prune the caller's expired assignments ───────────────
+    if (action === "prune") {
+      return await handlePrune(base44, user);
     }
 
     // ─── Delegation flow ───────────────────────────────────────
@@ -107,9 +121,19 @@ async function clearDelegatedAccess(base44: any, assignment: any): Promise<void>
   await base44.asServiceRole.entities.User.update(targetUser.id, { [field]: updatedArray });
 }
 
+/** Remove a customer from the user's onboarding marker array. */
+async function clearOnboardingAccess(base44: any, assignment: any): Promise<void> {
+  const targetUser = await base44.asServiceRole.entities.User.get(assignment.user_id);
+  if (!targetUser) return;
+  await base44.asServiceRole.entities.User.update(targetUser.id, {
+    onboarding_customer_ids: removeFromArray(targetUser.onboarding_customer_ids, assignment.customer_id),
+  });
+}
+
 /**
- * Retire assignments whose expires_at has passed: mark them expired and drop the
- * operational access they granted. Returns only the still-valid assignments.
+ * Retire assignments whose expires_at has passed: mark them expired and drop
+ * whatever they were carrying (delegation access or the onboarding marker).
+ * Returns only the still-valid assignments.
  */
 async function dropExpired(base44: any, assignments: any[]): Promise<any[]> {
   const active: any[] = [];
@@ -118,12 +142,17 @@ async function dropExpired(base44: any, assignments: any[]): Promise<any[]> {
       active.push(assignment);
       continue;
     }
+    const isOnboarding = assignment.assignment_type === "onboarding";
     try {
       await base44.asServiceRole.entities.UserCustomerAssignment.update(assignment.id, { status: "expired" });
-      await clearDelegatedAccess(base44, assignment);
+      if (isOnboarding) {
+        await clearOnboardingAccess(base44, assignment);
+      } else {
+        await clearDelegatedAccess(base44, assignment);
+      }
       await writeAccessAuditLog(
-        base44, "delegation_expired", assignment.customer_id, "system",
-        `Delegation for ${assignment.user_email} expired automatically`,
+        base44, isOnboarding ? "onboarding_expired" : "delegation_expired", assignment.customer_id, "system",
+        `${isOnboarding ? "Onboarding" : "Delegation"} for ${assignment.user_email} expired automatically`,
         "UserCustomerAssignment", assignment.id,
       );
     } catch (_e) {
@@ -133,21 +162,43 @@ async function dropExpired(base44: any, assignments: any[]): Promise<any[]> {
   return active;
 }
 
+/**
+ * Session bootstrap: retire the caller's own expired assignments so a lapsed
+ * delegation stops granting reads without anyone having to open a list.
+ */
+async function handlePrune(base44: any, user: any) {
+  const assignments = await base44.asServiceRole.entities.UserCustomerAssignment.filter({ user_id: user.id });
+  const liveable = assignments.filter((a: any) => a.status === "active" || a.status === "pending");
+  const stillValid = await dropExpired(base44, liveable);
+  return Response.json({ success: true, pruned: liveable.length - stillValid.length });
+}
+
 // ─── List ─────────────────────────────────────────────────────
 async function handleList(base44: any, user: any, body: any, userRole: string) {
   const { user_id, customer_id, assignment_type, status } = body;
+  const scope = await resolveScopeCustomerIds(base44, user);
+
+  const applyFilters = (list: any[]) =>
+    list.filter((a: any) =>
+      (!user_id || a.user_id === user_id) &&
+      (!customer_id || a.customer_id === customer_id) &&
+      (!assignment_type || a.assignment_type === assignment_type) &&
+      (!status || a.status === status)
+    );
 
   let assignments;
-  if (isPlatformAdmin(userRole) || userRole === "master_admin") {
-    // Platform admins see all
-    let filter: any = {};
-    if (user_id) filter.user_id = user_id;
-    if (customer_id) filter.customer_id = customer_id;
-    if (assignment_type) filter.assignment_type = assignment_type;
-    if (status) filter.status = status;
-    assignments = Object.keys(filter).length > 0
-      ? await base44.asServiceRole.entities.UserCustomerAssignment.filter(filter)
-      : await base44.asServiceRole.entities.UserCustomerAssignment.list("customer_name", 500);
+  if (scope.all) {
+    // Platform owner sees all
+    assignments = applyFilters(
+      await base44.asServiceRole.entities.UserCustomerAssignment.list("customer_name", 500)
+    );
+  } else if (isPartnerAdmin(userRole)) {
+    // Partner admin sees its carteira (own workspace subtree) and its own records,
+    // never another partner's book of business.
+    const all = await base44.asServiceRole.entities.UserCustomerAssignment.list("customer_name", 500);
+    assignments = applyFilters(
+      all.filter((a: any) => scope.customerIds.includes(a.customer_id) || a.user_id === user.id)
+    );
   } else if (userRole === "customer_admin") {
     // Customer admin sees assignments for their customer + their own
     const own = await base44.asServiceRole.entities.UserCustomerAssignment.filter({ user_id: user.id });
@@ -166,12 +217,10 @@ async function handleList(base44: any, user: any, body: any, userRole: string) {
   }
 
   // Retire anything past its deadline so the UI never shows stale access as active.
-  const activeDelegations = assignments.filter((a: any) =>
-    a.assignment_type === "delegation" && a.status === "active"
-  );
-  const stillValid = new Set((await dropExpired(base44, activeDelegations)).map((a: any) => a.id));
+  const liveable = assignments.filter((a: any) => a.status === "active" || a.status === "pending");
+  const stillValid = new Set((await dropExpired(base44, liveable)).map((a: any) => a.id));
   assignments = assignments.map((a: any) =>
-    a.assignment_type === "delegation" && a.status === "active" && !stillValid.has(a.id)
+    (a.status === "active" || a.status === "pending") && !stillValid.has(a.id)
       ? { ...a, status: "expired" }
       : a
   );
@@ -183,10 +232,18 @@ async function handleList(base44: any, user: any, body: any, userRole: string) {
 async function handleResolve(base44: any, user: any, body: any, userRole: string) {
   const { user_id } = body;
   const targetUserId = user_id || user.id;
+  const scope = await resolveScopeCustomerIds(base44, user);
 
-  // Non-admin can only resolve their own
-  if (!isPlatformAdmin(userRole) && user_id && user_id !== user.id) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+  // Anyone may resolve themselves. Resolving somebody else requires the platform
+  // owner, or a partner admin whose carteira contains that user's customer.
+  if (user_id && user_id !== user.id && !scope.all) {
+    if (!isPartnerAdmin(userRole)) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const target = await base44.asServiceRole.entities.User.get(user_id);
+    if (!target || !target.customer_id || !scope.customerIds.includes(target.customer_id)) {
+      return Response.json({ error: "Forbidden — user outside your carteira" }, { status: 403 });
+    }
   }
 
   // Only an approved delegation grants operational access to a customer.
@@ -243,6 +300,14 @@ async function handleRequestDelegation(base44: any, user: any, body: any, userRo
   // it prevents a tenant admin from authorizing their own request.
   if (user.customer_id && user.customer_id === customer_id) {
     return Response.json({ error: "You already belong to this customer" }, { status: 400 });
+  }
+
+  // A request can only target a customer inside the requester's own scope: the
+  // platform owner anywhere, a partner admin inside its carteira, everyone else
+  // only their own customer (which the check above already refuses).
+  const scope = await resolveScopeCustomerIds(base44, user);
+  if (!scope.all && !scope.customerIds.includes(customer_id)) {
+    return Response.json({ error: "Forbidden — that customer is outside your scope" }, { status: 403 });
   }
 
   // Check for existing active/pending assignment
@@ -395,13 +460,29 @@ async function handleRevokeDelegation(base44: any, user: any, body: any, userRol
 
 // ─── Create Onboarding ─────────────────────────────────────────
 async function handleCreateOnboarding(base44: any, user: any, body: any, userRole: string) {
-  const { user_id, user_email, customer_id, customer_name, workspace_id, authorized_modules, reason } = body;
+  const { user_id, user_email, customer_id, customer_name, workspace_id, authorized_modules, reason, expires_at } = body;
 
   if (!user_id || !customer_id) return Response.json({ error: "user_id and customer_id are required" }, { status: 400 });
 
-  // Only platform admins can create onboarding
-  if (!isPlatformAdmin(userRole)) {
-    return Response.json({ error: "Forbidden — only platform admins can create onboarding" }, { status: 403 });
+  // Platform owner anywhere; a partner admin only inside its own carteira.
+  if (!isPlatformOwner(userRole) && !isPartnerAdmin(userRole)) {
+    return Response.json({ error: "Forbidden — only platform and partner admins can create onboarding" }, { status: 403 });
+  }
+  const scope = await resolveScopeCustomerIds(base44, user);
+  if (!scope.all && !scope.customerIds.includes(customer_id)) {
+    return Response.json({ error: "Forbidden — that customer is outside your carteira" }, { status: 403 });
+  }
+
+  // Onboarding is time-boxed as well: the set-up window has to close on its own.
+  const expiresMs = expires_at ? new Date(expires_at).getTime() : Date.now() + ONBOARDING_DAYS * 24 * 60 * 60 * 1000;
+  if (Number.isNaN(expiresMs)) {
+    return Response.json({ error: "expires_at is not a valid date" }, { status: 400 });
+  }
+  if (expiresMs <= Date.now()) {
+    return Response.json({ error: "expires_at must be in the future" }, { status: 400 });
+  }
+  if (expiresMs > Date.now() + MAX_DELEGATION_DAYS * 24 * 60 * 60 * 1000) {
+    return Response.json({ error: `An onboarding cannot last longer than ${MAX_DELEGATION_DAYS} days` }, { status: 400 });
   }
 
   // Check for existing active/pending onboarding
@@ -430,19 +511,17 @@ async function handleCreateOnboarding(base44: any, user: any, body: any, userRol
     status: "pending",
     onboarding_state: "pending",
     requested_by: user.email,
+    expires_at: new Date(expiresMs).toISOString(),
     reason,
   });
 
-  // Add to onboarding_customer_ids on User immediately (pre-acceptance)
-  const targetUser = await base44.asServiceRole.entities.User.get(user_id);
-  if (targetUser) {
-    const updatedArray = addToArray(targetUser.onboarding_customer_ids, customer_id);
-    await base44.asServiceRole.entities.User.update(user_id, { onboarding_customer_ids: updatedArray });
-  }
-
+  // onboarding_customer_ids is deliberately NOT written here: a pending onboarding
+  // carries no access at all. It is written on acceptance (see accept_onboarding)
+  // and cleared when the onboarding ends — accepting used to grant permanent,
+  // delegation-less access to the tenant's operational data (F1).
   await writeAccessAuditLog(
     base44, "onboarding_created", customer_id, user.email,
-    `Onboarding created for ${user_email} to ${customer_name || customer_id} by ${user.email} (account set-up only)`,
+    `Onboarding created for ${user_email} to ${customer_name || customer_id} by ${user.email} until ${new Date(expiresMs).toISOString()} (account set-up only)`,
     "UserCustomerAssignment", assignment.id,
   );
 
@@ -467,12 +546,20 @@ async function handleAcceptOnboarding(base44: any, user: any, body: any, userRol
 
   // Acceptance closes the account set-up. It explicitly does NOT write the
   // delegated_*_customer_ids arrays: operational access requires an approved,
-  // time-boxed delegation.
+  // time-boxed delegation. onboarding_customer_ids is only a marker of the
+  // set-up window — no entity RLS reads it.
   const updated = await base44.asServiceRole.entities.UserCustomerAssignment.update(assignment_id, {
     status: "active",
     onboarding_state: "accepted",
     approved_by: user.email,
   });
+
+  const targetUser = await base44.asServiceRole.entities.User.get(assignment.user_id);
+  if (targetUser) {
+    await base44.asServiceRole.entities.User.update(targetUser.id, {
+      onboarding_customer_ids: addToArray(targetUser.onboarding_customer_ids, assignment.customer_id),
+    });
+  }
 
   await writeAccessAuditLog(
     base44, "onboarding_accepted", assignment.customer_id, user.email,
@@ -494,9 +581,13 @@ async function handleRevokeOnboarding(base44: any, user: any, body: any, userRol
     return Response.json({ error: "Assignment is not an onboarding" }, { status: 400 });
   }
 
-  // Only platform admins can revoke onboarding
-  if (!isPlatformAdmin(userRole)) {
-    return Response.json({ error: "Forbidden — only platform admins can revoke onboarding" }, { status: 403 });
+  // Platform owner anywhere; a partner admin only inside its own carteira.
+  if (!isPlatformOwner(userRole) && !isPartnerAdmin(userRole)) {
+    return Response.json({ error: "Forbidden — only platform and partner admins can revoke onboarding" }, { status: 403 });
+  }
+  const scope = await resolveScopeCustomerIds(base44, user);
+  if (!scope.all && !scope.customerIds.includes(assignment.customer_id)) {
+    return Response.json({ error: "Forbidden — that customer is outside your carteira" }, { status: 403 });
   }
 
   const updated = await base44.asServiceRole.entities.UserCustomerAssignment.update(assignment_id, {

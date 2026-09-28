@@ -22,17 +22,21 @@ export default function LicenseUnavailable() {
   const moduleCode = location.state?.module;
   const moduleName = moduleCode ? (MODULE_META[moduleCode]?.name || moduleCode) : null;
 
-  const titleKey = reason === 'license_usage_limit_exceeded'
-    ? 'license_usage_limit_exceeded'
-    : reason === 'license_not_active'
-      ? 'license_not_active'
-      : 'license_module_not_licensed';
+  const titleKey = reason === 'license_unresolved'
+    ? 'license_unresolved'
+    : reason === 'license_usage_limit_exceeded'
+      ? 'license_usage_limit_exceeded'
+      : reason === 'license_not_active'
+        ? 'license_not_active'
+        : 'license_module_not_licensed';
 
-  const descKey = reason === 'license_usage_limit_exceeded'
-    ? 'license_usage_limit_exceeded_desc'
-    : reason === 'license_not_active'
-      ? 'license_not_active_desc'
-      : 'license_module_not_licensed_desc';
+  const descKey = reason === 'license_unresolved'
+    ? 'license_unresolved_desc'
+    : reason === 'license_usage_limit_exceeded'
+      ? 'license_usage_limit_exceeded_desc'
+      : reason === 'license_not_active'
+        ? 'license_not_active_desc'
+        : 'license_module_not_licensed_desc';
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">

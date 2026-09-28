@@ -98,15 +98,33 @@
   ],
   "rls": {
     "create": {
-      "$or": [
+      "$and": [
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$or": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "grc_analyst"
+              }
+            }
+          ]
         },
         {
-          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
-        },
-        {
-          "data.customer_id": "{{user.data.breakglass_customer_ids}}"
+          "$or": [
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            },
+            {
+              "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+            },
+            {
+              "data.customer_id": "{{user.data.breakglass_customer_ids}}"
+            }
+          ]
         }
       ]
     },
@@ -122,33 +140,61 @@
           "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
         },
         {
-          "data.customer_id": "{{user.data.onboarding_customer_ids}}"
-        },
-        {
           "data.customer_id": "{{user.data.breakglass_customer_ids}}"
         }
       ]
     },
     "update": {
-      "$or": [
+      "$and": [
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$or": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "grc_analyst"
+              }
+            }
+          ]
         },
         {
-          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
-        },
-        {
-          "data.customer_id": "{{user.data.breakglass_customer_ids}}"
+          "$or": [
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            },
+            {
+              "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+            },
+            {
+              "data.customer_id": "{{user.data.breakglass_customer_ids}}"
+            }
+          ]
         }
       ]
     },
     "delete": {
-      "$or": [
+      "$and": [
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$or": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            }
+          ]
         },
         {
-          "data.customer_id": "{{user.data.breakglass_customer_ids}}"
+          "$or": [
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            },
+            {
+              "data.customer_id": "{{user.data.breakglass_customer_ids}}"
+            }
+          ]
         }
       ]
     }

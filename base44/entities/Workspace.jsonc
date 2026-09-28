@@ -19,7 +19,10 @@
       "description": "Workspace type in the hierarchy"
     },
     "parent_id": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "description": "Parent workspace ID (null for root workspaces)"
     },
     "ancestor_ids": {
@@ -61,15 +64,29 @@
   ],
   "rls": {
     "create": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "master_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "workspace_admin"
+          }
+        }
+      ]
     },
     "read": {
       "$or": [
         {
           "user_condition": {
-            "role": "admin"
+            "role": "master_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "workspace_admin"
           }
         },
         {
@@ -78,13 +95,22 @@
       ]
     },
     "update": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "master_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "workspace_admin"
+          }
+        }
+      ]
     },
     "delete": {
       "user_condition": {
-        "role": "admin"
+        "role": "master_admin"
       }
     }
   }

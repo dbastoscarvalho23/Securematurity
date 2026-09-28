@@ -120,15 +120,29 @@
   ],
   "rls": {
     "create": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "master_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "workspace_admin"
+          }
+        }
+      ]
     },
     "read": {
       "$or": [
         {
           "user_condition": {
-            "role": "admin"
+            "role": "master_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "workspace_admin"
           }
         },
         {
@@ -137,13 +151,22 @@
       ]
     },
     "update": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "master_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "workspace_admin"
+          }
+        }
+      ]
     },
     "delete": {
       "user_condition": {
-        "role": "admin"
+        "role": "master_admin"
       }
     }
   }

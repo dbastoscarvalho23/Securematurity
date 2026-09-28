@@ -1,12 +1,16 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
+import { normalizeRole } from "../../shared/accessUtils.ts";
 
 /**
  * Resolves the set of workspace IDs a user can access.
  *
  * Access model:
- * - admin: all workspaces
- * - customer_admin / user: their own workspace + all descendant workspaces
- *   (uses ancestor_ids chain to find descendants of their workspace)
+ * - master_admin (platform owner, including the legacy `admin` role): all workspaces
+ * - everyone else: their own workspace + all descendant workspaces (uses the
+ *   ancestor_ids chain to find descendants of their workspace), and never any
+ *   workspace outside that subtree
+ * - a user with no workspace_id cannot resolve somebody else's workspace at all:
+ *   the guard no longer depends on the caller having a workspace_id (F8)
  *
  * Request body: { workspace_id?: string }
  * If workspace_id is provided, resolves descendants of that workspace.
@@ -22,9 +26,12 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const targetWorkspaceId = body.workspace_id || user.workspace_id;
+    // The role is normalised — no literal comparison, so a legacy `admin` and a
+    // master_admin behave the same (F7).
+    const isOwner = normalizeRole(user.role) === "master_admin";
 
-    // Admin without a specific target gets everything
-    if (user.role === "admin" && !targetWorkspaceId) {
+    // Platform owner without a specific target gets everything
+    if (isOwner && !targetWorkspaceId) {
       const workspaces = await base44.asServiceRole.entities.Workspace.list("name", 500);
       const workspaceIds = workspaces.map((w: any) => w.id);
       const customerIds = workspaces.filter((w: any) => w.customer_id).map((w: any) => w.customer_id);
@@ -52,9 +59,26 @@ Deno.serve(async (req) => {
       return Response.json({ workspace_ids: [], customer_ids: [] });
     }
 
-    // Security check: non-admin users can only resolve from their own workspace
-    if (user.role !== "admin" && user.workspace_id && user.workspace_id !== targetWorkspaceId) {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+    // Scope check (F7/F8): only the platform owner resolves outside its own
+    // subtree, and the guard applies even when the caller has no workspace_id.
+    if (!isOwner) {
+      if (!user.workspace_id) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const permitted = new Set<string>([user.workspace_id]);
+      let grew = true;
+      while (grew) {
+        grew = false;
+        for (const ws of workspaces) {
+          if (ws?.parent_id && permitted.has(ws.parent_id) && !permitted.has(ws.id)) {
+            permitted.add(ws.id);
+            grew = true;
+          }
+        }
+      }
+      if (!permitted.has(targetWorkspaceId)) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     // Find all descendants: workspaces whose ancestor_ids contains targetWorkspaceId

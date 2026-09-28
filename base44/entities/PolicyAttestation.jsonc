@@ -32,7 +32,12 @@
     },
     "status": {
       "type": "string",
-      "enum": ["pending", "accepted", "rejected", "expired"],
+      "enum": [
+        "pending",
+        "accepted",
+        "rejected",
+        "expired"
+      ],
       "default": "pending",
       "description": "Attestation status"
     },
@@ -84,9 +89,6 @@
         },
         {
           "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
-        },
-        {
-          "data.customer_id": "{{user.data.onboarding_customer_ids}}"
         },
         {
           "data.customer_id": "{{user.data.breakglass_customer_ids}}"

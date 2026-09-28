@@ -29,11 +29,17 @@
       "description": "Schema version of the generated package"
     },
     "period_start": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "description": "Assessment period start (YYYY-MM-DD) covered by the package"
     },
     "period_end": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "description": "Assessment period end (YYYY-MM-DD) covered by the package"
     },
     "frameworks": {
@@ -44,29 +50,59 @@
       "description": "Frameworks covered by the package"
     },
     "scope": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "description": "Scope of the audit: tenant, frameworks, standards, period and methodology versions",
       "properties": {
-        "customer_id": { "type": "string" },
-        "customer_name": { "type": "string" },
+        "customer_id": {
+          "type": "string"
+        },
+        "customer_name": {
+          "type": "string"
+        },
         "frameworks": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "standards": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
-        "period_start": { "type": ["string", "null"] },
-        "period_end": { "type": ["string", "null"] },
-        "assessments_considered": { "type": "number" },
+        "period_start": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "period_end": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "assessments_considered": {
+          "type": "number"
+        },
         "methodology_versions": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
-              "code": { "type": "string" },
-              "version": { "type": ["string", "null"] }
+              "code": {
+                "type": "string"
+              },
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             }
           }
         }
@@ -78,10 +114,18 @@
       "items": {
         "type": "object",
         "properties": {
-          "key": { "type": "string" },
-          "label": { "type": "string" },
-          "description": { "type": "string" },
-          "count": { "type": "number" }
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "count": {
+            "type": "number"
+          }
         }
       }
     },
@@ -91,20 +135,41 @@
       "items": {
         "type": "object",
         "properties": {
-          "key": { "type": "string" },
-          "label": { "type": "string" },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
           "entries": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "ref": { "type": "string" },
-                "label": { "type": "string" },
-                "detail": { "type": "string" },
-                "status": { "type": "string" },
-                "hash": { "type": "string" },
-                "date": { "type": ["string", "null"] },
-                "url": { "type": "string" }
+                "ref": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "detail": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "hash": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "url": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -112,15 +177,30 @@
       }
     },
     "summary": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "description": "Counters used by the package header",
       "properties": {
-        "versions": { "type": "number" },
-        "controls": { "type": "number" },
-        "controls_not_implemented": { "type": "number" },
-        "evidence": { "type": "number" },
-        "decisions": { "type": "number" },
-        "open_actions": { "type": "number" }
+        "versions": {
+          "type": "number"
+        },
+        "controls": {
+          "type": "number"
+        },
+        "controls_not_implemented": {
+          "type": "number"
+        },
+        "evidence": {
+          "type": "number"
+        },
+        "decisions": {
+          "type": "number"
+        },
+        "open_actions": {
+          "type": "number"
+        }
       }
     },
     "generated_by": {
@@ -142,12 +222,30 @@
   ],
   "rls": {
     "create": {
-      "$or": [
+      "$and": [
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$or": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "grc_analyst"
+              }
+            }
+          ]
         },
         {
-          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+          "$or": [
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            },
+            {
+              "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+            }
+          ]
         }
       ]
     },
@@ -161,24 +259,48 @@
         },
         {
           "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
-        },
-        {
-          "data.customer_id": "{{user.data.onboarding_customer_ids}}"
         }
       ]
     },
     "update": {
-      "$or": [
+      "$and": [
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$or": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "grc_analyst"
+              }
+            }
+          ]
         },
         {
-          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+          "$or": [
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            },
+            {
+              "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+            }
+          ]
         }
       ]
     },
     "delete": {
-      "$or": [
+      "$and": [
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            }
+          ]
+        },
         {
           "data.customer_id": "{{user.data.customer_id}}"
         }

@@ -1,5 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
-import { authorizeAssessmentOperational } from "../../shared/assessmentAccess.ts";
+import { AUDIT_PACKAGE_MODULE, authorizeAssessmentOperational } from "../../shared/assessmentAccess.ts";
 import { AssessmentError } from "../../shared/assessmentScoring.ts";
 import { getEffectiveLicense } from "../../shared/licenseGuard.ts";
 
@@ -64,7 +64,7 @@ async function assertOperational(base44: any, user: any, customerId: string) {
   if (!customerId) {
     throw new AuditPackageError("customer_required", "O pacote de auditoria exige um cliente.", 422);
   }
-  const authorization = await authorizeAssessmentOperational(base44, user, customerId);
+  const authorization = await authorizeAssessmentOperational(base44, user, customerId, AUDIT_PACKAGE_MODULE);
   const license = await getEffectiveLicense(base44, customerId);
   const codes = (license?.modules || []).map((m: any) => m.code);
   if (!license?.licensed || !codes.includes(MODULE)) {

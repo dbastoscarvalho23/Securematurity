@@ -15,6 +15,9 @@ import { AssessmentError } from "./assessmentScoring.ts";
 /** Module that gates the assessment journey (diagnóstico + plano de ação). */
 export const ASSESSMENT_MODULE = "assessments_action_plan";
 
+/** Module that gates the audit package (relatórios + preparação de auditoria). */
+export const AUDIT_PACKAGE_MODULE = "reporting_audit_prep";
+
 /** Tenant roles that may operate an assessment of their own customer. */
 export const ASSESSMENT_EDIT_ROLES = ["customer_admin", "grc_analyst"];
 
@@ -22,8 +25,17 @@ export const ASSESSMENT_EDIT_ROLES = ["customer_admin", "grc_analyst"];
  * Authorize an operational action on a customer.
  * Mirrors the delegation model: platform/partner roles never get automatic
  * access to tenant data, they need an approved, non-expired delegation.
+ *
+ * The delegation must also cover `moduleCode`: a delegation authorizes the
+ * modules it names and nothing else, and an empty list means no module at all
+ * (F4 — it used to mean every licensed module).
  */
-export async function authorizeAssessmentOperational(base44: any, user: any, customerId: string) {
+export async function authorizeAssessmentOperational(
+  base44: any,
+  user: any,
+  customerId: string,
+  moduleCode: string,
+) {
   if (!customerId) {
     throw new AssessmentError("customer_required", "A avaliação não tem cliente associado.", 422);
   }
@@ -46,7 +58,8 @@ export async function authorizeAssessmentOperational(base44: any, user: any, cus
     return isSameUser && a.assignment_type === "delegation" && a.status === "active" && live;
   });
 
-  const canEdit = active.some((a: any) => a.access_level === "admin" || a.access_level === "contributor");
+  const covering = active.filter((a: any) => (a.authorized_modules || []).includes(moduleCode));
+  const canEdit = covering.some((a: any) => a.access_level === "admin" || a.access_level === "contributor");
   if (canEdit) return { via: "delegation", role };
 
   throw new AssessmentError(

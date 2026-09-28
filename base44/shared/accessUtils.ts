@@ -37,10 +37,73 @@ export function isPlatformAdmin(role: string | undefined | null): boolean {
 }
 
 /**
+ * Check if a user is the platform owner (master_admin).
+ * Only the platform owner acts platform-wide; a partner admin is scoped to
+ * the customers of its own workspace subtree (carteira).
+ */
+export function isPlatformOwner(role: string | undefined | null): boolean {
+  return normalizeRole(role) === "master_admin";
+}
+
+/**
+ * Check if a user is a partner admin (workspace_admin).
+ * A partner admin is NOT a platform admin: it only operates inside the
+ * carteira (workspace subtree) it belongs to.
+ */
+export function isPartnerAdmin(role: string | undefined | null): boolean {
+  return normalizeRole(role) === "workspace_admin";
+}
+
+/**
  * Check if a user is a customer-level admin (customer_admin).
  */
 export function isCustomerAdmin(role: string | undefined | null): boolean {
   return normalizeRole(role) === "customer_admin";
+}
+
+/**
+ * Resolve the customer scope of a user.
+ *
+ * - master_admin (platform owner): every customer.
+ * - workspace_admin (partner admin): the customers of its own workspace and of
+ *   every descendant workspace (its carteira), plus its own customer.
+ * - everyone else: their own customer only.
+ *
+ * Used to keep the partner admin inside its carteira on the write paths
+ * (list/resolve/onboarding/role assignment), which the entity RLS cannot express.
+ */
+export async function resolveScopeCustomerIds(
+  base44: any,
+  user: any,
+): Promise<{ all: boolean; customerIds: string[] }> {
+  const own = user?.customer_id ? [user.customer_id] : [];
+
+  if (isPlatformOwner(user?.role)) return { all: true, customerIds: [] };
+
+  if (!isPartnerAdmin(user?.role) || !user?.workspace_id) {
+    return { all: false, customerIds: own };
+  }
+
+  const workspaces = await base44.asServiceRole.entities.Workspace.list("name", 500);
+
+  // Workspace subtree: the partner's workspace plus every descendant.
+  const subtree = new Set<string>([user.workspace_id]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const ws of workspaces) {
+      if (ws?.parent_id && subtree.has(ws.parent_id) && !subtree.has(ws.id)) {
+        subtree.add(ws.id);
+        grew = true;
+      }
+    }
+  }
+
+  const customerIds = workspaces
+    .filter((w: any) => subtree.has(w.id) && w.customer_id)
+    .map((w: any) => w.customer_id);
+
+  return { all: false, customerIds: Array.from(new Set([...customerIds, ...own])) };
 }
 
 /**

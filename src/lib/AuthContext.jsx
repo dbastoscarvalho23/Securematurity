@@ -29,6 +29,10 @@ export const AuthProvider = ({ children }) => {
         const refreshedUser = await base44.auth.me();
         setUser(refreshedUser);
       } catch (_) {}
+      // Deterministic expiry cleanup (F15): retire this session's expired
+      // delegations and onboardings before the UI reads any entity, so a lapsed
+      // assignment no longer depends on somebody opening a list.
+      await base44.functions.invoke('manageAccess', { action: 'prune' }).catch(() => {});
     } catch (error) {
       setIsAuthenticated(false);
       setUser(null);
