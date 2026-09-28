@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Search, Pencil, Trash2, Sparkles, ShieldCheck, Loader2, Languages } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Sparkles, ShieldCheck, Loader2, Languages, Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import QuestionFormDialog from '@/components/questions/QuestionFormDialog';
 import AIQuestionGeneratorDialog from '@/components/questions/AIQuestionGeneratorDialog';
+import QuestionBankImportDialog from '@/components/questions/QuestionBankImportDialog';
+import {
+  fetchAllRecords,
+  buildQuestionBankPackage,
+  downloadQuestionBankPackage,
+  applyImportPlan,
+} from '@/lib/questionBankTransfer';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -41,6 +48,9 @@ export default function QuestionBank() {
   const [isDeduplicating, setIsDeduplicating] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateProgress, setTranslateProgress] = useState({ done: 0, total: 0 });
+  const [isExporting, setIsExporting] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ['questions'],
@@ -184,6 +194,53 @@ Return only valid JSON with the translations.`,
     toast.success(`Removed ${toDelete.length} duplicate question${toDelete.length !== 1 ? 's' : ''}.`);
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const [allQuestions, allFrameworks, allControls] = await Promise.all([
+        fetchAllRecords(base44.entities.Question, 'order_index'),
+        fetchAllRecords(base44.entities.Framework),
+        fetchAllRecords(base44.entities.FrameworkControl),
+      ]);
+      const pkg = buildQuestionBankPackage({ questions: allQuestions, frameworks: allFrameworks, controls: allControls });
+      const fileName = downloadQuestionBankPackage(pkg);
+      await writeAuditLog({
+        action: 'question_bank_exported',
+        entity_type: 'Question',
+        details: `Exported question bank to ${fileName} (${pkg.counts.questions} questions, ${pkg.counts.frameworks} frameworks, ${pkg.counts.controls} controls, ${pkg.counts.domains} domains)`,
+      });
+      toast.success(`${t('qb_export_done')} — ${pkg.counts.questions} ${t('qb_questions')} → ${fileName}`);
+    } catch (e) {
+      console.error(e);
+      toast.error(t('qb_export_failed'));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async (plan) => {
+    if (!plan) return;
+    setIsImporting(true);
+    try {
+      const result = await applyImportPlan(plan);
+      queryClient.invalidateQueries({ queryKey: ['questions'] });
+      queryClient.invalidateQueries({ queryKey: ['frameworks'] });
+      queryClient.invalidateQueries({ queryKey: ['question-bank-transfer-existing'] });
+      await writeAuditLog({
+        action: 'question_bank_imported',
+        entity_type: 'Question',
+        details: `Imported question bank: ${result.frameworks.created} new / ${result.frameworks.updated} updated frameworks, ${result.controls.created} new / ${result.controls.updated} updated controls, ${result.questions.created} new / ${result.questions.updated} updated questions`,
+      });
+      toast.success(`${t('qb_import_done')} — ${result.questions.created} ${t('qb_questions')}`);
+      setImportDialogOpen(false);
+    } catch (e) {
+      console.error(e);
+      toast.error(t('qb_import_failed'));
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleDelete = (q) => {
     if (confirm(`Delete question "${q.question_text.substring(0, 60)}..."?`)) {
       deleteMutation.mutate(q);
@@ -196,6 +253,13 @@ Return only valid JSON with the translations.`,
         description={t('qb_subtitle')}
         actions={
           <div className="flex gap-2 items-center flex-wrap">
+            <Button variant="outline" onClick={handleExport} disabled={isExporting} className="gap-2">
+              {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {t('qb_export')}
+            </Button>
+            <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="gap-2">
+              <Upload className="w-4 h-4" /> {t('qb_import')}
+            </Button>
             <Button variant="outline" onClick={handleTranslate} disabled={isTranslating} className="gap-2">
               {isTranslating
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('qb_translating')} {translateProgress.done}/{translateProgress.total}</>
@@ -371,6 +435,13 @@ Return only valid JSON with the translations.`,
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         question={editingQuestion}
+      />
+
+      <QuestionBankImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImport={handleImport}
+        importing={isImporting}
       />
 
       <AIQuestionGeneratorDialog

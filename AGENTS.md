@@ -29,3 +29,5 @@ docker compose -f docker-compose.base44.yml up -d
 - `OAuthConsent.jsx` is a platform-managed MCP consent page, NOT routed in `App.jsx`; it references `base44/mcp/config.json` (a platform-managed file not exported to GitHub).
 - `FrameworkControl` entity is used by the AI agent (framework_guide) but not directly in frontend code.
 - All 46 JSONC files validated; no broken `@/` imports across `src/`.
+- Question bank transfer: `src/lib/questionBankTransfer.js` (package build/parse/plan/apply) + `src/components/questions/QuestionBankImportDialog.jsx`, wired to Export/Import buttons on `/question-bank` (admin-only route). Entity reads page through the SDK with `list(sort, limit, skip)` — the entity endpoints honour `skip`.
+- Entity reads return an empty array (HTTP 200) when the request carries no session token, so an already-open preview tab can look empty until it is reloaded.
