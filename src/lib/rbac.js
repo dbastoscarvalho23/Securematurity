@@ -225,6 +225,8 @@ const ROUTE_RESOURCE = {
   '/configuration': 'settings',
   '/settings': 'settings',
   '/system-status': 'system_status',
+  // TEMPORÁRIO — relatório de validação, restrito ao master_admin (retirar com a página).
+  '/validacao-seguranca': 'system_status',
   '/workspaces': 'organization',
   '/user-assignments': 'organization',
   '/admin': 'organization',

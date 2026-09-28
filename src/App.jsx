@@ -56,6 +56,8 @@ const KnowledgeBase = lazy(() => import('@/pages/KnowledgeBase'));
 const AuditPackage = lazy(() => import('@/pages/AuditPackage'));
 const PolicyAttestation = lazy(() => import('@/pages/PolicyAttestation'));
 const ExternalAccess = lazy(() => import('@/pages/ExternalAccess'));
+// TEMPORÁRIO — relatório de validação (documento de inspeção; retirar quando as correções forem aplicadas).
+const ValidationReport = lazy(() => import('@/pages/ValidationReport'));
 
 function PageFallback() {
   return (
@@ -130,6 +132,8 @@ const AuthenticatedApp = () => {
           <Route path="/knowledge-base/:slug" element={<RouteGuard path="/knowledge-base"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/policy-attestation" element={<RouteGuard path="/policy-attestation"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><PolicyAttestation /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/external-access" element={<RouteGuard path="/external-access"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><ExternalAccess /></Suspense></ErrorBoundary></RouteGuard>} />
+          {/* TEMPORÁRIO — relatório de validação (documento de inspeção; retirar quando as correções forem aplicadas). */}
+          <Route path="/validacao-seguranca" element={<RouteGuard path="/validacao-seguranca"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><ValidationReport /></Suspense></ErrorBoundary></RouteGuard>} />
         </Route>
         </Route>
       </Route>
