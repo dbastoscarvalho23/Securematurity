@@ -5,16 +5,17 @@ import { cn } from '@/lib/utils';
 import { SEVERITIES, STATUSES } from '@/lib/validationReportModel';
 
 /**
- * Sumário do relatório: contagem de achados por severidade (cartões) e por
- * estado da recomendação (faixa de badges). Valores vêm do modelo, já somados
- * sobre as duas rondas.
+ * Sumário do relatório: contagem dos achados ABERTOS por severidade (cartões) e
+ * o estado da recomendação de todos os achados (faixa de badges). As contagens
+ * por severidade vêm do modelo (`openSeverityCounts()`); os achados já
+ * corrigidos ficam fora delas e são referidos à parte, na faixa de estados.
  */
-export default function SeveritySummary({ severityCounts, statusCounts, total }) {
+export default function SeveritySummary({ severityCounts, statusCounts, total, correctedCount = 0 }) {
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">
-          Achados por severidade
+          Achados abertos por severidade
           <span className="ml-2 text-sm font-normal text-muted-foreground">{total} no total</span>
         </CardTitle>
       </CardHeader>
@@ -34,6 +35,12 @@ export default function SeveritySummary({ severityCounts, statusCounts, total })
             </Badge>
           ))}
         </div>
+        {correctedCount > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {correctedCount} achado(s) já corrigido(s) ficam fora das contagens por severidade —
+            o estado de cada um está na faixa acima e o detalhe abre com «Mostrar corrigidos».
+          </p>
+        )}
       </CardContent>
     </Card>
   );

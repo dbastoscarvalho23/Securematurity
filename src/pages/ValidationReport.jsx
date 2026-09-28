@@ -20,6 +20,8 @@ import {
   SEVERITIES,
   VERDICT,
   buildReportModel,
+  openFindings,
+  openSeverityCounts,
   totalSeverityCounts,
   totalStatusCounts,
 } from '@/lib/validationReportModel';
@@ -34,19 +36,32 @@ import {
  */
 export default function ValidationReport() {
   const [severity, setSeverity] = useState('todas');
+  const [scope, setScope] = useState('abertos');
   const [openIds, setOpenIds] = useState(() => new Set(['FB1']));
 
   const areas = useMemo(() => buildReportModel(), []);
   const severityCounts = useMemo(() => totalSeverityCounts(), []);
+  const openCounts = useMemo(() => openSeverityCounts(), []);
   const statusCounts = useMemo(() => totalStatusCounts(), []);
+  const openTotal = useMemo(() => openFindings().length, []);
+
+  // As contagens e a lista mostram por omissão só os achados abertos (parcial ou
+  // pendente); «Mostrar corrigidos» alarga ambas ao relatório completo.
+  const scopedCounts = scope === 'abertos' ? openCounts : severityCounts;
+  const scopeTotal = scope === 'abertos' ? openTotal : FINDINGS.length;
 
   const visibleAreas = useMemo(
     () =>
-      areas.map((area) => ({
-        ...area,
-        visible: severity === 'todas' ? area.findings : area.findings.filter((f) => f.severity === severity),
-      })),
-    [areas, severity]
+      areas.map((area) => {
+        const scoped = scope === 'abertos' ? area.openFindings : area.findings;
+        return {
+          ...area,
+          scopedTotal: scoped.length,
+          severityCounts: scope === 'abertos' ? area.openSeverityCounts : area.severityCounts,
+          visible: severity === 'todas' ? scoped : scoped.filter((f) => f.severity === severity),
+        };
+      }),
+    [areas, severity, scope]
   );
 
   const visibleCount = visibleAreas.reduce((acc, area) => acc + area.visible.length, 0);
@@ -190,9 +205,10 @@ export default function ValidationReport() {
       </Card>
 
       <SeveritySummary
-        severityCounts={severityCounts}
+        severityCounts={openCounts}
         statusCounts={statusCounts}
-        total={FINDINGS.length}
+        total={openTotal}
+        correctedCount={statusCounts.corrigido || 0}
       />
 
       <AreaNav areas={areas} />
@@ -201,7 +217,8 @@ export default function ValidationReport() {
         <h2 className="text-base font-semibold text-foreground">
           Achados por área
           <span className="ml-2 text-sm font-normal text-muted-foreground">
-            {visibleCount} de {FINDINGS.length}
+            {visibleCount} de {scopeTotal}
+            {scope === 'abertos' ? ' abertos' : ''}
           </span>
         </h2>
         <div className="flex flex-wrap gap-2">
@@ -210,7 +227,7 @@ export default function ValidationReport() {
             size="sm"
             onClick={() => setSeverity('todas')}
           >
-            Todas {FINDINGS.length}
+            Todas {scopeTotal}
           </Button>
           {SEVERITIES.map((s) => (
             <Button
@@ -219,9 +236,18 @@ export default function ValidationReport() {
               size="sm"
               onClick={() => setSeverity(s.id)}
             >
-              {s.label} {severityCounts[s.id] || 0}
+              {s.label} {scopedCounts[s.id] || 0}
             </Button>
           ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setScope(scope === 'abertos' ? 'todos' : 'abertos')}
+          >
+            {scope === 'abertos'
+              ? `Mostrar corrigidos (${statusCounts.corrigido || 0})`
+              : 'Mostrar só abertos'}
+          </Button>
         </div>
       </div>
 

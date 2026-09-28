@@ -86,6 +86,40 @@ export function findingsByArea(areaId) {
   return FINDINGS.filter((f) => f.area === areaId);
 }
 
+/**
+ * Um achado está aberto enquanto a correção não estiver concluída: «parcial» e
+ * «pendente» contam como abertos; «corrigido» fica fora das contagens.
+ */
+const OPEN_STATUSES = ['parcial', 'pendente'];
+
+/** Achado ainda por fechar (parcial ou pendente). */
+export function isOpenFinding(finding) {
+  return OPEN_STATUSES.includes(finding.status);
+}
+
+/** Achados abertos, em todas as áreas. */
+export function openFindings() {
+  return FINDINGS.filter(isOpenFinding);
+}
+
+/** Contagem global por severidade, só dos achados abertos. */
+export function openSeverityCounts() {
+  return SEVERITIES.reduce((acc, s) => {
+    acc[s.id] = FINDINGS.filter((f) => f.severity === s.id && isOpenFinding(f)).length;
+    return acc;
+  }, {});
+}
+
+/** Contagem de achados abertos de uma área por severidade. */
+export function areaOpenSeverityCounts(areaId) {
+  return SEVERITIES.reduce((acc, s) => {
+    acc[s.id] = FINDINGS.filter(
+      (f) => f.area === areaId && f.severity === s.id && isOpenFinding(f)
+    ).length;
+    return acc;
+  }, {});
+}
+
 /** Contagem de achados de uma área por severidade. */
 export function areaSeverityCounts(areaId) {
   return SEVERITIES.reduce((acc, s) => {
@@ -119,15 +153,22 @@ export function totalStatusCounts() {
 }
 
 /**
- * Modelo pronto a renderizar: cada área com os seus achados e contagens.
+ * Modelo pronto a renderizar: cada área com os seus achados — todos e só os
+ * abertos — e as contagens correspondentes, para que a página possa alternar
+ * entre «só abertos» (por omissão) e o relatório completo.
  */
 export function buildReportModel() {
-  return AREAS.map((area) => ({
-    ...area,
-    findings: findingsByArea(area.id),
-    severityCounts: areaSeverityCounts(area.id),
-    statusCounts: areaStatusCounts(area.id),
-  }));
+  return AREAS.map((area) => {
+    const findings = findingsByArea(area.id);
+    return {
+      ...area,
+      findings,
+      openFindings: findings.filter(isOpenFinding),
+      severityCounts: areaSeverityCounts(area.id),
+      openSeverityCounts: areaOpenSeverityCounts(area.id),
+      statusCounts: areaStatusCounts(area.id),
+    };
+  });
 }
 
 /** Rótulo curto do estado de um achado (ex.: «Corrigido», «Pendente»). */
@@ -146,6 +187,9 @@ export {
   VERDICT,
   countBySeverity,
   countByStatus,
+  isOpenFinding,
+  openFindings,
+  openSeverityCounts,
   severityMeta,
   statusMeta,
 };

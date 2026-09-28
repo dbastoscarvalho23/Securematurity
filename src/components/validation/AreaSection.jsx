@@ -45,7 +45,7 @@ export default function AreaSection({ area, findings, openIds, onToggle }) {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">{area.findings.length} achado(s)</Badge>
+            <Badge variant="secondary">{area.scopedTotal} achado(s)</Badge>
             {SEVERITIES.filter((s) => (area.severityCounts[s.id] || 0) > 0).map((s) => (
               <Badge key={s.id} variant="outline" className={cn('text-xs', s.classes)}>
                 {s.label}: {area.severityCounts[s.id]}
