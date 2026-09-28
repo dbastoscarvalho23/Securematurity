@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Palette, Settings2, ShieldAlert, Workflow, XCircle } from 'lucide-react';
+import { CheckCircle2, Palette, Settings2, ShieldAlert, TrendingUp, Workflow, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EmptyState from '@/components/shared/EmptyState';
@@ -13,6 +13,7 @@ const AREA_ICONS = {
   funcional: Workflow,
   administracao: Settings2,
   ux: Palette,
+  comercial: TrendingUp,
   seguranca: ShieldAlert,
 };
 

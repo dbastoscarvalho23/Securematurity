@@ -96,7 +96,9 @@ export default function ValidationReport() {
             código, registadas como aplicadas e revistas por inspeção — não como verificadas. Ronda 3:
             avaliação funcional, de administração e de UX/UI, com o plano de correção em fases a ser
             executado — a Fase 1 (quick wins de apresentação, FC1/FC2/FC3/FC5/FC6) está aplicada e o
-            estado de cada achado, com o que falta, está no próprio cartão. A página deve ser retirada
+            estado de cada achado, com o que falta, está no próprio cartão. A área «Gestão comercial»
+            (FM1–FM6) é a auditoria dos fluxos comerciais e o plano das capacidades em falta: os cinco
+            achados abertos são o desenho proposto, não trabalho feito. A página deve ser retirada
             quando a validação por identidade real estiver concluída.
           </p>
         </div>
@@ -104,7 +106,7 @@ export default function ValidationReport() {
 
       <PageHeader
         title="Relatório de validação — Core NIS2"
-        description="Achados por área: funcionalidades e fluxos, administração da plataforma, UX/UI e a validação de segurança (papéis, isolamento entre tenants, onboarding, delegações e licenciamento)."
+        description="Achados por área: funcionalidades e fluxos, administração da plataforma, UX/UI, gestão comercial (oferta e preços, ciclo de vida da subscrição, utilização e quotas, inteligência comercial) e a validação de segurança (papéis, isolamento entre tenants, onboarding, delegações e licenciamento)."
       />
 
       <Card>

@@ -18,18 +18,26 @@
  * resolvidos pelo modelo (`validationReportModel.js`) a partir desse achado, para
  * que a lista não possa voltar a contradizer os cartões da mesma área. Uma lacuna
  * sem achado correspondente fica «pendente».
+ *
+ * A área «Gestão comercial» (FM1–FM6) nasce de uma auditoria comercial e não de
+ * uma inspeção de defeitos: os achados abertos registam a lacuna e o desenho
+ * proposto das capacidades em falta (oferta e preços, ciclo de vida da
+ * subscrição, utilização e quotas, inteligência comercial) e o FM6 regista a
+ * fronteira de âmbito — sem faturação nem pagamentos nesta fase. Nenhuma destas
+ * capacidades está implementada, pelo que os achados ficam «pendente» e o parecer
+ * da área é um plano, não um estado.
  */
 
 /** Âmbito e método desta ronda (mostrado no cabeçalho do relatório). */
 export const ROUND_META = {
-  round: 'Ronda 3 — avaliação funcional, de administração e de UX/UI',
+  round: 'Ronda 3 — avaliação funcional, de administração, comercial e de UX/UI',
   date: '2026-09-28',
   method:
-    'Inspeção de código e de configuração: rotas e matriz de capacidades (src/lib/rbac.js), páginas e componentes, entidades e funções de backend, automações agendadas (base44/workflows) e tokens do design system AnkoraOne (src/index.css, tailwind.config.js).',
+    'Inspeção de código e de configuração: rotas e matriz de capacidades (src/lib/rbac.js), páginas e componentes, entidades e funções de backend, automações agendadas (base44/workflows) e tokens do design system AnkoraOne (src/index.css, tailwind.config.js). Para a área «Gestão comercial», a mesma inspeção sobre o catálogo de licenciamento (src/lib/licenseModules.js, base44/shared/licenseGuard.ts), as entidades de licenciamento e de consumo (TenantSubscription, TenantModule, TenantStandard, LicenseChangeLog, LicenseUsageRecord), provisionTenantLicense e as superfícies onde a operação comercial acontece (/licensing, /admin e o painel de plataforma).',
   scope:
-    'Funcionalidades e fluxos de trabalho; administração da plataforma, workspaces, tenants e conteúdos; consistência visual entre páginas e com o design system. A validação de segurança da ronda anterior mantém-se como área própria, sem alteração de conteúdo.',
+    'Funcionalidades e fluxos de trabalho; administração da plataforma, workspaces, tenants e conteúdos; consistência visual entre páginas e com o design system. A área «Gestão comercial» (FM1–FM6) audita a oferta (tiers, packs e normas), o preço e a vigência, o ciclo de vida da subscrição, a utilização face a quotas contratuais e os indicadores de negócio, e planeia as capacidades em falta — sem faturação nem pagamentos em nenhuma fase. A validação de segurança da ronda anterior mantém-se como área própria, sem alteração de conteúdo.',
   limitation:
-    'A inspeção que originou esta ronda não tinha execução multi-identidade. Entretanto existe o harness `tools/validation-harness` (`npm run validate:harness`), que corre as nove identidades contra o backend local — no limite das funções (RBAC, âmbito de carteira, delegações, licenciamento) e na camada de decisão do frontend (Sidebar/RouteGuard, matriz de capacidades, contrato de tenant) — e é ele que sustenta as notas de correção. Continua por verificar em backend real o que o emulador local não honra: as RLS das entidades sobre sessões distintas (inclusive o ramo `delegated_edit_customer_ids`, escondido na leitura) e a leitura da trilha de auditoria.',
+    'A inspeção que originou esta ronda não tinha execução multi-identidade. Entretanto existe o harness `tools/validation-harness` (`npm run validate:harness`), que corre as nove identidades contra o backend local — no limite das funções (RBAC, âmbito de carteira, delegações, licenciamento) e na camada de decisão do frontend (Sidebar/RouteGuard, matriz de capacidades, contrato de tenant) — e é ele que sustenta as notas de correção. Continua por verificar em backend real o que o emulador local não honra: as RLS das entidades sobre sessões distintas (inclusive o ramo `delegated_edit_customer_ids`, escondido na leitura) e a leitura da trilha de auditoria. Na área «Gestão comercial» a inspeção é só de código e de configuração, sem execução: nenhuma das capacidades propostas (FM1–FM5) está implementada, pelo que esses achados ficam «pendente» e a verificação é a que cada cartão descreve.',
 };
 
 /**
@@ -107,6 +115,29 @@ export const ASSESSMENT_AREAS = [
       { text: 'Bloqueio de escrita por heurística durante a simulação de papel.', finding: 'FC4' },
       { text: 'Padrões de carregamento e de vazio divergentes.', finding: 'FC5' },
       { text: 'Acessibilidade: poucos nomes acessíveis em ações de ícone.', finding: 'FC6' },
+    ],
+  },
+  {
+    id: 'comercial',
+    label: 'Gestão comercial',
+    description:
+      'Oferta (tiers, packs e normas), preço e vigência, ciclo de vida da subscrição, utilização face a quotas contratuais e indicadores de negócio. Auditoria dos fluxos existentes e plano das capacidades em falta.',
+    accent: [217, 119, 6],
+    summary:
+      'A base de licenciamento está construída e é auditável — provisionamento por cliente com motivo e histórico, catálogo dos três tiers curado em código com espelho semeado, gating fail-closed —, mas a camada comercial propriamente dita não existe: a subscrição não tem preço nem vigência de preço, só o Core é comercializável, o ciclo de vida não tem renovação, upgrade/downgrade nem fecho, os lugares e o consumo de IA são limites técnicos e não quotas contratuais, e não há receita recorrente, churn, conversão nem upsell. Os seis achados registam a lacuna e o desenho proposto; cinco estão abertos, pelo que o parecer desta área é um plano e não um estado. A fronteira é deliberada: sem faturação nem pagamentos nesta fase — o excedente é sinalizado, nunca cobrado.',
+    solid: [
+      'Provisionamento por cliente com motivo obrigatório, snapshot antes/depois e histórico consultável (provisionTenantLicense + LicenseChangeLog + listLicenseChanges), com o âmbito resolvido no servidor: dono da plataforma = tudo, administrador de parceiro = a sua carteira.',
+      'Três tiers cumulativos (Core ⊂ Profissional ⊂ Avançado) curados em código (src/lib/licenseModules.js e base44/shared/licenseGuard.ts) e espelhados nas entidades pelas funções de semente — a fonte de verdade não pode divergir por edição de dados.',
+      'Gating fail-closed: sem licença resolvida, suspensa fora da tolerância ou com payload inválido, nenhum módulo nem standard abre; o cliente nunca decide o tier efetivo.',
+      'Contadores já existentes: lugares por subscrição (seat_limit / seats_used) e consumo de IA por mês (monthly_usage_count + LicenseUsageRecord, escrito por enforceUsageLimit).',
+      'Painel de plataforma com adoção por tier, estado das subscrições, maiores consumidores de IA e subscrições a expirar (FB6 deixou uma só consola de indicadores).',
+    ],
+    gaps: [
+      { text: 'Oferta sem consola: tiers, packs/add-ons e normas só se alteram em código, e só o Core é comercializável.', finding: 'FM1' },
+      { text: 'Sem tabela de preços: nenhum valor comercial, versão de oferta ou vigência existe no modelo nem no histórico.', finding: 'FM2' },
+      { text: 'Ciclo de vida incompleto: sem renovação, upgrade/downgrade com coerência de módulos e normas, fecho do tenant nem trabalho a tratar.', finding: 'FM3' },
+      { text: 'Utilização sem leitura de negócio: lugares e consumo de IA são limites técnicos, não quotas contratuais, e não há alertas nem sinalização de excedente.', finding: 'FM4' },
+      { text: 'Sem indicadores comerciais: não há receita recorrente, churn, conversão, upsell nem coortes de utilização, nem evolução comparável com o período anterior.', finding: 'FM5' },
     ],
   },
 ];
@@ -527,5 +558,134 @@ export const ASSESSMENT_FINDINGS = [
       'Alinhar isStandardLicensed com a política fail-closed já aplicada aos módulos (sem licença resolvida ou payload inválido → não licenciado) ou removê-lo, se a restrição por standard não estiver no roteiro; em qualquer caso, deixar escrito em AGENTS.md qual é a política de licenciamento e onde se aplica.',
     check:
       'Uma licença em erro não deixa passar nenhum standard; a política de licenciamento está descrita num único sítio.',
+  },
+
+  // ─── Gestão comercial (auditoria dos fluxos comerciais + plano) ──
+  {
+    id: 'FM1',
+    area: 'comercial',
+    severity: 'critica',
+    status: 'pendente',
+    title: 'Oferta comercial gerida só em código: tiers, packs/add-ons e normas',
+    persona: 'Administrador de plataforma que compõe e comercializa a oferta',
+    flow: 'Oferta e preços — compor tiers, packs e normas com versão e vigência',
+    evidence: [
+      'src/lib/licenseModules.js — MODULE_CODES (9 módulos) e ROUTE_MODULE; base44/shared/licenseGuard.ts:13 TIER_MODULES e :26 COMMERCIALLY_AVAILABLE_TIERS = ["core"] — só o Core é comercializável.',
+      'src/pages/Licensing.jsx:160,277,331 — a página apresenta o catálogo de tiers, o de módulos e o de normas; nenhuma criação nem edição (FB7).',
+      'base44/entities/LicenseTier.jsonc / LicenseModule.jsonc / LicenseStandard.jsonc — o conteúdo é reescrito por seedLicenseData / migrateExistingLicenses a partir de modulesForTier; as entidades são espelho semeado, não a fonte.',
+      'Não existe entidade de pack/acréscimo nem de composição da oferta: a privacidade (RoPA/DSR) está fora de todos os tiers (tier_code "outside_offering", is_active false) e não há caminho para a vender como acréscimo.',
+    ],
+    impact:
+      'A oferta não se compõe sem alterar código e voltar a semear: criar um pack, mover um módulo de tier, marcar Profissional ou Avançado como comercializáveis ou vender a privacidade como acréscimo é trabalho de desenvolvimento. Comercialmente a plataforma tem um só produto — o Core — e não consegue empacotar o que já construiu.',
+    recommendation:
+      'Consola de oferta na secção «Gestão da Plataforma»: tiers cumulativos (Core ⊂ Profissional ⊂ Avançado), packs/add-ons e normas, com versão e vigência (data de início e de fim) e estado preparado/comercializável. O catálogo de módulos por tier continua curado em código como fonte de verdade e o espelho semeado continua a ser reescrito a partir dele; toda a escrita é feita por função backend com ator real, snapshot antes/depois e registo no histórico de licenciamento (LicenseChangeLog), à imagem de provisionTenantLicense. A oferta passa a versionar-se por vigência, nunca por edição de entidades, e o provisionamento de um cliente usa a versão vigente nessa data.',
+    check:
+      'O administrador de plataforma cria uma versão de oferta com preço e vigência, marca um pack como comercializável, e o provisionamento seguinte de um cliente usa a versão vigente nessa data — sem alteração de código.',
+  },
+  {
+    id: 'FM2',
+    area: 'comercial',
+    severity: 'alta',
+    status: 'pendente',
+    title: 'Sem tabela de preços nem vigência: a subscrição não tem valor comercial',
+    persona: 'Responsável pela oferta da plataforma',
+    flow: 'Oferta e preços — preço, versão e vigência',
+    evidence: [
+      'base44/entities/TenantSubscription.jsonc — os campos são de estado (customer_id, tier_code, status, started_date, expires_date, trial_ends_at, seat_limit, seats_used, monthly_usage_count, grace_until, notes): nenhum preço, valor mensal ou anual, moeda ou desconto.',
+      'Nenhuma entidade de preço ou tabela de preços existe em base44/entities (48 entidades); o histórico LicenseChangeLog regista alterações de subscrição, não de oferta nem de preço.',
+      'src/lib/licenseModules.js — os tiers têm código e lista de módulos, sem qualquer atributo comercial (preço, periodicidade, unidade de lugares).',
+      'Não há versão de oferta: o que um tier inclui só se sabe pelo código da branch em execução, o que impossibilita reconstruir o que foi vendido numa data passada.',
+    ],
+    impact:
+      'Não existe oferta quantificada: não se sabe quanto vale um tier, não há preço por lugar adicional nem por acréscimo, não há versão de preço com vigência nem histórico de alterações de preço. Sem preço não há proposta, nem comparação entre tenants, nem qualquer indicador de receita (FM5) que não seja inventado — e uma alteração de preço não deixa rasto do que estava em vigor antes.',
+    recommendation:
+      'Tabela de preços versionada por vigência: preço base por tier (periodicidade mensal/anual), preço por lugar adicional e por pack/acréscimo, moeda e estado (preparado/comercializável). Cada alteração entra como versão nova com data de início (e data de fim quando substituída), escrita por função backend com snapshot antes/depois e registo no histórico de licenciamento — nunca uma edição in-place, para que o preço vigente a qualquer data seja reconstruível quando a faturação vier a ser decidida (FM6).',
+    check:
+      'Um preço novo entra como versão com data de início, a oferta anterior continua consultável e o histórico mostra quem alterou, quando e de que valor para que valor.',
+  },
+  {
+    id: 'FM3',
+    area: 'comercial',
+    severity: 'alta',
+    status: 'pendente',
+    title: 'Ciclo de vida da subscrição incompleto: sem renovação, upgrade/downgrade, fecho nem trabalho a tratar',
+    persona: 'Administrador de plataforma (todo o âmbito) e administrador de parceiro (a sua carteira)',
+    flow: 'Subscrições — provisionar, renovar, subir/descer de tier, suspender, reativar e fechar',
+    evidence: [
+      'base44/functions/provisionTenantLicense/entry.ts:79-89 — as seis ações existentes: create, update, suspend, resume, set_module, set_standard. Não há renovação por período, upgrade/downgrade com decisão sobre módulos excecionais e normas, nem fecho.',
+      'Renovar é indistinguível de corrigir: a validade muda por `update` de expires_date e o LicenseChangeLog regista a alteração de campo, não uma renovação.',
+      'src/components/licensing/TenantLicensePanel.jsx — cobre nível, lugares, validade, notas, exceções por módulo (com motivo e validade) e normas por cliente; não oferece a operação de ciclo (renovar, fechar) nem assinala o que o novo tier deixa de cobrir.',
+      'src/components/dashboard/platform/ExpiringSubscriptionsWidget.jsx — as subscrições a expirar aparecem como indicador num widget, sem lista de trabalho nem ação a partir dele.',
+    ],
+    impact:
+      'A operação comercial é manual e indistinta: renovar reescreve a data sem deixar registo de renovação, descer de tier pode deixar módulos excecionais e normas incoerentes com o que passou a estar contratado, e não há fecho — uma subscrição termina por decurso do prazo (`expired`), não por decisão registada. Sem renovação nem fecho registados também não há base para o churn de FM5, e as expirações próximas não chegam a quem tem de agir.',
+    recommendation:
+      'Completar o ciclo de vida em provisionTenantLicense, com motivo obrigatório em todos os caminhos: renovar por período, subir/descer de tier com reconhecimento explícito dos módulos excecionais e normas que o novo tier deixa de cobrir, suspender com tolerância, reativar e fechar com nota — cada ação com LicenseChangeLog (antes → after legível) e AuditLog. No painel do tenant, mostrar estado, tier, vigência, tolerância e módulos ativos; na consola comercial, transformar as renovações e expirações próximas numa lista de trabalho a tratar com ação direta.',
+    check:
+      'Renovar gera um registo de renovação e não uma correção de data; descer de tier obriga a decidir sobre os módulos excecionais; fechar um tenant é uma ação registada; e as renovações dos próximos 30 dias aparecem como trabalho a tratar.',
+  },
+  {
+    id: 'FM4',
+    area: 'comercial',
+    severity: 'alta',
+    status: 'pendente',
+    title: 'Utilização sem quotas contratuais: lugares e consumo de IA são limites técnicos',
+    persona: 'Administrador de plataforma, administrador de parceiro e cliente (leitura da sua própria subscrição)',
+    flow: 'Utilização e quotas — consumo face ao contratado, com alertas',
+    evidence: [
+      'base44/shared/licenseGuard.ts:190,259 — o teto de 1000 invocações de IA por mês é uma constante de código (salvaguarda técnica), não uma quota contratada.',
+      'base44/entities/LicenseUsageRecord.jsonc — contador mensal por cliente (customer_id, month, usage_count, reset_date) escrito por enforceUsageLimit; não há valor contratado com que comparar.',
+      'base44/entities/TenantSubscription.jsonc — seat_limit e seats_used existem como número de lugares incluídos, sem valor contratado por tier nem limite de aviso.',
+      'src/components/dashboard/platform/TopAIConsumersWidget.jsx — mostra os maiores consumidores de IA; não compara com quota nem sinaliza excedente.',
+    ],
+    impact:
+      'O consumo já é medido, mas não é lido como negócio: nenhum tier ou pack define lugares e consumo incluídos, ninguém é avisado antes de esgotar o incluído e um tenant acima do contratado não aparece em lado nenhum. Um lugar a mais ou mil invocações a mais são invisíveis até alguém fazer a conta à mão, e o único limite que o cliente vê é o corte técnico — o que transforma uma conversa comercial num incidente.',
+    recommendation:
+      'Quotas contratuais por tier e por pack (lugares e consumo de IA por mês) com limites de aviso, e leitura de consumo face à quota no painel do tenant (cliente) e na consola comercial (administrador), com alerta antes do limite e sinalização de excedente. O teto técnico de 1000/mês mantém-se como salvaguarda, distinto e declarado como tal face à quota contratada, e a evolução do consumo por mês fica visível a partir de LicenseUsageRecord. Sem faturação (FM6): o excedente é sinalizado, nunca cobrado.',
+    check:
+      'Um tenant que passa a quota contratada aparece sinalizado na consola comercial e no seu próprio painel, com alerta antes do limite e o valor excedido legível — sem qualquer cobrança automática.',
+  },
+  {
+    id: 'FM5',
+    area: 'comercial',
+    severity: 'media',
+    status: 'pendente',
+    title: 'Sem inteligência comercial: receita recorrente, churn, conversão, upsell e coortes',
+    persona: 'Administração da plataforma',
+    flow: 'Inteligência comercial — evolução do negócio e comparação com o período anterior',
+    evidence: [
+      'src/components/dashboard/PlatformAdminDashboard.jsx:14-20 — os sete widgets existentes: distribuição por tier, estado das subscrições, adoção de módulos, crescimento de tenants, volume de auditoria, maiores consumidores de IA e subscrições a expirar. Nenhum indicador de receita, churn, conversão, upsell ou coortes.',
+      'Não existe MRR, ARR nem qualquer valor de receita no código; a receita depende do preço vigente, que não existe (FM2).',
+      'src/components/dashboard/platform/TenantGrowthWidget.jsx — o crescimento é contado por data de criação dos clientes, sem comparação com o período anterior nem distinção entre novo, renovado, descido e perdido.',
+      'A adoção por tier existe (TierDistributionWidget), mas não é lida por coorte nem cruzada com o consumo.',
+    ],
+    impact:
+      'A plataforma não responde às perguntas de negócio: quanto vale a carteira (MRR/ARR), quantos clientes entraram, renovaram, subiram ou saíram no mês, que tier converte e retém, e que coortes de utilização anunciam churn ou upsell. Sem isso não há decisão fundamentada de preço nem de empacotamento, e a evolução do negócio não é comparável com o período anterior.',
+    recommendation:
+      'Painel de indicadores comerciais no painel de plataforma (não duplicado no /admin — FB6): receita recorrente (MRR/ARR a partir do preço vigente × subscrições ativas), churn e renovação por período, conversão e adoção por tier, upsell (upgrades e pedidos por tenant) e coortes de utilização. Cada indicador com drill-down para o tenant e para o registo que o sustenta (subscrição, alteração de licença, consumo) e comparação com o período anterior, sempre a partir das subscrições, do histórico de licenciamento e do consumo reais — nunca de valores escritos à mão.',
+    check:
+      'O MRR/ARR mostrado reconcilia-se com as subscrições ativas e os preços vigentes, cada número abre o tenant e o registo que o produziu, e a evolução mês a mês é comparada com o período anterior.',
+  },
+  {
+    id: 'FM6',
+    area: 'comercial',
+    severity: 'baixa',
+    status: 'corrigido',
+    statusNote:
+      'Fronteira de âmbito registada, não lacuna: a plataforma não integra fornecedor de pagamentos, não guarda dados de pagamento nem emite documento de faturação nesta fase, e as capacidades de FM1–FM5 estão desenhadas para essa fronteira — preços e quotas são valores de negócio declarados (o teto técnico de 1000 usos mensais mantém-se salvaguarda, não quota), o excedente é sinalizado ao administrador e ao cliente e nunca gera cobrança, e o preço vigente de FM2 fica versionado para que uma decisão futura de faturação possa reconstruí-lo a qualquer data. O que resta é não deixar a fronteira ser ultrapassada por arrasto: cada capacidade comercial nova que peça cobrança é uma decisão própria, não um requisito implícito.',
+    title: 'Sem faturação nem pagamentos na plataforma — fronteira de âmbito declarada',
+    persona: 'Equipa de produto e administração da plataforma',
+    flow: 'Fronteira do âmbito comercial',
+    evidence: [
+      'Não existe entidade de faturação, pagamento, método de pagamento, fatura ou recibo em base44/entities (48 entidades) nem integração de pagamentos no repositório.',
+      'Nenhuma função de backend processa cobranças: a única noção de utilização é o contador LicenseUsageRecord (mês e usage_count) e o teto técnico de base44/shared/licenseGuard.ts:190,259.',
+      'base44/functions/provisionTenantLicense/entry.ts — o provisionamento escreve subscrição, módulos e normas e audita a alteração; não gera qualquer obrigação financeira.',
+    ],
+    impact:
+      'Sem esta fronteira escrita, cada capacidade comercial nova tende a pedir faturação por arrasto — cobrar o excedente, faturar a renovação, integrar um gateway —, o que traz dados de pagamento, ciclo de faturação e obrigações fiscais para um produto de conformidade que não os quer nesta fase.',
+    recommendation:
+      'Manter a fronteira declarada e documentada no relatório e no parecer comercial: sem fornecedor de pagamentos, sem dados de pagamento e sem documento de faturação; preços e quotas são valores de negócio declarados, não derivados de limites técnicos. O excedente de consumo é sinalizado (consola comercial e painel do cliente) e nunca cobrado. Se a faturação vier a ser necessária, entra como decisão própria sobre o preço vigente que FM2 deixa versionado.',
+    check:
+      'Nenhuma capacidade comercial cobra: o excedente aparece sinalizado e nunca gera cobrança, e não existem na plataforma dados de pagamento nem documento de faturação.',
   },
 ];

@@ -4,7 +4,7 @@
  * Junta as duas rondas de inspeção num só modelo:
  *  - Ronda 1/2 (segurança e RBAC): `src/lib/validationReportData.js`, mantido como
  *    fonte de verdade dos achados F1–F15, do estado das correções e dos residuais.
- *  - Ronda 3 (funcional, administração e UX/UI): `src/lib/platformAssessmentData.js`.
+ *  - Ronda 3 (funcional, administração, comercial e UX/UI): `src/lib/platformAssessmentData.js`.
  *
  * A página `/validacao-seguranca` e os seus componentes leem tudo daqui: nenhum
  * achado, contagem ou área é escrito na página, para que o relatório não possa
