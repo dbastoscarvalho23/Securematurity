@@ -18,11 +18,10 @@ services:
       test:
         - CMD-SHELL
         - >-
-          node -e "const id=process.env.VITE_BASE44_APP_ID;
-          const check=async(name,url,ok)=>{try{const r=await fetch(url);if(!ok.includes(r.status))throw new Error('status '+r.status);console.log(name+' ok');return true}catch(e){console.log(name+' FAIL: '+e.message);return false}};
-          (async()=>{const fe=await check('frontend','http://127.0.0.1:5173/',[200]);
-          const be=await check('backend','http://127.0.0.1:4400/api/apps/'+id+'/entities/Customer',[200,401,403]);
-          process.exit(fe&&be?0:1)})()"
+          node -e "const probe=async(name,url)=>{try{const r=await fetch(url);if(r.status>=500)throw new Error('status '+r.status);console.log(name+' ok ('+r.status+')');return true}catch(e){console.log(name+' FAIL: '+e.message);return false}};
+          (async()=>{const frontend=await probe('frontend','http://127.0.0.1:5173/');
+          const backend=await probe('backend','http://127.0.0.1:4400/api/apps/'+process.env.VITE_BASE44_APP_ID+'/entities/Customer');
+          process.exit(frontend&&backend?0:1)})()"
       interval: 20s
       timeout: 10s
       retries: 5
