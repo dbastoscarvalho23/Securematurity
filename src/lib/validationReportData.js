@@ -367,9 +367,15 @@ export function countBySeverity() {
   }, {});
 }
 
-/** Estado da correção de um problema (por omissão «pendente»). */
-export function statusMeta(id) {
-  const entry = ISSUE_STATUS[id] || {};
+/**
+ * Estado da correção: aceita um id de problema (F1, que resolve por ISSUE_STATUS)
+ * ou já um id de estado (`corrigido`/`parcial`/`pendente`, como os achados da
+ * ronda funcional trazem no seu próprio campo `status`). Por omissão «pendente».
+ */
+export function statusMeta(idOrStatus) {
+  const direct = STATUSES.find((s) => s.id === idOrStatus);
+  if (direct) return direct;
+  const entry = ISSUE_STATUS[idOrStatus] || {};
   return STATUSES.find((s) => s.id === entry.status) || STATUSES[STATUSES.length - 1];
 }
 

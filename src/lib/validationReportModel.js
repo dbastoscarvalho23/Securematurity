@@ -132,7 +132,7 @@ export function buildReportModel() {
 
 /** Rótulo curto do estado de um achado (ex.: «Corrigido», «Pendente»). */
 export function findingStatusLabel(finding) {
-  return statusMeta(finding.id).label;
+  return statusMeta(finding.status).label;
 }
 
 export {
