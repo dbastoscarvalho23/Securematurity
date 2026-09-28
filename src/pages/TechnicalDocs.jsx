@@ -1,19 +1,22 @@
 import React from 'react';
 import {
-  AlertTriangle, Boxes, Database, Download, FileCode, Layers, Network, ShieldCheck, Users, Workflow,
+  AlertTriangle, Boxes, Braces, Database, Download, FileCode, Layers, Network, Server,
+  ShieldCheck, Users, Workflow,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import PageHeader from '@/components/shared/PageHeader';
+import ApiStructureSection from '@/components/docs/ApiStructureSection';
 import CapabilityMatrix from '@/components/docs/CapabilityMatrix';
 import ControlCascade from '@/components/docs/ControlCascade';
+import DataModelSection from '@/components/docs/DataModelSection';
 import DocsSection from '@/components/docs/DocsSection';
 import ModuleMap from '@/components/docs/ModuleMap';
+import ServiceArchitectureSection from '@/components/docs/ServiceArchitectureSection';
 import TenancyDiagram from '@/components/docs/TenancyDiagram';
 import { useLanguage } from '@/lib/LanguageContext';
 import {
-  DATA_MODEL,
   DEV_GUIDE,
   DOCS_META,
   FEATURE_AREAS,
@@ -53,6 +56,8 @@ const SECTIONS = [
   { id: 'areas', label: 'Áreas funcionais', icon: Workflow },
   { id: 'seguranca', label: 'Segurança', icon: ShieldCheck },
   { id: 'dados', label: 'Modelo de dados', icon: Database },
+  { id: 'servicos', label: 'Arquitetura de serviços', icon: Server },
+  { id: 'api', label: 'Estrutura da API', icon: Braces },
   { id: 'dev', label: 'Desenvolvimento', icon: FileCode },
 ];
 
@@ -392,81 +397,39 @@ export default function TechnicalDocs() {
         icon={Database}
         accent={[148, 163, 184]}
         title="Modelo de dados"
-        description={`${totals.entities} entidades, ${totals.functions} funções de backend, workflows e utilitários partilhados.`}
+        description={`${totals.entities} entidades e ${totals.entityRelations} relações declaradas — campos-chave lidos do esquema de cada entidade.`}
       >
-        <div>
-          <p className="mb-2 text-sm font-medium">Entidades</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {DATA_MODEL.entities.map((group) => (
-              <div key={group.group} className="rounded-lg border p-3">
-                <p className="text-sm font-medium">{group.group}</p>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {group.items.map((entity) => (
-                    <Badge key={entity} variant="outline" className="font-mono text-[10px] font-normal">
-                      {entity}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-2 text-sm font-medium">Funções de backend</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {DATA_MODEL.functions.map((group) => (
-              <div key={group.group} className="rounded-lg border p-3">
-                <p className="text-sm font-medium">{group.group}</p>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {group.items.map((fn) => (
-                    <Badge key={fn} variant="secondary" className="font-mono text-[10px] font-normal">
-                      {fn}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-lg border p-3">
-            <p className="text-sm font-medium">Workflows agendados</p>
-            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              {DATA_MODEL.workflows.map((workflow) => (
-                <li key={workflow}>{workflow}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-lg border p-3">
-            <p className="text-sm font-medium">Utilitários partilhados</p>
-            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              {DATA_MODEL.shared.map((item) => (
-                <li key={item.name}>
-                  <code className="font-mono text-xs">{item.name}</code> — {item.note}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        <div className="rounded-lg border p-3">
-          <p className="text-sm font-medium">Integrações</p>
-          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-            {DATA_MODEL.integrations.map((item) => (
-              <li key={item.name}>
-                <span className="text-foreground">{item.name}</span> — {item.note}
-              </li>
-            ))}
-          </ul>
-        </div>
+        <DataModelSection />
       </DocsSection>
 
-      {/* 9 — Guia de desenvolvimento */}
+      {/* 9 — Arquitetura de serviços */}
+      <DocsSection
+        id="servicos"
+        index={9}
+        icon={Server}
+        accent={[8, 145, 178]}
+        title="Tech stack e arquitetura de serviços"
+        description={`${STACK.length} camadas de stack, ${totals.workflows} automações agendadas, ${totals.sharedModules} módulos partilhados, ${totals.connectors} integrações e o agente de IA.`}
+      >
+        <ServiceArchitectureSection />
+      </DocsSection>
+
+      {/* 10 — Estrutura da API */}
+      <DocsSection
+        id="api"
+        index={10}
+        icon={Braces}
+        accent={[124, 58, 237]}
+        title="Estrutura da API"
+        description={`${totals.gatedRoutes + totals.rbacOnlyRoutes} rotas do frontend e ${totals.functions} funções de backend com entradas e saídas, extraídas do código.`}
+      >
+        <ApiStructureSection />
+      </DocsSection>
+
+      {/* 11 — Guia de desenvolvimento */}
       <DocsSection
         id="dev"
-        index={9}
+        index={11}
         icon={FileCode}
         accent={[234, 88, 12]}
         title="Guia de desenvolvimento"

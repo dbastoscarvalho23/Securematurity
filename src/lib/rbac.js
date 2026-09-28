@@ -266,7 +266,11 @@ const ROUTE_RESOURCE = {
   // TEMPORÁRIO — relatório de validação, restrito ao master_admin (retirar com a página).
   '/validacao-seguranca': 'system_status',
   '/workspaces': 'organization',
-  '/user-assignments': 'organization',
+  // «Delegações» é a entrada única da fusão com o «Acesso Externo»: a rota fica
+  // com o recurso do acesso externo, que é o conjunto de papéis que já alcançava
+  // uma das duas páginas (consultor, admins de cliente, de parceiro e de
+  // plataforma) — nenhum papel perde o que tinha.
+  '/user-assignments': 'external_access',
   '/admin': 'organization',
 };
 

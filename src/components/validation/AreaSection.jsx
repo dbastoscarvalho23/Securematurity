@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EmptyState from '@/components/shared/EmptyState';
 import FindingCard from './FindingCard';
+import MaturityBadge from './MaturityBadge';
 import { cn } from '@/lib/utils';
 import { SEVERITIES, statusMeta } from '@/lib/validationReportModel';
 import { rgba } from '@/lib/docsModel';
@@ -46,6 +47,8 @@ export default function AreaSection({ area, findings, openIds, onToggle }) {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {/* Nota 0–5 da área, calculada no modelo a partir dos seus achados. */}
+            <MaturityBadge maturity={area.maturity} />
             <Badge variant="secondary">{area.scopedTotal} achado(s)</Badge>
             {SEVERITIES.filter((s) => (area.severityCounts[s.id] || 0) > 0).map((s) => (
               <Badge key={s.id} variant="outline" className={cn('text-xs', s.classes)}>

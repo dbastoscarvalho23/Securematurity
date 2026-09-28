@@ -10,7 +10,7 @@
  * a partir do conteúdo narrativo.
  */
 
-import { ALL_ROLES, CAPABILITIES, CAPABILITY_TIERS } from './rbac';
+import { ALL_ROLES, CAPABILITIES, CAPABILITY_TIERS, resourceForRoute } from './rbac';
 import {
   COMMERCIALLY_AVAILABLE_TIERS,
   LEGACY_TIER_ALIASES,
@@ -19,7 +19,24 @@ import {
   TIER_MODULES,
   moduleForRoute,
 } from './licenseModules';
-import { DATA_MODEL, FEATURE_AREAS, ROLE_NOTES } from './devDocsData';
+import {
+  API_MODEL,
+  DATA_MODEL,
+  DATA_MODEL_NOTES,
+  FEATURE_AREAS,
+  FUNCTION_NOTES,
+  ROLE_NOTES,
+  SERVICE_MODEL,
+} from './devDocsData';
+import {
+  AGENT_INVENTORY,
+  CONNECTOR_INVENTORY,
+  ENTITY_INVENTORY,
+  FUNCTION_INVENTORY,
+  INVENTORY_TOTALS,
+  SHARED_INVENTORY,
+  WORKFLOW_INVENTORY,
+} from './repoInventory';
 
 export const TIER_ORDER = ['core', 'professional', 'advanced'];
 
@@ -246,7 +263,114 @@ export function buildDocsTotals() {
     areas: FEATURE_AREAS.length,
     gatedRoutes: Object.values(ROUTE_MODULE).filter(Boolean).length,
     rbacOnlyRoutes: RBAC_ONLY_ROUTES.length,
-    entities: DATA_MODEL.entities.reduce((total, group) => total + group.items.length, 0),
-    functions: DATA_MODEL.functions.reduce((total, group) => total + group.items.length, 0),
+    // Entidades e funções vêm do inventário do repositório, não do agrupamento
+    // editorial: o número não pode ficar curto por o grupo não ter sido revisto.
+    entities: INVENTORY_TOTALS.entities,
+    entityRelations: INVENTORY_TOTALS.relations,
+    entityFields: INVENTORY_TOTALS.fields,
+    functions: INVENTORY_TOTALS.functions,
+    multiplexedFunctions: INVENTORY_TOTALS.multiplexedFunctions,
+    workflows: INVENTORY_TOTALS.workflows,
+    sharedModules: INVENTORY_TOTALS.shared,
+    connectors: INVENTORY_TOTALS.connectors,
+    agents: INVENTORY_TOTALS.agents,
+  };
+}
+
+// ─── Modelo de dados (derivado + agrupamento curado) ────────────
+
+/**
+ * Campos-chave de uma entidade: as relações e os obrigatórios, até `limit`.
+ * O resto é contado, não listado — o esquema completo não cabe num documento.
+ */
+export function entityKeyFields(entity, limit = 8) {
+  const relations = entity.fields.filter((field) => field.relation);
+  const required = entity.fields.filter((field) => field.required && !field.relation);
+  const keyFields = [...relations, ...required].slice(0, limit);
+  return { keyFields, omittedFields: entity.fieldCount - keyFields.length };
+}
+
+/**
+ * Modelo de dados pronto a renderizar: o agrupamento editorial por domínio, com
+ * cada entidade confrontada com o inventário derivado — e a lista das entidades
+ * que existem no repositório e ainda não têm grupo.
+ */
+export function buildDataModel() {
+  const byName = new Map(ENTITY_INVENTORY.map((entity) => [entity.name, entity]));
+  const grouped = new Set(DATA_MODEL.entities.flatMap((group) => group.items));
+
+  return {
+    notes: DATA_MODEL_NOTES,
+    groups: DATA_MODEL.entities.map((group) => ({
+      group: group.group,
+      entities: group.items.map((name) => {
+        const entity = byName.get(name);
+        if (!entity) return { name, missing: true };
+        return { ...entity, ...entityKeyFields(entity) };
+      }),
+    })),
+    unclassified: ENTITY_INVENTORY.filter((entity) => !grouped.has(entity.name)).map(
+      (entity) => entity.name,
+    ),
+  };
+}
+
+// ─── Arquitetura de serviços (derivada + narrativa curada) ──────
+
+const SHARED_NOTES = new Map((DATA_MODEL.shared || []).map((item) => [item.name, item.note]));
+
+/** Arquitetura de serviços: narrativa curada + inventário do repositório. */
+export function buildServiceArchitecture() {
+  return {
+    model: SERVICE_MODEL,
+    workflows: WORKFLOW_INVENTORY,
+    shared: SHARED_INVENTORY.map((name) => ({ name, note: SHARED_NOTES.get(name) || '' })),
+    connectors: CONNECTOR_INVENTORY,
+    agents: AGENT_INVENTORY,
+  };
+}
+
+// ─── Estrutura da API (derivada + narrativa curada) ─────────────
+
+/**
+ * Estrutura da API: as rotas do frontend (recurso de capacidade e módulo que as
+ * licencia, lidos de rbac.js e licenseModules.js) e as funções de backend com o
+ * contrato extraído do código — resumo, ações, entradas e saídas.
+ */
+export function buildApiStructure() {
+  const routes = Object.keys(ROUTE_MODULE).map((route) => {
+    const code = ROUTE_MODULE[route];
+    const item = routeItem(route);
+    return {
+      route,
+      name: item ? item.name : null,
+      summary: item ? item.summary : null,
+      resource: resourceForRoute(route),
+      resourceLabel: resourceForRoute(route) ? resourceLabel(resourceForRoute(route)) : null,
+      module: code,
+      moduleName: code ? MODULE_META[code].name : null,
+    };
+  });
+
+  const byName = new Map(FUNCTION_INVENTORY.map((fn) => [fn.name, fn]));
+  const withNote = (fn) => ({
+    ...fn,
+    note: fn.summary || FUNCTION_NOTES[fn.name] || '',
+    noteIsCurated: !fn.summary && Boolean(FUNCTION_NOTES[fn.name]),
+  });
+
+  return {
+    model: API_MODEL,
+    routes,
+    groups: DATA_MODEL.functions.map((group) => ({
+      group: group.group,
+      items: group.items.map((name) => {
+        const fn = byName.get(name);
+        return fn ? withNote(fn) : { name, missing: true };
+      }),
+    })),
+    unclassified: FUNCTION_INVENTORY.filter(
+      (fn) => !DATA_MODEL.functions.some((group) => group.items.includes(fn.name)),
+    ).map(withNote),
   };
 }

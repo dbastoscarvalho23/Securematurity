@@ -68,7 +68,7 @@ export default function Sidebar({ collapsed, mobileOpen = false, onCloseMobile }
                 </p>
               )}
               <div className="space-y-0.5">
-                {group.items.map((item) => {
+                {group.items.map((item, index) => {
                   const label = t(item.labelKey);
                   const isActive = item.path === '/'
                     ? location.pathname === '/'
@@ -90,15 +90,32 @@ export default function Sidebar({ collapsed, mobileOpen = false, onCloseMobile }
                       {!collapsed && <span className="truncate">{label}</span>}
                     </Link>
                   );
-                  if (collapsed) {
-                    return (
-                      <Tooltip key={item.path}>
-                        <TooltipTrigger asChild>{link}</TooltipTrigger>
-                        <TooltipContent side="right">{label}</TooltipContent>
-                      </Tooltip>
-                    );
-                  }
-                  return link;
+                  const entry = collapsed ? (
+                    <Tooltip key={item.path}>
+                      <TooltipTrigger asChild>{link}</TooltipTrigger>
+                      <TooltipContent side="right">{label}</TooltipContent>
+                    </Tooltip>
+                  ) : link;
+
+                  // Separador temático: o grupo pode agrupar os itens por tema
+                  // (`sectionKey`), com o rótulo do tema antes do primeiro item
+                  // de cada secção — o mesmo tratamento tipográfico dos títulos
+                  // de grupo, sem um segundo nível de indentação.
+                  const startsSection =
+                    Boolean(item.sectionKey) && item.sectionKey !== group.items[index - 1]?.sectionKey;
+
+                  if (!startsSection) return entry;
+
+                  return (
+                    <React.Fragment key={item.path}>
+                      {!collapsed && (
+                        <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/25">
+                          {t(item.sectionKey)}
+                        </p>
+                      )}
+                      {entry}
+                    </React.Fragment>
+                  );
                 })}
               </div>
             </div>

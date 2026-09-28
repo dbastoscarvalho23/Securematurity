@@ -7,6 +7,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import AreaNav from '@/components/validation/AreaNav';
 import AreaSection from '@/components/validation/AreaSection';
+import MaturityMatrix from '@/components/validation/MaturityMatrix';
 import SeveritySummary from '@/components/validation/SeveritySummary';
 import { cn } from '@/lib/utils';
 import {
@@ -213,6 +214,8 @@ export default function ValidationReport() {
         total={openTotal}
         correctedCount={statusCounts.corrigido || 0}
       />
+
+      <MaturityMatrix />
 
       <AreaNav areas={areas} />
 

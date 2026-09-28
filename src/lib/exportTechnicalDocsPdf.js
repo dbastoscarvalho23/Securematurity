@@ -8,7 +8,6 @@
 
 import { jsPDF } from 'jspdf';
 import {
-  DATA_MODEL,
   DELEGATION_FLOW,
   DEV_GUIDE,
   DOCS_META,
@@ -29,9 +28,12 @@ import {
   ROLES,
   TIER_ACCENTS,
   TIER_LABELS,
+  buildApiStructure,
   buildAreaMap,
+  buildDataModel,
   buildDocsTotals,
   buildModuleCards,
+  buildServiceArchitecture,
   buildTierLayers,
   capabilityActions,
   resourceLabel,
@@ -59,7 +61,7 @@ const M = 16;      // margem lateral
 const GAP = 4;     // intervalo entre cartões
 const CHIP_H = 5;
 
-const SECTION_ACCENTS = [BLUE, VIOLET, TEAL, GOLD, CYAN, PINK, NAVY, SLATE, ORANGE];
+const SECTION_ACCENTS = [BLUE, VIOLET, TEAL, GOLD, CYAN, PINK, NAVY, SLATE, CYAN, VIOLET, ORANGE];
 const SCOPE_ACCENTS = { Plataforma: NAVY, Parceiro: BLUE, Cliente: TEAL, Externo: GOLD };
 
 const SECTIONS = [
@@ -71,6 +73,8 @@ const SECTIONS = [
   'Áreas funcionais',
   'Modelo de segurança',
   'Modelo de dados',
+  'Tech stack e arquitetura de serviços',
+  'Estrutura da API',
   'Guia de desenvolvimento',
 ];
 
@@ -657,47 +661,234 @@ function sectionData(doc) {
   const accent = SECTION_ACCENTS[7];
   const { W } = pageSize(doc);
   let y = sectionHeading(doc, newPage(doc, 'portrait'), 8, SECTIONS[7], accent);
+  const model = buildDataModel();
+  const totals = buildDocsTotals();
 
-  const groupBlock = (group, chips) => {
-    const labels = group.items.map((label) => ({ label }));
-    const h = 9 + chipRowHeight(doc, labels, W - 2 * M - 8, 6.5);
-    y = ensure(doc, y, h + GAP);
-    card(doc, M, y, W - 2 * M, h, {});
-    text(doc, group.group, M + 4, y + 5.6, { size: 8.5, style: 'bold', color: NAVY });
-    chipRow(doc, labels, M + 4, y + 7.6, W - M - 4, { accent: chips, size: 6.5 });
-    y += h + GAP;
-  };
+  y = paragraph(doc, model.notes.summary, M, y, W - 2 * M, { size: 8, color: INK }) + 1;
+  y = text(
+    doc,
+    `${totals.entities} entidades · ${totals.entityRelations} relações declaradas`,
+    M,
+    y + 3.4,
+    { size: 7.5, style: 'bold', color: accent },
+  ) + 1.5;
+  y = bulletList(doc, model.notes.rules, M + 1, y, W - 2 * M, { size: 7.5, color: MUTED }) + 3;
 
-  y = bandTitle(doc, y, `Entidades (${buildDocsTotals().entities})`, accent) + 1;
-  DATA_MODEL.entities.forEach((group) => groupBlock(group, BLUE));
-
-  y = ensure(doc, y + 3, 20);
-  y = bandTitle(doc, y, `Funções de backend (${buildDocsTotals().functions})`, accent) + 1;
-  DATA_MODEL.functions.forEach((group) => groupBlock(group, TEAL));
-
-  y = ensure(doc, y + 3, 30);
-  y = bandTitle(doc, y, 'Workflows agendados', accent) + 1;
-  y = bulletList(doc, DATA_MODEL.workflows, M + 1, y + 1, W - 2 * M, { size: 8, color: INK }) + 4;
-
-  y = ensure(doc, y, 30);
-  y = bandTitle(doc, y, 'Utilitários partilhados (base44/shared)', accent) + 1;
-  DATA_MODEL.shared.forEach((item) => {
-    y = ensure(doc, y, 6);
-    text(doc, item.name, M + 1, y + 3, { size: 7.5, style: 'bold', color: INK });
-    y = paragraph(doc, item.note, M + 46, y + 3, W - 2 * M - 46, { size: 7.5, color: MUTED }) + 1;
+  model.groups.forEach((group) => {
+    y = ensure(doc, y + 2, 22);
+    y = bandTitle(doc, y, `${group.group} (${group.entities.length})`, accent) + 1;
+    group.entities.forEach((entity) => {
+      if (entity.missing) return;
+      const chips = entity.keyFields.map((field) => ({
+        label: field.relation ? `${field.name} → ${field.relation}` : field.name,
+      }));
+      const h = 9 + chipRowHeight(doc, chips, W - 2 * M - 8, 6);
+      y = ensure(doc, y, h + 1.6);
+      card(doc, M, y, W - 2 * M, h, {});
+      text(doc, entity.name, M + 4, y + 4.8, { size: 8, style: 'bold', color: NAVY });
+      text(doc, `${entity.fieldCount} campos · ${entity.requiredCount} obrigatórios`, W - M - 4, y + 4.8, {
+        size: 6.5,
+        color: MUTED,
+        align: 'right',
+      });
+      chipRow(doc, chips, M + 4, y + 6.6, W - M - 4, { accent: BLUE, size: 6 });
+      y += h + 1.6;
+    });
   });
 
-  y = ensure(doc, y + 4, 24);
-  y = bandTitle(doc, y, 'Integrações', accent) + 1;
-  DATA_MODEL.integrations.forEach((item) => {
-    y = paragraph(doc, `${item.name} — ${item.note}`, M + 1, y + 3, W - 2 * M - 2, { size: 8, color: INK }) + 1;
-  });
+  if (model.unclassified.length) {
+    y = ensure(doc, y + 3, 12);
+    y = paragraph(
+      doc,
+      `Entidades sem grupo editorial: ${model.unclassified.join(', ')}.`,
+      M,
+      y + 4,
+      W - 2 * M,
+      { size: 7.5, color: ORANGE },
+    ) + 2;
+  }
 }
 
-function sectionDev(doc) {
+function sectionServices(doc) {
   const accent = SECTION_ACCENTS[8];
   const { W } = pageSize(doc);
   let y = sectionHeading(doc, newPage(doc, 'portrait'), 9, SECTIONS[8], accent);
+  const model = buildServiceArchitecture();
+
+  const cols = 2;
+  const colW = (W - 2 * M - GAP) / cols;
+
+  y = paragraph(doc, model.model.summary, M, y, W - 2 * M, { size: 8, color: INK }) + 3;
+
+  for (let i = 0; i < model.model.layers.length; i += cols) {
+    const row = model.model.layers.slice(i, i + cols);
+    const heights = row.map((layer) => 10 + measure(doc, layer.detail, colW - 8, 7.5) * lineH(7.5));
+    const h = Math.max(...heights);
+    y = ensure(doc, y, h + GAP);
+    row.forEach((layer, c) => {
+      const x = M + c * (colW + GAP);
+      card(doc, x, y, colW, h, { accent });
+      text(doc, layer.title, x + 4.5, y + 5.5, { size: 8.5, style: 'bold', color: NAVY });
+      paragraph(doc, layer.detail, x + 4.5, y + 9.4, colW - 8, { size: 7.5, color: INK });
+    });
+    y += h + GAP;
+  }
+
+  y = ensure(doc, y + 3, 24);
+  y = bandTitle(doc, y, `Automações agendadas (${model.workflows.length})`, accent) + 1;
+  model.workflows.forEach((workflow) => {
+    const chips = [
+      ...(workflow.cron ? [{ label: workflow.cron }] : []),
+      ...workflow.events.map((event) => ({ label: event })),
+      ...workflow.calls.map((call) => ({ label: `→ ${call}` })),
+    ];
+    const h = 8.5 + (chips.length ? chipRowHeight(doc, chips, W - 2 * M - 62, 6) : 0);
+    y = ensure(doc, y, h + 1.6);
+    card(doc, M, y, W - 2 * M, h, {});
+    text(doc, workflow.name, M + 4, y + 4.8, { size: 8, style: 'bold', color: INK });
+    text(doc, workflow.trigger, M + 4, y + 8.2, { size: 6.5, style: 'bold', color: MUTED });
+    if (chips.length) chipRow(doc, chips, M + 62, y + 3.4, W - M - 4, { accent, size: 6 });
+    y += h + 1.6;
+  });
+
+  y = ensure(doc, y + 3, 30);
+  y = bandTitle(doc, y, `Código partilhado (${model.shared.length})`, accent) + 1;
+  model.shared.forEach((module) => {
+    y = ensure(doc, y, 6);
+    text(doc, module.name, M + 1, y + 3, { size: 7.5, style: 'bold', color: INK });
+    y = paragraph(doc, module.note || '—', M + 46, y + 3, W - 2 * M - 46, { size: 7.5, color: MUTED }) + 1;
+  });
+
+  y = ensure(doc, y + 4, 20);
+  y = bandTitle(doc, y, 'Integrações e agente de IA', accent) + 1;
+  model.connectors.forEach((connector) => {
+    y = paragraph(
+      doc,
+      `${connector.name} (${connector.type}) — ${connector.scopes.join(' · ') || 'sem scopes declarados'}`,
+      M + 1,
+      y + 3,
+      W - 2 * M - 2,
+      { size: 8, color: INK },
+    ) + 1;
+  });
+  model.agents.forEach((agent) => {
+    y = paragraph(doc, `Agente ${agent.name} — ${agent.description}`, M + 1, y + 3.5, W - 2 * M - 2, {
+      size: 8,
+      color: INK,
+    }) + 1;
+    if (agent.tools.length) {
+      y = paragraph(
+        doc,
+        `Ferramentas: ${agent.tools.map((tool) => `${tool.entity}: ${tool.operations.join('/')}`).join(' · ')}`,
+        M + 1,
+        y + 1,
+        W - 2 * M - 2,
+        { size: 7, color: MUTED },
+      ) + 1.5;
+    }
+  });
+
+  y = ensure(doc, y + 4, 24);
+  y = bandTitle(doc, y, 'Convenções que o código impõe', accent) + 1;
+  bulletList(doc, model.model.conventions, M + 1, y + 2, W - 2 * M, { size: 8, color: INK });
+}
+
+function sectionApi(doc) {
+  const accent = SECTION_ACCENTS[9];
+  const { W, H } = pageSize(doc);
+  let y = sectionHeading(doc, newPage(doc, 'landscape'), 10, SECTIONS[9], accent);
+  const model = buildApiStructure();
+
+  y = paragraph(doc, model.model.summary, M, y, W - 2 * M, { size: 8, color: INK }) + 1.5;
+  y = bulletList(doc, model.model.call, M + 1, y, W - 2 * M, { size: 7.5, color: MUTED }) + 4;
+
+  const colRoute = 52;
+  const colName = 96;
+  const colResource = 46;
+
+  y = bandTitle(doc, y, `Rotas do frontend (${model.routes.length})`, accent) + 1;
+  const header = () => {
+    setFill(doc, NAVY);
+    doc.rect(M, y, W - 2 * M, 7, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    setText(doc, WHITE);
+    doc.text('Rota', M + 2, y + 4.6);
+    doc.text('Página', M + colRoute + 2, y + 4.6);
+    doc.text('Recurso', M + colRoute + colName + 2, y + 4.6);
+    doc.text('Módulo', M + colRoute + colName + colResource + 2, y + 4.6);
+    y += 9;
+  };
+  header();
+
+  model.routes.forEach((route, index) => {
+    if (y > H - 18) {
+      y = newPage(doc, 'landscape');
+      header();
+    }
+    if (index % 2 === 1) {
+      setFill(doc, SOFT);
+      doc.rect(M, y - 1.4, W - 2 * M, 5.4, 'F');
+    }
+    text(doc, route.route, M + 2, y + 2.6, { size: 7, style: 'bold', color: INK });
+    text(doc, route.name || '—', M + colRoute + 2, y + 2.6, { size: 7, color: INK });
+    text(doc, route.resource || '—', M + colRoute + colName + 2, y + 2.6, { size: 7, color: MUTED });
+    text(doc, route.moduleName || 'só RBAC', M + colRoute + colName + colResource + 2, y + 2.6, {
+      size: 7,
+      color: route.module ? accent : MUTED,
+    });
+    y += 5.4;
+  });
+
+  const renderFunctions = (items) => {
+    items.forEach((fn) => {
+      if (fn.missing) return;
+      const chips = [
+        ...fn.actions.map((action) => ({ label: action, filled: true })),
+        ...fn.inputs.map((input) => ({ label: `in: ${input}` })),
+        ...fn.outputs.map((output) => ({ label: `out: ${output}` })),
+      ];
+      const noteLines = fn.note ? measure(doc, fn.note, W - 2 * M - 8, 7) : 0;
+      const h = 8 + noteLines * lineH(7) + (chips.length ? chipRowHeight(doc, chips, W - 2 * M - 8, 6) : 0);
+      y = ensure(doc, y, h + 1.6, 'landscape');
+      card(doc, M, y, W - 2 * M, h, {});
+      text(doc, fn.name, M + 4, y + 4.6, { size: 8, style: 'bold', color: NAVY });
+      text(doc, fn.actions.length ? `multiplexada · ${fn.actions.length} ações` : 'comando único', W - M - 4, y + 4.6, {
+        size: 6.5,
+        style: 'bold',
+        color: MUTED,
+        align: 'right',
+      });
+      let ty = y + 5;
+      if (fn.note) ty = paragraph(doc, fn.note, M + 4, ty + 2, W - 2 * M - 8, { size: 7, color: INK });
+      if (chips.length) chipRow(doc, chips, M + 4, ty + 0.8, W - M - 4, { accent, size: 6 });
+      y += h + 1.6;
+    });
+  };
+
+  y = ensure(doc, y + 3, 24, 'landscape');
+  y = bandTitle(doc, y, `Funções de backend (${buildDocsTotals().functions})`, accent) + 1;
+  model.groups.forEach((group) => {
+    y = ensure(doc, y + 2, 20, 'landscape');
+    y = bandTitle(doc, y, `${group.group} (${group.items.length})`, accent) + 1;
+    renderFunctions(group.items);
+  });
+
+  if (model.unclassified.length) {
+    y = ensure(doc, y + 3, 20, 'landscape');
+    y = bandTitle(doc, y, `Funções sem grupo editorial (${model.unclassified.length})`, accent) + 1;
+    renderFunctions(model.unclassified);
+  }
+
+  y = ensure(doc, y + 4, 20, 'landscape');
+  y = bandTitle(doc, y, 'Códigos de erro', accent) + 1;
+  bulletList(doc, model.model.errors, M + 1, y + 2, W - 2 * M, { size: 7.5, color: INK });
+}
+
+function sectionDev(doc) {
+  const accent = SECTION_ACCENTS[10];
+  const { W } = pageSize(doc);
+  let y = sectionHeading(doc, newPage(doc, 'portrait'), 11, SECTIONS[10], accent);
 
   y = bandTitle(doc, y, 'Comandos do ambiente local', accent) + 1;
   DEV_GUIDE.commands.forEach((item) => {
@@ -735,6 +926,8 @@ export function exportTechnicalDocsPdf({ t } = {}) {
   sectionAreas(doc);
   sectionSecurity(doc);
   sectionData(doc);
+  sectionServices(doc);
+  sectionApi(doc);
   sectionDev(doc);
 
   const total = doc.internal.getNumberOfPages();

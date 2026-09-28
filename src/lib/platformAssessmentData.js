@@ -705,3 +705,124 @@ export const ASSESSMENT_FINDINGS = [
       'Nenhuma capacidade comercial cobra: o excedente aparece sinalizado e nunca gera cobrança, e não existem na plataforma dados de pagamento nem documento de faturação.',
   },
 ];
+
+/**
+ * Áreas comerciais da plataforma (FM1–FM6) — a prontidão comercial lida como uma
+ * escala 0–5 por área.
+ *
+ * Cada área aponta para os achados que a descrevem (`findings`), pelo que a nota
+ * é calculada pelo mesmo modelo do relatório (`validationReportModel.js`) a
+ * partir do estado e da severidade desses achados — nenhuma nota é escrita à mão.
+ * A área FM6 não tem achado aberto porque é uma decisão de âmbito registada
+ * (sem faturação nem pagamentos nesta fase), e é isso que a nota reflete.
+ */
+export const COMMERCIAL_AREAS = [
+  {
+    id: 'fm_oferta',
+    label: 'Oferta: tiers, packs e normas',
+    description: 'Versão de oferta com vigência, tiers cumulativos, packs/add-ons e normas por tier.',
+    findings: ['FM1'],
+  },
+  {
+    id: 'fm_preco',
+    label: 'Preço e vigência',
+    description: 'Preço por tier, por lugar adicional e por pack, com versão que permite reconstruir o que foi vendido a uma data.',
+    findings: ['FM2'],
+  },
+  {
+    id: 'fm_ciclo',
+    label: 'Ciclo de vida da subscrição',
+    description: 'Renovação, mudança de nível com decisão explícita sobre o que sai, suspensão com tolerância e fecho com trabalho a tratar.',
+    findings: ['FM3'],
+  },
+  {
+    id: 'fm_quotas',
+    label: 'Utilização e quotas contratuais',
+    description: 'Lugares e consumo de IA lidos da tabela em vigor, sinalizados ao cliente sem bloquear o acesso.',
+    findings: ['FM4'],
+  },
+  {
+    id: 'fm_indicadores',
+    label: 'Indicadores de negócio',
+    description: 'Receita contratada, movimento do período, churn, conversão e coortes, calculados no servidor.',
+    findings: ['FM5'],
+  },
+  {
+    id: 'fm_fronteira',
+    label: 'Fronteira de âmbito: sem faturação',
+    description: 'Decisão registada de não integrar fornecedor de pagamentos nem emitir documento de faturação nesta fase.',
+    findings: ['FM6'],
+  },
+];
+
+/**
+ * Categorias de requisitos NIS2 (art. 21.º/2 do RJCS) — a escala 0–5 lida sobre o
+ * conjunto de requisitos que o produto serve.
+ *
+ * Cada categoria aponta para os achados da plataforma que tocam o suporte que ela
+ * dá a essa medida (`findings`: o módulo/página que a serve e o que a limita), e a
+ * nota sai da mesma função de cálculo. Uma categoria sem achados abertos fica a 5
+ * — não tem lacunas registadas, e é isso que a nota diz.
+ */
+export const NIS2_AREAS = [
+  {
+    id: 'nis2_riscos',
+    label: 'Políticas de análise de riscos e segurança',
+    description: 'Medida a): políticas de análise dos riscos e de segurança dos sistemas de informação (Gestão de Risco, Métricas de Conformidade).',
+    findings: ['FA4', 'FB6', 'FM5'],
+  },
+  {
+    id: 'nis2_incidentes',
+    label: 'Gestão de incidentes',
+    description: 'Medida b): gestão de incidentes (registo e acompanhamento de incidentes, com notificação).',
+    findings: ['FC3', 'FC6'],
+  },
+  {
+    id: 'nis2_continuidade',
+    label: 'Continuidade de atividade e crises',
+    description: 'Medida c): continuidade das atividades e gestão de crises (automações agendadas, conservação e janela de manutenção).',
+    findings: ['FB4'],
+  },
+  {
+    id: 'nis2_cadeia',
+    label: 'Segurança da cadeia de abastecimento',
+    description: 'Medida d): segurança da cadeia de abastecimento (fornecedores e questionários da cadeia).',
+    findings: ['FB2', 'FC5'],
+  },
+  {
+    id: 'nis2_aquisicao',
+    label: 'Aquisição, desenvolvimento e vulnerabilidades',
+    description: 'Medida e): segurança na aquisição, desenvolvimento e manutenção, incluindo a gestão e divulgação de vulnerabilidades (registo de vulnerabilidades, revisão de documentos e catálogo curado em código).',
+    findings: ['FB7'],
+  },
+  {
+    id: 'nis2_eficacia',
+    label: 'Avaliação da eficácia das medidas',
+    description: 'Medida f): políticas e procedimentos para avaliar a eficácia das medidas de gestão de risco (trilha de auditoria, relatórios e consola de indicadores).',
+    findings: ['FB5', 'FB6'],
+  },
+  {
+    id: 'nis2_higiene',
+    label: 'Ciber-higiene e formação',
+    description: 'Medida g): práticas básicas de ciber-higiene e formação em cibersegurança (formação e atestação de políticas).',
+    findings: ['FC3', 'FC4'],
+  },
+  {
+    id: 'nis2_criptografia',
+    label: 'Criptografia e encriptação',
+    description: 'Medida h): práticas de utilização de criptografia e encriptação (hash SHA-256 das evidências e versões imutáveis de documentos).',
+    findings: ['FA5'],
+  },
+  {
+    id: 'nis2_acesso',
+    label: 'Recursos humanos, controlo de acesso e ativos',
+    description: 'Medida i): segurança dos recursos humanos, políticas de controlo de acesso e gestão de ativos (matriz de capacidades, delegações, licenciamento e auditoria do acesso).',
+    findings: ['FA1', 'FB1', 'FB3', 'FB8'],
+  },
+  {
+    id: 'nis2_autenticacao',
+    label: 'Autenticação multifator e comunicações seguras',
+    description: 'Medida j): autenticação multifator ou contínua, comunicações seguras e sistemas de emergência (sessão, normalização de papéis e expiração de delegações).',
+    findings: ['F2', 'F7', 'F14', 'F15'],
+  },
+];

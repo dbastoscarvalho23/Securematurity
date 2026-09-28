@@ -26,7 +26,13 @@ import {
   severityMeta,
   statusMeta,
 } from './validationReportData';
-import { ASSESSMENT_AREAS, ASSESSMENT_FINDINGS, ROUND_META } from './platformAssessmentData';
+import {
+  ASSESSMENT_AREAS,
+  ASSESSMENT_FINDINGS,
+  COMMERCIAL_AREAS,
+  NIS2_AREAS,
+  ROUND_META,
+} from './platformAssessmentData';
 
 /**
  * Área dos achados da ronda anterior. Os F1–F15 ficam intactos em
@@ -187,8 +193,125 @@ export function buildReportModel() {
       severityCounts: areaSeverityCounts(area.id),
       openSeverityCounts: areaOpenSeverityCounts(area.id),
       statusCounts: areaStatusCounts(area.id),
+      // Nota 0–5 da área, calculada dos seus achados (nunca escrita à mão).
+      maturity: maturityForFindings(findings),
     };
   });
+}
+
+// ─── Escala de maturidade 0–5 ───────────────────────────────────
+
+/**
+ * Escala única de maturidade (0–5), aplicada às três famílias de áreas do
+ * relatório: as áreas do relatório de validação, as áreas comerciais da
+ * plataforma (FM1–FM6) e as categorias de requisitos NIS2.
+ */
+export const MATURITY_SCALE = [
+  { level: 0, label: 'Inexistente', description: 'Nada existe para avaliar.' },
+  { level: 1, label: 'Esboçado', description: 'Existe desenho ou intenção, sem execução utilizável.' },
+  { level: 2, label: 'Parcial', description: 'Funciona em parte; as lacunas impedem o uso pleno.' },
+  { level: 3, label: 'Funcional', description: 'Cobre o percurso principal, com lacunas conhecidas e delimitadas.' },
+  { level: 4, label: 'Robusto', description: 'Cobre o percurso e os casos-limite; restam residuais assumidos.' },
+  { level: 5, label: 'Validado', description: 'Sem achados abertos na área.' },
+];
+
+/** Peso de cada severidade na descida da nota e fator de cada estado do achado. */
+export const MATURITY_WEIGHTS = { critica: 2, alta: 1.5, media: 0.75, baixa: 0.25, verificar: 0.25 };
+export const MATURITY_STATUS_FACTOR = { corrigido: 0, parcial: 0.5, pendente: 1 };
+
+/**
+ * A nota 0–5 de um conjunto de achados: 5 menos o peso dos achados abertos
+ * («parcial» conta metade, «corrigido» não conta), arredondado ao nível inteiro.
+ * A justificação diz sempre o que baixou a nota — nunca há uma nota sem razão.
+ */
+export function maturityForFindings(findings = []) {
+  const open = findings.filter(isOpenFinding);
+  const penalty = open.reduce(
+    (sum, f) =>
+      sum + (MATURITY_WEIGHTS[f.severity] ?? 0.25) * (MATURITY_STATUS_FACTOR[f.status] ?? 1),
+    0
+  );
+  // O nível 5 é «sem achados abertos»: qualquer achado aberto tira pelo menos um
+  // nível (senão um achado de peso baixo não descia a nota e a justificação
+  // contradizia o rótulo). Acima disso, o peso da severidade arredonda para cima.
+  const rounded = open.length > 0 ? Math.max(1, Math.round(penalty)) : 0;
+  const level = Math.max(0, Math.min(5, 5 - rounded));
+  const meta = MATURITY_SCALE[level];
+  const closed = findings.length - open.length;
+
+  return {
+    level,
+    label: meta.label,
+    description: meta.description,
+    rationale: open.length
+      ? `Achados abertos: ${open
+          .map((f) => `${f.id} (${severityMeta(f.severity).label}, ${statusMeta(f.status).label})`)
+          .join(' · ')}.`
+      : `Sem achados abertos${closed ? ` — ${closed} já corrigido(s)` : ''}.`,
+    open,
+    closed,
+    total: findings.length,
+  };
+}
+
+/** Nota 0–5 de uma área do relatório, pelos achados que lhe pertencem. */
+export function maturityForArea(areaId) {
+  return maturityForFindings(findingsByArea(areaId));
+}
+
+/**
+ * As três famílias de áreas medidas na mesma escala. As duas últimas são
+ * conjuntos de áreas adicionais (áreas comerciais FM e categorias de requisitos
+ * NIS2) e passam pela mesma função de cálculo que as áreas do relatório.
+ */
+export const MATURITY_FAMILIES = [
+  {
+    id: 'relatorio',
+    label: 'Áreas do relatório de validação',
+    description: 'Funcionalidades e fluxos, administração da plataforma, UX/UI, gestão comercial e segurança e RBAC.',
+    areas: () =>
+      AREAS.map((area) => ({
+        id: area.id,
+        label: area.label,
+        description: area.description,
+        findings: findingsByArea(area.id).map((f) => f.id),
+      })),
+  },
+  {
+    id: 'comercial',
+    label: 'Áreas comerciais da plataforma',
+    description: 'A prontidão comercial (FM1–FM6) lida pelos achados que a descrevem.',
+    areas: () => COMMERCIAL_AREAS,
+  },
+  {
+    id: 'nis2',
+    label: 'Categorias de requisitos NIS2',
+    description: 'As medidas do art. 21.º/2 do RJCS, medidas pelos achados da plataforma que tocam o suporte a cada uma.',
+    areas: () => NIS2_AREAS,
+  },
+];
+
+/**
+ * Matriz de maturidade pronta a renderizar: cada família com as suas áreas, os
+ * achados que a produzem e a nota calculada. Nenhuma nota é escrita à mão.
+ */
+export function buildMaturityMatrix() {
+  const byId = new Map(FINDINGS.map((f) => [f.id, f]));
+  return MATURITY_FAMILIES.map((family) => ({
+    id: family.id,
+    label: family.label,
+    description: family.description,
+    areas: family.areas().map((area) => {
+      const findings = (area.findings || []).map((id) => byId.get(id)).filter(Boolean);
+      return {
+        id: area.id,
+        label: area.label,
+        description: area.description,
+        findings,
+        maturity: maturityForFindings(findings),
+      };
+    }),
+  }));
 }
 
 /** Rótulo curto do estado de um achado (ex.: «Corrigido», «Pendente»). */

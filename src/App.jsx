@@ -47,7 +47,8 @@ import Workspaces from '@/pages/Workspaces';
 import Organization from '@/pages/Organization';
 import Configuration from '@/pages/Configuration';
 import SystemStatus from '@/pages/SystemStatus';
-import UserAssignments from '@/pages/UserAssignments';
+// «Delegações» — entrada única do acesso externo (fusão de ExternalAccess + UserAssignments).
+import Delegations from '@/pages/Delegations';
 import { Suspense, lazy } from 'react';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
@@ -55,7 +56,6 @@ const StrategicReport = lazy(() => import('@/pages/StrategicReport'));
 const KnowledgeBase = lazy(() => import('@/pages/KnowledgeBase'));
 const AuditPackage = lazy(() => import('@/pages/AuditPackage'));
 const PolicyAttestation = lazy(() => import('@/pages/PolicyAttestation'));
-const ExternalAccess = lazy(() => import('@/pages/ExternalAccess'));
 // Documentação técnica interna (separador «Dev»).
 const TechnicalDocs = lazy(() => import('@/pages/TechnicalDocs'));
 // TEMPORÁRIO — relatório de validação (documento de inspeção; retirar quando as correções forem aplicadas).
@@ -132,12 +132,13 @@ const AuthenticatedApp = () => {
           <Route path="/configuration" element={<RouteGuard path="/configuration"><Configuration /></RouteGuard>} />
           <Route path="/system-status" element={<RouteGuard path="/system-status"><SystemStatus /></RouteGuard>} />
           <Route path="/platform-operations" element={<RouteGuard path="/platform-operations"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><PlatformOperations /></Suspense></ErrorBoundary></RouteGuard>} />
-          <Route path="/user-assignments" element={<RouteGuard path="/user-assignments"><UserAssignments /></RouteGuard>} />
+          <Route path="/user-assignments" element={<RouteGuard path="/user-assignments"><Delegations /></RouteGuard>} />
           <Route path="/strategic-report" element={<RouteGuard path="/strategic-report"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><StrategicReport /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/knowledge-base" element={<RouteGuard path="/knowledge-base"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/knowledge-base/:slug" element={<RouteGuard path="/knowledge-base"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/policy-attestation" element={<RouteGuard path="/policy-attestation"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><PolicyAttestation /></Suspense></ErrorBoundary></RouteGuard>} />
-          <Route path="/external-access" element={<RouteGuard path="/external-access"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><ExternalAccess /></Suspense></ErrorBoundary></RouteGuard>} />
+          {/* «Acesso Externo» foi fundido em «Delegações»: a rota antiga redireciona para a entrada única. */}
+          <Route path="/external-access" element={<Navigate to="/user-assignments" replace />} />
           {/* Documentação técnica interna (separador «Dev»). */}
           <Route path="/documentacao-tecnica" element={<RouteGuard path="/documentacao-tecnica"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><TechnicalDocs /></Suspense></ErrorBoundary></RouteGuard>} />
           {/* TEMPORÁRIO — relatório de validação (documento de inspeção; retirar quando as correções forem aplicadas). */}

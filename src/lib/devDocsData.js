@@ -201,7 +201,8 @@ export const FEATURE_AREAS = [
     items: [
       { name: 'Formação', route: '/training', resource: 'training', summary: 'Atribuição de formação e acompanhamento de conclusão.' },
       { name: 'Atestação de Políticas', route: '/policy-attestation', resource: 'policy_attestation', summary: 'Pedido e registo de atestação de políticas pelos colaboradores.' },
-      { name: 'Acesso Externo', route: '/external-access', resource: 'external_access', summary: 'Pedidos e aprovações de delegação e onboarding.' },
+      // «Acesso Externo» foi fundido em «Delegações» (/user-assignments); a rota antiga redireciona.
+      { name: 'Delegações', route: '/user-assignments', resource: 'external_access', summary: 'Pedidos e aprovações de delegação, onboarding e atribuições diretas por utilizador e cliente.' },
     ],
   },
   {
@@ -357,6 +358,15 @@ export const DEV_GUIDE = {
   ],
 };
 
+/**
+ * Modelo de dados — agrupamento editorial.
+ *
+ * As LISTAS de entidades e funções destes grupos são o agrupamento por domínio,
+ * não o inventário: o inventário é derivado do repositório
+ * (`src/lib/repoInventory.js`) e a documentação confronta os dois. Uma peça que
+ * exista no repositório e não esteja em nenhum grupo aparece na secção do modelo
+ * de dados como «sem grupo» — a divergência fica à vista em vez de passar.
+ */
 export const DATA_MODEL = {
   entities: [
     { group: 'Isolamento e identidade', items: ['Customer', 'Workspace', 'User', 'InvitedUser', 'UserCustomerAssignment', 'AuditLog'] },
@@ -367,18 +377,20 @@ export const DATA_MODEL = {
     { group: 'Conhecimento e formação', items: ['KnowledgeArticle', 'Training', 'TrainingEnrollment', 'TrainingReport', 'TrainingUser'] },
     { group: 'Privacidade', items: ['DataProcessingActivity', 'DataSubjectRequest'] },
     { group: 'Relatórios e auditoria', items: ['AuditPackage', 'ComplianceChecklist'] },
-    { group: 'Licenciamento', items: ['LicenseTier', 'LicenseModule', 'LicenseEntitlement', 'LicenseStandard', 'TenantSubscription', 'TenantEntitlementOverride', 'TenantModule', 'TenantStandard', 'LicenseUsageRecord'] },
+    { group: 'Licenciamento', items: ['LicenseTier', 'LicenseModule', 'LicenseEntitlement', 'LicenseStandard', 'TenantSubscription', 'TenantEntitlementOverride', 'TenantModule', 'TenantStandard', 'LicenseUsageRecord', 'LicenseChangeLog'] },
+    { group: 'Camada comercial', items: ['OfferVersion', 'PriceTable', 'CommercialChangeLog', 'QuotaSignal'] },
+    { group: 'Importação de perguntas', items: ['QuestionImportBatch', 'QuestionImportItem'] },
     { group: 'Frameworks', items: ['Framework', 'FrameworkControl'] },
-    { group: 'Plataforma', items: ['Comment', 'Notification', 'MaintenanceWindow', 'ReminderSettings', 'StorageSettings', 'PolicyAttestation'] },
+    { group: 'Plataforma', items: ['Comment', 'Notification', 'MaintenanceWindow', 'ReminderSettings', 'StorageSettings', 'PolicyAttestation', 'PlatformAnnouncement', 'RetentionPolicy', 'WorkflowRun'] },
   ],
   functions: [
     { group: 'Identidade e acesso', items: ['logUserLogin', 'listUsers', 'adminUpdateUser', 'adminDeleteUser', 'manageAccess', 'manageAssignment', 'resolveWorkspaceAccess', 'getWorkspaceTree', 'migrateExistingWorkspaces'] },
     { group: 'Avaliações e ação', items: ['completeAssessment', 'manageActionPlan'] },
     { group: 'Documentos e evidências', items: ['reviewDocument', 'searchDocuments', 'storeFileToCloud', 'documentReviewReminders', 'documentNotifications'] },
-    { group: 'Relatórios e auditoria', items: ['generateAuditPackage', 'generateMonthlyAnnualReport', 'getPlatformMetrics'] },
-    { group: 'Licenciamento e armazenamento', items: ['getEffectiveLicense', 'seedLicenseData', 'migrateExistingLicenses', 'updateCustomerStorage', 'getStorageProviders'] },
-    { group: 'Notificações e retenção', items: ['createNotifications', 'taskNotifications', 'riskNotifications', 'riskDueDateReminders', 'dataRetentionPurge'] },
-    { group: 'Conteúdo', items: ['transitionArticleStatus', 'seedKnowledgeBase'] },
+    { group: 'Relatórios e auditoria', items: ['generateAuditPackage', 'generateMonthlyAnnualReport', 'getPlatformMetrics', 'listAuditLog', 'getCommercialMetrics'] },
+    { group: 'Licenciamento e camada comercial', items: ['getEffectiveLicense', 'provisionTenantLicense', 'listTenantLicenses', 'listLicenseChanges', 'manageCommercialOffer', 'seedLicenseData', 'migrateExistingLicenses', 'updateCustomerStorage', 'getStorageProviders'] },
+    { group: 'Notificações, automações e retenção', items: ['createNotifications', 'taskNotifications', 'riskNotifications', 'riskDueDateReminders', 'dataRetentionPurge', 'managePlatformOperations', 'manageAnnouncements'] },
+    { group: 'Conteúdo', items: ['transitionArticleStatus', 'seedKnowledgeBase', 'manageQuestionImport', 'extractQuestionBank'] },
     { group: 'Ambiente de teste', items: ['seedTestEnvironment'] },
   ],
   workflows: [
@@ -404,5 +416,105 @@ export const DATA_MODEL = {
   integrations: [
     { name: 'Conectores', note: 'Google Drive e OneDrive para armazenamento de evidências.' },
     { name: 'Agente de IA', note: 'framework_guide — apoio à interpretação dos controlos.' },
+  ],
+};
+
+/**
+ * Modelo de dados — narrativa curada. O inventário (entidades, campos e
+ * relações) é derivado do repositório em `src/lib/repoInventory.js`.
+ */
+export const DATA_MODEL_NOTES = {
+  summary:
+    'As entidades declaram-se em JSONC em `base44/entities` e trazem no próprio ficheiro o esquema, os campos obrigatórios e a RLS de leitura e escrita. As relações são por identificador (`customer_id`, `workspace_id`, `assessment_id`, `question_id`, …) — o motor não tem chaves estrangeiras — e é a RLS que faz o isolamento entre inquilinos. Os campos mostrados abaixo são as relações e os obrigatórios de cada entidade; a contagem total de campos vem do esquema.',
+  rules: [
+    'As entidades operacionais isolam-se por customer_id e pelos arrays desnormalizados de delegação guardados no User (delegated_view_customer_ids / delegated_edit_customer_ids).',
+    'As entidades com regra de negócio (licenciamento, camada comercial, delegação, catálogo de conteúdo) não têm caminho de escrita no browser: escreve-as a função de backend, com o ator retirado da sessão.',
+    'Um campo que o código limpa com null tem de ser declarado com tipo de união (ex.: ["number", "null"]) — o validador recusa null num tipo simples.',
+    'Chaves desconhecidas são descartadas pelo backend: o nome do campo no código tem de coincidir exatamente com o do esquema.',
+    'Um campo terminado em _id ou _ids que corresponda ao nome de uma entidade existente é apresentado como relação.',
+  ],
+};
+
+/**
+ * Arquitetura de serviços — narrativa curada. O inventário de workflows, código
+ * partilhado, conectores e agente é derivado do repositório.
+ */
+export const SERVICE_MODEL = {
+  summary:
+    'O backend é feito de funções Deno sem servidor próprio: cada função é uma porta HTTP que resolve o ator, verifica papel e âmbito, confirma o módulo licenciado quando o percurso é comercial, escreve pelo cliente de serviço e responde JSON. As automações agendadas chamam essas mesmas funções, e o código partilhado é o que impede duas portas de divergirem.',
+  layers: [
+    {
+      title: 'Funções de backend (Deno)',
+      detail:
+        'Cada função é um ponto de entrada autónomo. As funções multiplexadas recebem o comando no campo `action` do corpo; as restantes leem os campos que precisam. A autorização é sempre decidida no servidor.',
+    },
+    {
+      title: 'Automações agendadas (workflows)',
+      detail:
+        'As automações declaram-se em `base44/workflows`, por calendário (cron) ou por evento de entidade, e chamam funções de backend com o segredo partilhado em vez da sessão do utilizador. Cada execução regista uma linha em WorkflowRun, que é o que a consola de operações mostra.',
+    },
+    {
+      title: 'Código partilhado (base44/shared)',
+      detail:
+        'O que duas portas não podem repetir: normalização de papel e âmbito de carteira, autorização e pontuação de avaliações, derivação de lacunas, gating de licença, oferta comercial, fluxo editorial, regras da importação de perguntas, segredo das automações, execução de workflows e resolução do ator de teste.',
+    },
+    {
+      title: 'Integrações e agente de IA',
+      detail:
+        'Conectores de armazenamento para as evidências e um agente que conduz o utilizador pelos controlos de um framework, analisa a resposta e regista-a (com leitura apenas sobre Framework, FrameworkControl e Question).',
+    },
+  ],
+  conventions: [
+    'Uma função multiplexada usa `action` como selector: nenhum filtro pode chamar-se `action`, ou sobrepõe-se ao comando e a chamada responde 400.',
+    'As escritas de administração usam o cliente de serviço e ficam na trilha de auditoria com o ator real, retirado da sessão — nunca do corpo do pedido.',
+    'Uma automação embrulha o handler com o pedido como parâmetro: `Deno.serve((req) => withWorkflowRun(…, req, …))`.',
+    'O gating de licença é fail-closed: sem licença resolvida, em erro, ou com lista malformada, nenhum módulo nem standard abre.',
+    'O cálculo de resultados, cobertura e metodologia é sempre do servidor; o browser só apresenta.',
+  ],
+};
+
+/**
+ * Notas curadas por função — usadas apenas para as funções que não trazem
+ * cabeçalho de documentação no próprio ficheiro. Quando existe cabeçalho, é ele
+ * que aparece (derivado); estas notas são a exceção, não a regra.
+ */
+export const FUNCTION_NOTES = {
+  adminDeleteUser: 'Remove um utilizador — dono da plataforma ou administrador de parceiro dentro da sua carteira, com auditoria.',
+  createNotifications: 'Cria notificações para os destinatários indicados; é a porta usada pelas automações e pelas funções de evento.',
+  documentNotifications: 'Notifica os intervenientes quando um documento muda de estado ou de versão.',
+  documentReviewReminders: 'Lembretes de revisão de documentos a vencer (automação de calendário).',
+  generateMonthlyAnnualReport: 'Gera o retrato mensal/anual dos relatórios por cliente (automação de calendário).',
+  getEffectiveLicense: 'Resolve a licença efetiva do inquilino (tier, módulos, standards e tolerância de suspensão); fail-closed.',
+  getStorageProviders: 'Lista os fornecedores de armazenamento disponíveis e a configuração corrente.',
+  listUsers: 'Lista utilizadores com o âmbito do papel: um administrador de parceiro vê apenas a sua carteira.',
+  logUserLogin: 'Arranque de sessão: normaliza e persiste o papel canónico, retira delegações expiradas e audita a alteração.',
+  migrateExistingLicenses: 'Reconcilia o licenciamento existente com o catálogo de tiers atual; idempotente.',
+  migrateExistingWorkspaces: 'Cria o workspace raiz dos clientes que ainda não têm; idempotente.',
+  riskDueDateReminders: 'Lembretes de prazos de risco a vencer (automação de calendário).',
+  riskNotifications: 'Notifica os intervenientes quando um risco é criado, alterado ou fechado.',
+  searchDocuments: 'Pesquisa documentos de segurança com os filtros de âmbito de quem chama.',
+  storeFileToCloud: 'Guarda um ficheiro no fornecedor de armazenamento configurado e devolve a referência.',
+  taskNotifications: 'Notifica responsáveis e donos quando uma tarefa muda de estado ou de prazo.',
+  updateCustomerStorage: 'Atualiza a configuração de armazenamento de um cliente.',
+};
+
+/**
+ * Estrutura da API — narrativa curada. As rotas, os módulos, as ações e os
+ * campos de entrada/saída são derivados do código.
+ */
+export const API_MODEL = {
+  summary:
+    'A API tem duas faces: as rotas do frontend — cada uma com o recurso de capacidade que a autoriza e, quando é comercial, o módulo que a licencia — e as funções de backend, que são a única porta de escrita. As funções não são REST: o comando vai no corpo e a resposta é sempre JSON.',
+  call: [
+    'POST /api/apps/<appId>/functions/<nome-da-função>, com os cabeçalhos Base44-App-Id e Authorization: Bearer <token>.',
+    'Nas funções multiplexadas, o comando é o campo `action` do corpo; os restantes campos são dados e filtros.',
+    'As automações chamam as mesmas funções com o segredo partilhado, em vez da sessão do utilizador.',
+    'As chaves de entrada e de saída listadas abaixo são extraídas do código de cada função (desestruturação do corpo e respostas Response.json): são o contrato praticado, não uma promessa.',
+  ],
+  errors: [
+    '401 — sem sessão válida: a função resolveu o ator e não encontrou utilizador.',
+    '403 — papel ou âmbito insuficiente (carteira, delegação, módulo não licenciado).',
+    '409 — conflito de estado (ex.: publicar um lote já publicado, re-finalizar um pacote de auditoria).',
+    '422 — pedido inválido (campo obrigatório em falta, motivo ausente ou valor fora do intervalo).',
   ],
 };

@@ -152,7 +152,11 @@ function AssignmentFormDialog({ open, onClose, editing, users, customers, t }) {
   );
 }
 
-export default function UserAssignments() {
+/**
+ * `embedded` — usado pela página «Delegações», que já traz o seu próprio
+ * cabeçalho de secção: sem ele a página não repete o cabeçalho da página.
+ */
+export default function UserAssignments({ embedded = false }) {
   const { user } = useAuth();
   // Âmbito do tenant pelo contexto único (FA2) — a página não o resolve por si.
   const { customerId } = useActiveCustomer();
@@ -199,7 +203,7 @@ export default function UserAssignments() {
 
   return (
     <div className="space-y-6">
-      <PageHeader description={t('assignment_subtitle')} />
+      {!embedded && <PageHeader description={t('assignment_subtitle')} />}
 
       <div className="flex items-center justify-between">
         <Badge variant="outline" className="text-xs">

@@ -9,9 +9,14 @@ import { canView, isWorkspaceOrAbove } from './rbac';
 
 /**
  * Helper to create a nav item.
+ *
+ * `sectionKey` é opcional: dentro de um grupo, os itens com a mesma chave
+ * formam uma secção temática e a sidebar desenha o rótulo dessa secção antes do
+ * primeiro item (ver «Gestão da plataforma», separada em comercial, operacional
+ * e parceiros/utilizadores). Os itens de uma secção têm de ser contíguos.
  */
-function mk(path, labelKey, icon, resource) {
-  return { path, labelKey, icon, resource };
+function mk(path, labelKey, icon, resource, sectionKey) {
+  return { path, labelKey, icon, resource, sectionKey };
 }
 
 /**
@@ -93,23 +98,34 @@ export const BASE_GROUPS = [
     items: [
       mk('/training', 'nav_training', 'GraduationCap', 'training'),
       mk('/policy-attestation', 'nav_policy_attestation', 'ShieldCheck', 'policy_attestation'),
-      mk('/external-access', 'nav_external_access', 'Network', 'external_access'),
+      // O «Acesso Externo» foi fundido em «Delegações» (ver o grupo de gestão da
+      // plataforma): /external-access redireciona para /user-assignments.
     ],
   },
   {
+    // Um grupo, três temas: os itens são os mesmos, agrupados por assunto
+    // (`sectionKey`) para que a administração se leia por tema em vez de por
+    // ordem de chegada. A ordem dos itens tem de manter cada tema contíguo.
     labelKey: 'nav_platform_management',
     items: [
-      mk('/organization', 'nav_organization', 'Building2', 'organization'),
-      // FB2 — páginas de administração que existiam mas não estavam na navegação.
-      mk('/workspaces', 'nav_workspaces', 'Network', 'organization'),
-      mk('/user-assignments', 'nav_user_assignments', 'UserCog', 'organization'),
-      mk('/admin', 'nav_admin', 'ShieldAlert', 'organization'),
-      mk('/licensing', 'nav_licensing', 'ShieldCheck', 'licensing'),
-      mk('/configuration', 'nav_configuration', 'Settings', 'settings'),
-      mk('/system-status', 'nav_system_status', 'Activity', 'system_status'),
+      // ─── Comercial ───────────────────────────────────────────
+      mk('/licensing', 'nav_licensing', 'ShieldCheck', 'licensing', 'nav_platform_theme_commercial'),
+
+      // ─── Operacional ─────────────────────────────────────────
+      mk('/configuration', 'nav_configuration', 'Settings', 'settings', 'nav_platform_theme_operational'),
+      mk('/system-status', 'nav_system_status', 'Activity', 'system_status', 'nav_platform_theme_operational'),
       // FB4 — visibilidade e configuração das automações e da conservação.
-      mk('/platform-operations', 'nav_platform_operations', 'Timer', 'system_status'),
-      mk('/audit-log', 'nav_audit_log', 'ScrollText', 'audit_log'),
+      mk('/platform-operations', 'nav_platform_operations', 'Timer', 'system_status', 'nav_platform_theme_operational'),
+      mk('/audit-log', 'nav_audit_log', 'ScrollText', 'audit_log', 'nav_platform_theme_operational'),
+
+      // ─── Parceiros e utilizadores ────────────────────────────
+      mk('/organization', 'nav_organization', 'Building2', 'organization', 'nav_platform_theme_partners'),
+      // FB2 — páginas de administração que existiam mas não estavam na navegação.
+      mk('/workspaces', 'nav_workspaces', 'Network', 'organization', 'nav_platform_theme_partners'),
+      // «Delegações» é a entrada única da fusão com o «Acesso Externo»: a mesma
+      // página trata o ciclo de vida das delegações e as atribuições diretas.
+      mk('/user-assignments', 'nav_user_assignments', 'UserCog', 'external_access', 'nav_platform_theme_partners'),
+      mk('/admin', 'nav_admin', 'ShieldAlert', 'organization', 'nav_platform_theme_partners'),
     ],
   },
   {
@@ -131,7 +147,9 @@ export const BASE_GROUPS = [
 const ADMIN_CONTENT_GROUP = {
   labelKey: 'nav_content_management',
   pullPaths: ['/question-bank', '/knowledge-base'],
-  position: 'after:nav_main',
+  // O catálogo de conteúdo é governado pela administração da plataforma: o grupo
+  // fica imediatamente abaixo da «Gestão da plataforma», não no topo do menu.
+  position: 'after:nav_platform_management',
 };
 
 /**

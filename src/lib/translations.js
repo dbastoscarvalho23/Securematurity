@@ -20,6 +20,7 @@ import { phase1En, phase1Pt } from './translations-phase1';
 import { phase2En, phase2Pt } from './translations-phase2';
 import { phase3En, phase3Pt } from './translations-phase3';
 import { importEn, importPt } from './translations-import';
+import { navEn, navPt } from './translations-nav';
 export const translations = {
   en: {
     // assessments
@@ -192,7 +193,7 @@ export const translations = {
     page_organization: 'Organization',
     page_configuration: 'Configuration',
     page_system_status: 'System Status',
-    page_user_assignments: 'User Delegations',
+    page_user_assignments: 'Delegations',
     // workspace
     workspace_subtitle: 'Manage the organizational workspace hierarchy',
     workspace_total: 'workspaces',
@@ -612,7 +613,7 @@ export const translations = {
     page_organization: 'Organização',
     page_configuration: 'Configuração',
     page_system_status: 'Estado do Sistema',
-    page_user_assignments: 'Delegações de Utilizadores',
+    page_user_assignments: 'Delegações',
     // workspace
     workspace_subtitle: 'Gerir a hierarquia de workspaces organizacionais',
     workspace_total: 'workspaces',
@@ -907,3 +908,5 @@ Object.assign(translations.en, phase3En);
 Object.assign(translations.pt, phase3Pt);
 Object.assign(translations.en, importEn);
 Object.assign(translations.pt, importPt);
+Object.assign(translations.en, navEn);
+Object.assign(translations.pt, navPt);
