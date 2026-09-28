@@ -10,36 +10,9 @@ import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
-
-// Normalize text for comparison
-const normalize = (str) => str?.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim() || '';
-
-// Tokenize into words
-const tokenize = (str) => new Set(normalize(str).split(' ').filter(w => w.length > 3));
-
-// Jaccard similarity between two strings (word overlap)
-const jaccardSimilarity = (a, b) => {
-  const setA = tokenize(a);
-  const setB = tokenize(b);
-  if (setA.size === 0 || setB.size === 0) return 0;
-  const intersection = new Set([...setA].filter(x => setB.has(x)));
-  const union = new Set([...setA, ...setB]);
-  return intersection.size / union.size;
-};
-
-// Returns { isDuplicate, isSimilar, matchedQuestion } for a generated question vs existing
-const checkDuplicate = (generated, existingQuestions) => {
-  for (const existing of existingQuestions) {
-    const simEn = jaccardSimilarity(generated.question_text, existing.question_text);
-    const simPt = generated.question_text_pt && existing.question_text_pt
-      ? jaccardSimilarity(generated.question_text_pt, existing.question_text_pt)
-      : 0;
-    const sim = Math.max(simEn, simPt);
-    if (sim >= 0.75) return { isDuplicate: true, similarity: sim, matchedQuestion: existing };
-    if (sim >= 0.45) return { isSimilar: true, similarity: sim, matchedQuestion: existing };
-  }
-  return { isDuplicate: false, isSimilar: false };
-};
+// Normalização, Jaccard e veredicto de duplicados vivem agora em
+// `questionSimilarity` (partilhados com a importação de bases de perguntas).
+import { inspectQuestion, normalizeQuestionText } from '@/lib/questionSimilarity';
 
 const FRAMEWORKS = [
   { code: 'NIS2', name: 'NIS2' },
@@ -151,12 +124,12 @@ CRITICAL RULES:
     const rawQs = result?.questions || [];
 
     // Check each generated question against existing ones
-    const seenNormalized = new Set(existingQuestions.map(q => normalize(q.question_text)));
+    const seenNormalized = new Set(existingQuestions.map(q => normalizeQuestionText(q.question_text)));
     let duplicateCount = 0;
 
     const qs = [];
     for (const q of rawQs) {
-      const norm = normalize(q.question_text);
+      const norm = normalizeQuestionText(q.question_text);
       // Hard deduplicate within the batch itself (exact normalized match)
       if (seenNormalized.has(norm)) {
         duplicateCount++;
@@ -164,7 +137,7 @@ CRITICAL RULES:
       }
       seenNormalized.add(norm);
 
-      const { isDuplicate, isSimilar, similarity, matchedQuestion } = checkDuplicate(q, existingQuestions);
+      const { isDuplicate, isSimilar, similarity, matchedQuestion } = inspectQuestion(q, existingQuestions);
       if (isDuplicate) {
         duplicateCount++;
         continue; // block exact/near-exact duplicates (≥75% similarity)

@@ -1,0 +1,76 @@
+{
+  "name": "QuestionImportBatch",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["draft", "published", "discarded", "reverted"],
+      "default": "draft",
+      "description": "Lifecycle of the import batch — nothing is written to the catalogue before `published`"
+    },
+    "source_file_name": {
+      "type": "string",
+      "description": "Original file name the batch was built from"
+    },
+    "source_file_type": {
+      "type": "string",
+      "enum": ["json", "csv", "xlsx", "pdf", "docx", "manual"],
+      "description": "How the rows were obtained (uploaded spreadsheet/JSON or AI extraction from a document)"
+    },
+    "source_file_hash": {
+      "type": "string",
+      "description": "SHA-256 of the source file, computed in the browser (provenance)"
+    },
+    "imported_by": {
+      "type": "string",
+      "description": "Real actor that created the batch (not `created_by`, which the platform owns)"
+    },
+    "imported_by_role": {
+      "type": "string",
+      "description": "Normalised role of the actor"
+    },
+    "framework_codes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Frameworks referenced by the batch"
+    },
+    "item_count": { "type": "number", "default": 0 },
+    "question_count": { "type": "number", "default": 0 },
+    "control_count": { "type": "number", "default": 0 },
+    "framework_count": { "type": "number", "default": 0 },
+    "valid_count": { "type": "number", "default": 0 },
+    "warning_count": { "type": "number", "default": 0 },
+    "duplicate_count": { "type": "number", "default": 0 },
+    "error_count": { "type": "number", "default": 0 },
+    "published_at": {
+      "type": ["string", "null"],
+      "description": "When the approved items were applied to the catalogue"
+    },
+    "published_by": { "type": "string" },
+    "discarded_at": { "type": ["string", "null"] },
+    "reverted_at": { "type": ["string", "null"] }
+  },
+  "required": ["status", "source_file_name", "imported_by"],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    }
+  }
+}

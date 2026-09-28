@@ -85,6 +85,11 @@
         "user_assignment_created",
         "user_assignment_updated",
         "user_assignment_deleted",
+        "question_import_draft_created",
+        "question_import_item_reviewed",
+        "question_import_published",
+        "question_import_discarded",
+        "question_import_reverted",
         "test_conditions_seeded"
       ],
       "description": "Action type"

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Search, Pencil, Trash2, Sparkles, ShieldCheck, Loader2, Languages } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Sparkles, ShieldCheck, Loader2, Languages, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import QuestionFormDialog from '@/components/questions/QuestionFormDialog';
 import AIQuestionGeneratorDialog from '@/components/questions/AIQuestionGeneratorDialog';
+import QuestionImportDialog from '@/components/questions/QuestionImportDialog';
+import { useAuth } from '@/lib/AuthContext';
+import { isPlatformOwner } from '@/lib/rbac';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -29,6 +32,7 @@ const FRAMEWORK_COLORS = {
 export default function QuestionBank() {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [filterFramework, setFilterFramework] = useState('all');
   const [filterDomain, setFilterDomain] = useState('all');
@@ -36,6 +40,7 @@ export default function QuestionBank() {
   const [filterWeight, setFilterWeight] = useState('all');
   const [filterLang, setFilterLang] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [isDeduplicating, setIsDeduplicating] = useState(false);
@@ -196,6 +201,11 @@ Return only valid JSON with the translations.`,
         description={t('qb_subtitle')}
         actions={
           <div className="flex gap-2 items-center flex-wrap">
+            {isPlatformOwner(user?.role) && (
+              <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+                <Upload className="w-4 h-4" /> {t('qimp_import')}
+              </Button>
+            )}
             <Button variant="outline" onClick={handleTranslate} disabled={isTranslating} className="gap-2">
               {isTranslating
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('qb_translating')} {translateProgress.done}/{translateProgress.total}</>
@@ -381,6 +391,12 @@ Return only valid JSON with the translations.`,
           await base44.entities.Question.bulkCreate(newQuestions);
           queryClient.invalidateQueries({ queryKey: ['questions'] });
         }}
+      />
+
+      <QuestionImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => queryClient.invalidateQueries({ queryKey: ['questions'] })}
       />
     </div>
   );
