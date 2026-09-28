@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EmptyState from '@/components/shared/EmptyState';
 import FindingCard from './FindingCard';
 import { cn } from '@/lib/utils';
-import { SEVERITIES } from '@/lib/validationReportModel';
+import { SEVERITIES, statusMeta } from '@/lib/validationReportModel';
 import { rgba } from '@/lib/docsModel';
 
 /** Ícone de cada área (a área de segurança é a herdada da ronda anterior). */
@@ -76,13 +76,32 @@ export default function AreaSection({ area, findings, openIds, onToggle }) {
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Lacunas identificadas
             </p>
-            <ul className="space-y-1.5">
-              {area.gaps.map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-chart-3" />
-                  <span>{item}</span>
-                </li>
-              ))}
+            <ul className="space-y-2">
+              {area.gaps.map((gap) => {
+                const st = statusMeta(gap.status);
+                return (
+                  <li key={gap.text} className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-chart-3" />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <span>{gap.text}</span>
+                        <Badge variant="outline" className={cn('shrink-0 text-xs', st.classes)}>
+                          {st.label}
+                        </Badge>
+                      </div>
+                      {(gap.finding || gap.statusNote) && (
+                        <p
+                          className="line-clamp-2 text-xs text-muted-foreground/80"
+                          title={gap.statusNote || undefined}
+                        >
+                          {gap.finding && <span className="font-mono">{gap.finding} · </span>}
+                          {gap.statusNote}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>

@@ -187,7 +187,7 @@ export default function ValidationReport() {
               </p>
               <ul className="list-disc space-y-1 pl-4 text-sm">
                 {VERDICT.blockers.map((b) => (
-                  <li key={b}>{b}</li>
+                  <li key={b.text}>{[b.finding, b.text].filter(Boolean).join(' — ')}</li>
                 ))}
               </ul>
             </div>

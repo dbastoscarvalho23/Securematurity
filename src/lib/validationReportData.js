@@ -29,11 +29,24 @@ export const VERDICT = {
   summary:
     'As correções de F1–F15 foram implementadas em código (escopo de carteira do parceiro, âmbito de módulos da delegação, guarda de auto-escalada, RLS canónica, licenciamento fail-closed) e as verificações de papel do backend foram uniformizadas. Nesta ronda a validação multi-identidade deixou de ser uma lacuna: o harness (`npm run validate:harness`) corre as nove identidades contra o backend local — 46 casos ok, 0 falhas, 2 não verificáveis localmente — no limite das funções e na camada de decisão do frontend, e foi ele que expôs e fechou quatro defeitos (carteira do parceiro vazia, módulos abertos depois da suspensão, condições de teste não impostas pelo seed e avaliações semeadas em rascunho). O Core continua sem parecer positivo: as RLS das entidades só são avaliáveis por sessão autenticada e a conta local permanece `admin`, pelo que a confirmação ponta-a-ponta (e F15) exige backend real.',
   blockers: [
-    'F2 — a migração está em código, mas o emulador local ignora a escrita de `User.role` (na mesma chamada grava `language` e descarta `role`), pelo que a conta local continua `admin` e o efeito ponta-a-ponta não é verificável aqui; num backend real a conta passa a `master_admin` no primeiro login.',
-    'F7 — fechado em código: nenhuma comparação de papel do frontend usa literais; falta a confirmação com contas reais das personas.',
-    'F15 parcial — a leitura de entidades não revalida expires_at; a delegação expirada só é retirada no arranque da sessão ou numa listagem.',
-    'Validação multi-identidade executada no emulador local, com limites: as funções e a camada de decisão do frontend aceitam a identidade injectada, mas as RLS das entidades são avaliadas pela sessão autenticada (uma só) — o isolamento real entre tenants e o ramo `delegated_edit_customer_ids` exigem backend real.',
-    'Semântica de user_condition no backend de produção por confirmar (localmente é igualdade exacta, sem normalização de papel).',
+    {
+      text: 'A migração está em código, mas o emulador local ignora a escrita de `User.role` (na mesma chamada grava `language` e descarta `role`), pelo que a conta local continua `admin` e o efeito ponta-a-ponta não é verificável aqui; num backend real a conta passa a `master_admin` no primeiro login.',
+      finding: 'F2',
+    },
+    {
+      text: 'Fechado em código: nenhuma comparação de papel do frontend usa literais; falta a confirmação com contas reais das personas.',
+      finding: 'F7',
+    },
+    {
+      text: 'A leitura de entidades não revalida expires_at; a delegação expirada só é retirada no arranque da sessão ou numa listagem.',
+      finding: 'F15',
+    },
+    {
+      text: 'Validação multi-identidade executada no emulador local, com limites: as funções e a camada de decisão do frontend aceitam a identidade injectada, mas as RLS das entidades são avaliadas pela sessão autenticada (uma só) — o isolamento real entre tenants e o ramo `delegated_edit_customer_ids` exigem backend real.',
+    },
+    {
+      text: 'Semântica de user_condition no backend de produção por confirmar (localmente é igualdade exacta, sem normalização de papel).',
+    },
   ],
   positives: [
     'Matriz de capacidades coerente e sem atalho para admins de plataforma/parceiro nas capacidades de conformidade.',

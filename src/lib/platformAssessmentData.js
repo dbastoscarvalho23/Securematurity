@@ -12,6 +12,12 @@
  * entretanto trabalhados trazem `status` próprio — `corrigido` ou `parcial` —
  * com `statusNote` a dizer o que ficou feito e o que falta. Quem não tem nota
  * continua «pendente» (recomendação por aplicar).
+ *
+ * As lacunas de cada área (`gaps`) são estruturas com o texto e o achado que as
+ * fecha (`finding`), e não texto solto: o estado e a nota de cada lacuna são
+ * resolvidos pelo modelo (`validationReportModel.js`) a partir desse achado, para
+ * que a lista não possa voltar a contradizer os cartões da mesma área. Uma lacuna
+ * sem achado correspondente fica «pendente».
  */
 
 /** Âmbito e método desta ronda (mostrado no cabeçalho do relatório). */
@@ -49,8 +55,8 @@ export const ASSESSMENT_AREAS = [
       'Automações agendadas por evento e por calendário (8 workflows) para tarefas, riscos, documentos, relatórios mensais e conservação de dados.',
     ],
     gaps: [
-      'Confirmação em backend real da leitura das entidades por identidade delegada (consultor e auditor) — o emulador local avalia a RLS sobre a sessão autenticada, uma só.',
-      'Reprodução manual, no browser, do estado de erro com a rede cortada (FA4).',
+      { text: 'Confirmação em backend real da leitura das entidades por identidade delegada (consultor e auditor) — o emulador local avalia a RLS sobre a sessão autenticada, uma só.', finding: 'FA1' },
+      { text: 'Reprodução manual, no browser, do estado de erro com a rede cortada.', finding: 'FA4' },
     ],
   },
   {
@@ -60,7 +66,7 @@ export const ASSESSMENT_AREAS = [
       'Workspaces, clientes/tenants, utilizadores e atribuições, licenças e tiers, conteúdos e operação corrente da plataforma.',
     accent: [124, 58, 237],
     summary:
-      'Existem recursos de administração para clientes, utilizadores, atribuições, workspaces, catálogo de conteúdo e manutenção programada, mas a operação comercial da plataforma não está fechada: não há interface para provisionar licenças, três páginas de gestão ficam fora da navegação, a troca de workspace não muda o contexto de dados e não há visibilidade nem configuração das automações e da conservação.',
+      'Existem recursos de administração para clientes, utilizadores, atribuições, workspaces, catálogo de conteúdo e manutenção programada, e a operação comercial da plataforma está fechada: o provisionamento de licenças tem painel (nível, lugares, validade, exceções por módulo e standards, com histórico das alterações), as três páginas de gestão entraram na navegação, as automações e a política de conservação têm consola e execução registada, os indicadores ficaram num só painel com o /admin como área de operações e existe canal de anúncios para os tenants. Restam dois pontos, ambos de confirmação e não de construção: a troca de workspace — o seletor já alimenta o contexto de tenant e todas as páginas leem o mesmo — e o âmbito do papel auditor na trilha de auditoria, que o emulador local não distingue.',
     solid: [
       'Gestão de clientes com formulário, detalhe e auditoria (Customers + CustomerForm/CustomerDetailPanel).',
       'Gestão de utilizadores e convites, com normalização de papel no servidor (Settings + adminUpdateUser/adminDeleteUser/logUserLogin).',
@@ -71,13 +77,13 @@ export const ASSESSMENT_AREAS = [
       'Consola de plataforma com métricas de tenants, uso de IA, adoção de módulos e subscrições a expirar.',
     ],
     gaps: [
-      'Provisionamento de licenças (tier, assentos, módulos, estado) sem interface.',
-      'Três páginas de administração inalcançáveis pelo menu.',
-      'Seletor de workspace sem efeito no contexto de dados.',
-      'Sem política de conservação configurável nem histórico de execução das automações.',
-      'Trilha de auditoria sem filtros de servidor nem exportação.',
-      'Duas consolas de plataforma sobrepostas (/admin e o dashboard).',
-      'Sem canal de comunicação da plataforma para os tenants.',
+      { text: 'Provisionamento de licenças (nível, lugares, módulos, estado) sem interface.', finding: 'FB1' },
+      { text: 'Três páginas de administração inalcançáveis pelo menu.', finding: 'FB2' },
+      { text: 'Seletor de workspace sem efeito no contexto de dados.', finding: 'FB3' },
+      { text: 'Sem política de conservação configurável nem histórico de execução das automações.', finding: 'FB4' },
+      { text: 'Trilha de auditoria sem filtros de servidor nem exportação.', finding: 'FB5' },
+      { text: 'Duas consolas de plataforma sobrepostas (/admin e o dashboard).', finding: 'FB6' },
+      { text: 'Sem canal de comunicação da plataforma para os tenants.', finding: 'FB8' },
     ],
   },
   {
@@ -87,7 +93,7 @@ export const ASSESSMENT_AREAS = [
       'Consistência entre páginas e com os tokens do design system AnkoraOne: títulos, cor, idioma, estados, acessibilidade e responsividade.',
     accent: [8, 145, 178],
     summary:
-      'A base é sólida: páginas construídas sobre shadcn/ui, tipografia e raios vindos dos tokens AnkoraOne, tabelas com scroll horizontal próprio e quase nenhuma cor rígida nas páginas. As divergências estão nos detalhes que se repetem em todas elas: título duplicado, paletas de gráficos fora dos tokens, mensagens em inglês, padrões de carregamento diferentes e acessibilidade fraca em ações de ícone.',
+      'A base é sólida: páginas construídas sobre shadcn/ui, tipografia e raios vindos dos tokens AnkoraOne, tabelas com scroll horizontal próprio e quase nenhuma cor rígida nas páginas. As divergências estavam nos detalhes que se repetem em todas elas — título duplicado, paletas de gráficos fora dos tokens, mensagens em inglês, bloqueio de escrita por heurística, padrões de carregamento diferentes e acessibilidade fraca em ações de ícone — e quatro das seis estão corrigidas: o título tem uma só fonte, a cor resolve-se em `palette.js`, as cadeias visíveis passaram a chaves de tradução e as ações de ícone têm nome acessível. Restam duas parciais: a confirmação no browser do bloqueio de escrita durante a simulação de papel e as três tabelas que ainda mostram a linha própria em vez do indicador partilhado.',
     solid: [
       'Tokens semânticos (HSL) para superfícies, texto, bordas e gráficos, com tema claro/escuro no ThemeContext.',
       'Componentes partilhados reutilizados: PageHeader, EmptyState, LoadingState, StatCard, StatusBadge, ConfirmDialog, BulkActionBar.',
@@ -95,12 +101,12 @@ export const ASSESSMENT_AREAS = [
       'Interface integralmente em português de Portugal nas páginas principais, com i18n por chaves (translations-*.js).',
     ],
     gaps: [
-      'Título da página duplicado (TopBar + PageHeader).',
-      'Paletas de gráficos e de pesquisa fora da paleta de tokens.',
-      'Mensagens de retorno em inglês numa interface PT-PT.',
-      'Bloqueio de escrita por heurística durante a simulação de papel.',
-      'Padrões de carregamento e de vazio divergentes.',
-      'Acessibilidade: poucos nomes acessíveis em ações de ícone.',
+      { text: 'Título da página duplicado (TopBar + PageHeader).', finding: 'FC1' },
+      { text: 'Paletas de gráficos e de pesquisa fora da paleta de tokens.', finding: 'FC2' },
+      { text: 'Mensagens de retorno em inglês numa interface PT-PT.', finding: 'FC3' },
+      { text: 'Bloqueio de escrita por heurística durante a simulação de papel.', finding: 'FC4' },
+      { text: 'Padrões de carregamento e de vazio divergentes.', finding: 'FC5' },
+      { text: 'Acessibilidade: poucos nomes acessíveis em ações de ícone.', finding: 'FC6' },
     ],
   },
 ];
@@ -265,7 +271,7 @@ export const ASSESSMENT_FINDINGS = [
     severity: 'alta',
     status: 'parcial',
     statusNote:
-      'O seletor de workspace passou a ter consumidor: `tenantResolver.js` lê `selected_workspace_id` com prioridade sobre o tenant próprio e resolve o cliente do workspace escolhido, e o harness verifica o contrato (TEN4 muda mesmo o contexto, TEN5 ignora um workspace fora do âmbito). Falta a confirmação no browser do indicador de contexto e a migração das páginas ainda não abrangidas por FA2, que não acompanham a troca.',
+      'O seletor de workspace passou a ter consumidor: `tenantResolver.js` lê `selected_workspace_id` com prioridade sobre o tenant próprio e resolve o cliente do workspace escolhido, e o harness verifica o contrato (TEN4 muda mesmo o contexto, TEN5 ignora um workspace fora do âmbito). As páginas leem o mesmo contexto (FA2), pelo que a troca já não fica só num controlo decorativo e nenhuma resolve o tenant por si — o caso TEN6 impede que isso volte a acontecer; falta a confirmação no browser do indicador de contexto.',
     title: 'Seletor de workspace não altera o contexto de dados',
     evidence: [
       'src/components/layout/WorkspaceSwitcher.jsx — grava `selected_workspace_id` com base44.auth.updateMe e filtra a lista de workspaces acessíveis.',

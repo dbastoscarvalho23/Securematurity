@@ -87,6 +87,25 @@ export function findingsByArea(areaId) {
 }
 
 /**
+ * Uma lacuna da lista «Lacunas identificadas», com o estado que lhe dá o achado
+ * que a fecha. O estado não é escrito à mão em lado nenhum: vem do achado
+ * (`finding`), pelo que a lista não pode contradizer os cartões da mesma área —
+ * fechar um achado muda a lacuna e o parecer no mesmo instante. Uma lacuna
+ * histórica, escrita como texto solto (os bloqueadores do parecer de segurança),
+ * não tem achado correspondente e fica «pendente».
+ */
+function normalizeGap(gap) {
+  const { text, finding = null } = typeof gap === 'string' ? { text: gap } : gap;
+  const match = finding ? FINDINGS.find((f) => f.id === finding) : null;
+  return {
+    text,
+    finding: match ? match.id : null,
+    status: match ? match.status : 'pendente',
+    statusNote: (match && match.statusNote) || '',
+  };
+}
+
+/**
  * Um achado está aberto enquanto a correção não estiver concluída: «parcial» e
  * «pendente» contam como abertos; «corrigido» fica fora das contagens.
  */
@@ -162,6 +181,7 @@ export function buildReportModel() {
     const findings = findingsByArea(area.id);
     return {
       ...area,
+      gaps: area.gaps.map(normalizeGap),
       findings,
       openFindings: findings.filter(isOpenFinding),
       severityCounts: areaSeverityCounts(area.id),
