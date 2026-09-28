@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { getNavGroups } from '@/lib/rbac';
-import Logo from './Logo';
+
 
 const ICON_MAP = {
   LayoutDashboard, Building2, ClipboardCheck, BarChart3, ShieldCheck,
@@ -48,15 +48,6 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
-        {/* Logo */}
-        <div className="h-16 flex items-center px-4 border-b border-sidebar-border flex-shrink-0">
-          {collapsed ? (
-            <Logo variant="icon" size={32} />
-          ) : (
-            <Logo variant="full" size={130} />
-          )}
-        </div>
-
         {/* Navigation */}
         <nav className="flex-1 py-3 px-2 overflow-y-auto space-y-4">
           {navGroups.map((group) => (

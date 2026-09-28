@@ -27,9 +27,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import GlobalSearch from './GlobalSearch';
 import NotificationBell from './NotificationBell';
+import Logo from './Logo';
 
-
-const PAGE_TITLE_KEYS = {
+export const PAGE_TITLE_KEYS = {
   '/': 'page_dashboard',
   '/customers': 'page_customers',
   '/assessments': 'page_assessments',
@@ -72,11 +72,6 @@ export default function TopBar({ onMenuClick }) {
   const [selectedLang, setSelectedLang] = useState(language);
   const [selectedTheme, setSelectedTheme] = useState(theme);
   const [saving, setSaving] = useState(false);
-
-  const pageTitleKey = Object.entries(PAGE_TITLE_KEYS).find(([path]) =>
-    path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
-  )?.[1];
-  const pageTitle = pageTitleKey ? t(pageTitleKey) : 'AnkoraOne';
 
   const displayName = user?.display_name || user?.full_name || user?.email || 'User';
   const initials = displayName
@@ -134,7 +129,7 @@ export default function TopBar({ onMenuClick }) {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <h2 className="text-base font-heading font-semibold text-foreground">{pageTitle}</h2>
+          <Logo variant="full" size={120} className="ankora-logo" />
         </div>
 
         <div className="flex items-center gap-3">
