@@ -11,7 +11,7 @@ export const REPORT_META = {
   appId: '6ab5373e7f8f586c80cb9ed8',
   branch: 'migration-ankoraone-update',
   commit:
-    '2c2932e — «Refatorar RLS de entidades e implementar restrições de onboarding e licenciamento» (2026-09-28), com uniformização das verificações de papel do backend aplicada nesta ronda',
+    '39fc046 — «Migrar papéis para grafia canónica em todo o sistema» (2026-09-28): as 29 entidades de catálogo/tenant, o frontend (~84 comparações em 41 ficheiros, via src/lib/rbac.js) e a persistência (logUserLogin / adminUpdateUser) passam a usar a grafia canónica, sobre a uniformização do backend de 2c2932e',
   backend:
     'base44 dev local (funções em Deno; entidades em base de dados em memória), servido por docker compose -f docker-compose.base44.yml, serviço web (node:22-slim) + vite → host 3000',
   persistence: 'Nenhuma — estado em memória, perdido em cada restart do container ou alteração de schema.',
@@ -26,7 +26,7 @@ export const REPORT_META = {
 export const VERDICT = {
   classification: 'Correções aplicadas em código — validação live por executar',
   summary:
-    'As correções de F1–F15 foram implementadas em código (escopo de carteira do parceiro, âmbito de módulos da delegação, guarda de auto-escalada, RLS canónica, licenciamento fail-closed) e as verificações de papel do backend foram uniformizadas nesta ronda. O Core continua sem parecer positivo: as correções são dadas como aplicadas e revistas por inspeção, não como verificadas, porque a validação executada — onboarding, escopo de delegação, escrita por papel — exige várias identidades reais, que o ambiente local não tem. Ficam residuais por fechar (F2, F7 e F15).',
+    'As correções de F1–F15 foram implementadas em código (escopo de carteira do parceiro, âmbito de módulos da delegação, guarda de auto-escalada, RLS canónica, licenciamento fail-closed) e as verificações de papel do backend foram uniformizadas nesta ronda. O Core continua sem parecer positivo: as correções são dadas como aplicadas e revistas por inspeção, não como verificadas, porque a validação executada — onboarding, escopo de delegação, escrita por papel — exige várias identidades reais, que o ambiente local não tem. Em código ficam fechados F2 e F7, com a confirmação por identidade real em falta; F15 permanece parcial.',
   blockers: [
     'F2 — a migração está em código, mas o emulador local ignora a escrita de `User.role` (na mesma chamada grava `language` e descarta `role`), pelo que a conta local continua `admin` e o efeito ponta-a-ponta não é verificável aqui; num backend real a conta passa a `master_admin` no primeiro login.',
     'F7 — fechado em código: nenhuma comparação de papel do frontend usa literais; falta a confirmação com contas reais das personas.',
@@ -38,7 +38,7 @@ export const VERDICT = {
     'Matriz de capacidades coerente e sem atalho para admins de plataforma/parceiro nas capacidades de conformidade.',
     'Ciclo de delegação com motivo, prazo, proibição de auto-aprovação e aprovação reservada ao cliente.',
     'Break-glass removido; cálculo de resultados, cobertura e metodologia sempre no servidor, com o ator retirado de `base44.auth.me()`.',
-    'F1, F3–F6, F8, F9, F11, F13 e F14 aplicadas em código; F2, F7 e F15 com residual identificado.',
+    'F1–F9, F11, F13 e F14 aplicadas em código; F15 com residual identificado (revalidação de expires_at na camada de entidades).',
   ],
 };
 
@@ -388,8 +388,8 @@ export function countByStatus() {
 export const FOLLOW_UPS = [
   {
     ref: 'F2 residual',
-    title: 'Literais de papel legado nas entidades de catálogo/tenant',
-    note: 'As entidades de isolamento (Customer, Workspace, AuditLog, User, UserCustomerAssignment) e as operacionais já usam os papéis canónicos. As restantes mantêm role: "admin", o que exige decidir por entidade se o gate era de plataforma (master_admin) ou de cliente (customer_admin) antes de substituir — uma troca mecânica atribuiria o gate errado.',
+    title: 'Gates de catálogo/tenant migrados por substituição fiel',
+    note: 'As 29 entidades de catálogo/tenant (Comment, Training, Notification, licenciamento, KnowledgeArticle, …) passaram a nomear master_admin por substituição fiel de admin → master_admin, com os ramos de tenant, delegação e customer_admin intactos. Fica por revisar, entidade a entidade, se algum desses gates era na verdade de cliente (customer_admin) e ficou alargado à plataforma — a substituição preserva o comportamento legado (normalizeRole mapeia admin → master_admin), não decide o gate correto.',
   },
   {
     ref: 'F15 residual',
@@ -397,8 +397,8 @@ export const FOLLOW_UPS = [
     note: 'O prune no arranque de sessão e o dropExpired em list/resolve fecham a janela na prática, mas uma leitura de entidade continua a honrar delegated_*_customer_ids sem revalidar expires_at. Fechar isto exige revalidação por data na RLS ou uma limpeza determinística fora do arranque.',
   },
   {
-    ref: 'F2/F7 — papel canónico vs grafia legada',
-    title: 'Decidir entre alias da grafia legada ou migração de papéis',
-    note: 'O backend compara user_condition por igualdade exacta e não normaliza o papel (verificado). Ou as regras aceitam `admin` como alias do mesmo papel que `master_admin`, ou as contas passam a ser guardadas com os papéis canónicos — e nesse caso as ~84 comparações de papel do frontend têm de passar pelo normalizador do RBAC antes de a conta mudar, sob pena de o administrador perder os acessos de interface.',
+    ref: 'F2/F7 — verificação local',
+    title: 'Decisão tomada (migração de papéis); confirmação ponta-a-ponta pendente',
+    note: 'A decisão foi a migração da grafia, não o alias: as contas passam a ser guardadas com o papel canónico no primeiro login (logUserLogin) e adminUpdateUser normaliza o que persiste, depois de o frontend deixar de comparar literais. O backend compara user_condition por igualdade exacta e não normaliza o papel (verificado), e o emulador local ignora a escrita de User.role — pelo que a conta local permanece admin e o efeito ponta-a-ponta, com a RLS canónica a casar a conta, só é observável num backend real.',
   },
 ];
