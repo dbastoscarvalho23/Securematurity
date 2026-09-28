@@ -19,12 +19,12 @@ export default function ExpiringSubscriptionsWidget({ subscriptions = [] }) {
 
     const exp = subscriptions
       .filter(s => {
-        if (!s.end_date || s.status === 'cancelled' || s.status === 'expired') return false;
-        const end = new Date(s.end_date);
+        if (!s.expires_date || s.status === 'cancelled' || s.status === 'expired') return false;
+        const end = new Date(s.expires_date);
         return end >= now && end <= in30Days;
       })
       .map(s => {
-        const end = new Date(s.end_date);
+        const end = new Date(s.expires_date);
         const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
         return { ...s, daysLeft };
       })
@@ -55,7 +55,7 @@ export default function ExpiringSubscriptionsWidget({ subscriptions = [] }) {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">{s.customer_name || s.name || '—'}</p>
                       <p className="text-xs text-muted-foreground">
-                        {s.end_date ? new Date(s.end_date).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB') : '—'}
+                        {s.expires_date ? new Date(s.expires_date).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB') : '—'}
                       </p>
                     </div>
                     <Badge variant={s.daysLeft <= 7 ? 'destructive' : 'secondary'} className="ml-2">

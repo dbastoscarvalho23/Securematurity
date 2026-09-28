@@ -60,6 +60,30 @@ export async function runApiSuite(report) {
   const tenants = topology.tenants;
   const assessments = topology.assessments;
 
+  // ─── Contexto comercial em vigor na entrada ────────────────────────
+  // O emulador local sobrevive entre execuções e o grupo comercial do fim deixa
+  // o tenant de verificação FECHADO (FM3.6). Sem esta reposição, os grupos que
+  // correm antes dele medem um cliente fechado em vez da autorização que querem
+  // provar — foi assim que DEL5 («o cliente não tem o módulo ... licenciado») e
+  // FA5.1 falharam. A reposição é a mínima: um contrato vivo, no mesmo nível, só
+  // quando o anterior está fechado. A oferta e o preço em vigor para as quotas
+  // por omissão continuam a ser repostos pela preparação do grupo FM3/FM4, que
+  // corre depois de FM2.7 os ter retirado de propósito.
+  const bootLicences = await invoke("listTenantLicenses", { actor: ids.master_admin });
+  const bootAlfa = ((bootLicences.data?.tenants || []).find((tenant) => tenant.id === tenants.tenant_alfa) || {}).subscription;
+  if (!bootAlfa || bootAlfa.status === "cancelled") {
+    await invoke("provisionTenantLicense", {
+      actor: ids.master_admin,
+      body: {
+        action: "create",
+        customer_id: tenants.tenant_alfa,
+        tier_code: "core",
+        seat_limit: 5,
+        reason: "Reposição da subscrição de verificação",
+      },
+    });
+  }
+
   // ─── G1. Isolamento e âmbito de leitura ────────────────────────────
   const area1 = "isolamento de tenant";
   await report.case("ISO1", area1, "dono da plataforma lê a licença de qualquer cliente", async () => {
@@ -854,19 +878,31 @@ export async function runApiSuite(report) {
   });
 
   await report.case("FM4.4", area8, "o registo das sinalizações do período é idempotente", async () => {
-    // Período fixo e distinto do corrente: o caso tem de poder repetir-se (o
-    // registo é idempotente por cliente, período e grandeza, e o período
-    // corrente já foi registado por uma execução anterior).
-    const period = "2020-01";
-    const first = await provision({ action: "record_quota_signals", period });
-    if (first.status !== 200) return statusOf(first, 200, "primeiro registo");
-    const recorded = first.data.totals?.recorded || 0;
+    // O registo é idempotente por cliente, período e grandeza e o emulador local
+    // sobrevive entre execuções: um período fixo só devolve linhas na primeira
+    // execução e o caso acabava a medir a execução anterior, não a idempotência.
+    // Procura-se um período ainda sem registo — o primeiro que devolva linhas
+    // novas — e é nesse que se prova que repetir não duplica. Os candidatos são
+    // meses de um século anterior ao lançamento, a partir de um ponto aleatório,
+    // para o custo não crescer com o número de execuções.
+    let period = "";
+    let recorded = 0;
+    for (let attempt = 0; attempt < 24 && recorded === 0; attempt += 1) {
+      const offset = (Math.floor(Math.random() * 1200) + attempt) % 1200;
+      period = `19${String(Math.floor(offset / 12)).padStart(2, "0")}-${String((offset % 12) + 1).padStart(2, "0")}`;
+      const attemptRes = await provision({ action: "record_quota_signals", period });
+      if (attemptRes.status !== 200) return statusOf(attemptRes, 200, "primeiro registo");
+      recorded = attemptRes.data.totals?.recorded || 0;
+    }
+    if (recorded === 0) {
+      return { ok: false, detail: "nenhum período novo encontrado para registar as sinalizações" };
+    }
     const second = await provision({ action: "record_quota_signals", period });
     if (second.status !== 200) return statusOf(second, 200, "segundo registo");
     const again = second.data.totals?.recorded || 0;
-    return recorded > 0 && again === 0
-      ? { ok: true, detail: `200 — ${recorded} linhas registadas; repetir não duplica (0 novas)` }
-      : { ok: false, detail: `esperado registo idempotente: ${JSON.stringify({ recorded, again }).slice(0, 120)}` };
+    return again === 0
+      ? { ok: true, detail: `200 — ${recorded} linhas registadas em ${period}; repetir não duplica (0 novas)` }
+      : { ok: false, detail: `esperado registo idempotente: ${JSON.stringify({ period, recorded, again }).slice(0, 140)}` };
   });
 
   await report.case("FM5.1", area8, "os indicadores comerciais comparam com o período anterior e não inventam receita", async () => {
