@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -61,7 +62,7 @@ export default function Recommendations() {
   const canBulkAction = hasRole(user?.role, 'master_admin', 'customer_admin');
   const { customerId } = useActiveCustomer();
 
-  const { data: recommendations = [] } = useQuery({
+  const { data: recommendations = [], isError, refetch } = useQuery({
     queryKey: ['recommendations', customerId],
     queryFn: () => isAdmin
       ? base44.entities.Recommendation.list('-created_date', 200)
@@ -540,7 +541,9 @@ export default function Recommendations() {
         </DialogContent>
       </Dialog>
 
-      {filtered.length === 0 && (
+      {isError ? (
+        <Card><CardContent className="p-0"><ErrorState variant="inline" onRetry={() => refetch()} /></CardContent></Card>
+      ) : filtered.length === 0 && (
         <Card><CardContent className="p-0">
           <EmptyState icon={Lightbulb} title={t('recs_empty')} />
         </CardContent></Card>

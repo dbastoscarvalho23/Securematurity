@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
 import { GraduationCap } from 'lucide-react';
 import TrainingSummary from '@/components/training/TrainingSummary';
 import TrainingUserRoster from '@/components/training/TrainingUserRoster';
@@ -19,8 +21,9 @@ export default function Training() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
+  const { customerId } = useActiveCustomer();
 
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [], isError: customersError, refetch: refetchCustomers } = useQuery({
     queryKey: ['customers'],
     queryFn: () => base44.entities.Customer.list('name', 500),
     enabled: isAdmin,
@@ -33,10 +36,10 @@ export default function Training() {
     }
   }, [customers, isAdmin, selectedCustomerId]);
 
-  const { data: myCustomer } = useQuery({
-    queryKey: ['customer', user?.customer_id],
-    queryFn: () => base44.entities.Customer.get(user.customer_id),
-    enabled: !isAdmin && !!user?.customer_id,
+  const { data: myCustomer, isError: myCustomerError, refetch: refetchMyCustomer } = useQuery({
+    queryKey: ['customer', customerId],
+    queryFn: () => base44.entities.Customer.get(customerId),
+    enabled: !isAdmin && !!customerId,
   });
 
   const customer = isAdmin
@@ -80,6 +83,8 @@ export default function Training() {
             <TrainingCalendar customer={customer} />
           </TabsContent>
         </Tabs>
+      ) : (customersError || myCustomerError) ? (
+        <ErrorState variant="inline" onRetry={() => { refetchCustomers(); refetchMyCustomer(); }} />
       ) : isAdmin ? (
         <EmptyState icon={GraduationCap} title={t('training_no_customer_admin')} />
       ) : (

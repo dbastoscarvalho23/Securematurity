@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { withWorkflowRun } from '../../shared/workflowRuns.ts';
 
 const ENTITY_MAP = {
   Task: 'Task',
@@ -6,7 +7,7 @@ const ENTITY_MAP = {
   SecurityDocument: 'SecurityDocument',
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withWorkflowRun('createNotifications', 'event', req, async () => {
   try {
     const base44 = createClientFromRequest(req);
     const payload = await req.json();
@@ -180,4 +181,4 @@ Deno.serve(async (req) => {
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}));

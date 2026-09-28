@@ -1,0 +1,58 @@
+{
+  "name": "RetentionPolicy",
+  "type": "object",
+  "description": "Política de conservação por entidade e por tenant (FB4). A escrita passa sempre pela função managePlatformOperations; nenhuma página escreve esta entidade.",
+  "properties": {
+    "entity_name": {
+      "type": "string",
+      "enum": ["DataProcessingActivity", "DataSubjectRequest"],
+      "description": "Entidade a que a política se aplica"
+    },
+    "customer_id": {
+      "type": ["string", "null"],
+      "description": "Tenant a que a política se aplica; null = todos os tenants"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Nome do tenant (denormalizado, para a lista)"
+    },
+    "retention_days": {
+      "type": "number",
+      "description": "Prazo de conservação, em dias, contado desde a criação do registo"
+    },
+    "action": {
+      "type": "string",
+      "enum": ["purge", "archive", "anonymise"],
+      "default": "purge",
+      "description": "O que a purga faz aos registos fora do prazo"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Políticas inactivas são conservadas mas ignoradas pela purga e pela simulação"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notas de apoio (base legal, referência interna)"
+    },
+    "updated_by": {
+      "type": "string",
+      "description": "Email de quem guardou a política pela última vez"
+    }
+  },
+  "required": ["entity_name", "retention_days"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "read": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "update": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "master_admin" }
+    }
+  }
+}

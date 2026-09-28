@@ -66,7 +66,7 @@ export default function AreaSection({ area, findings, openIds, onToggle }) {
             <ul className="space-y-1.5">
               {area.solid.map((item) => (
                 <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-chart-2" />
                   <span>{item}</span>
                 </li>
               ))}
@@ -79,7 +79,7 @@ export default function AreaSection({ area, findings, openIds, onToggle }) {
             <ul className="space-y-1.5">
               {area.gaps.map((item) => (
                 <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                  <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-chart-3" />
                   <span>{item}</span>
                 </li>
               ))}

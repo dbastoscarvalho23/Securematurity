@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
 import { normalizeRole } from '../../shared/accessUtils.ts';
+import { withWorkflowRun } from '../../shared/workflowRuns.ts';
 
 async function getSettings(base44ServiceRole, customerId) {
   const all = await base44ServiceRole.entities.ReminderSettings.list();
@@ -13,7 +14,7 @@ async function getSettings(base44ServiceRole, customerId) {
   };
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withWorkflowRun('documentNotifications', 'event', req, async () => {
   const base44 = createClientFromRequest(req);
 
   const body = await req.json();
@@ -181,4 +182,4 @@ Deno.serve(async (req) => {
   }
 
   return Response.json({ skipped: 'unknown type' });
-});
+}));

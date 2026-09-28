@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +34,7 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
   // Fetch all records from all customers, then filter client-side for consistency with Risk Assessment page
   const { data: allRisks = [] } = useQuery({

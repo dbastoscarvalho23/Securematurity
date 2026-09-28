@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import jsPDF from 'npm:jspdf@4.0.0';
 import { getAutomationSecret } from "../../shared/automationSecret.ts";
+import { withWorkflowRun } from "../../shared/workflowRuns.ts";
 import { normalizeRole } from "../../shared/accessUtils.ts";
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
@@ -358,7 +359,7 @@ function buildPdf(reportData, monthLabel, customerName) {
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
-Deno.serve(async (req) => {
+Deno.serve(withWorkflowRun('generateMonthlyAnnualReport', 'scheduled', req, async () => {
   try {
     const base44 = createClientFromRequest(req);
 
@@ -460,4 +461,4 @@ Deno.serve(async (req) => {
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}));

@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { MapPin, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { cn } from '@/lib/utils';
 import { isPlatformOwner } from '@/lib/rbac';
@@ -14,7 +15,7 @@ export default function ComplianceJourneyStatusCard() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['compliance-checklist-status', isAdmin, customerId],

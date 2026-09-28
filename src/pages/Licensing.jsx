@@ -8,6 +8,8 @@ import { ShieldCheck, Layers, Package, Check, Minus, Info } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import TenantLicensePanel from '@/components/licensing/TenantLicensePanel';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -60,7 +62,7 @@ export default function Licensing() {
     enabled: allowed,
   });
 
-  const { data: subscriptions = [] } = useQuery({
+  const { data: subscriptions = [], isLoading: subsLoading, isError: subsError, refetch: refetchSubs } = useQuery({
     queryKey: ['tenant-subscriptions'],
     queryFn: () => base44.entities.TenantSubscription.list('-created_date', 500),
     enabled: allowed,
@@ -228,7 +230,19 @@ export default function Licensing() {
                   </TableCell>
                 </TableRow>
               ))}
-              {subscriptions.length === 0 && (
+              {subsError ? (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <ErrorState variant="inline" onRetry={() => refetchSubs()} />
+                  </TableCell>
+                </TableRow>
+              ) : subsLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <LoadingState variant="skeleton" rows={4} label={t('common_loading')} />
+                  </TableCell>
+                </TableRow>
+              ) : subscriptions.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5}>
                     <EmptyState compact icon={Package} title={t('licensing_no_subscriptions')} />

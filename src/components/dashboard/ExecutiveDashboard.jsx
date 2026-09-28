@@ -16,6 +16,7 @@ import RiskMatrixWidget from '@/components/dashboard/RiskMatrixWidget';
 import ComplianceJourneyStatusCard from '@/components/dashboard/ComplianceJourneyStatusCard';
 import MaturityOverview from '@/components/dashboard/MaturityOverview';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
 import PageHeader from '@/components/shared/PageHeader';
@@ -23,7 +24,7 @@ import PageHeader from '@/components/shared/PageHeader';
 export default function ExecutiveDashboard({ readOnly = true }) {
   const { user } = useAuth();
   const { t, language } = useLanguage();
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
   const { data: assessments = [] } = useQuery({
     queryKey: ['assessments-exec', customerId],
@@ -80,7 +81,7 @@ export default function ExecutiveDashboard({ readOnly = true }) {
         description={t('dashboard_subtitle')}
         actions={
           <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full">
+            <span className="text-xs bg-chart-3/10 text-chart-3 px-3 py-1.5 rounded-full">
               {t('dashboard_read_only')}
             </span>
             <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">

@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
+import ErrorState from '@/components/shared/ErrorState';
 import { isPlatformOwner, hasRole } from '@/lib/rbac';
 import { useActiveCustomer } from '@/lib/tenantContext';
 
@@ -32,7 +33,7 @@ export default function Tasks() {
   const canBulkEdit = hasRole(user?.role, 'master_admin', 'customer_admin');
   const { customerId } = useActiveCustomer();
 
-  const { data: tasks = [] } = useQuery({
+  const { data: tasks = [], isError, refetch } = useQuery({
     queryKey: ['tasks', customerId],
     queryFn: () => isAdmin
       ? base44.entities.Task.list('-created_date', 200)
@@ -247,7 +248,9 @@ export default function Tasks() {
         />
       )}
 
-      {view === 'board' ? (
+      {isError ? (
+        <ErrorState variant="inline" onRetry={() => refetch()} />
+      ) : view === 'board' ? (
         <TaskBoard
           tasks={filteredTasks}
           onStatusChange={(id, status, title) => statusMutation.mutate({ id, status, title })}

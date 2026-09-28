@@ -1,0 +1,60 @@
+{
+  "name": "WorkflowRun",
+  "type": "object",
+  "description": "Registo de uma execução de automação (FB4) — escrito pelas próprias funções através do helper base44/shared/workflowRuns.ts. Dá ao master_admin a última execução, a duração e o erro de cada workflow.",
+  "properties": {
+    "workflow_name": {
+      "type": "string",
+      "description": "Nome da função/automação executada (ex.: dataRetentionPurge)"
+    },
+    "trigger_type": {
+      "type": "string",
+      "enum": ["scheduled", "event", "manual", "unknown"],
+      "default": "unknown",
+      "description": "Origem da execução"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["success", "failed", "skipped"],
+      "default": "success",
+      "description": "Resultado da execução"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Início da execução"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fim da execução"
+    },
+    "duration_ms": {
+      "type": "number",
+      "description": "Duração em milissegundos"
+    },
+    "error": {
+      "type": ["string", "null"],
+      "description": "Mensagem de erro, quando a execução falhou"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Resumo legível do resultado (ex.: contagens)"
+    }
+  },
+  "required": ["workflow_name", "status"],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "read": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "update": {
+      "user_condition": { "role": "master_admin" }
+    },
+    "delete": {
+      "user_condition": { "role": "master_admin" }
+    }
+  }
+}

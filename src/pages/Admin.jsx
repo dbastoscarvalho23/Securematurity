@@ -25,6 +25,8 @@ import { format } from 'date-fns';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import { isPlatformOwner } from '@/lib/rbac';
 
 // Paleta dos gráficos vinda dos tokens do design system (FC2) — acompanha o
@@ -300,7 +302,7 @@ export default function Admin() {
   const [filterSector, setFilterSector] = useState('all');
   const [drillDown, setDrillDown] = useState(null); // 'customers' | 'users' | 'assessments' | 'risks' | 'tasks'
 
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['customers'],
     queryFn: () => base44.entities.Customer.list(),
   });
@@ -661,7 +663,15 @@ export default function Admin() {
                   </TableCell>
                 </TableRow>
               ))}
-              {customerRankings.length === 0 && (
+              {isError ? (
+                <TableRow>
+                  <TableCell colSpan={10}><ErrorState variant="inline" onRetry={() => refetch()} /></TableCell>
+                </TableRow>
+              ) : isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={10}><LoadingState variant="skeleton" rows={4} label={t('common_loading')} /></TableCell>
+                </TableRow>
+              ) : customerRankings.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={10}><EmptyState compact icon={Building2} title={t('common_no_data')} /></TableCell>
                 </TableRow>

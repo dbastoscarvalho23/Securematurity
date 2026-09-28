@@ -21,6 +21,7 @@ import RiskMatrixWidget from '@/components/dashboard/RiskMatrixWidget';
 import RiskExposureTrend from '@/components/dashboard/RiskExposureTrend';
 import ComplianceJourneyStatusCard from '@/components/dashboard/ComplianceJourneyStatusCard';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
 import PageHeader from '@/components/shared/PageHeader';
@@ -30,7 +31,7 @@ export default function PlatformTenantDashboard({ readOnly = false }) {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],

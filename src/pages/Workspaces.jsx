@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import { fetchWorkspaceTree, flattenWorkspaceTree, WORKSPACE_TYPES, migrateExistingWorkspaces } from '@/lib/workspace';
 import { isPlatformOwner } from '@/lib/rbac';
 
@@ -217,7 +218,7 @@ export default function Workspaces() {
   const [parentNode, setParentNode] = useState(null);
   const [migrating, setMigrating] = useState(false);
 
-  const { data: treeData, isLoading } = useQuery({
+  const { data: treeData, isLoading, isError, refetch } = useQuery({
     queryKey: ['workspace-tree'],
     queryFn: fetchWorkspaceTree,
     enabled: isPlatformOwner(user?.role),
@@ -288,7 +289,9 @@ export default function Workspaces() {
 
       <Card>
         <CardContent className="pt-6">
-          {isLoading ? (
+          {isError ? (
+            <ErrorState variant="inline" onRetry={() => refetch()} />
+          ) : isLoading ? (
             <LoadingState variant="skeleton" rows={5} label={t('common_loading')} />
           ) : tree.length > 0 ? (
             <div className="space-y-1">

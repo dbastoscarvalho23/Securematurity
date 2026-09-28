@@ -26,6 +26,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
 import { isPlatformOwner } from '@/lib/rbac';
 import { useActiveCustomer } from '@/lib/tenantContext';
 
@@ -170,7 +171,7 @@ export default function ActionPlan() {
   const isAdmin = isPlatformOwner(user?.role);
   const { customerId } = useActiveCustomer();
 
-  const { data: recommendations = [] } = useQuery({
+  const { data: recommendations = [], isError, refetch } = useQuery({
     queryKey: ['recommendations', customerId],
     queryFn: () => isAdmin
       ? base44.entities.Recommendation.list('-created_date', 200)
@@ -448,7 +449,9 @@ Return only valid JSON with the translations.`,
       </div>
 
       {/* Recommendation groups by priority */}
-      {filtered.length === 0 ? (
+      {isError ? (
+        <Card><CardContent className="p-0"><ErrorState variant="inline" onRetry={() => refetch()} /></CardContent></Card>
+      ) : filtered.length === 0 ? (
         <Card><CardContent className="p-0">
           <EmptyState icon={Sparkles} title={t('action_plan_no_recs')} description={t('action_plan_no_recs_desc')} />
         </CardContent></Card>

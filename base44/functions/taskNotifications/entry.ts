@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
+import { withWorkflowRun } from '../../shared/workflowRuns.ts';
 
 const STATUS_LABELS = {
   todo: 'To-Do',
@@ -26,7 +27,7 @@ async function getSettings(base44, customerId) {
   };
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withWorkflowRun('taskNotifications', 'event', req, async () => {
   const base44 = createClientFromRequest(req);
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -121,4 +122,4 @@ Deno.serve(async (req) => {
   }
 
   return Response.json({ skipped: 'unknown type' });
-});
+}));

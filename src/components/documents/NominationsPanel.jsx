@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, UserCheck, Pencil, Trash2, ExternalLink, ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
@@ -44,7 +45,7 @@ export default function NominationsPanel({ customers, selectedCustomerId }) {
     revoked: t('nominations_role_other'), // fallback
   };
   const isCustomerAdmin = user?.role === 'customer_admin';
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
   const effectiveCustomerId = isAdmin ? selectedCustomerId : customerId;
 
   const [collapsed, setCollapsed] = useState(false);

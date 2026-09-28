@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Pencil, Trash2, Loader2, Search, FileText } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import { isPlatformOwner } from '@/lib/rbac';
 
 const LEGAL_BASES = [
@@ -51,9 +53,9 @@ export default function RoPA() {
   const [saving, setSaving] = useState(false);
 
   const isAdmin = isPlatformOwner(user?.role);
-  const customerId = user?.data?.customer_id || user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
-  const { data: records = [], isLoading } = useQuery({
+  const { data: records = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['ropa'],
     queryFn: () => base44.entities.DataProcessingActivity.list('-updated_date', 200),
   });
@@ -154,7 +156,9 @@ export default function RoPA() {
 
       <Card>
         <CardContent className="p-0">
-          {isLoading ? (
+          {isError ? (
+            <ErrorState variant="inline" onRetry={() => refetch()} />
+          ) : isLoading ? (
             <LoadingState label={t('common_loading')} className="py-12" />
           ) : filtered.length === 0 ? (
             <EmptyState compact icon={FileText} title={t('ropa_empty')} />

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +31,7 @@ export default function RiskMatrixWidget() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
   const [hoveredRisks, setHoveredRisks] = useState([]);
 
   const { data: manualRisks = [] } = useQuery({
@@ -107,14 +108,14 @@ export default function RiskMatrixWidget() {
         {total > 0 && (
           <div className="space-y-1">
             <div className="flex h-2.5 rounded-full overflow-hidden w-full gap-px">
-              {distPct.critical > 0 && <div className="bg-red-500 transition-all duration-700"    style={{ width: `${distPct.critical}%` }} title={`${t('risk_level_critical')}: ${summary.critical}`} />}
-              {distPct.high > 0     && <div className="bg-orange-400 transition-all duration-700" style={{ width: `${distPct.high}%` }}     title={`${t('risk_level_high')}: ${summary.high}`} />}
-              {distPct.medium > 0   && <div className="bg-yellow-400 transition-all duration-700" style={{ width: `${distPct.medium}%` }}   title={`${t('risk_level_medium')}: ${summary.medium}`} />}
-              {distPct.low > 0      && <div className="bg-emerald-400 transition-all duration-700" style={{ width: `${distPct.low}%` }}    title={`${t('risk_level_low')}: ${summary.low}`} />}
+              {distPct.critical > 0 && <div className="transition-all duration-700" style={{ width: `${distPct.critical}%`, backgroundColor: 'hsl(var(--risk-critical))' }} title={`${t('risk_level_critical')}: ${summary.critical}`} />}
+              {distPct.high > 0     && <div className="transition-all duration-700" style={{ width: `${distPct.high}%`, backgroundColor: 'hsl(var(--risk-high))' }} title={`${t('risk_level_high')}: ${summary.high}`} />}
+              {distPct.medium > 0   && <div className="transition-all duration-700" style={{ width: `${distPct.medium}%`, backgroundColor: 'hsl(var(--risk-medium))' }} title={`${t('risk_level_medium')}: ${summary.medium}`} />}
+              {distPct.low > 0      && <div className="transition-all duration-700" style={{ width: `${distPct.low}%`, backgroundColor: 'hsl(var(--risk-low))' }} title={`${t('risk_level_low')}: ${summary.low}`} />}
             </div>
             <p className="text-[10px] text-muted-foreground">
               {t('dashboard_score_dist')} <strong>{total}</strong> {total !== 1 ? t('dashboard_risks') : t('dashboard_risk')}
-              {summary.critical > 0 && <span className="text-red-600 ml-1">· {summary.critical} {t('dashboard_critical_risks')}</span>}
+              {summary.critical > 0 && <span className="ankora-risk-critical ml-1">· {summary.critical} {t('dashboard_critical_risks')}</span>}
             </p>
           </div>
         )}

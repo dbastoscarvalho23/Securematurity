@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertTriangle, Plus, Pencil, Loader2, Search, Clock, CheckCircle2, AlertOctagon } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
 import { formatDateTime, hoursRemaining, daysRemaining } from '@/lib/complianceUtils';
@@ -67,7 +68,7 @@ export default function IncidentManagement() {
   const [saving, setSaving] = useState(false);
 
   const isAdmin = isPlatformOwner(user?.role);
-  const customerId = user?.data?.customer_id || user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ['incidents'],

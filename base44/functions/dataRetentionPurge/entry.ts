@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { getAutomationSecret } from "../../shared/automationSecret.ts";
 import { normalizeRole } from "../../shared/accessUtils.ts";
+import { withWorkflowRun } from "../../shared/workflowRuns.ts";
 
 /**
  * Scheduled data retention automation.
@@ -14,7 +15,7 @@ import { normalizeRole } from "../../shared/accessUtils.ts";
  *
  * Each action is logged to AuditLog for traceability (GDPR Art. 30(1)(f), Art. 17).
  */
-Deno.serve(async (req) => {
+Deno.serve(withWorkflowRun('dataRetentionPurge', 'scheduled', req, async () => {
   const base44 = createClientFromRequest(req);
   const now = new Date().toISOString();
   const results = { executed_at: now, purged: 0, archived: 0, errors: [] };
@@ -110,4 +111,4 @@ Deno.serve(async (req) => {
   }
 
   return Response.json(results);
-});
+}));

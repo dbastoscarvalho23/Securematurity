@@ -10,6 +10,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import EditUserDialog from '@/components/settings/EditUserDialog';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +23,7 @@ export default function Organization() {
   const navigate = useNavigate();
   const [userToEdit, setUserToEdit] = useState(null);
 
-  const { data: users = [] } = useQuery({
+  const { data: users = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['org-users'],
     queryFn: () => base44.functions.invoke('listUsers', {}),
     enabled: hasRole(user?.role, 'master_admin', 'customer_admin'),
@@ -142,7 +144,19 @@ export default function Organization() {
                   </TableCell>
                 </TableRow>
               ))}
-              {visibleUsers.length === 0 && (
+              {isError ? (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <ErrorState variant="inline" onRetry={() => refetch()} />
+                  </TableCell>
+                </TableRow>
+              ) : isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <LoadingState variant="skeleton" rows={4} label={t('common_loading')} />
+                  </TableCell>
+                </TableRow>
+              ) : visibleUsers.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5}>
                     <EmptyState compact icon={Users} title={t('common_no_data')} />

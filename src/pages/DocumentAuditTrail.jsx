@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +12,7 @@ import DocCustomerBreakdown from '@/components/documents/DocCustomerBreakdown';
 import DocAuditTable from '@/components/documents/DocAuditTable';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
+import ErrorState from '@/components/shared/ErrorState';
 import { isPlatformOwner } from '@/lib/rbac';
 
 const RANGE_KEYS = [
@@ -25,17 +27,17 @@ export default function DocumentAuditTrail() {
   const { t } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
   const isCustomerAdmin = user?.role === 'customer_admin';
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
   const [rangeDays, setRangeDays] = useState(30);
   const [filterCustomer, setFilterCustomer] = useState('all');
 
-  const { data: allDocs = [], isLoading: loadingDocs } = useQuery({
+  const { data: allDocs = [], isLoading: loadingDocs, isError: docsError, refetch: refetchDocs } = useQuery({
     queryKey: ['securityDocuments'],
     queryFn: () => base44.entities.SecurityDocument.list('-created_date', 1000),
   });
 
-  const { data: versions = [], isLoading: loadingVersions } = useQuery({
+  const { data: versions = [], isLoading: loadingVersions, isError: versionsError, refetch: refetchVersions } = useQuery({
     queryKey: ['documentVersionsAll'],
     queryFn: () => base44.entities.DocumentVersion.list('-created_date', 1000),
   });
@@ -130,6 +132,10 @@ export default function DocumentAuditTrail() {
           </div>
         }
       />
+
+      {(docsError || versionsError) && (
+        <Card><CardContent className="p-0"><ErrorState variant="inline" onRetry={() => { refetchDocs(); refetchVersions(); }} /></CardContent></Card>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

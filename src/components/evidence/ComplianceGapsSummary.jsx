@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { isAfter, isBefore, parseISO } from 'date-fns';
 import { ShieldCheck } from 'lucide-react';
@@ -16,7 +17,7 @@ export default function ComplianceGapsSummary() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
   const enabled = isAdmin || !!customerId;
 
   const scoped = (list) => (isAdmin ? list : list.filter(x => x.customer_id === customerId));

@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { escapeHtml } from '../../shared/escapeHtml.ts';
 import { getAutomationSecret } from '../../shared/automationSecret.ts';
+import { withWorkflowRun } from '../../shared/workflowRuns.ts';
 import { normalizeRole } from '../../shared/accessUtils.ts';
 
 function scoreLevel(score) {
@@ -10,7 +11,7 @@ function scoreLevel(score) {
   return 'Low';
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withWorkflowRun('riskDueDateReminders', 'scheduled', req, async () => {
   const base44 = createClientFromRequest(req);
 
   // Authorization: scheduled automation passes the shared secret (body.args.automation_secret
@@ -114,4 +115,4 @@ Deno.serve(async (req) => {
   }
 
   return Response.json({ sent, skipped });
-});
+}));

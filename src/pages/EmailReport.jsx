@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +49,7 @@ export default function EmailReport() {
   const { t } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
   const isCustomerAdmin = user?.role === 'customer_admin';
+  const { customerId } = useActiveCustomer();
 
   const [search, setSearch] = useState('');
   const [rangeFilter, setRangeFilter] = useState('14');
@@ -67,7 +69,7 @@ export default function EmailReport() {
   // Filter by customer for customer_admin
   const logs = rawLogs.filter(log => {
     if (isCustomerAdmin) {
-      return log.customer_id === user?.customer_id;
+      return log.customer_id === customerId;
     }
     return true;
   });

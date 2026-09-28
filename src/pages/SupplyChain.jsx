@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +34,7 @@ export default function SupplyChain() {
   const [editing, setEditing] = useState(null);
   const [selected, setSelected] = useState(null);
 
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
   const { data: questionnaires = [], isLoading: loadingQuestionnaires } = useQuery({
     queryKey: ['supplier-questionnaires', customerId],

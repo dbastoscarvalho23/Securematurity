@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +24,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { isPlatformOwner, hasRole } from '@/lib/rbac';
 
@@ -35,7 +37,7 @@ export default function Suppliers() {
   const { t } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
   const canBulkAction = hasRole(user?.role, 'master_admin', 'customer_admin');
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
   const queryClient = useQueryClient();
 
   const supplierStatusOptions = [
@@ -58,7 +60,7 @@ export default function Suppliers() {
   const [supplierToDelete, setSupplierToDelete] = useState(null);
 
   const queryKey = ['suppliers', customerId];
-  const { data: suppliers = [], isLoading } = useQuery({
+  const { data: suppliers = [], isLoading, isError, refetch } = useQuery({
     queryKey,
     queryFn: () => isAdmin
       ? base44.entities.Supplier.list('-created_date', 500)
@@ -290,7 +292,9 @@ export default function Suppliers() {
         />
       )}
 
-      {isLoading ? (
+      {isError ? (
+        <Card><CardContent className="p-0"><ErrorState variant="inline" onRetry={() => refetch()} /></CardContent></Card>
+      ) : isLoading ? (
         <LoadingState label={t('common_loading')} className="py-20" />
       ) : filtered.length === 0 ? (
         <Card><CardContent className="p-0">

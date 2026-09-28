@@ -9,10 +9,12 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { ShieldCheck, Plus, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,12 +42,12 @@ export default function PolicyAttestation() {
   const { t, language } = useLanguage();
   const queryClient = useQueryClient();
   const isAdmin = hasRole(user?.role, 'master_admin', 'customer_admin');
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
   const userEmail = user?.email;
   const [newDialog, setNewDialog] = useState(false);
   const [newForm, setNewForm] = useState({ policy_title: '', policy_version: '', user_email: '', due_date: '' });
 
-  const { data: attestations = [], isLoading } = useQuery({
+  const { data: attestations = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['policy-attestations', customerId],
     queryFn: () => isAdmin
       ? base44.entities.PolicyAttestation.filter({ customer_id: customerId }, '-created_date', 200)
@@ -155,7 +157,9 @@ export default function PolicyAttestation() {
       {/* Pending attestations */}
       <Card>
         <CardContent className="p-0">
-          {isLoading ? (
+          {isError ? (
+            <ErrorState variant="inline" onRetry={() => refetch()} />
+          ) : isLoading ? (
             <LoadingState variant="skeleton" rows={5} label={t('common_loading')} />
           ) : pending.length === 0 ? (
             <EmptyState icon={ShieldCheck} title={t('pa_no_pending')} />

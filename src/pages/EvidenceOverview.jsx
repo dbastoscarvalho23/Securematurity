@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { format } from 'date-fns';
 import { useLanguage } from '@/lib/LanguageContext';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
 import ComplianceGapsSummary from '@/components/evidence/ComplianceGapsSummary';
 import { isPlatformOwner } from '@/lib/rbac';
 
@@ -30,7 +32,7 @@ export default function EvidenceOverview() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const isAdmin = isPlatformOwner(user?.role);
-  const customerId = user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
   const [search, setSearch] = useState('');
   const [filterAssessment, setFilterAssessment] = useState('all');
@@ -47,7 +49,7 @@ export default function EvidenceOverview() {
   });
 
   // Fetch all responses with attachments
-  const { data: responses = [], isLoading } = useQuery({
+  const { data: responses = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['responses-evidence', customerId],
     queryFn: async () => {
       const all = isAdmin
@@ -206,7 +208,9 @@ export default function EvidenceOverview() {
       </div>
 
       {/* Results */}
-      {isLoading ? (
+      {isError ? (
+        <Card><CardContent className="p-0"><ErrorState variant="inline" onRetry={() => refetch()} /></CardContent></Card>
+      ) : isLoading ? (
         <Card><CardContent className="p-0"><LoadingState label={t('evidence_loading')} className="py-16" /></CardContent></Card>
       ) : filtered.length === 0 ? (
         <Card><CardContent className="p-0">

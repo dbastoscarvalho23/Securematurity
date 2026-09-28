@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Users, Plus, Pencil, Loader2, Search, Clock, AlertOctagon, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
 import { SLA_STATUS_STYLES, slaStatus, daysRemaining, calculateDsrDueDate } from '@/lib/complianceUtils';
@@ -20,6 +21,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import { isPlatformOwner } from '@/lib/rbac';
 
 const REQUEST_TYPES = [
@@ -60,9 +62,9 @@ export default function DSRManagement() {
   const [saving, setSaving] = useState(false);
 
   const isAdmin = isPlatformOwner(user?.role);
-  const customerId = user?.data?.customer_id || user?.customer_id;
+  const { customerId } = useActiveCustomer();
 
-  const { data: records = [], isLoading } = useQuery({
+  const { data: records = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['dsrs'],
     queryFn: () => base44.entities.DataSubjectRequest.list('-updated_date', 200),
   });
@@ -152,7 +154,9 @@ export default function DSRManagement() {
 
       <Card>
         <CardContent className="p-0">
-          {isLoading ? (
+          {isError ? (
+            <ErrorState variant="inline" onRetry={() => refetch()} />
+          ) : isLoading ? (
             <LoadingState label={t('common_loading')} className="py-12" />
           ) : filtered.length === 0 ? (
             <EmptyState compact icon={Users} title={t('dsr_empty')} />

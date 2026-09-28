@@ -31,8 +31,8 @@ export default function ImpersonationBanner() {
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 text-sm">
-      <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+    <div className="flex items-center justify-between gap-3 px-4 py-2 bg-chart-3/10 border-b border-chart-3/30 text-sm">
+      <div className="flex items-center gap-2 text-chart-3">
         <ShieldAlert className="w-4 h-4 flex-shrink-0" />
         <span>
           {t('impersonation_banner_text')
@@ -47,7 +47,7 @@ export default function ImpersonationBanner() {
         variant="outline"
         size="sm"
         onClick={stopImpersonation}
-        className="h-7 gap-1.5 border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+        className="h-7 gap-1.5 border-chart-3/40 text-chart-3 hover:bg-chart-3/10"
       >
         <X className="w-3.5 h-3.5" />
         {t('impersonation_stop')}

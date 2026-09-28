@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCustomerUsers } from '@/hooks/useCustomerUsers';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useActiveCustomer } from '@/lib/tenantContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -255,7 +256,8 @@ export default function ComplianceJourney() {
   const { t, language } = useLanguage();
   const queryClient = useQueryClient();
   const isAdmin = isPlatformOwner(user?.role);
-  const [selectedCustomerId, setSelectedCustomerId] = useState(isAdmin ? '' : user?.customer_id);
+  const { customerId } = useActiveCustomer();
+  const [selectedCustomerId, setSelectedCustomerId] = useState(isAdmin ? '' : customerId);
   const [initializing, setInitializing] = useState(false);
   const [reinitConfirm, setReinitConfirm] = useState(false);
 
@@ -267,7 +269,7 @@ export default function ComplianceJourney() {
     enabled: isAdmin,
   });
 
-  const activeCustomerId = isAdmin ? selectedCustomerId : user?.customer_id;
+  const activeCustomerId = isAdmin ? selectedCustomerId : customerId;
   const queryKey = ['compliance-checklist', activeCustomerId];
 
   const customerUsers = useCustomerUsers(activeCustomerId);
