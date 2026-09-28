@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Sparkles, FileText, Paperclip, RotateCcw } from 'lucide-react';
+import {
+  AlertTriangle, ArrowLeft, CalendarDays, Download, FileText, ListTodo, Loader2,
+  Paperclip, RotateCcw, Target, User,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,6 +53,62 @@ export default function AssessmentResults({ assessment, responses }) {
   const [isReopening, setIsReopening] = useState(false);
   const canReopen = can(user?.role, 'edit', 'assessments') && assessment.status === 'completed';
   const coverage = assessment.coverage;
+
+  // Gap analysis and action generation are server operations (manageActionPlan):
+  // the browser never derives gaps or actions, it only triggers and displays them.
+  const canManagePlan = can(user?.role, 'edit', 'assessments') && assessment.status === 'completed';
+  const [isIdentifyingGaps, setIsIdentifyingGaps] = useState(false);
+  const [isGeneratingActions, setIsGeneratingActions] = useState(false);
+
+  const { data: actionTasks = [] } = useQuery({
+    queryKey: ['assessment-actions', assessment.id],
+    queryFn: () => base44.entities.Task.filter({ assessment_id: assessment.id }, '-created_date', 200),
+  });
+
+  const actionsByRecommendation = useMemo(() => {
+    const map = new Map();
+    actionTasks.forEach((task) => {
+      if (!task.recommendation_id) return;
+      const list = map.get(task.recommendation_id) || [];
+      list.push(task);
+      map.set(task.recommendation_id, list);
+    });
+    return map;
+  }, [actionTasks]);
+
+  const handleIdentifyGaps = async () => {
+    setIsIdentifyingGaps(true);
+    try {
+      const result = await base44.functions.invoke('manageActionPlan', {
+        action: 'identify_gaps',
+        assessment_id: assessment.id,
+      });
+      toast.success(`${result?.created ?? 0} ${t('assessment_gaps_identified_suffix')}`);
+      queryClient.invalidateQueries({ queryKey: ['recommendations', assessment.id] });
+    } catch (error) {
+      toast.error(error?.response?.data?.error || error?.data?.error || t('assessment_gaps_error'));
+    } finally {
+      setIsIdentifyingGaps(false);
+    }
+  };
+
+  const handleGenerateActions = async () => {
+    setIsGeneratingActions(true);
+    try {
+      const result = await base44.functions.invoke('manageActionPlan', {
+        action: 'generate_actions',
+        assessment_id: assessment.id,
+        assigned_to: user?.email || '',
+      });
+      toast.success(`${result?.created ?? 0} ${t('assessment_actions_created_suffix')}`);
+      queryClient.invalidateQueries({ queryKey: ['assessment-actions', assessment.id] });
+    } catch (error) {
+      toast.error(error?.response?.data?.error || error?.data?.error || t('assessment_actions_error'));
+    } finally {
+      setIsGeneratingActions(false);
+    }
+  };
+
   const { data: recommendations = [] } = useQuery({
     queryKey: ['recommendations', assessment.id],
     queryFn: () => base44.entities.Recommendation.filter({ assessment_id: assessment.id }),
@@ -256,47 +315,130 @@ export default function AssessmentResults({ assessment, responses }) {
         </CardContent>
       </Card>
 
-      {/* AI Recommendations */}
-      {recommendations.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              {t('assessment_results_ai_recs')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recommendations.map((rec, i) => (
-                <div key={rec.id || i} className="p-4 rounded-lg border hover:shadow-sm transition-shadow">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={priorityColors[rec.priority]}>
-                        {t(PRIORITY_KEYS[rec.priority]) || rec.priority}
-                      </Badge>
-                      {rec.framework_code && (
-                        <Badge variant="outline" className="text-xs">{rec.framework_code}</Badge>
-                      )}
-                      {rec.timeline && (
-                        <span className="text-xs text-muted-foreground">
-                          {t(timelineKey(rec.timeline)) || rec.timeline.replace('_', ' ')}
-                        </span>
+      {/* Gap analysis & action plan — server-derived gaps, each with its traceable actions */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Target className="w-4 h-4 text-primary" />
+                {t('assessment_gaps_title')}
+                {recommendations.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">{recommendations.length}</Badge>
+                )}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">{t('assessment_gaps_subtitle')}</p>
+            </div>
+            {canManagePlan && (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={isIdentifyingGaps}
+                  onClick={handleIdentifyGaps}
+                >
+                  {isIdentifyingGaps
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : <AlertTriangle className="w-3.5 h-3.5" />}
+                  {isIdentifyingGaps ? t('assessment_gaps_identifying') : t('assessment_gaps_identify')}
+                </Button>
+                <Button
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={isGeneratingActions || recommendations.length === 0}
+                  onClick={handleGenerateActions}
+                >
+                  {isGeneratingActions
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : <ListTodo className="w-3.5 h-3.5" />}
+                  {isGeneratingActions ? t('assessment_gaps_generating') : t('assessment_gaps_generate')}
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {recommendations.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">{t('assessment_gaps_empty')}</p>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-5 text-xs text-muted-foreground mb-4">
+                <span><span className="font-semibold text-foreground">{recommendations.length}</span> {t('assessment_gaps_labelled')}</span>
+                <span><span className="font-semibold text-foreground">{actionTasks.length}</span> {t('assessment_actions_labelled')}</span>
+                <span><span className="font-semibold text-foreground">{actionTasks.filter(task => task.status === 'done').length}</span> {t('assessment_actions_done')}</span>
+              </div>
+              <div className="space-y-3">
+                {recommendations.map((rec, i) => {
+                  const linked = actionsByRecommendation.get(rec.id) || [];
+                  return (
+                    <div key={rec.id || i} className="p-4 rounded-lg border hover:shadow-sm transition-shadow">
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="outline" className={priorityColors[rec.priority]}>
+                            {t(PRIORITY_KEYS[rec.priority]) || rec.priority}
+                          </Badge>
+                          {rec.source === 'assessment_gap' && (
+                            <Badge variant="outline" className="text-xs border-primary/30 text-primary">
+                              {t('assessment_gaps_source')}
+                            </Badge>
+                          )}
+                          {rec.control_id && (
+                            <Badge variant="outline" className="text-xs font-mono">{rec.control_id}</Badge>
+                          )}
+                          {rec.framework_code && (
+                            <Badge variant="outline" className="text-xs">{rec.framework_code}</Badge>
+                          )}
+                          {rec.timeline && (
+                            <span className="text-xs text-muted-foreground">
+                              {t(timelineKey(rec.timeline)) || rec.timeline.replace('_', ' ')}
+                            </span>
+                          )}
+                        </div>
+                        {rec.current_level != null && rec.target_level != null ? (
+                          <span className="text-xs font-mono text-muted-foreground flex-shrink-0">
+                            {rec.current_level} → {rec.target_level}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground flex-shrink-0">{t('assessment_gaps_uncovered')}</span>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium">{rec.title}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
+                      {linked.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic mt-2">{t('assessment_actions_none')}</p>
+                      ) : (
+                        <div className="mt-3 space-y-1.5">
+                          {linked.map(task => (
+                            <div
+                              key={task.id}
+                              className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground bg-muted/40 rounded-md px-2.5 py-1.5"
+                            >
+                              <ListTodo className="w-3 h-3 flex-shrink-0" />
+                              <span className="font-medium text-foreground/80">{task.title}</span>
+                              <span>{t(`action_plan_status_${task.status}`) || task.status}</span>
+                              {task.assigned_to && (
+                                <span className="flex items-center gap-1">
+                                  <User className="w-3 h-3" />{task.assigned_to.split('@')[0]}
+                                </span>
+                              )}
+                              {task.due_date && (
+                                <span className="flex items-center gap-1">
+                                  <CalendarDays className="w-3 h-3" />{task.due_date}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
-                    {rec.current_level != null && rec.target_level != null && (
-                      <span className="text-xs font-mono text-muted-foreground">
-                        {rec.current_level} → {rec.target_level}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm font-medium">{rec.title}</p>
-                  <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Dialog open={showReopen} onOpenChange={setShowReopen}>
         <DialogContent>

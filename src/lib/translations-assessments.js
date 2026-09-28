@@ -128,6 +128,25 @@ export const assessmentEn = {
   assessment_reopen_error: 'It was not possible to reopen the assessment.',
 
   // Evidence uploader
+  // Gap analysis & action plan (Phase 6) — server-derived gaps and actions
+  assessment_gaps_title: 'Gap Analysis & Action Plan',
+  assessment_gaps_subtitle: 'Gaps derived from the assessment responses; each one becomes a traceable action with a responsible, a due date and required evidence.',
+  assessment_gaps_identify: 'Identify gaps',
+  assessment_gaps_identifying: 'Identifying...',
+  assessment_gaps_identified_suffix: 'gaps identified from the assessment responses.',
+  assessment_gaps_generate: 'Generate actions',
+  assessment_gaps_generating: 'Generating...',
+  assessment_actions_created_suffix: 'actions created from the identified gaps.',
+  assessment_gaps_empty: 'No gaps recorded yet. Complete the assessment and run the gap analysis.',
+  assessment_gaps_error: 'It was not possible to run the gap analysis.',
+  assessment_actions_error: 'It was not possible to generate the actions.',
+  assessment_gaps_labelled: 'gaps',
+  assessment_actions_labelled: 'actions',
+  assessment_actions_done: 'actions completed',
+  assessment_gaps_source: 'Gap',
+  assessment_gaps_uncovered: 'Not covered',
+  assessment_actions_none: 'No action generated for this gap yet.',
+
   evidence_attach_file: '+ Attach evidence file',
 
   // Cross-mapping suggestions
@@ -256,6 +275,25 @@ export const assessmentPt = {
   assessment_reopen_confirm: 'Reabrir',
   assessment_reopen_success: 'Avaliação reaberta — o resultado anterior foi preservado.',
   assessment_reopen_error: 'Não foi possível reabrir a avaliação.',
+
+  // Análise de lacunas e plano de ação (Fase 6) — lacunas e ações calculadas no servidor
+  assessment_gaps_title: 'Análise de Lacunas e Plano de Ação',
+  assessment_gaps_subtitle: 'Lacunas derivadas das respostas da avaliação; cada uma gera uma ação rastreável com responsável, prazo e evidência exigida.',
+  assessment_gaps_identify: 'Identificar lacunas',
+  assessment_gaps_identifying: 'A identificar...',
+  assessment_gaps_identified_suffix: 'lacunas identificadas a partir das respostas da avaliação.',
+  assessment_gaps_generate: 'Gerar ações',
+  assessment_gaps_generating: 'A gerar...',
+  assessment_actions_created_suffix: 'ações criadas a partir das lacunas identificadas.',
+  assessment_gaps_empty: 'Ainda não há lacunas registadas. Conclua a avaliação e execute a análise de lacunas.',
+  assessment_gaps_error: 'Não foi possível executar a análise de lacunas.',
+  assessment_actions_error: 'Não foi possível gerar as ações.',
+  assessment_gaps_labelled: 'lacunas',
+  assessment_actions_labelled: 'ações',
+  assessment_actions_done: 'ações concluídas',
+  assessment_gaps_source: 'Lacuna',
+  assessment_gaps_uncovered: 'Não coberta',
+  assessment_actions_none: 'Ainda sem ação gerada para esta lacuna.',
 
   evidence_attach_file: '+ Anexar ficheiro de evidência',
 

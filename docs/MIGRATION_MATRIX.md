@@ -85,8 +85,8 @@ Estado: ✅ cumpre · 🟡 parcial · ❌ em falta/violação.
 | 8 | Sem break-glass/suporte autoaprovado no MVP | `breakGlassAccess` **removido** (função, botão, diálogo, banner e wrappers de frontend); `breakglass` saiu do enum de `assignment_type`; `breakglass_customer_ids` fica reservado e sem escrita | Retirado do MVP na Fase 3 (secção 9) | ✅ | 3 |
 | 9 | Não usar arrays de clientes no utilizador como única fonte | Os 12 RLS operacionais continuam assentes em `delegated_*_customer_ids`, mas `User` passou a ter RLS de escrita reservado ao serviço/`master_admin` (as mutações de utilizador passam por `adminUpdateUser`), e o prazo é aplicado na leitura (`list`/`resolve`) | Parcial: a fronteira continua a ser arrays, já não escrevíveis pelo cliente | 🟡 | 3 |
 | 9 | Acesso direto às entidades não contorna as funções | `AuditLog.create` no cliente (`src/lib/auditLog.js`) grava `user_email` fornecido pelo chamador | Frontend pode falsificar o ator | ❌ | 8 |
-| 10 | Avaliações: resultados calculados no servidor; conclusão validada | Sem função `completeAssessment`; não há cálculo de resultados no servidor | Conclusão apenas no cliente | ❌ | 6 |
-| 10 | Lacunas → ações com responsável, prazo, prioridade, estado, evidência | `Recommendation`, `Task`, `MitigationTask`, `ActionPlan` existem; ligação lacuna→requisito não é explícita | Rastreabilidade parcial | 🟡 | 6 |
+| 10 | Avaliações: resultados calculados no servidor; conclusão validada | `completeAssessment` calcula cobertura, pontuação e instantâneo metodológico a partir das respostas persistidas; exige papel de tenant ou delegação de edição e módulo licenciado | Corrigido na Fase 6 (secção 9) | ✅ | 6 |
+| 10 | Lacunas → ações com responsável, prazo, prioridade, estado, evidência | `manageActionPlan` deriva as lacunas das respostas (abaixo do alvo / não cobertas), grava-as como `Recommendation` com `question_id`+`control_id` e gera a `Task` com responsável, prazo, prioridade, estado e evidência exigida | Corrigido na Fase 6 (secção 9) | ✅ | 6 |
 | 10 | Documentos/evidências com versões, revisão, aprovação, hashes | `SecurityDocument`, `DocumentVersion`, `NominationDocument`, `PolicyAttestation`, `storeFileToCloud` | Revisão/aprovação por evidência a confirmar | 🟡 | 7 |
 | 10 | Pacote de auditoria (índice, âmbito, versões, controlos, evidências, decisões) | Existem relatórios (`generateMonthlyAnnualReport`, `EmailReport`, `StrategicReport`); não existe pacote de auditoria | Funcionalidade em falta | ❌ | 7 |
 | 11 | Conteúdos persistidos com estado editorial; sem mocks | `src/lib/knowledgeBaseMockData.js` alimenta a Base de Conhecimento; **não existe entidade** de artigo | Base de Conhecimento é mock; falta `transitionArticleStatus` | ❌ | 7 |
@@ -112,8 +112,10 @@ o defeito 5 fica para a Fase 6.
 2. **Delegações sem prazo nem âmbito verificados** — ✅ **corrigido na Fase 3**.
 3. **Aprovação por administrador de parceiro** — ✅ **corrigido na Fase 3**.
 4. **Suporte autoaprovado** — ✅ **retirado do MVP na Fase 3**.
-5. **Conclusão de avaliações protegida apenas por autenticação** — em falta: não existe função de
-   conclusão; o `AuditLog` tem `assessment_completed` mas a escrita é do cliente. **(Fase 6.)**
+5. **Conclusão de avaliações protegida apenas por autenticação** — ✅ **corrigido na Fase 6**:
+   `completeAssessment` (conclusão e reabertura) e `manageActionPlan` (lacunas e ações) correm no
+   servidor, com o ator vindo da sessão, verificação de tenant/delegação, módulo licenciado e registo
+   de auditoria; o cliente deixou de calcular pontuações e de derivar lacunas.
 6. **Regras que permitem modificar diretamente autorizações críticas** — ✅ **corrigido na Fase 3**:
    `User` passou a ter RLS de escrita (`create`/`update`/`delete` reservados a `master_admin`/serviço),
    pelo que os arrays `delegated_*_customer_ids` deixaram de ser alteráveis por um cliente com
@@ -134,7 +136,7 @@ Preservar (não copiar da origem, mas manter aqui): armazenamento cloud
 | 3 | Autorização, isolamento, onboarding e delegação (fechar defeitos 1–4, 6) | **Concluída** — ver evidências na secção 9 |
 | 4 | Catálogo de 3 tiers e ativação comercial só do Core | **Concluída** — ver evidências na secção 9 |
 | 5 | Administração consolidada (página Licenciamento real; aviso separado) | **Concluída** — ver evidências na secção 9 |
-| 6 | Jornada Core NIS2 completa (avaliações com cálculo no servidor, lacunas, ações) | **Em curso** — conclusão/reabertura de avaliações no servidor (secção 9); lacunas e ações por consolidar |
+| 6 | Jornada Core NIS2 completa (avaliações com cálculo no servidor, lacunas, ações) | **Concluída** — conclusão/reabertura, análise de lacunas e geração de ações no servidor (secção 9) |
 | 7 | Conteúdos, reporting e pacote de auditoria | Não iniciada |
 | 8 | Testes de segurança, regressão, persistência e operação | Não iniciada |
 
@@ -173,7 +175,7 @@ Preservar (não copiar da origem, mas manter aqui): armazenamento cloud
 
 ## 9. Evidências de execução
 
-### Fase 6 — conclusão de avaliações no servidor (parcial: avaliação Core NIS2)
+### Fase 6 — conclusão de avaliações no servidor (concluída)
 
 Alterações: `base44/shared/assessmentScoring.ts` (novo), `base44/functions/completeAssessment/entry.ts`
 (novo), `base44/entities/Assessment.jsonc` (campos anuláveis na reabertura e instantâneo metodológico
@@ -204,7 +206,53 @@ ambiente criado por `seedTestEnvironment {confirm:"create-test-conditions"}` —
 **Não verificado nesta fase:** o diálogo de reabertura na interface não foi exercitado por clique — a
 verificação foi feita por chamada direta à função com a identidade da sessão; os widgets do Dashboard
 aparecem em estado vazio porque o ambiente de teste não semeia riscos nem consumo de IA. As lacunas e
-ações (restante da Fase 6) continuam por consolidar.
+ações estão na subsecção seguinte.
+
+### Fase 6 — lacunas → ações (concluída)
+
+Alterações: `base44/shared/assessmentAccess.ts` (novo — autorização, licença e carregamento
+partilhados), `base44/shared/gapAnalysis.ts` (novo), `base44/functions/manageActionPlan/entry.ts`
+(novo), `base44/functions/completeAssessment/entry.ts` (passa a usar os utilitários partilhados),
+`base44/entities/Recommendation.jsonc` (`question_id`, `source`),
+`src/components/assessments/AssessmentResults.jsx`, `src/lib/translations-assessments.js`.
+
+Regra de negócio (sempre no servidor, nunca no browser): uma lacuna é uma resposta *respondida* com
+maturidade abaixo do alvo (`below_target`) ou um requisito *sem resposta* numa conclusão parcial
+(`uncovered`); uma resposta «não aplicável» é uma decisão de âmbito e nunca conta como lacuna. A
+prioridade combina o tamanho da lacuna com o peso do requisito (crítica ≥ 9, alta ≥ 6, média ≥ 3,
+baixa abaixo disso) e determina o prazo sugerido da ação (imediato 30 dias, curto 90, médio 180, longo
+365). Cada lacuna é gravada como `Recommendation` ligada ao requisito (`question_id` + `control_id` +
+`framework_code`) e cada ação é uma `Task` ligada de volta à lacuna (`recommendation_id`) e ao controlo
+(`framework_control_id`), com responsável, prazo, prioridade, estado e evidência exigida em `notes`.
+
+Método: funções invocadas contra o backend local sobre o ambiente de `seedTestEnvironment`
+(4 clientes, 12 perguntas NIS2, 3 com subscrição Core — o cliente Delta fica sem subscrição).
+
+| Verificação | Resultado |
+|---|---|
+| Ações antes das lacunas | **Passou** — 422 `no_gaps`; nenhuma escrita |
+| Lacunas numa avaliação não concluída | **Passou** — 409 `not_completed` |
+| Identificação de lacunas (alfa, cobertura total) | **Passou** — 8 lacunas: 1 crítica, 2 altas, 3 médias, 2 baixas |
+| Lacuna ligada ao requisito | **Passou** — `question_id` + `control_id` (`NIS2.2.3`) + `source: assessment_gap` |
+| Repetição da análise | **Passou** — 0 lacunas criadas na segunda execução (idempotente) |
+| Geração de ações | **Passou** — 8 ações criadas, cada uma com responsável, prazo, prioridade, estado `todo` e evidência exigida |
+| Ação ligada de volta à lacuna | **Passou** — `recommendation_id` + `framework_control_id` + `assessment_id` |
+| Repetição da geração de ações | **Passou** — 0 ações criadas na segunda execução |
+| Lacunas numa conclusão parcial (beta) | **Passou** — 9 lacunas: 5 `below_target` + 4 `uncovered` |
+| Autorização por delegação (só leitura) | **Passou** — 403 `forbidden` (cliente Gama) |
+| Módulo licenciado | **Passou** — 403 `module_not_licensed` (cliente Delta) |
+| Ação desconhecida | **Passou** — 400 `Unknown action` |
+| Regressão da conclusão/reabertura | **Passou** — após a extração dos utilitários partilhados: conclusão total 200 e reabertura 200 com o resultado anterior preservado |
+| Registo de auditoria | **Passou** — `assessment_gaps_identified` e `action_plan_generated` com contagens por prioridade |
+| Compilação do frontend | **Passou** — `vite build` no contentor (saída 0) |
+| Painel sem erros | **Passou** — 0 pedidos falhados e sem overlay; apenas o ruído conhecido do websocket (`connect_error`/`timeout`) |
+
+**Não verificado nesta fase:** o painel de lacunas e ações na interface não foi exercitado por clique.
+O único utilizador do ambiente local é o administrador de plataforma, que a matriz de RBAC exclui das
+rotas de conformidade (a navegação para `/assessments` redireciona para `/`), pelo que o ecrã não é
+alcançável nesta sessão; a persistência foi verificada pelo serviço (a segunda execução cria 0). A
+leitura das entidades pelo cliente continua filtrada por RLS — o administrador de plataforma não tem
+tenant, pelo que `Recommendation`, `Task` e `Assessment` devolvem 0 registos ao cliente.
 
 ### Fase 4 — catálogo de três tiers (concluída)
 

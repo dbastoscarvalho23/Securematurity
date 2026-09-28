@@ -6,6 +6,20 @@
       "type": "string",
       "description": "Reference to Assessment"
     },
+    "question_id": {
+      "type": "string",
+      "description": "Reference to the Question this gap was derived from (explicit gap → requirement traceability)"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "ai",
+        "assessment_gap"
+      ],
+      "default": "manual",
+      "description": "How the recommendation was created; assessment_gap marks the ones derived from the assessment responses"
+    },
     "customer_id": {
       "type": "string",
       "description": "Reference to Customer"

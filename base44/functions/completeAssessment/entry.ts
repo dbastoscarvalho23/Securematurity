@@ -1,6 +1,4 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
-import { normalizeRole } from "../../shared/accessUtils.ts";
-import { getEffectiveLicense } from "../../shared/licenseGuard.ts";
 import {
   AssessmentError,
   appendStatusHistory,
@@ -10,6 +8,12 @@ import {
   completionType,
   assertCompletionAllowed,
 } from "../../shared/assessmentScoring.ts";
+import {
+  authorizeAssessmentOperational,
+  assertAssessmentModuleLicensed,
+  loadAssessmentQuestions,
+  loadAssessmentResponses,
+} from "../../shared/assessmentAccess.ts";
 
 /**
  * completeAssessment — server-side completion (and reopening) of Core NIS2
@@ -30,10 +34,6 @@ import {
  * - complete: close the assessment with server-computed results
  * - reopen:   reopen a completed assessment, preserving the previous result
  */
-const ASSESSMENT_MODULE = "assessments_action_plan";
-/** Tenant roles that may complete an assessment of their own customer. */
-const EDIT_ROLES = ["customer_admin", "grc_analyst"];
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -55,76 +55,6 @@ Deno.serve(async (req) => {
   }
 });
 
-/**
- * Authorize an operational action on a customer.
- * Mirrors the delegation model: platform/partner roles never get automatic
- * access to tenant data, they need an approved, non-expired delegation.
- */
-async function authorizeOperational(base44: any, user: any, customerId: string) {
-  if (!customerId) {
-    throw new AssessmentError("customer_required", "A avaliação não tem cliente associado.", 422);
-  }
-
-  const role = normalizeRole(user.role);
-  const ownTenant = !!user.customer_id && user.customer_id === customerId;
-  if (ownTenant && EDIT_ROLES.includes(role)) {
-    return { via: "tenant_role", role };
-  }
-
-  const assignments = await base44.asServiceRole.entities.UserCustomerAssignment.filter({
-    customer_id: customerId,
-  });
-  const now = Date.now();
-  const active = assignments.filter((a: any) => {
-    const isSameUser = a.user_id === user.id || (!!user.email && a.user_email === user.email);
-    const live = !a.expires_at || new Date(a.expires_at).getTime() > now;
-    return isSameUser && a.assignment_type === "delegation" && a.status === "approved" && live;
-  });
-
-  const canEdit = active.some((a: any) => a.access_level === "admin" || a.access_level === "contributor");
-  if (canEdit) return { via: "delegation", role };
-
-  throw new AssessmentError(
-    "forbidden",
-    "Não tem autorização para concluir avaliações deste cliente.",
-    403,
-  );
-}
-
-/** The assessments module must be licensed for the customer. */
-async function assertModuleLicensed(base44: any, customerId: string) {
-  const license = await getEffectiveLicense(base44, customerId);
-  const codes = (license?.modules || []).map((m: any) => m.code);
-  if (!license?.licensed || !codes.includes(ASSESSMENT_MODULE)) {
-    throw new AssessmentError(
-      "module_not_licensed",
-      "O cliente não tem o módulo de Avaliações e Plano de Ação licenciado.",
-      403,
-    );
-  }
-}
-
-/** Questions of an assessment: assessment-specific ones, else the selected global ones. */
-async function loadQuestions(base44: any, assessment: any) {
-  const specific = await base44.asServiceRole.entities.Question.filter({ assessment_id: assessment.id });
-  if (specific.length > 0) return specific;
-
-  const questionIds = assessment.question_ids || [];
-  if (questionIds.length === 0) return [];
-
-  const all = await base44.asServiceRole.entities.Question.list("order_index", 500);
-  const wanted = new Set(questionIds);
-  return all.filter((q: any) => wanted.has(q.id));
-}
-
-/** Responses are read from persistence and re-checked against the assessment tenant. */
-async function loadResponses(base44: any, assessment: any) {
-  const responses = await base44.asServiceRole.entities.AssessmentResponse.filter({
-    assessment_id: assessment.id,
-  });
-  return responses.filter((r: any) => !r.customer_id || r.customer_id === assessment.customer_id);
-}
-
 async function loadFrameworkVersions(base44: any, codes: string[]) {
   const all = await base44.asServiceRole.entities.Framework.list();
   const byCode = new Map<string, any>(all.map((f: any) => [f.code, f]));
@@ -140,8 +70,8 @@ async function handleComplete(base44: any, user: any, body: any) {
   const assessment = await base44.asServiceRole.entities.Assessment.get(assessment_id);
   if (!assessment) return Response.json({ error: "Assessment not found" }, { status: 404 });
 
-  const authorization = await authorizeOperational(base44, user, assessment.customer_id);
-  await assertModuleLicensed(base44, assessment.customer_id);
+  const authorization = await authorizeAssessmentOperational(base44, user, assessment.customer_id);
+  await assertAssessmentModuleLicensed(base44, assessment.customer_id);
 
   if (assessment.status === "completed") {
     return Response.json(
@@ -150,8 +80,8 @@ async function handleComplete(base44: any, user: any, body: any) {
     );
   }
 
-  const questions = await loadQuestions(base44, assessment);
-  const responses = await loadResponses(base44, assessment);
+  const questions = await loadAssessmentQuestions(base44, assessment);
+  const responses = await loadAssessmentResponses(base44, assessment);
 
   // Completion rules (coverage) are validated server-side.
   const coverage = assertCompletionAllowed(questions, responses, { confirm_partial: !!confirm_partial });
@@ -220,7 +150,7 @@ async function handleReopen(base44: any, user: any, body: any) {
   const assessment = await base44.asServiceRole.entities.Assessment.get(assessment_id);
   if (!assessment) return Response.json({ error: "Assessment not found" }, { status: 404 });
 
-  const authorization = await authorizeOperational(base44, user, assessment.customer_id);
+  const authorization = await authorizeAssessmentOperational(base44, user, assessment.customer_id);
 
   if (assessment.status !== "completed") {
     return Response.json(
