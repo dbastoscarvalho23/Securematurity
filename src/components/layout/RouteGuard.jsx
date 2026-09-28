@@ -49,7 +49,7 @@ export default function RouteGuard({ path, children }) {
 
   if (!isModuleLicensed(license, moduleCode)) {
     const reason = moduleDenialReason(license, moduleCode);
-    return <Navigate to="/licensing" replace state={{ reason, module: moduleCode }} />;
+    return <Navigate to="/license-unavailable" replace state={{ reason, module: moduleCode }} />;
   }
 
   return children;

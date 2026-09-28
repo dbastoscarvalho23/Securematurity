@@ -62,6 +62,7 @@ export const PAGE_TITLE_KEYS = {
   '/system-status': 'page_system_status',
   '/user-assignments': 'page_user_assignments',
   '/licensing': 'page_licensing',
+  '/license-unavailable': 'page_license_unavailable',
   '/strategic-report': 'page_strategic_report',
   '/knowledge-base': 'page_knowledge_base',
   '/training': 'nav_training',

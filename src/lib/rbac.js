@@ -218,6 +218,8 @@ const ROUTE_RESOURCE = {
   '/external-access': 'external_access',
   '/organization': 'organization',
   '/licensing': 'licensing',
+  // Informational notice reached from the license redirect — any signed-in role.
+  '/license-unavailable': 'dashboard',
   '/configuration': 'settings',
   '/settings': 'settings',
   '/system-status': 'system_status',

@@ -42,6 +42,7 @@ import Training from '@/pages/Training';
 import FrameworkGuide from '@/pages/FrameworkGuide';
 import RouteGuard from '@/components/layout/RouteGuard';
 import Licensing from '@/pages/Licensing';
+import LicenseUnavailable from '@/pages/LicenseUnavailable';
 import Workspaces from '@/pages/Workspaces';
 import Organization from '@/pages/Organization';
 import Configuration from '@/pages/Configuration';
@@ -116,6 +117,7 @@ const AuthenticatedApp = () => {
           <Route path="/framework-guide" element={<RouteGuard path="/framework-guide"><FrameworkGuide /></RouteGuard>} />
           <Route path="/email-report" element={<RouteGuard path="/email-report"><EmailReport /></RouteGuard>} />
           <Route path="/licensing" element={<RouteGuard path="/licensing"><Licensing /></RouteGuard>} />
+          <Route path="/license-unavailable" element={<RouteGuard path="/license-unavailable"><LicenseUnavailable /></RouteGuard>} />
           <Route path="/workspaces" element={<RouteGuard path="/workspaces"><Workspaces /></RouteGuard>} />
           <Route path="/organization" element={<RouteGuard path="/organization"><Organization /></RouteGuard>} />
           <Route path="/configuration" element={<RouteGuard path="/configuration"><Configuration /></RouteGuard>} />

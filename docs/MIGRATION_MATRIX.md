@@ -93,7 +93,7 @@ Estado: ✅ cumpre · 🟡 parcial · ❌ em falta/violação.
 | 5 | Apenas NIS2 nos novos percursos; preservar histórico | `frameworkConstants.js` mapeia `NIS2: 'NIS2 / DL 125/2025'`; `LicenseStandard` semeia NIS2, RJCS, ISO27001 | Identificadores NIS2/RJCS sem versão nem mapeamento justificado | 🟡 | 2 |
 | 13 | Workspace: `ancestor_ids` (destino) ≠ `ancestor_workspace_ids` (origem); tipos diferentes | Destino: `ancestor_ids` (antecessores, sem o próprio), tipos `root|organization|division|subsidiary|department` | Semântica por documentar; sem validação de ciclos/órfãos | 🟡 | 2 |
 | 13 | Funções equivalentes a `manageWorkspace`, `writeAuditLog`, `getSubtreeKpis`, `snapshotAccessImpact`, `completeAssessment`, `transitionArticleStatus` | Existem `manageAssignment`, `getWorkspaceTree`, `resolveWorkspaceAccess`, `migrateExistingWorkspaces`; **as outras não existem** | 6 capacidades em falta | ❌ | 2–7 |
-| 12 | Página Licenciamento não pode ser só o aviso "Módulo Não Licenciado" | `src/pages/Licensing.jsx` (46 linhas) **é** o cartão de aviso, e é o destino do redirect do `RouteGuard` | Página inexistente enquanto funcionalidade | ❌ | 4–5 |
+| 12 | Página Licenciamento não pode ser só o aviso "Módulo Não Licenciado" | `src/pages/Licensing.jsx` é a página real (catálogo dos 3 tiers, catálogo de módulos, subscrições por cliente, normas); o aviso passou para `src/pages/LicenseUnavailable.jsx` (rota `/license-unavailable`), que é o novo destino do redirect do `RouteGuard` | — | ✅ | 5 |
 | 12 | Estados de carregamento/vazio/erro, validação, sem botões sem efeito | Parcial, por página | Auditoria por ecrã em falta | 🟡 | 5 |
 | 14 | Auditoria produzida no servidor com ator real | `writeAccessAuditLog`/`writeLicenseAuditLog` gravam no servidor; mas o cliente também pode criar `AuditLog` | Caminho de escrita no cliente a fechar | ❌ | 8 |
 | 14 | Persistência real; preview em memória não prova prontidão | Backend local é **em memória** e reinicia a cada arranque; um único utilizador semeado | Não é prova de prontidão comercial | ❌ | 8 |
@@ -134,7 +134,7 @@ Preservar (não copiar da origem, mas manter aqui): armazenamento cloud
 | 2 | Modelo de dados e migrações compatíveis (Workspace canónico, NIS2/versão, funções em falta) | Não iniciada |
 | 3 | Autorização, isolamento, onboarding e delegação (fechar defeitos 1–4, 6) | Não iniciada |
 | 4 | Catálogo de 3 tiers e ativação comercial só do Core | **Concluída** — ver evidências na secção 9 |
-| 5 | Administração consolidada (página Licenciamento real; aviso separado) | Não iniciada |
+| 5 | Administração consolidada (página Licenciamento real; aviso separado) | **Concluída** — ver evidências na secção 9 |
 | 6 | Jornada Core NIS2 completa (avaliações com cálculo no servidor, lacunas, ações) | Não iniciada |
 | 7 | Conteúdos, reporting e pacote de auditoria | Não iniciada |
 | 8 | Testes de segurança, regressão, persistência e operação | Não iniciada |
@@ -194,8 +194,33 @@ Alterações: `src/lib/licenseModules.js`, `base44/shared/licenseGuard.ts`,
 Método de invocação local (para repetir): `POST /api/apps/<appId>/functions/<nome>` com os
 cabeçalhos `Base44-App-Id` e `Authorization: Bearer <token de localStorage.base44_access_token>`.
 
-**Não verificado nesta fase:** a página `/licensing` ainda é o cartão de aviso
-"módulo não licenciado" (Fase 5) e não foi aberta; não há testes de interface nesta fase.
+**Não verificado nesta fase:** não há testes de interface nesta fase.
+
+### Fase 5 — página de licenciamento real e aviso separado (concluída)
+
+Alterações: `src/pages/Licensing.jsx` (reescrita), `src/pages/LicenseUnavailable.jsx` (nova),
+`src/components/layout/RouteGuard.jsx`, `src/App.jsx`, `src/lib/rbac.js`,
+`src/lib/licenseModules.js`, `src/components/layout/TopBar.jsx`, `src/lib/translations-license.js`.
+
+Separação de responsabilidades: `/licensing` passa a ser a página de administração do
+licenciamento (só papéis com a capacidade `licensing`: `master_admin`, `workspace_admin`);
+o aviso de módulo não licenciado passa a ser uma rota própria (`/license-unavailable`),
+mapeada para o recurso `dashboard` (`rbac.js`), pelo que qualquer papel autenticado a alcança,
+e sem gating de módulo (`licenseModules.js`).
+
+| Verificação | Método | Resultado |
+|---|---|---|
+| `/licensing` com dados reais | preview: `seedLicenseData` + navegação | **Passou** — 4 indicadores, catálogo dos 3 tiers, tabela de módulos (Privacidade "Fora da oferta"), normas (NIS2, RJCS, ISO 27001) |
+| Apenas o Core em venda | cartões do catálogo | **Passou** — Core "Disponível"; Profissional e Avançado "Preparado, não comercializado" |
+| Subscrições por cliente | tabela `TenantSubscription` | **Passou** — 1 subscrição local; `tier_code: "partner"` (legado) apresenta-se como "Avançado", via `LEGACY_TIER_ALIASES` |
+| Aviso acessível a qualquer papel | navegação para `/license-unavailable` | **Passou** — cartão "Módulo Não Licenciado" (não é *Page Not Found*) |
+| Ação do aviso | clique em "Painel" | **Passou** — navega para `/` |
+| Saúde do frontend após as alterações | consola, rede, overlay, raiz | **Passou** — 0 pedidos falhados, sem `vite-error-overlay`, raiz renderizada; só o ruído conhecido do websocket do SDK |
+
+**Não verificado nesta fase:** o redirect do `RouteGuard` para `/license-unavailable` não foi
+exercitado ponta a ponta porque o ambiente local tem um único utilizador (`master_admin`), para
+quem a verificação de módulo é dispensada; o destino foi validado por leitura de código e por
+navegação direta. Não há testes de RBAC por papel nesta fase.
 
 ### Descobertas de ambiente registadas
 
