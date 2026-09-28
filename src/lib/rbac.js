@@ -66,72 +66,82 @@ export function normalizeRole(role) {
 }
 
 // ─── Capability tiers (reusable role arrays) ────────────────────
-// Tiers that include platform/partner roles
-const PLATFORM     = ['master_admin'];
-const PARTNER      = ['master_admin', 'workspace_admin'];
-const TENANT_MGR   = ['master_admin', 'workspace_admin', 'customer_admin'];
-const TENANT_EDIT  = [...TENANT_MGR, 'grc_analyst'];
-const TENANT_OPS   = [...TENANT_EDIT, 'control_owner'];
-const TENANT_VIEW  = [...TENANT_OPS, 'auditor'];
-const EXEC_VIEW    = [...TENANT_MGR, 'executive'];
-const ALL_VIEW     = [...TENANT_VIEW, 'executive', 'employee', 'consultant'];
+// Administration tiers — platform & partner admins manage the platform,
+// customers, licensing and the shared content catalogue. They are
+// administration-only and never appear in a compliance capability.
+const PLATFORM   = ['master_admin'];                        // AnkoraOne team only
+const PARTNER    = ['master_admin', 'workspace_admin'];
+const TENANT_MGR = ['master_admin', 'workspace_admin', 'customer_admin'];
+const ALL_VIEW = [
+  'master_admin', 'workspace_admin', 'customer_admin', 'grc_analyst',
+  'control_owner', 'auditor', 'executive', 'employee', 'consultant',
+];
 
-// Tenant-only tiers (no platform/partner — pure tenant management)
+// Compliance/operational tiers — tenant-only. Platform & partner admins are
+// administration-only and never appear in a compliance capability.
 const T_MGR  = ['customer_admin'];
 const T_EDIT = ['customer_admin', 'grc_analyst'];
 const T_OPS  = ['customer_admin', 'grc_analyst', 'control_owner'];
 const T_VIEW = ['customer_admin', 'grc_analyst', 'control_owner', 'auditor'];
 
+// Content / catalogue tiers — the shared content catalogue (question database,
+// knowledge base) is managed by the platform & partner admins AND by the tenant
+// roles that curate the same content.
+const CONTENT_MGR    = [...PLATFORM, 'workspace_admin', 'grc_analyst'];
+const CONTENT_DELETE = [...CONTENT_MGR, ...T_MGR];
+
 export const CAPABILITY_TIERS = {
-  PLATFORM, PARTNER, TENANT_MGR, TENANT_EDIT, TENANT_OPS, TENANT_VIEW,
-  EXEC_VIEW, ALL_VIEW, T_MGR, T_EDIT, T_OPS, T_VIEW,
+  PLATFORM, PARTNER, TENANT_MGR, ALL_VIEW,
+  T_MGR, T_EDIT, T_OPS, T_VIEW, CONTENT_MGR, CONTENT_DELETE,
 };
 
 // ─── Capabilities matrix (single source of truth) ──────────────
 // For each resource, defines which roles can perform each action.
-// master_admin is always allowed (short-circuited in can()).
+// master_admin is NOT short-circuited — it only holds what the matrix grants.
 export const CAPABILITIES = {
-  // ─── Spec explicit ──────────────────────────────────────────
+  // ─── Administration (platform & partner admins) ─────────────
   dashboard:          { view: ALL_VIEW },
   customers:          { view: PARTNER, create: PARTNER, edit: PARTNER, delete: PLATFORM },
-  assessments:        { view: [...T_VIEW, 'executive'], create: T_EDIT, edit: T_EDIT, delete: T_MGR, export: [...T_EDIT, 'executive', 'auditor'] },
-  question_bank:      { view: ['grc_analyst'], create: ['grc_analyst'], edit: ['grc_analyst'], delete: T_MGR },
   organization:       { view: [...PARTNER, 'customer_admin'], create: PARTNER, edit: PARTNER, delete: PLATFORM },
   licensing:          { view: [...PLATFORM, 'workspace_admin'] },
   system_status:      { view: PLATFORM },
+  audit_log:          { view: [...PLATFORM, 'auditor'] },
+  settings:           { view: TENANT_MGR, edit: TENANT_MGR },
   external_access:    { view: ['customer_admin', 'consultant', 'master_admin', 'workspace_admin'] },
 
-  // ─── Derived from existing access patterns + tier system ────
-  compliance_journey: { view: TENANT_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
-  framework_guide:    { view: TENANT_EDIT },
-  action_plan:        { view: TENANT_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
-  compliance_metrics: { view: [...TENANT_EDIT, 'executive'], export: [...TENANT_EDIT, 'executive', 'auditor'] },
-  tasks:              { view: [...TENANT_OPS, 'employee'], create: T_OPS, edit: T_OPS, delete: T_MGR, approve: T_MGR },
-  task_analytics:     { view: TENANT_OPS },
-  documents:          { view: TENANT_OPS, create: T_OPS, edit: T_OPS, delete: T_MGR },
-  evidence:           { view: TENANT_VIEW, create: T_OPS, edit: T_OPS, delete: T_MGR },
-  document_audit:     { view: [...TENANT_EDIT, 'auditor'] },
-  reports:            { view: [...TENANT_EDIT, 'auditor', 'executive'], export: [...TENANT_EDIT, 'auditor', 'executive'] },
-  strategic_report:   { view: [...PLATFORM, 'workspace_admin', 'executive'], export: [...PLATFORM, 'workspace_admin', 'executive'] },
-  recommendations:    { view: TENANT_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
-  email_report:       { view: TENANT_EDIT, create: T_EDIT },
+  // Content catalogue — managed by platform & partner admins AND curating tenants.
+  question_bank:      { view: CONTENT_MGR, create: CONTENT_MGR, edit: CONTENT_MGR, delete: CONTENT_DELETE },
+  knowledge_base:     { view: ALL_VIEW, create: CONTENT_MGR, edit: CONTENT_MGR, delete: CONTENT_DELETE },
+
+  // ─── Compliance management (tenant-only — no platform/partner admins) ───
+  compliance_journey: { view: T_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
+  framework_guide:    { view: T_EDIT },
+  action_plan:        { view: T_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
+  assessments:        { view: [...T_VIEW, 'executive'], create: T_EDIT, edit: T_EDIT, delete: T_MGR, export: [...T_EDIT, 'executive', 'auditor'] },
+  recommendations:    { view: T_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
+  compliance_metrics: { view: [...T_EDIT, 'executive'], export: [...T_EDIT, 'executive', 'auditor'] },
+  tasks:              { view: [...T_OPS, 'employee'], create: T_OPS, edit: T_OPS, delete: T_MGR, approve: T_MGR },
+  task_analytics:     { view: T_OPS },
+  documents:          { view: T_OPS, create: T_OPS, edit: T_OPS, delete: T_MGR },
+  evidence:           { view: T_VIEW, create: T_OPS, edit: T_OPS, delete: T_MGR },
+  document_audit:     { view: [...T_EDIT, 'auditor'] },
+  reports:            { view: [...T_EDIT, 'auditor', 'executive'], export: [...T_EDIT, 'auditor', 'executive'] },
+  strategic_report:   { view: ['executive'], export: ['executive'] },
+  email_report:       { view: T_EDIT, create: T_EDIT },
   risks:              { view: [...T_VIEW, 'executive'], create: T_EDIT, edit: T_EDIT, delete: T_MGR },
   vulnerabilities:    { view: T_VIEW, create: T_OPS, edit: T_OPS, delete: T_MGR },
-  incidents:          { view: [...TENANT_OPS, 'employee'], create: [...TENANT_OPS, 'employee'], edit: T_OPS, delete: T_MGR },
-  suppliers:          { view: TENANT_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
-  supply_chain:       { view: TENANT_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
-  knowledge_base:     { view: [...TENANT_OPS, 'employee'], create: T_EDIT, edit: T_EDIT, delete: T_MGR },
-  ropa:               { view: [...TENANT_EDIT, 'auditor'], create: T_EDIT, edit: T_EDIT, delete: T_MGR },
-  dsr:                { view: [...TENANT_EDIT, 'auditor'], create: T_EDIT, edit: T_EDIT, delete: T_MGR },
-  audit_log:          { view: [...PLATFORM, 'workspace_admin', 'auditor'] },
-  training:           { view: [...TENANT_MGR, 'control_owner', 'employee'], create: T_MGR, edit: T_MGR, delete: T_MGR },
-  policy_attestation: { view: [...TENANT_MGR, 'control_owner', 'employee'], create: T_MGR, edit: T_MGR, delete: T_MGR, approve: T_MGR },
-  settings:           { view: [...PARTNER, 'customer_admin'] },
+  incidents:          { view: [...T_OPS, 'employee'], create: [...T_OPS, 'employee'], edit: T_OPS, delete: T_MGR },
+  suppliers:          { view: T_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
+  supply_chain:       { view: T_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
+  ropa:               { view: [...T_EDIT, 'auditor'], create: T_EDIT, edit: T_EDIT, delete: T_MGR },
+  dsr:                { view: [...T_EDIT, 'auditor'], create: T_EDIT, edit: T_EDIT, delete: T_MGR },
+  training:           { view: [...T_MGR, 'control_owner', 'employee'], create: T_MGR, edit: T_MGR, delete: T_MGR },
+  policy_attestation: { view: [...T_MGR, 'control_owner', 'employee'], create: T_MGR, edit: T_MGR, delete: T_MGR, approve: T_MGR },
 };
 
 /**
  * Check if a role can perform an action on a resource.
- * master_admin short-circuits to always true.
+ * master_admin is not short-circuited — it only holds what the matrix grants.
  *
  * @param {string} role - User role (raw or normalized)
  * @param {string} action - Action: 'view', 'create', 'edit', 'delete', 'export', 'approve'
@@ -162,6 +172,16 @@ export function can(role, action, resource) {
  */
 export function canView(role, resource) {
   return can(role, 'view', resource);
+}
+
+/**
+ * Platform & partner admins — administration-only for compliance.
+ * They keep management of the shared content catalogue, but never appear in a
+ * compliance capability, and are not commercially gated for that catalogue.
+ */
+export function isWorkspaceOrAbove(role) {
+  const normalized = normalizeRole(role);
+  return normalized === 'master_admin' || normalized === 'workspace_admin';
 }
 
 // ─── Route → resource mapping ───────────────────────────────────
@@ -226,7 +246,8 @@ export function resourceForRoute(path) {
 /**
  * Check if a role can access a specific route.
  * Uses canView with prefix matching for dynamic routes.
- * master_admin short-circuits to always true.
+ * No role is short-circuited: platform & partner admins are administration-only,
+ * so a compliance URL opened directly redirects them to the dashboard.
  *
  * @param {string} role - User role (raw or normalized)
  * @param {string} path - Route path
@@ -234,7 +255,6 @@ export function resourceForRoute(path) {
  */
 export function canAccessRoute(role, path) {
   const normalized = normalizeRole(role);
-  if (normalized === 'master_admin') return true;
 
   const resource = resourceForRoute(path);
   if (resource && canView(normalized, resource)) return true;
@@ -252,10 +272,6 @@ export function canAccessRoute(role, path) {
  */
 export function canAccess(role, path) {
   const normalized = normalizeRole(role);
-
-  if (normalized === 'master_admin') {
-    return { allowed: true, reason: null };
-  }
 
   const resource = resourceForRoute(path);
   if (resource && canView(normalized, resource)) {

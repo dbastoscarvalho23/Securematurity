@@ -5,7 +5,7 @@
  * overrides that pull items from base groups and reorganize them
  * under contextual labels.
  */
-import { canView } from './rbac';
+import { canView, isWorkspaceOrAbove } from './rbac';
 
 /**
  * Helper to create a nav item.
@@ -90,7 +90,6 @@ export const BASE_GROUPS = [
   {
     labelKey: 'nav_common',
     items: [
-      mk('/audit-log', 'nav_audit_log', 'ScrollText', 'audit_log'),
       mk('/training', 'nav_training', 'GraduationCap', 'training'),
       mk('/policy-attestation', 'nav_policy_attestation', 'ShieldCheck', 'policy_attestation'),
       mk('/external-access', 'nav_external_access', 'Network', 'external_access'),
@@ -109,11 +108,25 @@ export const BASE_GROUPS = [
 ];
 
 /**
+ * Content catalogue group — Question DB + Knowledge Base.
+ * Platform & partner admins are administration-only, so this is the only
+ * non-administration group they get; the two items are pulled out of their
+ * base groups, which then disappear for them.
+ */
+const ADMIN_CONTENT_GROUP = {
+  labelKey: 'nav_content_management',
+  pullPaths: ['/question-bank', '/knowledge-base'],
+  position: 'after:nav_main',
+};
+
+/**
  * Role-specific group overrides.
  * Each override "steals" items from base groups (via pullPaths)
  * and regroups them under a contextual label.
  */
 export const ROLE_GROUP_OVERRIDES = {
+  master_admin: [ADMIN_CONTENT_GROUP],
+  workspace_admin: [ADMIN_CONTENT_GROUP],
   executive: [
     {
       labelKey: 'nav_strategy',
@@ -213,13 +226,18 @@ export function buildSidebarGroups(role) {
 export function getVisibleSidebarGroups(role, license, isModuleLicensedFn, moduleForRouteFn) {
   const allGroups = buildSidebarGroups(role);
 
+  // Platform & partner admins are administration-only: compliance items are
+  // already filtered out by canView, and the content catalogue they manage
+  // (Question DB, Knowledge Base) is not commercially gated for them.
+  const isAdmin = isWorkspaceOrAbove(role);
+
   return allGroups.map(group => ({
     ...group,
     items: group.items.filter(item => {
       // Check resource visibility
       if (item.resource && !canView(role, item.resource)) return false;
       // Check module license
-      if (moduleForRouteFn && isModuleLicensedFn) {
+      if (!isAdmin && moduleForRouteFn && isModuleLicensedFn) {
         const mod = moduleForRouteFn(item.path);
         if (mod && !isModuleLicensedFn(license, mod)) return false;
       }

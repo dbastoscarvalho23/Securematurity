@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { moduleForRoute } from '@/lib/licenseModules';
 import { isModuleLicensed, moduleDenialReason } from '@/lib/license';
-import { canAccessRoute, normalizeRole } from '@/lib/rbac';
+import { canAccessRoute, isWorkspaceOrAbove, normalizeRole } from '@/lib/rbac';
 import { useEffectiveRole } from '@/lib/RoleSimulationContext';
 
 /**
@@ -27,7 +27,7 @@ export default function RouteGuard({ path, children }) {
   const { data: license } = useQuery({
     queryKey: ['effective-license', user?.customer_id],
     queryFn: () => base44.functions.invoke('getEffectiveLicense', { customer_id: user.customer_id }),
-    enabled: !!user?.customer_id && realRole !== 'master_admin' && realRole !== 'admin' && !!moduleCode,
+    enabled: !!user?.customer_id && !isWorkspaceOrAbove(realRole) && !!moduleCode,
     staleTime: 60000,
   });
 
@@ -42,8 +42,10 @@ export default function RouteGuard({ path, children }) {
   // Skip license check when simulating (view-only preview)
   if (effectiveRole !== realRole) return children;
 
-  // Skip for master_admin/admin
-  if (realRole === 'master_admin' || realRole === 'admin') return children;
+  // Platform & partner admins are administration-only: no compliance route
+  // reaches them (see canAccessRoute), and the shared content catalogue they
+  // manage (Question DB, Knowledge Base) is not commercially gated for them.
+  if (isWorkspaceOrAbove(effectiveRole)) return children;
 
   if (!isModuleLicensed(license, moduleCode)) {
     const reason = moduleDenialReason(license, moduleCode);
