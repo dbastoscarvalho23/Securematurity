@@ -187,9 +187,6 @@ export {
   VERDICT,
   countBySeverity,
   countByStatus,
-  isOpenFinding,
-  openFindings,
-  openSeverityCounts,
   severityMeta,
   statusMeta,
 };
