@@ -16,7 +16,8 @@ import { normalizeRole } from '@/lib/rbac';
 
 const SIMULATABLE_ROLES = [
   'master_admin', 'workspace_admin', 'customer_admin',
-  'grc_analyst', 'control_owner', 'executive', 'auditor', 'employee',
+  'grc_analyst', 'control_owner', 'executive', 'auditor',
+  'employee', 'consultant',
 ];
 
 export default function RoleSimulationSelector() {

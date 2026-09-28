@@ -395,6 +395,7 @@ export const translations = {
     role_executive: 'Executive',
     role_auditor: 'Auditor',
     role_employee: 'Employee',
+    role_consultant: 'Consultant',
     // simulation
     simulation_view_as: 'View As',
     simulation_real: 'Real',
@@ -789,6 +790,7 @@ export const translations = {
     role_executive: 'Executivo',
     role_auditor: 'Auditor',
     role_employee: 'Colaborador',
+    role_consultant: 'Consultor',
     // simulation
     simulation_view_as: 'Ver Como',
     simulation_real: 'Real',

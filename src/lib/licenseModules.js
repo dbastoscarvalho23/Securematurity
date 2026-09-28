@@ -69,7 +69,6 @@ export const ROUTE_MODULE = {
   // knowledge_guidance
   "/framework-guide": "knowledge_guidance",
   "/knowledge-base": "knowledge_guidance",
-  "/policy-attestation": "knowledge_guidance",
 
   // privacy
   "/ropa": "privacy",
@@ -78,8 +77,9 @@ export const ROUTE_MODULE = {
   // tasks — gated by assessments_action_plan (part of action plan workflow)
   "/tasks": "assessments_action_plan",
 
-  // training — gated by knowledge_guidance
-  "/training": "knowledge_guidance",
+  // RBAC-only routes (no module gating) — available in all tiers
+  "/training": null,
+  "/policy-attestation": null,
 };
 
 /** Prefix-based fallback for dynamic routes (e.g. /assessments/:id). */
@@ -113,7 +113,7 @@ export const MODULE_RESOURCES = {
   risk_management: ["risk_assessment"],
   incident_management: ["incidents", "vulnerabilities"],
   supplier_management: ["supply_chain", "suppliers"],
-  knowledge_guidance: ["framework_guide", "training"],
+  knowledge_guidance: ["framework_guide"],
   privacy: ["ropa", "dsr"],
 };
 
