@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { normalizeRole } from '../../shared/accessUtils.ts';
 
 const ALLOWED_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
 
@@ -11,8 +12,9 @@ export default async function (req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const isAdmin = user.role === 'admin';
-    const isCustomerAdmin = user.role === 'customer_admin';
+    const role = normalizeRole(user.role);
+    const isAdmin = role === 'master_admin';
+    const isCustomerAdmin = role === 'customer_admin';
     if (!isAdmin && !isCustomerAdmin) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }

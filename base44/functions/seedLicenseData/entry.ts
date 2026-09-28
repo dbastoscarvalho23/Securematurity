@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
 import { writeLicenseAuditLog, modulesForTier } from "../../shared/licenseGuard.ts";
+import { normalizeRole } from "../../shared/accessUtils.ts";
 
 /**
  * seedLicenseData — Seeds the licensing system with default data.
@@ -25,7 +26,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
-    if (user.role !== "admin" && user.role !== "master_admin") {
+    if (normalizeRole(user.role) !== "master_admin") {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }
 

@@ -156,7 +156,7 @@ export function can(role, action, resource) {
   // The CAPABILITIES matrix uses tenant-only T_* tiers for compliance resources,
   // which intentionally exclude master_admin. This enforces the delegation model:
   // master_admin must use explicit UserCustomerAssignment to access tenant data.
-  // Route ACCESS for master_admin is still short-circuited in canAccessRoute().
+  // Route access is not short-circuited either — canAccessRoute() applies the same matrix (F11).
 
   const caps = CAPABILITIES[resource];
   if (!caps) return false;

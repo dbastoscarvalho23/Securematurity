@@ -9,7 +9,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await base44.entities.AuditLog.create({
+    // Written with the service role: the AuditLog RLS only lets master_admin (or
+    // the record's own customer) create an entry, so a tenant user's login audit
+    // would otherwise be silently dropped.
+    await base44.asServiceRole.entities.AuditLog.create({
       action: 'user_login',
       user_email: user.email,
       entity_type: 'User',
@@ -37,7 +40,7 @@ Deno.serve(async (req) => {
           }
           await base44.asServiceRole.entities.User.update(user.id, updates);
           await base44.asServiceRole.entities.InvitedUser.update(invite.id, { status: 'active' });
-          await base44.entities.AuditLog.create({
+          await base44.asServiceRole.entities.AuditLog.create({
             action: 'customer_updated',
             user_email: user.email,
             entity_type: 'User',
@@ -50,6 +53,14 @@ Deno.serve(async (req) => {
         console.error('Failed to auto-assign invited user:', inviteError?.message || inviteError);
       }
     }
+
+    // NOTE: the stored role is deliberately NOT rewritten to the canonical
+    // spelling on login. The entity RLS matches `user_condition` by exact string
+    // (verified in the backend: no role normalisation happens there), so writing
+    // `master_admin` would satisfy the canonical rules but silently break the
+    // ~84 legacy `role === 'admin'` checks in the frontend. Until those are
+    // unified on the RBAC normaliser, a legacy-stored administrator keeps the
+    // legacy spelling and the canonical rules must accept it as an alias.
 
     return Response.json({ success: true });
   } catch (error) {

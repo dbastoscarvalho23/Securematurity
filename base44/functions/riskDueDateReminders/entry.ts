@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { escapeHtml } from '../../shared/escapeHtml.ts';
 import { getAutomationSecret } from '../../shared/automationSecret.ts';
+import { normalizeRole } from '../../shared/accessUtils.ts';
 
 function scoreLevel(score) {
   if (score >= 16) return 'Critical';
@@ -20,7 +21,7 @@ Deno.serve(async (req) => {
   if (!authorized) {
     try {
       const user = await base44.auth.me();
-      authorized = user?.role === 'admin';
+      authorized = normalizeRole(user?.role) === 'master_admin';
     } catch {
       authorized = false;
     }

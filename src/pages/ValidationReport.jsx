@@ -8,12 +8,15 @@ import ValidationIssueCard from '@/components/validation/ValidationIssueCard';
 import { cn } from '@/lib/utils';
 import {
   FIX_PLAN,
+  FOLLOW_UPS,
   ISSUES,
   NOT_EXECUTED,
   REPORT_META,
   SEVERITIES,
+  STATUSES,
   VERDICT,
   countBySeverity,
+  countByStatus,
 } from '@/lib/validationReportData';
 
 /**
@@ -28,6 +31,7 @@ export default function ValidationReport() {
   const [openIds, setOpenIds] = useState(() => new Set(['F1']));
 
   const counts = useMemo(() => countBySeverity(), []);
+  const statusCounts = useMemo(() => countByStatus(), []);
   const visible = useMemo(
     () => (severity === 'todas' ? ISSUES : ISSUES.filter((i) => i.severity === severity)),
     [severity]
@@ -53,8 +57,9 @@ export default function ValidationReport() {
         <div className="space-y-1">
           <p className="text-sm font-semibold">Página temporária — documento de validação, não é produção</p>
           <p className="text-sm">
-            Resultado de uma ronda de validação em modo de inspeção, sem alterações de implementação.
-            Deve ser retirada quando as correções do plano forem aplicadas.
+            Ronda 1: inspeção de código e configuração. Ronda 2: correções de F1–F15 aplicadas no
+            código, registadas como aplicadas e revistas por inspeção — não como verificadas. A
+            página deve ser retirada quando a validação por identidade real estiver concluída.
           </p>
         </div>
       </div>
@@ -146,6 +151,23 @@ export default function ValidationReport() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Wrench className="h-4 w-4 text-muted-foreground" />
+            Estado das correções
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-2">
+          {STATUSES.map((s) => (
+            <Badge key={s.id} variant="outline" className={cn('text-sm', s.classes)}>
+              {s.label}: {statusCounts[s.id] || 0}
+            </Badge>
+          ))}
+          <span className="text-xs text-muted-foreground">Total: {ISSUES.length}</span>
+        </CardContent>
+      </Card>
+
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-base font-semibold text-foreground">
@@ -201,10 +223,14 @@ export default function ValidationReport() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Wrench className="h-4 w-4 text-muted-foreground" />
-            Plano de correções (não executado)
+            Plano de correções (executado em código)
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Aplicado no código e revisto por inspeção. A confirmação por identidade real corre num
+            backend com várias identidades (ver «Testes não executados» e «Seguimento»).
+          </p>
           <ol className="space-y-3">
             {FIX_PLAN.map((step) => (
               <li key={step.id} className="flex items-start gap-3 text-sm">
@@ -218,6 +244,22 @@ export default function ValidationReport() {
               </li>
             ))}
           </ol>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Seguimento (residuais)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {FOLLOW_UPS.map((f) => (
+            <div key={f.ref} className="border-b pb-3 last:border-b-0 last:pb-0">
+              <p className="text-sm font-medium text-foreground">
+                <span className="font-mono text-xs text-muted-foreground">{f.ref}</span> — {f.title}
+              </p>
+              <p className="text-sm text-muted-foreground">{f.note}</p>
+            </div>
+          ))}
         </CardContent>
       </Card>
 

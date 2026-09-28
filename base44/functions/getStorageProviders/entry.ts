@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { normalizeRole } from '../../shared/accessUtils.ts';
 
 // Storage provider id -> connector integration type (they are not the same string).
 const THIRD_PARTY_PROVIDERS = { google_drive: 'googledrive', one_drive: 'one_drive' };
@@ -10,7 +11,8 @@ export default async function (req) {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && user.role !== 'customer_admin') {
+    const role = normalizeRole(user.role);
+    if (role !== 'master_admin' && role !== 'customer_admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 

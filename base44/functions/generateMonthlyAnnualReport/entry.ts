@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import jsPDF from 'npm:jspdf@4.0.0';
 import { getAutomationSecret } from "../../shared/automationSecret.ts";
+import { normalizeRole } from "../../shared/accessUtils.ts";
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
 const BRAND_DARK = [20, 30, 60];
@@ -372,7 +373,7 @@ Deno.serve(async (req) => {
     } else {
       try {
         const user = await base44.auth.me();
-        if (user?.role !== 'admin') {
+        if (normalizeRole(user?.role) !== 'master_admin') {
           return Response.json({ error: 'Admin access required' }, { status: 403 });
         }
       } catch {

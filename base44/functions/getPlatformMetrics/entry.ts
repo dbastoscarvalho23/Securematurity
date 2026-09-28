@@ -1,4 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
+import { normalizeRole } from "../../shared/accessUtils.ts";
 
 /**
  * Cross-tenant platform metrics — master_admin only.
@@ -35,7 +36,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
-    if (user.role !== "master_admin" && user.role !== "admin") {
+    if (normalizeRole(user.role) !== "master_admin") {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }
 

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
+import { normalizeRole } from '../../shared/accessUtils.ts';
 
 async function getSettings(base44ServiceRole, customerId) {
   const all = await base44ServiceRole.entities.ReminderSettings.list();
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
     const realDoc = await base44.asServiceRole.entities.SecurityDocument.get(docId);
     if (!realDoc) return Response.json({ error: 'document not found' }, { status: 404 });
 
-    const isAuthorized = user.role === 'admin' ||
+    const isAuthorized = normalizeRole(user.role) === 'master_admin' ||
       realDoc.created_by_id === user.id ||
       realDoc.owner_email === user.email ||
       realDoc.customer_id === user.data?.customer_id;

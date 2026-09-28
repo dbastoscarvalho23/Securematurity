@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { severityMeta } from '@/lib/validationReportData';
+import { issueStatus, severityMeta, statusMeta } from '@/lib/validationReportData';
 
 function Field({ label, children }) {
   return (
@@ -16,11 +16,13 @@ function Field({ label, children }) {
 
 /**
  * Cartão colapsável de um problema do relatório de validação.
- * Só leitura: identificador, severidade, persona/fluxo, localização,
- * impacto, reprodução, correção recomendada e teste de regressão.
+ * Só leitura: identificador, severidade, estado da correção, persona/fluxo,
+ * localização, impacto, reprodução, correção recomendada e teste de regressão.
  */
 export default function ValidationIssueCard({ issue, open, onToggle }) {
   const sev = severityMeta(issue.severity);
+  const st = statusMeta(issue.id);
+  const { note } = issueStatus(issue.id);
 
   return (
     <Card>
@@ -39,6 +41,9 @@ export default function ValidationIssueCard({ issue, open, onToggle }) {
             {issue.persona} · {issue.flow}
           </p>
         </div>
+        <Badge variant="outline" className={cn('shrink-0', st.classes)}>
+          {st.label}
+        </Badge>
         <Badge variant="outline" className={cn('shrink-0', sev.classes)}>
           {sev.label}
         </Badge>
@@ -49,6 +54,14 @@ export default function ValidationIssueCard({ issue, open, onToggle }) {
 
       {open && (
         <CardContent className="space-y-4 border-t pt-4">
+          <Field label="Estado da correção">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className={cn('shrink-0', st.classes)}>
+                {st.label}
+              </Badge>
+              {note && <span className="text-sm text-muted-foreground">{note}</span>}
+            </div>
+          </Field>
           <Field label="Localização no código">
             <ul className="list-disc space-y-1 pl-4">
               {issue.location.map((line) => (

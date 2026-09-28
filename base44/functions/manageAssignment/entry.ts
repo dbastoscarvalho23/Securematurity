@@ -1,4 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
+import { normalizeRole } from "../../shared/accessUtils.ts";
 
 /**
  * Manages UserCustomerAssignment records — explicit delegation of users
@@ -18,6 +19,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+    const role = normalizeRole(user.role);
     const body = await req.json();
     const { action } = body;
 
@@ -26,7 +28,7 @@ Deno.serve(async (req) => {
       const { user_id, customer_id } = body;
 
       let assignments;
-      if (user.role === "admin") {
+      if (role === "master_admin") {
         // Admin: can filter by user_id or customer_id, or list all
         if (user_id) {
           assignments = await base44.asServiceRole.entities.UserCustomerAssignment.filter({ user_id });
@@ -54,7 +56,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── All mutations: admin only ──────────────────────────
-    if (user.role !== "admin") {
+    if (role !== "master_admin") {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -149,7 +151,7 @@ Deno.serve(async (req) => {
       const targetUserId = user_id || user.id;
 
       // Non-admin can only resolve their own
-      if (user.role !== "admin" && user_id && user_id !== user.id) {
+      if (role !== "master_admin" && user_id && user_id !== user.id) {
         return Response.json({ error: "Forbidden" }, { status: 403 });
       }
 

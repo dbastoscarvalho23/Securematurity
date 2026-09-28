@@ -10,7 +10,8 @@ export const REPORT_META = {
   app: 'Securematurity',
   appId: '6ab5373e7f8f586c80cb9ed8',
   branch: 'migration-ankoraone-update',
-  commit: 'a90a530575 — «Corrigir validação de status de delegação e ajustar seed de testes» (2026-09-28)',
+  commit:
+    '2c2932e — «Refatorar RLS de entidades e implementar restrições de onboarding e licenciamento» (2026-09-28), com uniformização das verificações de papel do backend aplicada nesta ronda',
   backend:
     'base44 dev local (funções em Deno; entidades em base de dados em memória), servido por docker compose -f docker-compose.base44.yml, serviço web (node:22-slim) + vite → host 3000',
   persistence: 'Nenhuma — estado em memória, perdido em cada restart do container ou alteração de schema.',
@@ -23,20 +24,21 @@ export const REPORT_META = {
 };
 
 export const VERDICT = {
-  classification: 'Funcionalmente parcial, com bloqueios identificados',
+  classification: 'Correções aplicadas em código — validação live por executar',
   summary:
-    'O Core não é declarado pronto para piloto comercial controlado. A prontidão fica bloqueada independentemente das falhas, porque nenhum percurso foi executado com identidades reais — sem validação executada não há parecer positivo possível.',
+    'As correções de F1–F15 foram implementadas em código (escopo de carteira do parceiro, âmbito de módulos da delegação, guarda de auto-escalada, RLS canónica, licenciamento fail-closed) e as verificações de papel do backend foram uniformizadas nesta ronda. O Core continua sem parecer positivo: as correções são dadas como aplicadas e revistas por inspeção, não como verificadas, porque a validação executada — onboarding, escopo de delegação, escrita por papel — exige várias identidades reais, que o ambiente local não tem. Ficam residuais por fechar (F2, F7 e F15).',
   blockers: [
-    'Acesso operacional de leitura durante o onboarding (F1) — acesso a dados de cliente antes de qualquer delegação aprovada.',
-    'Bypass do âmbito de delegação (F4) e leitura após expiração (F15).',
-    'Elevação de privilégios por API (F6) e escrita direta nas entidades (F5).',
-    'Falta de escopo de carteira do administrador de parceiro (F3).',
-    'RLS ancorada no literal legado (F2) — a camada de isolamento não está alinhada com o modelo de 9 papéis; a fuga entre tenants depende dessa confirmação.',
+    'F2 — a RLS canónica não aceita a grafia legada guardada nas contas: o administrador de plataforma local perde a leitura de Customer, Workspace e AuditLog (lista de Clientes vazia) e o mesmo acontece em produção enquanto as contas tiverem role "admin".',
+    'F7 parcial — o backend foi uniformizado, mas ~84 comparações de papel do frontend continuam na grafia legada e são o que fixa a grafia que pode ser guardada.',
+    'F15 parcial — a leitura de entidades não revalida expires_at; a delegação expirada só é retirada no arranque da sessão ou numa listagem.',
+    'Validação multi-identidade não executada — o backend local tem uma única identidade (master_admin) e ignora a criação de utilizadores; cada percurso tem de correr num backend real com contas das personas.',
+    'Semântica de user_condition no backend de produção por confirmar (localmente é igualdade exacta, sem normalização de papel).',
   ],
   positives: [
     'Matriz de capacidades coerente e sem atalho para admins de plataforma/parceiro nas capacidades de conformidade.',
     'Ciclo de delegação com motivo, prazo, proibição de auto-aprovação e aprovação reservada ao cliente.',
     'Break-glass removido; cálculo de resultados, cobertura e metodologia sempre no servidor, com o ator retirado de `base44.auth.me()`.',
+    'F1, F3–F6, F8, F9, F11, F13 e F14 aplicadas em código; F2, F7 e F15 com residual identificado.',
   ],
 };
 
@@ -48,6 +50,69 @@ export const SEVERITIES = [
   { id: 'baixa', label: 'Baixa', classes: 'bg-slate-100 text-slate-600 border-slate-200' },
   { id: 'verificar', label: 'A verificar', classes: 'bg-blue-100 text-blue-700 border-blue-200' },
 ];
+
+// Estado das correções aplicadas em código (a validação live continua pendente —
+// ver FOLLOW_UPS). Não altera a severidade original de cada problema.
+export const STATUSES = [
+  { id: 'corrigido', label: 'Corrigido', classes: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  { id: 'parcial', label: 'Parcial', classes: 'bg-amber-100 text-amber-700 border-amber-200' },
+  { id: 'pendente', label: 'Pendente', classes: 'bg-destructive/10 text-destructive border-destructive/20' },
+];
+
+export const ISSUE_STATUS = {
+  F1: {
+    status: 'corrigido',
+    note: 'manageAccess deixou de escrever onboarding_customer_ids na criação e nenhuma regra rls.read o lê; o array só é escrito na aceitação e é limpo na expiração/revogação.',
+  },
+  F2: {
+    status: 'parcial',
+    note: 'Customer, Workspace, AuditLog, User, UserCustomerAssignment e as entidades operacionais passaram a nomear os papéis canónicos. Ficam duas consequências por fechar: (a) a RLS compara user_condition por igualdade exacta e o backend não normaliza papéis (verificado no emulador local), pelo que uma conta guardada como `admin` deixa de satisfazer regras que só nomeiam `master_admin` — o administrador de plataforma local passou a ver a lista de Clientes vazia; (b) subsistem literais role: "admin" nas entidades de catálogo/tenant (Comment, Training, Notification, licenciamento, KnowledgeArticle, …), que aceitam a conta legada e recusam uma conta canónica. É preciso decidir entre aceitar a grafia legada como alias do mesmo papel ou migrar as contas para os papéis canónicos.',
+  },
+  F3: {
+    status: 'corrigido',
+    note: 'isPartnerAdmin + resolveScopeCustomerIds aplicam o escopo de carteira em list, resolve, request/create/revoke de onboarding e adminUpdateUser; só o master_admin age plataforma-larga.',
+  },
+  F4: {
+    status: 'corrigido',
+    note: 'authorizeAssessmentOperational e resolveAuthority passaram a exigir o módulo na authorized_modules da delegação; lista vazia = nenhum módulo e o diálogo obriga a escolher pelo menos um.',
+  },
+  F5: {
+    status: 'corrigido',
+    note: 'create/update das entidades operacionais passam a exigir papel (customer_admin / grc_analyst / control_owner) além do tenant; a leitura mantém-se por tenant/delegação.',
+  },
+  F6: {
+    status: 'corrigido',
+    note: 'adminUpdateUser bloqueia a auto-edição de role/customer_id antes de qualquer outro check e limita o workspace_admin a papéis de cliente dentro da sua carteira.',
+  },
+  F15: {
+    status: 'parcial',
+    note: 'O prune no arranque de sessão e o dropExpired em list/resolve retiram as delegações expiradas e os seus arrays. A camada de entidades continua a ler delegated_* sem revalidar expires_at; a janela fecha-se no arranque da sessão seguinte.',
+  },
+  F7: {
+    status: 'parcial',
+    note: 'Backend uniformizado: 15 funções deixaram de comparar o papel a literais e usam normalizeRole (adminDeleteUser, adminUpdateUser, dataRetentionPurge, documentNotifications, generateMonthlyAnnualReport, getPlatformMetrics, getStorageProviders, getWorkspaceTree, listUsers, manageAssignment, migrateExistingLicenses, migrateExistingWorkspaces, riskDueDateReminders, seedLicenseData, updateCustomerStorage), além de getEffectiveLicense e resolveWorkspaceAccess. Falta o frontend: ~84 comparações role === "admin" / role === "user" em 41 ficheiros continuam na grafia legada e têm de passar pelo normalizador do RBAC.',
+  },
+  F8: {
+    status: 'corrigido',
+    note: 'resolveWorkspaceAccess exige workspace_id próprio para quem não é platform owner e recusa 403 fora da subárvore.',
+  },
+  F13: {
+    status: 'corrigido',
+    note: 'fetchEffectiveLicense devolve status "error" e isModuleLicensed é fail-closed (sem licença, em erro, ou lista malformada = nenhum módulo).',
+  },
+  F9: {
+    status: 'corrigido',
+    note: 'request_delegation valida o customer_id contra o escopo de quem pede e recusa pedidos sobre o próprio tenant.',
+  },
+  F11: {
+    status: 'corrigido',
+    note: 'AGENTS.md corrigido: canAccessRoute não faz short-circuit de master_admin — a decisão resulta sempre da matriz.',
+  },
+  F14: {
+    status: 'corrigido',
+    note: 'User.jsonc passou a declarar rls.read (master_admin / workspace_admin, o próprio registo e o próprio cliente).',
+  },
+};
 
 const INSPECTION_ONLY =
   'Inspeção de código — não reproduzível no backend local, que tem uma única identidade (ver «Testes não executados»).';
@@ -299,3 +364,41 @@ export function countBySeverity() {
     return acc;
   }, {});
 }
+
+/** Estado da correção de um problema (por omissão «pendente»). */
+export function statusMeta(id) {
+  const entry = ISSUE_STATUS[id] || {};
+  return STATUSES.find((s) => s.id === entry.status) || STATUSES[STATUSES.length - 1];
+}
+
+/** Nota de correção de um problema. */
+export function issueStatus(id) {
+  return ISSUE_STATUS[id] || {};
+}
+
+export function countByStatus() {
+  return ISSUES.reduce((acc, i) => {
+    const s = (ISSUE_STATUS[i.id] || {}).status || 'pendente';
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+// Residuais que as correções não fecham e que ficam como seguimento.
+export const FOLLOW_UPS = [
+  {
+    ref: 'F2 residual',
+    title: 'Literais de papel legado nas entidades de catálogo/tenant',
+    note: 'As entidades de isolamento (Customer, Workspace, AuditLog, User, UserCustomerAssignment) e as operacionais já usam os papéis canónicos. As restantes mantêm role: "admin", o que exige decidir por entidade se o gate era de plataforma (master_admin) ou de cliente (customer_admin) antes de substituir — uma troca mecânica atribuiria o gate errado.',
+  },
+  {
+    ref: 'F15 residual',
+    title: 'Expiração não revalidada na camada de entidades',
+    note: 'O prune no arranque de sessão e o dropExpired em list/resolve fecham a janela na prática, mas uma leitura de entidade continua a honrar delegated_*_customer_ids sem revalidar expires_at. Fechar isto exige revalidação por data na RLS ou uma limpeza determinística fora do arranque.',
+  },
+  {
+    ref: 'F2/F7 — papel canónico vs grafia legada',
+    title: 'Decidir entre alias da grafia legada ou migração de papéis',
+    note: 'O backend compara user_condition por igualdade exacta e não normaliza o papel (verificado). Ou as regras aceitam `admin` como alias do mesmo papel que `master_admin`, ou as contas passam a ser guardadas com os papéis canónicos — e nesse caso as ~84 comparações de papel do frontend têm de passar pelo normalizador do RBAC antes de a conta mudar, sob pena de o administrador perder os acessos de interface.',
+  },
+];
