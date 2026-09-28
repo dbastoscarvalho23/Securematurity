@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, ClipboardCheck, BarChart3, ShieldCheck,
-  Settings, ChevronLeft, ChevronRight, ScrollText, BookOpen,
+  Settings, ChevronLeft, ChevronRight, ScrollText, BookOpen, ShieldAlert,
   ListTodo, Target, TrendingUp, FolderLock, Activity, TriangleAlert,
   Paperclip, MapPin, MailCheck, Truck, Database, Siren, Users, Bug,
   Gauge, GraduationCap, Bot, Network, UserCog, PackageCheck,
@@ -19,7 +19,7 @@ import { moduleForRoute } from '@/lib/licenseModules';
 
 const ICON_MAP = {
   LayoutDashboard, Building2, ClipboardCheck, BarChart3, ShieldCheck,
-  Settings, ChevronLeft, ChevronRight, ScrollText, BookOpen,
+  Settings, ChevronLeft, ChevronRight, ScrollText, BookOpen, ShieldAlert,
   ListTodo, Target, TrendingUp, FolderLock, Activity, TriangleAlert,
   Paperclip, MapPin, MailCheck, Truck, Database, Siren, Users, Bug,
   Gauge, GraduationCap, Bot, Network, UserCog, PackageCheck,
