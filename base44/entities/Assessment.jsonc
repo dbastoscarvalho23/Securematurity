@@ -43,8 +43,8 @@
       "default": "draft"
     },
     "overall_score": {
-      "type": "number",
-      "description": "Overall maturity score (0-5)"
+      "type": ["number", "null"],
+      "description": "Overall maturity score (0-5). Null while the assessment is not completed (cleared on reopen)"
     },
     "framework_scores": {
       "type": "array",
@@ -76,7 +76,7 @@
       }
     },
     "completed_date": {
-      "type": "string",
+      "type": ["string", "null"],
       "format": "date"
     },
     "assessor_email": {
@@ -87,20 +87,21 @@
       "type": "string"
     },
     "completed_by": {
-      "type": "string",
-      "description": "Email of the user who completed the assessment (set by completeAssessment)"
+      "type": ["string", "null"],
+      "description": "Email of the user who completed the assessment (set by completeAssessment, cleared on reopen)"
     },
     "completion_type": {
-      "type": "string",
+      "type": ["string", "null"],
       "enum": [
         "full_coverage",
-        "partial_coverage"
+        "partial_coverage",
+        null
       ],
-      "description": "Whether every question was resolved or the assessment was closed with pending questions"
+      "description": "Whether every question was resolved or the assessment was closed with pending questions (cleared on reopen)"
     },
     "coverage": {
-      "type": "object",
-      "description": "Server-computed coverage (kept separate from the score)",
+      "type": ["object", "null"],
+      "description": "Server-computed coverage (kept separate from the score), cleared on reopen",
       "properties": {
         "total_questions": { "type": "number" },
         "answered": { "type": "number" },
@@ -112,8 +113,8 @@
       }
     },
     "methodology": {
-      "type": "object",
-      "description": "Methodology snapshot: scoring model, framework versions, questions and weights actually used",
+      "type": ["object", "null"],
+      "description": "Methodology snapshot: scoring model, framework versions, questions and weights actually used (cleared on reopen)",
       "properties": {
         "scoring_model": { "type": "string" },
         "captured_at": { "type": "string" },
@@ -126,7 +127,7 @@
             "type": "object",
             "properties": {
               "code": { "type": "string" },
-              "version": { "type": "string" }
+              "version": { "type": ["string", "null"] }
             }
           }
         },
@@ -136,9 +137,9 @@
             "type": "object",
             "properties": {
               "question_id": { "type": "string" },
-              "framework_code": { "type": "string" },
-              "domain": { "type": "string" },
-              "control_id": { "type": "string" },
+              "framework_code": { "type": ["string", "null"] },
+              "domain": { "type": ["string", "null"] },
+              "control_id": { "type": ["string", "null"] },
               "weight": { "type": "number" }
             }
           }
@@ -157,7 +158,7 @@
           "via": { "type": "string" },
           "reason": { "type": "string" },
           "coverage_pct": { "type": "number" },
-          "previous_coverage_pct": { "type": "number" },
+          "previous_coverage_pct": { "type": ["number", "null"] },
           "scoring_model": { "type": "string" }
         }
       }
@@ -168,14 +169,14 @@
       "items": {
         "type": "object",
         "properties": {
-          "completed_date": { "type": "string" },
-          "completed_by": { "type": "string" },
-          "overall_score": { "type": "number" },
+          "completed_date": { "type": ["string", "null"] },
+          "completed_by": { "type": ["string", "null"] },
+          "overall_score": { "type": ["number", "null"] },
           "reopened_at": { "type": "string" },
           "reopened_by": { "type": "string" },
           "reason": { "type": "string" },
           "coverage": {
-            "type": "object",
+            "type": ["object", "null"],
             "properties": {
               "total_questions": { "type": "number" },
               "answered": { "type": "number" },
@@ -187,7 +188,7 @@
             }
           },
           "methodology": {
-            "type": "object",
+            "type": ["object", "null"],
             "properties": {
               "scoring_model": { "type": "string" },
               "captured_at": { "type": "string" },

@@ -231,7 +231,7 @@ async function handleReopen(base44: any, user: any, body: any) {
 
   // The previous result is preserved, never deleted.
   const previousResult = {
-    completed_at: assessment.completed_date || null,
+    completed_date: assessment.completed_date || null,
     completed_by: assessment.completed_by || null,
     overall_score: assessment.overall_score ?? null,
     framework_scores: assessment.framework_scores || [],
