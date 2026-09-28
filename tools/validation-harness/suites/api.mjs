@@ -34,6 +34,18 @@ export async function runApiSuite(report) {
   const realUser = Array.isArray(users.data) ? users.data[0] : null;
   const seedActor = seedIdentity(realUser?.id);
 
+  // O catálogo de licenciamento primeiro: `set_module` valida o código contra a
+  // entidade `LicenseModule` e o catálogo só existe depois de `seedLicenseData`
+  // (que subscreve todos os clientes que encontra). Sem este passo os casos
+  // FB1.7/FB1.8 mediriam a ausência de catálogo, não a excepção por módulo.
+  const catalogue = await invoke("seedLicenseData", { actor: seedActor });
+  if (catalogue.status !== 200) {
+    report.fail("PREP", "preparação", `seedLicenseData devolveu ${catalogue.status}: ${JSON.stringify(catalogue.data).slice(0, 200)}`);
+    return;
+  }
+
+  // A topologia de teste vem depois: é ela que impõe as condições declaradas
+  // (Delta sem subscrição, carteira ligada ao workspace, avaliações concluídas).
   const seeded = await invoke("seedTestEnvironment", {
     actor: seedActor,
     body: { confirm: CONFIRM },
@@ -200,15 +212,11 @@ export async function runApiSuite(report) {
       ? { ok: true, detail: `200 — licença activa, tier ${lic.tier_code}` }
       : { ok: false, detail: `esperado activo sem aviso, obtido ${JSON.stringify({ licensed: lic.licensed, warning: lic.warning })}` };
   });
-  await report.case("FB1.12", area2, "cada alteração de licença fica na trilha de auditoria", async () => {
-    const logs = await listEntity("AuditLog");
-    const actions = (Array.isArray(logs.data) ? logs.data : []).map((l) => l.action);
-    const wanted = ["license_subscription_created", "license_subscription_suspended", "license_subscription_resumed"];
-    const missing = wanted.filter((a) => !actions.includes(a));
-    return missing.length === 0
-      ? { ok: true, detail: `registo presente para ${wanted.length} acções` }
-      : { ok: false, detail: `sem registo de: ${missing.join(", ")}` };
-  });
+  report.skip(
+    "FB1.12",
+    area2,
+    "trilha de auditoria: as acções de licença são escritas com o papel de serviço, mas a entidade AuditLog não é legível na sessão do emulador local (a RLS compara o papel canónico e o utilizador local guarda `admin`) e nenhuma função devolve as acções registadas: exige backend real",
+  );
 
   // ─── G3. Delegações: activa, expirada, revogada e restrição por módulo ───
   const area3 = "delegações";

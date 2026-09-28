@@ -103,6 +103,16 @@ export async function resolveScopeCustomerIds(
     .filter((w: any) => subtree.has(w.id) && w.customer_id)
     .map((w: any) => w.customer_id);
 
+  // The tenant↔workspace link exists on both sides (`Workspace.customer_id` and
+  // `Customer.workspace_id`), and a workspace created before its customer — or
+  // by a path that does not write the link back — carries no `customer_id`.
+  // Reading only the Workspace side left the carteira empty for those tenants,
+  // so a partner admin was refused on its own customers. Read both ends.
+  const customers = await base44.asServiceRole.entities.Customer.list("name", 500);
+  for (const customer of customers) {
+    if (customer?.workspace_id && subtree.has(customer.workspace_id)) customerIds.push(customer.id);
+  }
+
   return { all: false, customerIds: Array.from(new Set([...customerIds, ...own])) };
 }
 

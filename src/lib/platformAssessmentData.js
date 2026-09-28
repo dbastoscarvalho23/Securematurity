@@ -8,8 +8,10 @@
  * As severidades são as mesmas do relatório de segurança (`SEVERITIES` em
  * `validationReportData.js`): crítica, alta, média, baixa e a verificar.
  *
- * Esta ronda é de inspeção: nenhum achado foi corrigido — todos entram como
- * «pendente» (recomendação por aplicar).
+ * A ronda nasceu de inspeção (todos os achados «pendente») e os que foram
+ * entretanto trabalhados trazem `status` próprio — `corrigido` ou `parcial` —
+ * com `statusNote` a dizer o que ficou feito e o que falta. Quem não tem nota
+ * continua «pendente» (recomendação por aplicar).
  */
 
 /** Âmbito e método desta ronda (mostrado no cabeçalho do relatório). */
@@ -21,7 +23,7 @@ export const ROUND_META = {
   scope:
     'Funcionalidades e fluxos de trabalho; administração da plataforma, workspaces, tenants e conteúdos; consistência visual entre páginas e com o design system. A validação de segurança da ronda anterior mantém-se como área própria, sem alteração de conteúdo.',
   limitation:
-    'Sem execução multi-identidade: o ambiente local tem uma única identidade (master_admin) e ignora a criação de utilizadores, pelo que os percursos por persona continuam por verificar em backend real. Os achados abaixo são de inspeção.',
+    'A inspeção que originou esta ronda não tinha execução multi-identidade. Entretanto existe o harness `tools/validation-harness` (`npm run validate:harness`), que corre as nove identidades contra o backend local — no limite das funções (RBAC, âmbito de carteira, delegações, licenciamento) e na camada de decisão do frontend (Sidebar/RouteGuard, matriz de capacidades, contrato de tenant) — e é ele que sustenta as notas de correção. Continua por verificar em backend real o que o emulador local não honra: as RLS das entidades sobre sessões distintas (inclusive o ramo `delegated_edit_customer_ids`, escondido na leitura) e a leitura da trilha de auditoria.',
 };
 
 /**
@@ -116,7 +118,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FA1',
     area: 'funcional',
     severity: 'alta',
-    status: 'pendente',
+    status: 'parcial',
+    statusNote:
+      'A matriz de capacidades passou a dar leitura ao consultor nos percursos operacionais (avaliações, riscos, evidências, documentos, tarefas e relatórios) sem lhe dar escrita, e o contexto único de tenant alarga o que ele vê às delegações vivas. Verificado na suíte de decisão do harness (FA1.1–FA1.3, ISO-UI2); falta a leitura real dos dados do cliente numa sessão de consultor — o emulador local não honra `delegated_edit_customer_ids` (esconde na leitura) e exige backend real.',
     title: 'Papel consultant sem cobertura funcional fora do acesso externo',
     persona: 'Consultor convidado a trabalhar num tenant de cliente (delegação ativa)',
     flow: 'Delegação e trabalho por conta do cliente',
@@ -136,7 +140,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FA2',
     area: 'funcional',
     severity: 'media',
-    status: 'pendente',
+    status: 'parcial',
+    statusNote:
+      'As cinco páginas que resolviam o tenant por si (RiskAssessment, AuditPackage, Recommendations, Tasks, ActionPlan) passaram a ler o contexto único (`useActiveCustomer()` sobre `tenantResolver.js`), com prioridade ao workspace selecionado, depois o tenant próprio e por fim as delegações vivas (TEN1–TEN3 no harness). As restantes páginas operacionais continuam a ler `user.customer_id` diretamente — a migração é o que falta para a regra ser única.',
     title: 'Contexto de tenant resolvido de forma divergente entre páginas',
     evidence: [
       'src/pages/RiskAssessment.jsx:57 — `const customerId = user?.customer_id;` e a lista é filtrada por igualdade estrita (linha 138), pelo que quem não tem customer_id próprio vê a lista vazia mesmo com leitura delegada.',
@@ -213,7 +219,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FB1',
     area: 'administracao',
     severity: 'critica',
-    status: 'pendente',
+    status: 'parcial',
+    statusNote:
+      'Existe provisionamento: `provisionTenantLicense` (create/update/suspend/resume/set_module/set_standard, só master_admin ou o administrador de parceiro dentro da carteira) e `listTenantLicenses` para a leitura com o âmbito resolvido no servidor, com o painel TenantLicensePanel em /licensing — nenhuma entidade de licenciamento é escrita pelo frontend. Os casos FB1.1–FB1.11 do harness verificam autorização, criação, tier inválido, duplicação, excepção por módulo com validade, suspensão com tolerância e fecho fail-closed no fim dela, reactivação e recusa fora da carteira. Falta o histórico visível das alterações (as acções são registadas em AuditLog, que a sessão do emulador local não consegue ler — FB1.12 fica como não verificável localmente).',
     title: 'Sem provisionamento de licenças: o master_admin não consegue ativar nem alterar um tenant',
     evidence: [
       'src/pages/Licensing.jsx:64 e src/components/dashboard/PlatformAdminDashboard.jsx:32 — TenantSubscription é apenas lido (list). Não existe qualquer create/update em src/ para TenantSubscription.',
@@ -250,7 +258,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FB3',
     area: 'administracao',
     severity: 'alta',
-    status: 'pendente',
+    status: 'parcial',
+    statusNote:
+      'O seletor de workspace passou a ter consumidor: `tenantResolver.js` lê `selected_workspace_id` com prioridade sobre o tenant próprio e resolve o cliente do workspace escolhido, e o harness verifica o contrato (TEN4 muda mesmo o contexto, TEN5 ignora um workspace fora do âmbito). Falta a confirmação no browser do indicador de contexto e a migração das páginas ainda não abrangidas por FA2, que não acompanham a troca.',
     title: 'Seletor de workspace não altera o contexto de dados',
     evidence: [
       'src/components/layout/WorkspaceSwitcher.jsx — grava `selected_workspace_id` com base44.auth.updateMe e filtra a lista de workspaces acessíveis.',

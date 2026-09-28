@@ -1,5 +1,12 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
 import { normalizeRole, addToArray } from "../../shared/accessUtils.ts";
+import {
+  assertCompletionAllowed,
+  appendStatusHistory,
+  buildMethodology,
+  computeScores,
+  completionType,
+} from "../../shared/assessmentScoring.ts";
 
 /**
  * seedTestEnvironment — creates the test conditions required by the Core NIS2
@@ -98,7 +105,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const summary: any = { marker: MARKER, created: {}, reused: {} };
+    const summary: any = { marker: MARKER, created: {}, reused: {}, removed: {} };
 
     // ─── Workspaces (2 partners) ──────────────────────────────
     const workspaces: Record<string, any> = {};
@@ -123,6 +130,7 @@ Deno.serve(async (req) => {
       });
       const customer = await ensureCustomer(base44, summary, spec, workspace.id);
       customers[spec.key] = { ...spec, id: customer.id, workspace_id: workspace.id };
+      await linkWorkspaceToCustomer(base44, summary, workspace, customer);
     }
 
     // ─── NIS2 framework, controls and question bank ───────────
@@ -132,14 +140,25 @@ Deno.serve(async (req) => {
 
     // ─── Core subscription per tenant (Delta intentionally left unlicensed) ───
     for (const key of Object.keys(customers)) {
-      if (customers[key].subscription === false) continue;
+      if (customers[key].subscription === false) {
+        await ensureNoSubscription(base44, summary, customers[key]);
+        continue;
+      }
       await ensureSubscription(base44, summary, customers[key]);
     }
 
-    // ─── Assessments (full coverage / partial coverage) ───────
+    // ─── Assessments (completed: full coverage / partial coverage) ───────
     const assessments: Record<string, any> = {};
     for (const key of Object.keys(customers)) {
-      assessments[key] = await ensureAssessment(base44, summary, customers[key], questions, ASSESSMENT_MODE[key] || "full");
+      assessments[key] = await ensureAssessment(
+        base44,
+        summary,
+        customers[key],
+        questions,
+        framework,
+        ASSESSMENT_MODE[key] || "full",
+        user,
+      );
     }
 
     // ─── Delegation scenarios ─────────────────────────────────
@@ -202,6 +221,24 @@ async function ensureCustomer(base44: any, summary: any, spec: any, workspaceId:
   const created = await base44.asServiceRole.entities.Customer.create(data);
   summary.created[`customer:${spec.key}`] = created.id;
   return created;
+}
+
+/**
+ * Ensure the tenant workspace carries its customer link.
+ *
+ * The link exists on both sides (`Customer.workspace_id` and
+ * `Workspace.customer_id`) and the carteira of a partner admin is resolved from
+ * the Workspace subtree, so writing only the Customer side leaves the subtree
+ * with no `customer_id` and the partner's scope resolves empty.
+ */
+async function linkWorkspaceToCustomer(base44: any, summary: any, workspace: any, customer: any) {
+  if (workspace.customer_id === customer.id) return workspace;
+  const updated = await base44.asServiceRole.entities.Workspace.update(workspace.id, {
+    customer_id: customer.id,
+    customer_name: customer.name,
+  });
+  summary.created[`workspace_link:${customer.name}`] = updated.id;
+  return updated;
 }
 
 async function ensureFramework(base44: any, summary: any) {
@@ -299,57 +336,133 @@ async function ensureSubscription(base44: any, summary: any, customer: any) {
   return created;
 }
 
-/** Create the test assessment and its responses. */
-async function ensureAssessment(base44: any, summary: any, customer: any, questions: any[], coverageMode: string) {
-  const existing = await base44.asServiceRole.entities.Assessment.filter({ customer_id: customer.id });
-  const testAssessment = existing.find((a: any) => (a.title || "").startsWith(MARKER));
-  if (testAssessment) {
-    summary.reused[`assessment:${customer.key}`] = testAssessment.id;
-    return testAssessment;
+/**
+ * Delta is declared as "no subscription" so the module gating can be validated.
+ * That condition has to be ENFORCED, not merely skipped at creation: the licence
+ * catalogue (`seedLicenseData`) subscribes every customer it finds, and a
+ * previous run may have provisioned Delta — the declared state would then
+ * silently not hold and the provisioning cases would measure leftover data
+ * instead of the behaviour under test.
+ */
+async function ensureNoSubscription(base44: any, summary: any, customer: any) {
+  const subscriptions = await base44.asServiceRole.entities.TenantSubscription.filter({ customer_id: customer.id });
+  for (const subscription of subscriptions) {
+    await base44.asServiceRole.entities.TenantSubscription.delete(subscription.id);
   }
 
-  const assessment = await base44.asServiceRole.entities.Assessment.create({
-    customer_id: customer.id,
-    customer_name: customer.name,
-    title: `${MARKER} Diagnóstico NIS2 — ${customer.name}`,
-    period: "2025-Q4",
-    frameworks: ["NIS2"],
-    question_ids: questions.map((q) => q.id),
-    status: "draft",
-    assessor_email: "",
+  // Module exceptions belong to the subscription: clear them too, so a tenant
+  // declared unlicensed has no licence path at all.
+  const overrides = await base44.asServiceRole.entities.TenantModule.filter({ customer_id: customer.id });
+  for (const override of overrides) {
+    await base44.asServiceRole.entities.TenantModule.delete(override.id);
+  }
+
+  const removed = subscriptions.length + overrides.length;
+  if (removed > 0) summary.removed[`subscription:${customer.key}`] = removed;
+}
+
+/**
+ * Create the test assessment, its responses and its completion.
+ *
+ * The seeded assessment is a COMPLETED one: a full-coverage tenant completes
+ * directly and the partial one completes with explicit confirmation — the same
+ * rules `completeAssessment` applies, read from the same shared helpers. A
+ * draft would leave the step after it (gap analysis) answering 409
+ * `not_completed`, so the edit-delegation scenario would not be testable.
+ */
+async function ensureAssessment(
+  base44: any,
+  summary: any,
+  customer: any,
+  questions: any[],
+  framework: any,
+  coverageMode: string,
+  user: any,
+) {
+  const existing = await base44.asServiceRole.entities.Assessment.filter({ customer_id: customer.id });
+  let assessment = existing.find((a: any) => (a.title || "").startsWith(MARKER));
+
+  if (assessment) {
+    summary.reused[`assessment:${customer.key}`] = assessment.id;
+  } else {
+    assessment = await base44.asServiceRole.entities.Assessment.create({
+      customer_id: customer.id,
+      customer_name: customer.name,
+      title: `${MARKER} Diagnóstico NIS2 — ${customer.name}`,
+      period: "2025-Q4",
+      frameworks: ["NIS2"],
+      question_ids: questions.map((q) => q.id),
+      status: "draft",
+      assessor_email: "",
+    });
+    summary.created[`assessment:${customer.key}`] = assessment.id;
+
+    const total = questions.length;
+    const answeredCount = coverageMode === "full" ? total : Math.max(1, Math.round(total * 0.6));
+
+    for (let index = 0; index < questions.length; index += 1) {
+      const q = questions[index];
+      let answer: any = null;
+      if (index < answeredCount) {
+        answer = { answer_state: "answered", maturity_level: (index % 5) + 1 };
+      } else if (coverageMode === "partial" && index === answeredCount) {
+        // Not applicable: no maturity level at all (the field is a number).
+        answer = { answer_state: "not_applicable" };
+      }
+      if (!answer) continue;
+
+      await base44.asServiceRole.entities.AssessmentResponse.create({
+        assessment_id: assessment.id,
+        customer_id: customer.id,
+        question_id: q.id,
+        framework_code: q.framework_code,
+        control_id: q.control_id,
+        domain: q.domain,
+        question_weight: q.weight,
+        answer_state: answer.answer_state,
+        target_level: 4,
+        evidence_notes: `${MARKER} Resposta de teste.`,
+        ...(answer.maturity_level !== undefined ? { maturity_level: answer.maturity_level } : {}),
+      });
+    }
+  }
+
+  // Completion is enforced, so an assessment left in draft by an earlier run is
+  // completed instead of being silently reused.
+  if (assessment.status === "completed") return assessment;
+
+  const responses = await base44.asServiceRole.entities.AssessmentResponse.filter({
+    assessment_id: assessment.id,
+  });
+  const coverage = assertCompletionAllowed(questions, responses, { confirm_partial: true });
+  const scores = computeScores(questions, responses, assessment.frameworks || []);
+  const methodology = buildMethodology(assessment, questions, [
+    { code: framework.code, version: framework.version || null },
+  ]);
+  const completedAt = new Date().toISOString();
+
+  const completed = await base44.asServiceRole.entities.Assessment.update(assessment.id, {
+    status: "completed",
+    overall_score: scores.overall_score,
+    framework_scores: scores.framework_scores,
+    coverage,
+    methodology,
+    completion_type: completionType(coverage),
+    completed_date: completedAt.split("T")[0],
+    completed_by: user.email || "",
+    assessor_email: assessment.assessor_email || user.email || "",
+    status_history: appendStatusHistory(assessment, {
+      status: "completed",
+      by: user.email || "",
+      via: "seed",
+      coverage_pct: coverage.coverage_pct,
+      scoring_model: methodology.scoring_model,
+    }),
   });
 
-  const total = questions.length;
-  const answeredCount = coverageMode === "full" ? total : Math.max(1, Math.round(total * 0.6));
-
-  for (let index = 0; index < questions.length; index += 1) {
-    const q = questions[index];
-    let answer: any = null;
-    if (index < answeredCount) {
-      answer = { answer_state: "answered", maturity_level: (index % 5) + 1 };
-    } else if (coverageMode === "partial" && index === answeredCount) {
-      // Not applicable: no maturity level at all (the field is a number).
-      answer = { answer_state: "not_applicable" };
-    }
-    if (!answer) continue;
-
-    await base44.asServiceRole.entities.AssessmentResponse.create({
-      assessment_id: assessment.id,
-      customer_id: customer.id,
-      question_id: q.id,
-      framework_code: q.framework_code,
-      control_id: q.control_id,
-      domain: q.domain,
-      question_weight: q.weight,
-      answer_state: answer.answer_state,
-      target_level: 4,
-      evidence_notes: `${MARKER} Resposta de teste.`,
-      ...(answer.maturity_level !== undefined ? { maturity_level: answer.maturity_level } : {}),
-    });
-  }
-
-  summary.created[`assessment:${customer.key}`] = assessment.id;
-  return assessment;
+  summary.completed = summary.completed || {};
+  summary.completed[`assessment:${customer.key}`] = completed.id;
+  return completed;
 }
 
 /** Delegation scenarios: approved / pending / expired / revoked / module-restricted. */

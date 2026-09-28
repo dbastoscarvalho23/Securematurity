@@ -137,14 +137,20 @@ export async function getEffectiveLicense(base44: any, customerId: string): Prom
   const tenantStandards = await base44.asServiceRole.entities.TenantStandard.filter({ customer_id: customerId, status: "active" });
   const standards = tenantStandards.map((ts: any) => ts.standard_code);
 
+  const licensed =
+    effectiveStatus === "active" ||
+    effectiveStatus === "trial" ||
+    warning === "suspension_grace";
+
+  // Fail-closed: a licence that is not active opens NO module. The module list
+  // is what the gating (`assertModule` / `isModuleLicensed`) and the interface
+  // read, so without this a suspended tenant kept receiving its tier's module
+  // list and the access stayed open after the grace period ended.
   return {
-    licensed:
-      effectiveStatus === "active" ||
-      effectiveStatus === "trial" ||
-      warning === "suspension_grace",
+    licensed,
     status: effectiveStatus,
-    modules,
-    standards,
+    modules: licensed ? modules : [],
+    standards: licensed ? standards : [],
     tier_code: tierCode,
     seat_limit: sub.seat_limit || 0,
     seats_used: sub.seats_used || 0,

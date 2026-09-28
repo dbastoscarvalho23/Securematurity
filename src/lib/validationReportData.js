@@ -15,23 +15,24 @@ export const REPORT_META = {
   backend:
     'base44 dev local (funções em Deno; entidades em base de dados em memória), servido por docker compose -f docker-compose.base44.yml, serviço web (node:22-slim) + vite → host 3000',
   persistence: 'Nenhuma — estado em memória, perdido em cada restart do container ou alteração de schema.',
-  auth: 'Real (token CLI `base44 login`), mas uma única identidade.',
+  auth: 'Real (token CLI `base44 login`) e, no local, identidade explícita por invocação: o cabeçalho `x-base44-dev-actor` só é honrado com `BASE44_DEV_IDENTITY=1`, variável que existe apenas no docker-compose local.',
   identities:
-    'Apenas a conta CLI (papel `admin` → `normalizeRole()` → `master_admin`). `User` create/delete são ignorados localmente.',
-  isolation: 'Não existe ambiente isolado/descartável multi-identidade.',
+    'As nove identidades canónicas são injectadas pelo harness (`tools/validation-harness`), no limite das funções de backend e na camada de decisão do frontend. A sessão continua a ser uma só: a conta CLI (`admin` → `normalizeRole()` → `master_admin`), com `User` create/delete e a escrita de `User.role` ignorados localmente.',
+  isolation:
+    'Ambiente isolado e descartável (estado em memória, topologia criada por `seedTestEnvironment`), mas as RLS das entidades só são avaliáveis pela sessão autenticada: o isolamento real entre tenants exige backend real.',
   scope:
-    'Inspeção de código e de configuração no ambiente de preview. Onde não havia ambiente válido para testar, o cenário ficou marcado como «Não executado» — nunca convertido em aprovação por simulação visual de papel.',
+    'Inspeção de código e de configuração no ambiente de preview, complementada pelo harness multi-identidade, que executa os casos de RBAC, âmbito de carteira, delegação e licenciamento. Onde não há ambiente válido para testar, o cenário fica marcado como «Não executado» — nunca convertido em aprovação por simulação visual de papel.',
 };
 
 export const VERDICT = {
-  classification: 'Correções aplicadas em código — validação live por executar',
+  classification: 'Correções aplicadas em código — validação multi-identidade por fechar em backend real',
   summary:
-    'As correções de F1–F15 foram implementadas em código (escopo de carteira do parceiro, âmbito de módulos da delegação, guarda de auto-escalada, RLS canónica, licenciamento fail-closed) e as verificações de papel do backend foram uniformizadas nesta ronda. O Core continua sem parecer positivo: as correções são dadas como aplicadas e revistas por inspeção, não como verificadas, porque a validação executada — onboarding, escopo de delegação, escrita por papel — exige várias identidades reais, que o ambiente local não tem. Em código ficam fechados F2 e F7, com a confirmação por identidade real em falta; F15 permanece parcial.',
+    'As correções de F1–F15 foram implementadas em código (escopo de carteira do parceiro, âmbito de módulos da delegação, guarda de auto-escalada, RLS canónica, licenciamento fail-closed) e as verificações de papel do backend foram uniformizadas. Nesta ronda a validação multi-identidade deixou de ser uma lacuna: o harness (`npm run validate:harness`) corre as nove identidades contra o backend local — 46 casos ok, 0 falhas, 2 não verificáveis localmente — no limite das funções e na camada de decisão do frontend, e foi ele que expôs e fechou quatro defeitos (carteira do parceiro vazia, módulos abertos depois da suspensão, condições de teste não impostas pelo seed e avaliações semeadas em rascunho). O Core continua sem parecer positivo: as RLS das entidades só são avaliáveis por sessão autenticada e a conta local permanece `admin`, pelo que a confirmação ponta-a-ponta (e F15) exige backend real.',
   blockers: [
     'F2 — a migração está em código, mas o emulador local ignora a escrita de `User.role` (na mesma chamada grava `language` e descarta `role`), pelo que a conta local continua `admin` e o efeito ponta-a-ponta não é verificável aqui; num backend real a conta passa a `master_admin` no primeiro login.',
     'F7 — fechado em código: nenhuma comparação de papel do frontend usa literais; falta a confirmação com contas reais das personas.',
     'F15 parcial — a leitura de entidades não revalida expires_at; a delegação expirada só é retirada no arranque da sessão ou numa listagem.',
-    'Validação multi-identidade não executada — o backend local tem uma única identidade (master_admin) e ignora a criação de utilizadores; cada percurso tem de correr num backend real com contas das personas.',
+    'Validação multi-identidade executada no emulador local, com limites: as funções e a camada de decisão do frontend aceitam a identidade injectada, mas as RLS das entidades são avaliadas pela sessão autenticada (uma só) — o isolamento real entre tenants e o ramo `delegated_edit_customer_ids` exigem backend real.',
     'Semântica de user_condition no backend de produção por confirmar (localmente é igualdade exacta, sem normalização de papel).',
   ],
   positives: [
@@ -39,6 +40,7 @@ export const VERDICT = {
     'Ciclo de delegação com motivo, prazo, proibição de auto-aprovação e aprovação reservada ao cliente.',
     'Break-glass removido; cálculo de resultados, cobertura e metodologia sempre no servidor, com o ator retirado de `base44.auth.me()`.',
     'F1–F9, F11, F13 e F14 aplicadas em código; F15 com residual identificado (revalidação de expires_at na camada de entidades).',
+    'Harness multi-identidade: 46 casos ok, 0 falhas, 2 não verificáveis localmente — isolamento e âmbito de carteira, provisionamento de licenças com tolerância e fecho fail-closed, estados da delegação, matriz de capacidades por papel e contrato de tenant.',
   ],
 };
 
@@ -346,11 +348,11 @@ export const FIX_PLAN = [
 ];
 
 export const NOT_EXECUTED = [
-  { block: '§5 (fluxos comuns) e §6–§16 (percursos por persona)', reason: 'Não existe ambiente isolado com contas das personas; o backend local tem uma única identidade (master_admin) e ignora a criação de utilizadores.' },
-  { block: 'Escrita com delegação de edição (§8.5)', reason: 'O emulador local não honra delegated_edit_customer_ids (esconde na leitura, 403 na escrita).' },
-  { block: 'Isolamento real multi-tenant, caches, troca de contexto e operações em lote', reason: 'Exigem múltiplas sessões/identidades.' },
+  { block: '§6–§16 (percursos por persona, ponta a ponta na interface)', reason: 'A camada de decisão (Sidebar, RouteGuard, matriz de capacidades, contexto de tenant) e as funções de backend são executadas pelo harness com as nove identidades, mas a interface a sério exige uma sessão por persona: o backend local ignora a criação de utilizadores e a escrita de User.role.' },
+  { block: 'Escrita com delegação de edição (§8.5) na camada de entidades', reason: 'O emulador local não honra delegated_edit_customer_ids (esconde na leitura, 403 na escrita); a autorização das funções é executada pelo harness (DEL1–DEL10).' },
+  { block: 'Isolamento real multi-tenant, caches, troca de contexto e operações em lote', reason: 'Exigem múltiplas sessões/identidades — as RLS das entidades são avaliadas sobre a sessão autenticada.' },
   { block: 'Notificações, pesquisa, ajuda contextual e IA', reason: 'Fora do âmbito desta ronda.' },
-  { block: 'seedTestEnvironment', reason: 'O pedido proíbe seeds; é o caminho mais curto para materializar os 9 cenários, mas carece de autorização explícita.' },
+  { block: 'seedTestEnvironment na ronda original', reason: 'O pedido proibia seeds; o cenário ficou por materializar nesta ronda. Entretanto o harness usa-o (é ele que cria a topologia de teste), com confirmação explícita e só no ambiente local descartável.' },
   { block: 'Crash de /audit-package', reason: 'Não reproduzível sem execução de página; registado como issue separada.' },
 ];
 
@@ -400,5 +402,10 @@ export const FOLLOW_UPS = [
     ref: 'F2/F7 — verificação local',
     title: 'Decisão tomada (migração de papéis); confirmação ponta-a-ponta pendente',
     note: 'A decisão foi a migração da grafia, não o alias: as contas passam a ser guardadas com o papel canónico no primeiro login (logUserLogin) e adminUpdateUser normaliza o que persiste, depois de o frontend deixar de comparar literais. O backend compara user_condition por igualdade exacta e não normaliza o papel (verificado), e o emulador local ignora a escrita de User.role — pelo que a conta local permanece admin e o efeito ponta-a-ponta, com a RLS canónica a casar a conta, só é observável num backend real.',
+  },
+  {
+    ref: 'Harness multi-identidade',
+    title: 'Validação executável por identidade — o que fecha e o que falta',
+    note: 'O harness (`tools/validation-harness`, `npm run validate:harness`) injecta as nove identidades no limite das funções (cabeçalho `x-base44-dev-actor`, honrado só com `BASE44_DEV_IDENTITY=1`, variável que existe apenas no compose local) e corre a camada de decisão do frontend com o código real (`rbac.js`, `sidebarGroups.js`, `licenseModules.js`, `tenantResolver.js`). Estado: 46 ok, 0 falhas, 2 não verificáveis localmente. Fecha: âmbito de leitura e de escrita de um administrador de parceiro sobre a sua carteira, provisionamento de licenças (criação, mudança de tier, exceção por módulo com motivo e validade, suspensão com tolerância e fecho fail-closed no fim dela, reactivação), estados da delegação (activa, expirada, revogada e restrita por módulo), coerência Sidebar↔RouteGuard nas nove identidades e o contrato do contexto de tenant. Não fecha: as RLS das entidades (avaliadas pela sessão autenticada, uma só), o ramo `delegated_edit_customer_ids` (escondido na leitura pelo emulador) e a leitura da trilha de auditoria (AuditLog ilegível nessa sessão) — todos exigem backend real.',
   },
 ];
