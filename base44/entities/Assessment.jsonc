@@ -192,6 +192,29 @@
             "properties": {
               "scoring_model": { "type": "string" },
               "captured_at": { "type": "string" },
+              "framework_versions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "string" },
+                    "version": { "type": ["string", "null"] }
+                  }
+                }
+              },
+              "questions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "question_id": { "type": "string" },
+                    "framework_code": { "type": ["string", "null"] },
+                    "domain": { "type": ["string", "null"] },
+                    "control_id": { "type": ["string", "null"] },
+                    "weight": { "type": "number" }
+                  }
+                }
+              },
               "questions_count": { "type": "number" },
               "weight_total": { "type": "number" },
               "scale_max": { "type": "number" }

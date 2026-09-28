@@ -19,7 +19,7 @@
       "description": "Workspace type in the hierarchy"
     },
     "parent_id": {
-      "type": "string",
+      "type": ["string", "null"],
       "description": "Parent workspace ID (null for root workspaces)"
     },
     "ancestor_ids": {

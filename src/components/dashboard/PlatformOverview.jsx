@@ -39,7 +39,7 @@ export default function PlatformOverview() {
 
   const { data: risks = [] } = useQuery({
     queryKey: ['overview-risks'],
-    queryFn: () => base44.entities.Risk.list('-created_date', 500),
+    queryFn: () => base44.entities.RiskItem.list('-created_date', 500),
   });
 
   // Maturity by sector

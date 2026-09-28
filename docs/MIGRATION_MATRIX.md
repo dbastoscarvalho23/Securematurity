@@ -134,7 +134,7 @@ Preservar (não copiar da origem, mas manter aqui): armazenamento cloud
 | 3 | Autorização, isolamento, onboarding e delegação (fechar defeitos 1–4, 6) | **Concluída** — ver evidências na secção 9 |
 | 4 | Catálogo de 3 tiers e ativação comercial só do Core | **Concluída** — ver evidências na secção 9 |
 | 5 | Administração consolidada (página Licenciamento real; aviso separado) | **Concluída** — ver evidências na secção 9 |
-| 6 | Jornada Core NIS2 completa (avaliações com cálculo no servidor, lacunas, ações) | Não iniciada |
+| 6 | Jornada Core NIS2 completa (avaliações com cálculo no servidor, lacunas, ações) | **Em curso** — conclusão/reabertura de avaliações no servidor (secção 9); lacunas e ações por consolidar |
 | 7 | Conteúdos, reporting e pacote de auditoria | Não iniciada |
 | 8 | Testes de segurança, regressão, persistência e operação | Não iniciada |
 
@@ -172,6 +172,39 @@ Preservar (não copiar da origem, mas manter aqui): armazenamento cloud
 ---
 
 ## 9. Evidências de execução
+
+### Fase 6 — conclusão de avaliações no servidor (parcial: avaliação Core NIS2)
+
+Alterações: `base44/shared/assessmentScoring.ts` (novo), `base44/functions/completeAssessment/entry.ts`
+(novo), `base44/entities/Assessment.jsonc` (campos anuláveis na reabertura e instantâneo metodológico
+completo), `base44/functions/seedTestEnvironment/entry.ts` (novo), `src/pages/AssessmentDetail.jsx`,
+`src/pages/AssessmentResults.jsx`, `src/components/assessments/QuestionCard.jsx`.
+
+Método: funções invocadas contra o backend local (`POST /api/apps/<appId>/functions/<nome>`) sobre o
+ambiente criado por `seedTestEnvironment {confirm:"create-test-conditions"}` — 2 parceiros, 4 clientes,
+12 perguntas NIS2 e cenários de delegação. A pontuação e a cobertura são sempre calculadas no servidor.
+
+| Verificação | Resultado |
+|---|---|
+| Conclusão com cobertura total | **Passou** — 200, `completion_type: full_coverage`, pontuação 2,7 (12/12 respondidas) |
+| Conclusão parcial com pendentes | **Passou** — 200 com `confirm_partial`, `partial_coverage`, cobertura 66,7% (4 pendentes) |
+| Conclusão parcial sem confirmação | **Passou** — 422 a pedir confirmação; nenhuma escrita |
+| Reabertura de avaliação concluída | **Passou** — 200; estado `in_progress`, pontuação/cobertura/metodologia anuladas, `completed_date` e `completed_by` limpos |
+| Reabertura sem motivo | **Passou** — 400 `reason_required` |
+| Reabertura de avaliação não concluída | **Passou** — 409 `not_completed` |
+| Conclusão de avaliação já concluída | **Passou** — 409 `already_completed` |
+| Ação desconhecida | **Passou** — 400 `Unknown action` |
+| Resultado anterior preservado | **Passou** — `result_history` acumula entradas (histórico observado após várias conclusões e reaberturas) |
+| Instantâneo metodológico no histórico | **Passou** — modelo de pontuação, versão do framework (NIS2 2025) e pesos por pergunta gravados no histórico |
+| Autorização por delegação (só leitura) | **Passou** — 403 `forbidden` (cliente Gama) |
+| Módulo licenciado | **Passou** — 403 `module_not_licensed` (cliente Delta, sem subscrição) |
+| Migração de workspaces existentes | **Passou** — `migrateExistingWorkspaces` 200; workspace raiz criado com `parent_id: null`, cliente ligado, clientes já migrados ignorados |
+| Painel sem erros de entidade | **Passou** — `/` após recarregamento: `RiskItem` e `LicenseUsageRecord` a 200, 0 pedidos falhados, 0 erros de consola, sem overlay |
+
+**Não verificado nesta fase:** o diálogo de reabertura na interface não foi exercitado por clique — a
+verificação foi feita por chamada direta à função com a identidade da sessão; os widgets do Dashboard
+aparecem em estado vazio porque o ambiente de teste não semeia riscos nem consumo de IA. As lacunas e
+ações (restante da Fase 6) continuam por consolidar.
 
 ### Fase 4 — catálogo de três tiers (concluída)
 
@@ -260,7 +293,11 @@ autoridade de aprovação, onboarding sem acesso operacional), `base44/functions
 
 - `getPlatformMetrics` mapeia `knowledge_article` → entidade `KnowledgeArticle`, **que não existe**
   (erro 403/404 no arranque). Corrigir na Fase 7, com a entidade de artigos e o fluxo editorial.
-- O Dashboard consulta `IntegrationUsage` e `Risk`, entidades inexistentes (404 na consola).
+- **Resolvido na Fase 6:** o Dashboard consultava `IntegrationUsage` e `Risk`, entidades inexistentes
+  (404 na consola). Passou a consultar `RiskItem` e `LicenseUsageRecord` (o contador mensal por cliente
+  escrito por `enforceUsageLimit`); o widget de consumo de IA passou a listar clientes.
+- `migrateExistingWorkspaces` falhava com `parent_id: Input should be a valid string` (criava workspaces
+  raiz com `parent_id: null`). **Resolvido:** `Workspace.parent_id` passou a `["string", "null"]`.
 - `Customer` exige `nif` e `name`; sem eles a escrita devolve 422 com corpo vazio (sem detalhe de validação).
 - Ficou um registo de teste ("Probe Catálogo", cliente + subscrição) na base de dados em memória
   local: o limite de verificações da sessão esgotou-se antes da limpeza. Desaparece em qualquer

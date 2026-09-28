@@ -39,13 +39,15 @@ export default function PlatformAdminDashboard() {
 
   const { data: usage = [] } = useQuery({
     queryKey: ['ai-usage'],
-    queryFn: () => base44.entities.IntegrationUsage.list('-created_date', 500),
+    queryFn: () => base44.entities.LicenseUsageRecord.list('-created_date', 500),
   });
 
   const activeTenants = customers.filter(c => c.status === 'active');
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const creditsThisMonth = usage.filter(u => new Date(u.created_date) >= monthStart).length;
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const creditsThisMonth = usage
+    .filter(u => u.month === currentMonth)
+    .reduce((sum, u) => sum + (u.usage_count || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -105,7 +107,7 @@ export default function PlatformAdminDashboard() {
 
       {/* Consumption and alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopAIConsumersWidget usage={usage} />
+        <TopAIConsumersWidget usage={usage} customers={customers} />
         <ExpiringSubscriptionsWidget subscriptions={subscriptions} />
       </div>
     </div>
