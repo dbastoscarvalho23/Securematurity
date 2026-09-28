@@ -30,6 +30,7 @@ import NotificationBell from './NotificationBell';
 import Logo from './Logo';
 import RoleSimulationSelector from './RoleSimulationSelector';
 import WorkspaceSwitcher from './WorkspaceSwitcher';
+import { isPlatformOwner } from '@/lib/rbac';
 
 export const PAGE_TITLE_KEYS = {
   '/': 'page_dashboard',
@@ -93,7 +94,7 @@ export default function TopBar({ collapsed, onToggleCollapse, onMenuClick, pageT
     return () => clearInterval(timer);
   }, []);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const roleLabel = {
     admin: t('role_admin'),
     customer_admin: t('role_customer_admin'),

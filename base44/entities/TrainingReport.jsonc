@@ -88,7 +88,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "admin"
+            "role": "master_admin"
           }
         },
         {
@@ -100,7 +100,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "admin"
+            "role": "master_admin"
           }
         },
         {
@@ -112,7 +112,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "admin"
+            "role": "master_admin"
           }
         },
         {
@@ -124,7 +124,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "admin"
+            "role": "master_admin"
           }
         },
         {

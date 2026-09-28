@@ -13,6 +13,7 @@ import EmptyState from '@/components/shared/EmptyState';
 import EditUserDialog from '@/components/settings/EditUserDialog';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { isPlatformOwner, hasRole } from '@/lib/rbac';
 
 export default function Organization() {
   const { user } = useAuth();
@@ -23,13 +24,13 @@ export default function Organization() {
   const { data: users = [] } = useQuery({
     queryKey: ['org-users'],
     queryFn: () => base44.functions.invoke('listUsers', {}),
-    enabled: user?.role === 'admin' || user?.role === 'customer_admin',
+    enabled: hasRole(user?.role, 'master_admin', 'customer_admin'),
   });
 
   const { data: customers = [] } = useQuery({
     queryKey: ['org-customers'],
     queryFn: () => base44.entities.Customer.list(),
-    enabled: user?.role === 'admin',
+    enabled: isPlatformOwner(user?.role),
   });
 
   const { data: frameworks = [] } = useQuery({
@@ -37,7 +38,7 @@ export default function Organization() {
     queryFn: () => base44.entities.Framework.list(),
   });
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const isCustomerAdmin = user?.role === 'customer_admin';
 
   if (!isAdmin && !isCustomerAdmin) {
@@ -132,7 +133,7 @@ export default function Organization() {
                     <Badge variant="outline" className="capitalize text-xs">{u.role?.replace(/_/g, ' ') || 'user'}</Badge>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {customers.find(c => c.id === u.customer_id)?.name || u.customer_name || (u.role === 'admin' ? '—' : '—')}
+                    {customers.find(c => c.id === u.customer_id)?.name || u.customer_name || '—'}
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setUserToEdit(u)}>

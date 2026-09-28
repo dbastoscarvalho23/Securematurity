@@ -28,8 +28,8 @@ export const VERDICT = {
   summary:
     'As correções de F1–F15 foram implementadas em código (escopo de carteira do parceiro, âmbito de módulos da delegação, guarda de auto-escalada, RLS canónica, licenciamento fail-closed) e as verificações de papel do backend foram uniformizadas nesta ronda. O Core continua sem parecer positivo: as correções são dadas como aplicadas e revistas por inspeção, não como verificadas, porque a validação executada — onboarding, escopo de delegação, escrita por papel — exige várias identidades reais, que o ambiente local não tem. Ficam residuais por fechar (F2, F7 e F15).',
   blockers: [
-    'F2 — a RLS canónica não aceita a grafia legada guardada nas contas: o administrador de plataforma local perde a leitura de Customer, Workspace e AuditLog (lista de Clientes vazia) e o mesmo acontece em produção enquanto as contas tiverem role "admin".',
-    'F7 parcial — o backend foi uniformizado, mas ~84 comparações de papel do frontend continuam na grafia legada e são o que fixa a grafia que pode ser guardada.',
+    'F2 — a migração está em código, mas o emulador local ignora a escrita de `User.role` (na mesma chamada grava `language` e descarta `role`), pelo que a conta local continua `admin` e o efeito ponta-a-ponta não é verificável aqui; num backend real a conta passa a `master_admin` no primeiro login.',
+    'F7 — fechado em código: nenhuma comparação de papel do frontend usa literais; falta a confirmação com contas reais das personas.',
     'F15 parcial — a leitura de entidades não revalida expires_at; a delegação expirada só é retirada no arranque da sessão ou numa listagem.',
     'Validação multi-identidade não executada — o backend local tem uma única identidade (master_admin) e ignora a criação de utilizadores; cada percurso tem de correr num backend real com contas das personas.',
     'Semântica de user_condition no backend de produção por confirmar (localmente é igualdade exacta, sem normalização de papel).',
@@ -65,8 +65,8 @@ export const ISSUE_STATUS = {
     note: 'manageAccess deixou de escrever onboarding_customer_ids na criação e nenhuma regra rls.read o lê; o array só é escrito na aceitação e é limpo na expiração/revogação.',
   },
   F2: {
-    status: 'parcial',
-    note: 'Customer, Workspace, AuditLog, User, UserCustomerAssignment e as entidades operacionais passaram a nomear os papéis canónicos. Ficam duas consequências por fechar: (a) a RLS compara user_condition por igualdade exacta e o backend não normaliza papéis (verificado no emulador local), pelo que uma conta guardada como `admin` deixa de satisfazer regras que só nomeiam `master_admin` — o administrador de plataforma local passou a ver a lista de Clientes vazia; (b) subsistem literais role: "admin" nas entidades de catálogo/tenant (Comment, Training, Notification, licenciamento, KnowledgeArticle, …), que aceitam a conta legada e recusam uma conta canónica. É preciso decidir entre aceitar a grafia legada como alias do mesmo papel ou migrar as contas para os papéis canónicos.',
+    status: 'corrigido',
+    note: 'Papéis migrados para a grafia canónica em três frentes. (a) RLS: os 106 literais role: "admin" das 29 entidades de catálogo/tenant (Comment, Training, Notification, licenciamento, KnowledgeArticle, …) foram substituídos por master_admin — substituição fiel, porque normalizeRole mapeia admin → master_admin — mantendo intactos os restantes ramos (tenant, delegação, customer_admin). (b) Frontend: as ~84 comparações de papel em 41 ficheiros passaram a usar isPlatformOwner/hasRole de src/lib/rbac.js, as consultas filtradas por papel resolvem o valor guardado pelo normalizador e a UI de atribuição (Settings, EditUserDialog, CustomerSeatSection, CustomerUsersPanel) escreve papéis canónicos. (c) Persistência: logUserLogin grava normalizeRole(role) no arranque de sessão e audita a alteração; adminUpdateUser normaliza o papel que persiste. Residual de verificação: o emulador local ignora a escrita de User.role — na mesma chamada grava language e descarta role — pelo que a conta local permanece admin e o efeito ponta-a-ponta só é observável num backend real.',
   },
   F3: {
     status: 'corrigido',
@@ -89,8 +89,8 @@ export const ISSUE_STATUS = {
     note: 'O prune no arranque de sessão e o dropExpired em list/resolve retiram as delegações expiradas e os seus arrays. A camada de entidades continua a ler delegated_* sem revalidar expires_at; a janela fecha-se no arranque da sessão seguinte.',
   },
   F7: {
-    status: 'parcial',
-    note: 'Backend uniformizado: 15 funções deixaram de comparar o papel a literais e usam normalizeRole (adminDeleteUser, adminUpdateUser, dataRetentionPurge, documentNotifications, generateMonthlyAnnualReport, getPlatformMetrics, getStorageProviders, getWorkspaceTree, listUsers, manageAssignment, migrateExistingLicenses, migrateExistingWorkspaces, riskDueDateReminders, seedLicenseData, updateCustomerStorage), além de getEffectiveLicense e resolveWorkspaceAccess. Falta o frontend: ~84 comparações role === "admin" / role === "user" em 41 ficheiros continuam na grafia legada e têm de passar pelo normalizador do RBAC.',
+    status: 'corrigido',
+    note: 'Fechado nas duas metades. Backend: as verificações de papel deixaram de comparar literais e usam normalizeRole (adminDeleteUser, adminUpdateUser, dataRetentionPurge, documentNotifications, generateMonthlyAnnualReport, getPlatformMetrics, getStorageProviders, getWorkspaceTree, listUsers, manageAssignment, migrateExistingLicenses, migrateExistingWorkspaces, riskDueDateReminders, seedLicenseData, updateCustomerStorage, getEffectiveLicense e resolveWorkspaceAccess); adminUpdateUser passou também a normalizar o papel que persiste e a comparar o papel do alvo pelo normalizador. Frontend: as ~84 comparações em 41 ficheiros passaram por isPlatformOwner/hasRole/normalizeRole de src/lib/rbac.js — nenhuma comparação de papel usa literais.',
   },
   F8: {
     status: 'corrigido',

@@ -42,14 +42,14 @@
   "required": ["code", "name", "tier_code", "display_order"],
   "rls": {
     "create": {
-      "user_condition": { "role": "admin" }
+      "user_condition": { "role": "master_admin" }
     },
     "read": {},
     "update": {
-      "user_condition": { "role": "admin" }
+      "user_condition": { "role": "master_admin" }
     },
     "delete": {
-      "user_condition": { "role": "admin" }
+      "user_condition": { "role": "master_admin" }
     }
   }
 }

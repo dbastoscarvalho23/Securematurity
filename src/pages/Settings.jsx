@@ -29,17 +29,18 @@ import CustomerStorageAssignmentsPanel from '@/components/settings/CustomerStora
 import ReminderSettingsPanel from '@/components/settings/ReminderSettingsPanel';
 import GeneratedReportsPanel from '@/components/genreports/GeneratedReportsPanel';
 import TrainingReportsPanel from '@/components/genreports/TrainingReportsPanel';
+import { isPlatformOwner, hasRole } from '@/lib/rbac';
 
 export default function Settings() {
   const { user: currentUser, checkAppState, refreshUser } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = isPlatformOwner(currentUser?.role);
   const isCustomerAdmin = currentUser?.role === 'customer_admin';
-  const isReadOnly = currentUser?.role === 'user';
+  const isReadOnly = hasRole(currentUser?.role, 'employee');
 
   const [isSeeding, setIsSeeding] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('user');
+  const [inviteRole, setInviteRole] = useState('employee');
   const [isInviting, setIsInviting] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [invitedToDelete, setInvitedToDelete] = useState(null);
@@ -281,8 +282,8 @@ export default function Settings() {
       // base44.users.inviteUser only accepts 'user' or 'admin'.
       // We map customer_admin -> 'user' (upgraded later via EditUserDialog)
       // and keep the desired role tracked in InvitedUser.
-      const platformRole = inviteRole === 'admin' ? 'admin' : 'user';
-      const trackedRole = isCustomerAdmin ? 'user' : inviteRole;
+      const platformRole = isPlatformOwner(inviteRole) ? 'admin' : 'user';
+      const trackedRole = isCustomerAdmin ? 'employee' : inviteRole;
       await base44.users.inviteUser(inviteEmail, platformRole);
       const alreadyTracked = invitedUsers.find(u => u.email === inviteEmail);
       if (!alreadyTracked) {
@@ -295,7 +296,7 @@ export default function Settings() {
       }
       toast.success(`${t('settings_invitation_sent')} ${inviteEmail}`);
       setInviteEmail('');
-      setInviteRole('user');
+      setInviteRole('employee');
       refetchInvited();
     } catch (err) {
       toast.error(err?.message || `${t('settings_invitation_error')} ${inviteEmail}`);
@@ -557,8 +558,8 @@ export default function Settings() {
                   <div className="space-y-1.5">
                     <Label>{t('settings_role')}</Label>
                     <div className="flex items-center gap-2 h-9">
-                      <Badge variant={currentUser?.role === 'admin' ? 'default' : 'secondary'}>
-                        {currentUser?.role === 'customer_admin' ? t('settings_role_customer_admin') : currentUser?.role === 'admin' ? t('settings_role_admin') : t('settings_role_user')}
+                      <Badge variant={isPlatformOwner(currentUser?.role) ? 'default' : 'secondary'}>
+                        {currentUser?.role === 'customer_admin' ? t('settings_role_customer_admin') : isPlatformOwner(currentUser?.role) ? t('settings_role_admin') : t('settings_role_user')}
                       </Badge>
                       <Badge className="bg-accent/10 text-accent border-accent/20">{t('settings_user_active')}</Badge>
                     </div>
@@ -570,7 +571,7 @@ export default function Settings() {
                       disabled
                       className="bg-muted/50 text-muted-foreground"
                     />
-                    {currentUser?.role !== 'admin' && (
+                    {!isPlatformOwner(currentUser?.role) && (
                       <p className="text-xs text-muted-foreground">{t('settings_customer_contact_admin')}</p>
                     )}
                   </div>
@@ -633,9 +634,9 @@ export default function Settings() {
                         <Select value={inviteRole} onValueChange={setInviteRole}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="user">{t('settings_role_user')}</SelectItem>
+                            <SelectItem value="employee">{t('settings_role_user')}</SelectItem>
                             <SelectItem value="customer_admin">{t('settings_role_customer_admin')}</SelectItem>
-                            <SelectItem value="admin">{t('settings_role_admin')}</SelectItem>
+                            <SelectItem value="master_admin">{t('settings_role_admin')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -660,7 +661,7 @@ export default function Settings() {
                   <CardDescription>
                     {users.length} {t('settings_registered')} · {invitedUsers.filter(i => !users.find(u => u.email === i.email)).length} {t('settings_pending_invitation')}
                     {(() => {
-                      const pending = users.filter(u => u.role !== 'admin' && !u.customer_id);
+                      const pending = users.filter(u => !isPlatformOwner(u.role) && !u.customer_id);
                       return pending.length > 0
                         ? ` · ${pending.length} ${t('settings_pending_activation_count')}`
                         : '';
@@ -686,7 +687,7 @@ export default function Settings() {
                           <TableCell className="font-medium">{u.display_name || u.full_name || '—'}</TableCell>
                           <TableCell className="text-muted-foreground text-sm">{u.email}</TableCell>
                           <TableCell className="text-sm">
-                            {u.role === 'admin'
+                            {isPlatformOwner(u.role)
                               ? <span className="text-muted-foreground italic text-xs">{t('settings_na_admin')}</span>
                               : u.customer_name
                                 ? <Badge variant="outline" className="text-xs">{u.customer_name}</Badge>
@@ -694,12 +695,12 @@ export default function Settings() {
                             }
                           </TableCell>
                           <TableCell>
-                            <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                              {u.role === 'customer_admin' ? t('settings_role_customer_admin') : u.role === 'admin' ? t('settings_role_admin') : t('settings_role_user')}
+                            <Badge variant={isPlatformOwner(u.role) ? 'default' : 'secondary'} className="capitalize">
+                              {u.role === 'customer_admin' ? t('settings_role_customer_admin') : isPlatformOwner(u.role) ? t('settings_role_admin') : t('settings_role_user')}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {u.role !== 'admin' && !u.customer_id ? (
+                            {!isPlatformOwner(u.role) && !u.customer_id ? (
                               <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
                                 <Clock className="w-3 h-3 mr-1" />
                                 {t('settings_pending_activation')}
@@ -741,8 +742,8 @@ export default function Settings() {
                             <TableCell className="text-muted-foreground text-sm">{i.email}</TableCell>
                             <TableCell className="text-muted-foreground text-xs">—</TableCell>
                             <TableCell>
-                              <Badge variant={i.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                                {i.role === 'customer_admin' ? t('settings_role_customer_admin') : i.role === 'admin' ? t('settings_role_admin') : t('settings_role_user')}
+                              <Badge variant={isPlatformOwner(i.role) ? 'default' : 'secondary'} className="capitalize">
+                                {i.role === 'customer_admin' ? t('settings_role_customer_admin') : isPlatformOwner(i.role) ? t('settings_role_admin') : t('settings_role_user')}
                               </Badge>
                             </TableCell>
                             <TableCell>

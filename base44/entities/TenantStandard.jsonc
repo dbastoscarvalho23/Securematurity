@@ -25,19 +25,19 @@
   "required": ["customer_id", "standard_code"],
   "rls": {
     "create": {
-      "user_condition": { "role": "admin" }
+      "user_condition": { "role": "master_admin" }
     },
     "read": {
       "$or": [
-        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "role": "master_admin" } },
         { "data.customer_id": "{{user.data.customer_id}}" }
       ]
     },
     "update": {
-      "user_condition": { "role": "admin" }
+      "user_condition": { "role": "master_admin" }
     },
     "delete": {
-      "user_condition": { "role": "admin" }
+      "user_condition": { "role": "master_admin" }
     }
   }
 }

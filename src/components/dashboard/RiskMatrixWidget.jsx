@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { ShieldAlert, ExternalLink } from 'lucide-react';
 import { deriveRisksFromAssessment, mergeRisks, summariseRisks, riskScore } from '@/lib/riskEngine';
 import { cn } from '@/lib/utils';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const CELL_COLOR = (impact, likelihood) => {
   const score = impact * likelihood;
@@ -28,7 +29,7 @@ const LEVEL_COLORS = {
 export default function RiskMatrixWidget() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const customerId = user?.customer_id;
   const [hoveredRisks, setHoveredRisks] = useState([]);
 

@@ -52,6 +52,7 @@
         "email_sent",
         "report_exported",
         "user_login",
+        "user_updated",
         "settings_changed",
         "data_exported",
         "data_deleted",

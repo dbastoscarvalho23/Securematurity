@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
     // A partner admin assigns roles — but only tenant roles, and only to users
     // inside its own carteira. Platform roles stay with the platform owner.
     if (isPartner && !isOwner) {
-      if (role !== undefined && !TENANT_ROLES.includes(role)) {
+      if (role !== undefined && !TENANT_ROLES.includes(normalizeRole(role))) {
         return Response.json(
           { error: "Forbidden: a partner admin cannot assign platform roles" },
           { status: 403 },
@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       if (!currentUser.customer_id || target.customer_id !== currentUser.customer_id) {
         return Response.json({ error: "Forbidden: you can only edit users of your own customer" }, { status: 403 });
       }
-      if (PLATFORM_ROLES.includes(target.role)) {
+      if (PLATFORM_ROLES.includes(normalizeRole(target.role))) {
         return Response.json({ error: "Forbidden: you cannot edit a platform or partner administrator" }, { status: 403 });
       }
       // A customer admin may remove a user from their customer, but not move them elsewhere.
@@ -128,7 +128,10 @@ Deno.serve(async (req) => {
     }
     if (customer_id !== undefined) update.customer_id = customer_id;
     if (customer_name !== undefined) update.customer_name = customer_name;
-    if (role !== undefined) update.role = role;
+    // Roles are persisted in their canonical spelling (admin → master_admin,
+    // user → employee) so the entity RLS, which matches by exact string, and the
+    // frontend agree on a single value per role.
+    if (role !== undefined) update.role = normalizeRole(role);
 
     if (Object.keys(update).length === 0) {
       return Response.json({ success: true, user: target });

@@ -20,6 +20,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const CATEGORIES = ['malware_ransomware','data_breach','ddos','phishing','unauthorized_access','insider_threat','system_failure','physical_security','supply_chain','other'];
 
@@ -65,7 +66,7 @@ export default function IncidentManagement() {
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const customerId = user?.data?.customer_id || user?.customer_id;
 
   const { data: records = [], isLoading } = useQuery({

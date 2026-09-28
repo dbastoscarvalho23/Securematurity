@@ -13,18 +13,21 @@ import {
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import { isPlatformOwner, normalizeRole } from '@/lib/rbac';
 import { notifySeatChange, MIN_SEAT_LIMIT } from '@/lib/seatManagement';
 
+// Keyed by canonical role; look up with normalizeRole() so a record still
+// holding a legacy spelling resolves to the same style.
 const ROLE_STYLES = {
-  admin:          'bg-red-100 text-red-700 border-red-200',
+  master_admin:   'bg-red-100 text-red-700 border-red-200',
   customer_admin: 'bg-purple-100 text-purple-700 border-purple-200',
-  user:           'bg-blue-100 text-blue-700 border-blue-200',
+  employee:       'bg-blue-100 text-blue-700 border-blue-200',
 };
 
 const ROLE_LABELS = {
-  admin:          'Admin',
+  master_admin:   'Admin',
   customer_admin: 'Customer Admin',
-  user:           'User',
+  employee:       'User',
 };
 
 function SeatBar({ used, total }) {
@@ -75,14 +78,14 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
   const { user: currentUser } = useAuth();
   const { t } = useLanguage();
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('user');
+  const [inviteRole, setInviteRole] = useState('employee');
   const [inviting, setInviting] = useState(false);
   const [removingId, setRemovingId] = useState(null);
   const [updatingRoleId, setUpdatingRoleId] = useState(null);
   const [savingSeats, setSavingSeats] = useState(false);
   const [showSeatDialog, setShowSeatDialog] = useState(false);
 
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = isPlatformOwner(currentUser?.role);
   const isCustomerAdmin = currentUser?.role === 'customer_admin';
   const canManage = isAdmin || isCustomerAdmin;
 
@@ -128,7 +131,7 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
       });
       toast.success(t('seat_invite_sent').replace('{email}', inviteEmail.trim()));
       setInviteEmail('');
-      setInviteRole('user');
+      setInviteRole('employee');
       invalidate();
     } catch (err) {
       toast.error(err?.message || t('seat_invite_failed'));
@@ -268,7 +271,7 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
             <Select value={inviteRole} onValueChange={setInviteRole}>
               <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="user">{t('role_user')}</SelectItem>
+                <SelectItem value="employee">{t('role_user')}</SelectItem>
                 <SelectItem value="customer_admin">{t('role_customer_admin')}</SelectItem>
               </SelectContent>
             </Select>
@@ -308,22 +311,22 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
                       ? <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
                       : (
                         <Select
-                          value={u.role || 'user'}
+                          value={normalizeRole(u.role)}
                           onValueChange={val => handleRoleChange(u.id, val)}
                         >
-                          <SelectTrigger className={`h-6 text-[10px] px-2 border font-semibold rounded-md ${ROLE_STYLES[u.role] || ROLE_STYLES.user}`}>
+                          <SelectTrigger className={`h-6 text-[10px] px-2 border font-semibold rounded-md ${ROLE_STYLES[normalizeRole(u.role)] || ROLE_STYLES.employee}`}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="user">{t('role_user')}</SelectItem>
+                            <SelectItem value="employee">{t('role_user')}</SelectItem>
                             <SelectItem value="customer_admin">{t('role_customer_admin')}</SelectItem>
                           </SelectContent>
                         </Select>
                       )}
                   </div>
                 ) : (
-                  <Badge variant="outline" className={`text-[10px] px-1.5 capitalize ${ROLE_STYLES[u.role] || ''}`}>
-                    {ROLE_LABELS[u.role] || u.role}
+                  <Badge variant="outline" className={`text-[10px] px-1.5 capitalize ${ROLE_STYLES[normalizeRole(u.role)] || ''}`}>
+                    {ROLE_LABELS[normalizeRole(u.role)] || u.role}
                   </Badge>
                 )}
                 {canManage && (

@@ -11,11 +11,12 @@ import TrainingSummary from '@/components/training/TrainingSummary';
 import TrainingUserRoster from '@/components/training/TrainingUserRoster';
 import TrainingList from '@/components/training/TrainingList';
 import TrainingCalendar from '@/components/training/TrainingCalendar';
+import { isPlatformOwner } from '@/lib/rbac';
 
 export default function Training() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],

@@ -12,6 +12,7 @@ import { AlertTriangle, CheckCircle2, Clock, Users, ListTodo } from 'lucide-reac
 import { format, isAfter, parseISO } from 'date-fns';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444'];
 
@@ -64,7 +65,7 @@ function DrillDownSheet({ open, onClose, title, description, tasks }) {
 export default function TaskAnalytics() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const customerId = user?.customer_id;
 
   const [drillDown, setDrillDown] = useState(null); // { title, description, tasks }

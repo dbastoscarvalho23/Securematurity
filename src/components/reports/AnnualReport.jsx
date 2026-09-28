@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { riskScore } from '@/lib/riskEngine';
 import RecordDetailDialog from '@/components/reports/RecordDetailDialog';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const RISK_STATUS_COLORS = {
   open: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -31,7 +32,7 @@ const PRIORITY_COLORS = {
 export default function AnnualReport({ selectedCustomer = 'all' }) {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const customerId = user?.customer_id;
 
   // Fetch all records from all customers, then filter client-side for consistency with Risk Assessment page

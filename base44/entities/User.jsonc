@@ -18,7 +18,7 @@
         "consultant",
         "user"
       ],
-      "default": "user",
+      "default": "employee",
       "description": "User role (9-role tier system with legacy aliases)"
     },
     "display_name": {

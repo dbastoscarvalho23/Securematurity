@@ -8,13 +8,14 @@ import { ShieldCheck } from 'lucide-react';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
 import CustomerGapCard from './CustomerGapCard';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const HORIZON_DAYS = 30;
 
 export default function ComplianceGapsSummary() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const customerId = user?.customer_id;
   const enabled = isAdmin || !!customerId;
 

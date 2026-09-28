@@ -23,6 +23,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { exportReportPdf } from '@/lib/exportReportPdf';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
+import { isPlatformOwner, hasRole } from '@/lib/rbac';
 
 const assessmentStatusOptions = [
   { value: 'draft', labelKey: 'assessments_status_draft' },
@@ -43,8 +44,8 @@ export default function Assessments() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
-  const canBulkAction = user?.role === 'admin' || user?.role === 'customer_admin';
+  const isAdmin = isPlatformOwner(user?.role);
+  const canBulkAction = hasRole(user?.role, 'master_admin', 'customer_admin');
   const customerId = user?.customer_id;
 
   const { data: assessments = [], isLoading } = useQuery({

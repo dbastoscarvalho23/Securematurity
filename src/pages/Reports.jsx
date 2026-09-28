@@ -19,6 +19,7 @@ import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const MATURITY_LABEL_KEYS = ['maturity_not_implemented', 'maturity_initial', 'maturity_developing', 'maturity_defined', 'maturity_managed', 'maturity_optimized'];
 
@@ -121,7 +122,7 @@ function AssessmentAnswersPanel({ assessmentId }) {
 export default function Reports() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const customerId = user?.customer_id;
 
   const [selectedCustomer, setSelectedCustomer] = useState('all');

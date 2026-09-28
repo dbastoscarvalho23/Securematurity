@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { listAssignments, createAssignment, updateAssignment, deleteAssignment, DELEGATION_ROLES } from '@/lib/delegation';
+import { isPlatformOwner } from '@/lib/rbac';
 
 function AssignmentFormDialog({ open, onClose, editing, users, customers, t }) {
   const queryClient = useQueryClient();
@@ -154,7 +155,7 @@ export default function UserAssignments() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const isCustomerAdmin = user?.role === 'customer_admin';
 
   const { data: assignments = [], isLoading } = useQuery({

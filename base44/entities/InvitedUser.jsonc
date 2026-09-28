@@ -9,12 +9,14 @@
     "role": {
       "type": "string",
       "enum": [
+        "employee",
+        "customer_admin",
+        "master_admin",
         "user",
-        "admin",
-        "customer_admin"
+        "admin"
       ],
-      "default": "user",
-      "description": "Assigned role"
+      "default": "employee",
+      "description": "Assigned role (canonical; legacy aliases kept for records created before the role migration)"
     },
     "status": {
       "type": "string",
@@ -47,7 +49,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "admin"
+            "role": "master_admin"
           }
         },
         {
@@ -68,7 +70,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "admin"
+            "role": "master_admin"
           }
         },
         {
@@ -89,7 +91,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "admin"
+            "role": "master_admin"
           }
         },
         {
@@ -110,7 +112,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "admin"
+            "role": "master_admin"
           }
         },
         {

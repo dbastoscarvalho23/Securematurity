@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const COLORS = ['hsl(217,91%,60%)', 'hsl(173,58%,39%)', 'hsl(43,74%,66%)', 'hsl(27,87%,67%)', 'hsl(262,52%,56%)', 'hsl(0,84%,60%)'];
 
@@ -119,7 +120,7 @@ function UserDrillDown({ users, customers, t }) {
               <TableCell>
                 <Badge variant="outline" className="capitalize text-xs">{u.role?.replace(/_/g, ' ') || 'user'}</Badge>
               </TableCell>
-              <TableCell className="text-sm">{customerMap[u.customer_id] || (u.role === 'admin' ? t('settings_na_admin') : '—')}</TableCell>
+              <TableCell className="text-sm">{customerMap[u.customer_id] || (isPlatformOwner(u.role) ? t('settings_na_admin') : '—')}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -316,7 +317,7 @@ export default function Admin() {
     queryFn: () => base44.entities.Task.list('-created_date', 500),
   });
 
-  if (user?.role !== 'admin') {
+  if (!isPlatformOwner(user?.role)) {
     return <EmptyState icon={ShieldCheck} title={t('common_no_permission')} className="h-64" />;
   }
 

@@ -24,11 +24,12 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
 import PageHeader from '@/components/shared/PageHeader';
+import { isPlatformOwner } from '@/lib/rbac';
 
 export default function PlatformTenantDashboard({ readOnly = false }) {
   const { user } = useAuth();
   const { t, language } = useLanguage();
-  const isAdmin = user?.role === 'admin' || user?.role === 'master_admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const customerId = user?.customer_id;
 
   const { data: customers = [] } = useQuery({

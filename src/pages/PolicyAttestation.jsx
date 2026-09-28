@@ -24,6 +24,7 @@ import EmptyState from '@/components/shared/EmptyState';
 import { writeAuditLog } from '@/lib/auditLog';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { hasRole } from '@/lib/rbac';
 
 const STATUS_CONFIG = {
   pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100', label: 'Pending' },
@@ -36,7 +37,7 @@ export default function PolicyAttestation() {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const queryClient = useQueryClient();
-  const isAdmin = user?.role === 'admin' || user?.role === 'customer_admin';
+  const isAdmin = hasRole(user?.role, 'master_admin', 'customer_admin');
   const customerId = user?.customer_id;
   const userEmail = user?.email;
   const [newDialog, setNewDialog] = useState(false);

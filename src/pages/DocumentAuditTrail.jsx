@@ -11,6 +11,7 @@ import DocCustomerBreakdown from '@/components/documents/DocCustomerBreakdown';
 import DocAuditTable from '@/components/documents/DocAuditTable';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const RANGE_KEYS = [
   { key: 'doc_audit_range_30', days: 30 },
@@ -22,7 +23,7 @@ const RANGE_KEYS = [
 export default function DocumentAuditTrail() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const isCustomerAdmin = user?.role === 'customer_admin';
   const customerId = user?.customer_id;
 

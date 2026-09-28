@@ -18,6 +18,7 @@ import ApprovalDialog from '@/components/documents/ApprovalDialog';
 import NominationsPanel from '@/components/documents/NominationsPanel';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const LEVEL_CONFIGS = [
   { id: 'policy',    labelKey: 'docs_level1_label', sublabelKey: 'docs_level1_sublabel', statLabelKey: 'docs_stat_policies',  exampleKeys: ['docs_level1_ex1','docs_level1_ex2','docs_level1_ex3'], icon: Shield,   color: 'text-chart-1', bg: 'bg-chart-1/10', border: 'border-chart-1/20' },
@@ -45,7 +46,7 @@ export default function SecurityDocuments() {
     approved: t('docs_status_approved'),
     deprecated: t('docs_status_deprecated'),
   };
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const isCustomerAdmin = user?.role === 'customer_admin';
   const isUser = !isAdmin && !isCustomerAdmin;
   const customerId = user?.customer_id;

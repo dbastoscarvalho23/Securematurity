@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { fetchWorkspaceTree, flattenWorkspaceTree, WORKSPACE_TYPES, migrateExistingWorkspaces } from '@/lib/workspace';
+import { isPlatformOwner } from '@/lib/rbac';
 
 function WorkspaceNode({ node, onAddChild, onEdit, onDelete, t }) {
   const [expanded, setExpanded] = useState(true);
@@ -213,10 +214,10 @@ export default function Workspaces() {
   const { data: treeData, isLoading } = useQuery({
     queryKey: ['workspace-tree'],
     queryFn: fetchWorkspaceTree,
-    enabled: user?.role === 'admin',
+    enabled: isPlatformOwner(user?.role),
   });
 
-  if (user?.role !== 'admin') {
+  if (!isPlatformOwner(user?.role)) {
     return <EmptyState icon={Network} title={t('common_no_permission')} className="h-64" />;
   }
 

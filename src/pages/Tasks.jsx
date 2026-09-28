@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
+import { isPlatformOwner, hasRole } from '@/lib/rbac';
 
 export default function Tasks() {
   const [search, setSearch] = useState('');
@@ -26,8 +27,8 @@ export default function Tasks() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
-  const canBulkEdit = user?.role === 'admin' || user?.role === 'customer_admin';
+  const isAdmin = isPlatformOwner(user?.role);
+  const canBulkEdit = hasRole(user?.role, 'master_admin', 'customer_admin');
   const customerId = user?.customer_id;
 
   const { data: tasks = [] } = useQuery({

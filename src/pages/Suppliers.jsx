@@ -24,6 +24,7 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import { isPlatformOwner, hasRole } from '@/lib/rbac';
 
 const emptyForm = { customer_id: '', name: '', nif: '', contact_email: '', contact_phone: '', website: '', tier: 'tier_2', country: '', sector: '', service_provided: '', contract_start_date: '', contract_renewal_date: '', annual_value: '', access_to_personal_data: '', access_to_critical_systems: '', notes: '', status: 'active' };
 
@@ -32,8 +33,8 @@ const isSafeUrl = (u) => typeof u === 'string' && /^https?:\/\//i.test(u);
 export default function Suppliers() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
-  const canBulkAction = user?.role === 'admin' || user?.role === 'customer_admin';
+  const isAdmin = isPlatformOwner(user?.role);
+  const canBulkAction = hasRole(user?.role, 'master_admin', 'customer_admin');
   const customerId = user?.customer_id;
   const queryClient = useQueryClient();
 

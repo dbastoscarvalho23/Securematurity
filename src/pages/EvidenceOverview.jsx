@@ -13,6 +13,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
 import ComplianceGapsSummary from '@/components/evidence/ComplianceGapsSummary';
+import { isPlatformOwner } from '@/lib/rbac';
 
 function fileIcon(name = '') {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -28,7 +29,7 @@ const isSafeUrl = (u) => typeof u === 'string' && /^https?:\/\//i.test(u);
 export default function EvidenceOverview() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const customerId = user?.customer_id;
 
   const [search, setSearch] = useState('');

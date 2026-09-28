@@ -19,6 +19,7 @@ import RiskHeatmap from '@/components/risks/RiskHeatmap';
 import TaskHeatmap from '@/components/risks/TaskHeatmap';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
+import { isPlatformOwner } from '@/lib/rbac';
 
 function riskScore(r) { return (r.impact || 0) * (r.likelihood || 0); }
 
@@ -51,7 +52,7 @@ export default function RiskAssessment() {
     operational: t('risk_cat_operational'),
     other: t('risk_cat_other'),
   };
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const isCustomerAdmin = user?.role === 'customer_admin';
   const customerId = user?.customer_id;
 

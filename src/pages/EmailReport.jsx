@@ -14,6 +14,7 @@ import EmptyState from '@/components/shared/EmptyState';
 import { format, subDays, isAfter } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const EMAIL_TYPE_CONFIG = {
   Task: { labelKey: 'email_report_type_task', icon: CheckCircle2, color: 'bg-blue-100 text-blue-700 border-blue-200' },
@@ -45,7 +46,7 @@ const EMAIL_SUBTYPE_KEYS = {
 export default function EmailReport() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const isCustomerAdmin = user?.role === 'customer_admin';
 
   const [search, setSearch] = useState('');

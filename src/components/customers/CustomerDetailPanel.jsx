@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import CustomerSeatSection from './CustomerSeatSection';
+import { hasRole } from '@/lib/rbac';
 
 const statusStyles = {
   active: 'bg-accent/10 text-accent border-accent/20',
@@ -47,7 +48,7 @@ function Section({ title, defaultOpen = false, children }) {
 export default function CustomerDetailPanel({ customer, onEdit, onCustomerUpdated }) {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const canManageUsers = user?.role === 'admin' || user?.role === 'customer_admin';
+  const canManageUsers = hasRole(user?.role, 'master_admin', 'customer_admin');
 
   if (!customer) return null;
 

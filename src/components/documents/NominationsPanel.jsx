@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import NominationDocumentDialog from './NominationDocumentDialog';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const STATUS_STYLES = {
   active: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
@@ -21,7 +22,7 @@ export default function NominationsPanel({ customers, selectedCustomerId }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
 
   const ROLE_LABELS = {
     risk_officer: t('nominations_role_risk_officer'),

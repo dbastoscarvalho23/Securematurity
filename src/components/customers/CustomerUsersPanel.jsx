@@ -10,6 +10,7 @@ import { UserPlus, Trash2, Loader2, Users, AlertTriangle, Send, Clock, MailCheck
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const DEFAULT_SEAT_LIMIT = 5;
 
@@ -18,12 +19,12 @@ export default function CustomerUsersPanel({ customer }) {
   const { user: currentUser } = useAuth();
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState('user');
+  const [role, setRole] = useState('employee');
   const [inviting, setInviting] = useState(false);
   const [requestingSeat, setRequestingSeat] = useState(false);
   const [resendingId, setResendingId] = useState(null);
 
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = isPlatformOwner(currentUser?.role);
   const seatLimit = (customer.user_seat_limit ?? DEFAULT_SEAT_LIMIT) + (customer.user_seat_addon_count ?? 0);
 
   // Fetch users belonging to this customer
@@ -67,7 +68,7 @@ export default function CustomerUsersPanel({ customer }) {
       });
       toast.success(t('cup_invite_sent_password', { email: email.trim() }));
       setEmail('');
-      setRole('user');
+      setRole('employee');
       queryClient.invalidateQueries({ queryKey: ['customerUsers', customer.id] });
       queryClient.invalidateQueries({ queryKey: ['pendingInvites', customer.id] });
     } catch (err) {
@@ -104,7 +105,7 @@ export default function CustomerUsersPanel({ customer }) {
     setRequestingSeat(true);
     try {
       // Find platform admins to notify
-      const admins = await base44.entities.User.filter({ role: 'admin' });
+      const admins = (await base44.entities.User.list()).filter(u => isPlatformOwner(u.role));
       const adminEmails = admins.map(a => a.email).filter(Boolean);
 
       // Send email to each admin
@@ -183,7 +184,7 @@ export default function CustomerUsersPanel({ customer }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="user">{t('cup_role_user')}</SelectItem>
+              <SelectItem value="employee">{t('cup_role_user')}</SelectItem>
               <SelectItem value="customer_admin">{t('cup_role_customer_admin')}</SelectItem>
             </SelectContent>
           </Select>
@@ -222,7 +223,7 @@ export default function CustomerUsersPanel({ customer }) {
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <Badge variant="secondary" className="text-[10px] px-1.5 capitalize">{u.role}</Badge>
+                <Badge variant="secondary" className="text-[10px] px-1.5 capitalize">{u.role?.replace(/_/g, ' ')}</Badge>
                 {isAdmin && (
                   <button
                     onClick={() => handleRemove(u.id)}

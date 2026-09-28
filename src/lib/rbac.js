@@ -65,6 +65,32 @@ export function normalizeRole(role) {
   return map[role] || 'employee';
 }
 
+/**
+ * True when the role (raw or canonical) resolves to any of the given canonical
+ * roles — the single entry point for role comparisons in the UI, so a legacy
+ * spelling (`admin`, `user`, `partner_admin`) and its canonical equivalent are
+ * never treated differently.
+ *
+ * @param {string} role - User role (raw or normalized)
+ * @param {...string} targets - Canonical roles to match against
+ * @returns {boolean}
+ */
+export function hasRole(role, ...targets) {
+  return targets.includes(normalizeRole(role));
+}
+
+/**
+ * Platform owner — the legacy `admin` spelling included (admin → master_admin).
+ * Mirrors the backend `isPlatformOwner` in base44/shared/accessUtils.ts: a
+ * partner admin (workspace_admin) is NOT the platform owner.
+ *
+ * @param {string} role - User role (raw or normalized)
+ * @returns {boolean}
+ */
+export function isPlatformOwner(role) {
+  return normalizeRole(role) === 'master_admin';
+}
+
 // ─── Capability tiers (reusable role arrays) ────────────────────
 // Administration tiers — platform & partner admins manage the platform,
 // customers, licensing and the shared content catalogue. They are

@@ -8,11 +8,12 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { cn } from '@/lib/utils';
+import { isPlatformOwner } from '@/lib/rbac';
 
 export default function ComplianceJourneyStatusCard() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const customerId = user?.customer_id;
 
   const { data: items = [], isLoading } = useQuery({

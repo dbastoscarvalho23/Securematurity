@@ -18,11 +18,12 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import { isPlatformOwner } from '@/lib/rbac';
 
 export default function SupplyChain() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState('');

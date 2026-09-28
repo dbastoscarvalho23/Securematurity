@@ -23,6 +23,7 @@ import BulkActionBar from '@/components/shared/BulkActionBar';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
+import { isPlatformOwner, hasRole } from '@/lib/rbac';
 
 const statusOptions = ['pending', 'in_progress', 'completed', 'dismissed'];
 
@@ -55,8 +56,8 @@ export default function Recommendations() {
   });
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
-  const canBulkAction = user?.role === 'admin' || user?.role === 'customer_admin';
+  const isAdmin = isPlatformOwner(user?.role);
+  const canBulkAction = hasRole(user?.role, 'master_admin', 'customer_admin');
   const customerId = user?.customer_id;
 
   const { data: recommendations = [] } = useQuery({

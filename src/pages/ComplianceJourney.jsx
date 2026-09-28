@@ -17,6 +17,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const RJCS_TEMPLATE_EN = [
   {
@@ -253,7 +254,7 @@ export default function ComplianceJourney() {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const queryClient = useQueryClient();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const [selectedCustomerId, setSelectedCustomerId] = useState(isAdmin ? '' : user?.customer_id);
   const [initializing, setInitializing] = useState(false);
   const [reinitConfirm, setReinitConfirm] = useState(false);

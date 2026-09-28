@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { normalizeRole } from '../../shared/accessUtils.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -20,6 +21,10 @@ Deno.serve(async (req) => {
       details: `User ${user.full_name || user.email} logged in`
     });
 
+    // The stored role is canonicalised in this function, so `storedRole` mirrors
+    // what the record will hold after the migration step below.
+    let storedRole = user.role;
+
     // Auto-assign customer_id/role for previously-invited users on first login.
     // This keeps the customer "Users" panel coherent with the Settings "Users" list,
     // since Settings lists all platform users while the customer panel filters by customer_id.
@@ -34,9 +39,10 @@ Deno.serve(async (req) => {
         if (invite) {
           const updates = { customer_id: invite.customer_id };
           // Promote to customer_admin only if that was the intended role and the
-          // current user is still a plain platform 'user'.
-          if (invite.role === 'customer_admin' && user.role === 'user') {
+          // current user is still a plain 'employee' (legacy spelling: 'user').
+          if (normalizeRole(invite.role) === 'customer_admin' && normalizeRole(user.role) === 'employee') {
             updates.role = 'customer_admin';
+            storedRole = 'customer_admin';
           }
           await base44.asServiceRole.entities.User.update(user.id, updates);
           await base44.asServiceRole.entities.InvitedUser.update(invite.id, { status: 'active' });
@@ -54,13 +60,30 @@ Deno.serve(async (req) => {
       }
     }
 
-    // NOTE: the stored role is deliberately NOT rewritten to the canonical
-    // spelling on login. The entity RLS matches `user_condition` by exact string
-    // (verified in the backend: no role normalisation happens there), so writing
-    // `master_admin` would satisfy the canonical rules but silently break the
-    // ~84 legacy `role === 'admin'` checks in the frontend. Until those are
-    // unified on the RBAC normaliser, a legacy-stored administrator keeps the
-    // legacy spelling and the canonical rules must accept it as an alias.
+    // ─── Role migration ───────────────────────────────────────
+    // The entity RLS compares `user_condition.role` by exact string and the
+    // backend does not normalise roles, so an account stored with a legacy
+    // spelling (`admin`, `user`, `partner_admin`) no longer satisfies the
+    // canonical rules. Migrate the record lazily on login: the frontend and the
+    // backend both resolve roles through normalizeRole, but only a canonical
+    // stored value satisfies the RLS.
+    const canonicalRole = normalizeRole(storedRole);
+    if (canonicalRole !== storedRole) {
+      try {
+        await base44.asServiceRole.entities.User.update(user.id, { role: canonicalRole });
+        await base44.asServiceRole.entities.AuditLog.create({
+          action: 'user_updated',
+          user_email: user.email,
+          entity_type: 'User',
+          entity_id: user.id,
+          details: `Role migrated on login: ${storedRole} → ${canonicalRole}`
+        });
+      } catch (migrationError) {
+        // Non-fatal: the account keeps its legacy spelling and the session
+        // continues — normalizeRole still resolves it for the UI.
+        console.error('Failed to migrate stored role:', migrationError?.message || migrationError);
+      }
+    }
 
     return Response.json({ success: true });
   } catch (error) {

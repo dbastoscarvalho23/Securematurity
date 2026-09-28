@@ -45,7 +45,7 @@ export async function notifySeatChange({ customer, field, oldValue, newValue, ch
   // 2. Email notification to platform admins + customer admins
   try {
     const [admins, customerAdmins] = await Promise.all([
-      base44.entities.User.filter({ role: 'admin' }),
+      base44.entities.User.list().then(users => users.filter(u => isPlatformOwner(u.role))),
       base44.entities.User.filter({ role: 'customer_admin', customer_id: customer.id }),
     ]);
 

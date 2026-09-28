@@ -7,32 +7,33 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { validators, validateForm, hasErrors } from '@/lib/validation';
 import { useLanguage } from '@/lib/LanguageContext';
+import { hasRole, isPlatformOwner, normalizeRole } from '@/lib/rbac';
 
 export default function EditUserDialog({ open, onOpenChange, user, customers, onSave, isSaving, currentUserRole }) {
   const { t } = useLanguage();
   const [fullName, setFullName] = useState('');
   const [customerId, setCustomerId] = useState('');
-  const [role, setRole] = useState('user');
+  const [role, setRole] = useState('employee');
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (user) {
       setFullName(user.display_name || user.full_name || '');
       setCustomerId(user.customer_id || '');
-      setRole(user.role || 'user');
+      setRole(normalizeRole(user.role));
     }
     setErrors({});
   }, [user]);
 
-  const isPlatformAdmin = currentUserRole === 'admin';
-  const needsCustomer = role === 'customer_admin' || role === 'user';
+  const isPlatformAdminActor = isPlatformOwner(currentUserRole);
+  const needsCustomer = hasRole(role, 'customer_admin', 'employee');
 
   const handleSave = () => {
     const values = { fullName, customerId, role };
     const schema = {
       fullName: [validators.required, (v) => validators.minLength(v, 2), (v) => validators.maxLength(v, 100)],
-      role: (v) => validators.enum(v, ['user', 'customer_admin', 'admin']),
-      ...(isPlatformAdmin && role === 'customer_admin' && { customerId: validators.required }),
+      role: (v) => validators.enum(v, ['employee', 'customer_admin', 'master_admin']),
+      ...(isPlatformAdminActor && role === 'customer_admin' && { customerId: validators.required }),
     };
     const formErrors = validateForm(values, schema);
     setErrors(formErrors);
@@ -41,8 +42,8 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
     const selectedCustomer = customers.find(c => c.id === customerId);
     onSave(user.id, {
       full_name: fullName,
-      ...(isPlatformAdmin && { role }),
-      ...(isPlatformAdmin && needsCustomer && {
+      ...(isPlatformAdminActor && { role }),
+      ...(isPlatformAdminActor && needsCustomer && {
         customer_id: customerId || null,
         customer_name: selectedCustomer?.name || null,
       }),
@@ -70,7 +71,7 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
 
           {/* Customer — shown whenever role is customer_admin or user */}
           {needsCustomer && (
-            isPlatformAdmin ? (
+            isPlatformAdminActor ? (
               <div className="space-y-1.5">
                 <Label>{t('user_dlg_associated_customer')} {role === 'customer_admin' && <span className="text-destructive">*</span>}</Label>
                 <Select value={customerId} onValueChange={(v) => { setCustomerId(v); if (errors.customerId) setErrors(p => ({ ...p, customerId: null })); }}>
@@ -103,7 +104,7 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
           )}
 
           {/* Role — only platform admin can change */}
-          {isPlatformAdmin ? (
+          {isPlatformAdminActor ? (
             <div className="space-y-1.5">
               <Label>{t('common_role')}</Label>
               <Select value={role} onValueChange={setRole}>
@@ -111,9 +112,9 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">{t('user_dlg_role_user')}</SelectItem>
+                  <SelectItem value="employee">{t('user_dlg_role_user')}</SelectItem>
                   <SelectItem value="customer_admin">{t('user_dlg_role_customer_admin')}</SelectItem>
-                  <SelectItem value="admin">{t('user_dlg_role_admin')}</SelectItem>
+                  <SelectItem value="master_admin">{t('user_dlg_role_admin')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

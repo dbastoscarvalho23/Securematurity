@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EmptyState from '@/components/shared/EmptyState';
 import { cn } from '@/lib/utils';
+import { isPlatformOwner } from '@/lib/rbac';
 
 const MATURITY_LABELS = {
   0: 'Not Implemented', 1: 'Initial', 2: 'Developing',
@@ -49,7 +50,7 @@ function MaturityBar({ score }) {
 export default function StrategicReport() {
   const { user } = useAuth();
   const { t, language } = useLanguage();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isPlatformOwner(user?.role);
   const customerId = user?.customer_id;
   const [selectedCustomer, setSelectedCustomer] = useState(customerId || 'all');
 

@@ -24,15 +24,16 @@ import CustomerStoragePanel from '@/components/settings/CustomerStoragePanel';
 import CustomerStorageAssignmentsPanel from '@/components/settings/CustomerStorageAssignmentsPanel';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import { isPlatformOwner, hasRole } from '@/lib/rbac';
 
 export default function Configuration() {
   const { t } = useLanguage();
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
 
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'master_admin';
+  const isAdmin = isPlatformOwner(currentUser?.role);
   const isCustomerAdmin = currentUser?.role === 'customer_admin';
-  const isReadOnly = currentUser?.role === 'user';
+  const isReadOnly = hasRole(currentUser?.role, 'employee');
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],

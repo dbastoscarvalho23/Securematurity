@@ -6,6 +6,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { isInMaintenanceWindow } from '@/lib/maintenanceUtils';
 import { Shield, Wrench, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { isPlatformOwner } from '@/lib/rbac';
 
 export default function MaintenanceGuard() {
   const { user } = useAuth();
@@ -43,7 +44,7 @@ export default function MaintenanceGuard() {
   const blocked = useMemo(() => {
     // touch tick so the memo recomputes on the interval
     void tick;
-    if (!config || user?.role === 'admin') return false;
+    if (!config || isPlatformOwner(user?.role)) return false;
     return isInMaintenanceWindow(config, new Date());
   }, [config, user?.role, tick]);
 

@@ -84,7 +84,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "admin"
+            "role": "master_admin"
           }
         },
         {
@@ -96,7 +96,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "admin"
+            "role": "master_admin"
           }
         },
         {
@@ -106,12 +106,12 @@
     },
     "update": {
       "user_condition": {
-        "role": "admin"
+        "role": "master_admin"
       }
     },
     "delete": {
       "user_condition": {
-        "role": "admin"
+        "role": "master_admin"
       }
     }
   }
