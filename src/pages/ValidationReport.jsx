@@ -1,41 +1,55 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, FlaskConical, ShieldAlert, Wrench } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertTriangle, ClipboardList, FlaskConical, ShieldAlert, Wrench } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PageHeader from '@/components/shared/PageHeader';
-import ValidationIssueCard from '@/components/validation/ValidationIssueCard';
+import EmptyState from '@/components/shared/EmptyState';
+import AreaNav from '@/components/validation/AreaNav';
+import AreaSection from '@/components/validation/AreaSection';
+import SeveritySummary from '@/components/validation/SeveritySummary';
 import { cn } from '@/lib/utils';
 import {
+  AREAS,
   FIX_PLAN,
+  FINDINGS,
   FOLLOW_UPS,
-  ISSUES,
   NOT_EXECUTED,
   REPORT_META,
+  ROUND_META,
   SEVERITIES,
-  STATUSES,
   VERDICT,
-  countBySeverity,
-  countByStatus,
-} from '@/lib/validationReportData';
+  buildReportModel,
+  totalSeverityCounts,
+  totalStatusCounts,
+} from '@/lib/validationReportModel';
 
 /**
- * Relatório de validação funcional e de segurança (Core NIS2).
+ * Relatório de validação — achados agrupados por área.
  *
- * Página TEMPORÁRIA, de leitura: conteúdo estático local, sem leituras nem
- * escritas sobre dados de tenants, e sem entrada no Sidebar. Deve ser retirada
- * quando as correções do plano forem aplicadas.
+ * Página TEMPORÁRIA, de leitura: todo o conteúdo vem do modelo
+ * (`src/lib/validationReportModel.js`, sobre `validationReportData.js` e
+ * `platformAssessmentData.js`), sem leituras nem escritas sobre dados de tenants.
+ * Deve ser retirada quando os achados estiverem tratados.
  */
 export default function ValidationReport() {
   const [severity, setSeverity] = useState('todas');
-  const [openIds, setOpenIds] = useState(() => new Set(['F1']));
+  const [openIds, setOpenIds] = useState(() => new Set(['FB1']));
 
-  const counts = useMemo(() => countBySeverity(), []);
-  const statusCounts = useMemo(() => countByStatus(), []);
-  const visible = useMemo(
-    () => (severity === 'todas' ? ISSUES : ISSUES.filter((i) => i.severity === severity)),
-    [severity]
+  const areas = useMemo(() => buildReportModel(), []);
+  const severityCounts = useMemo(() => totalSeverityCounts(), []);
+  const statusCounts = useMemo(() => totalStatusCounts(), []);
+
+  const visibleAreas = useMemo(
+    () =>
+      areas.map((area) => ({
+        ...area,
+        visible: severity === 'todas' ? area.findings : area.findings.filter((f) => f.severity === severity),
+      })),
+    [areas, severity]
   );
+
+  const visibleCount = visibleAreas.reduce((acc, area) => acc + area.visible.length, 0);
 
   const toggle = (id) => {
     setOpenIds((prev) => {
@@ -46,9 +60,15 @@ export default function ValidationReport() {
     });
   };
 
-  const groups = SEVERITIES
-    .map((s) => ({ ...s, items: visible.filter((i) => i.severity === s.id) }))
-    .filter((g) => g.items.length > 0);
+  if (!areas.length) {
+    return (
+      <EmptyState
+        icon={ClipboardList}
+        title="Sem dados de avaliação"
+        description="O modelo do relatório não devolveu nenhuma área nem achado."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -58,15 +78,17 @@ export default function ValidationReport() {
           <p className="text-sm font-semibold">Página temporária — documento de validação, não é produção</p>
           <p className="text-sm">
             Ronda 1: inspeção de código e configuração. Ronda 2: correções de F1–F15 aplicadas no
-            código, registadas como aplicadas e revistas por inspeção — não como verificadas. A
-            página deve ser retirada quando a validação por identidade real estiver concluída.
+            código, registadas como aplicadas e revistas por inspeção — não como verificadas. Ronda 3:
+            avaliação funcional, de administração e de UX/UI, com recomendações por aplicar (nenhuma
+            correção feita). A página deve ser retirada quando a validação por identidade real estiver
+            concluída.
           </p>
         </div>
       </div>
 
       <PageHeader
         title="Relatório de validação — Core NIS2"
-        description="Validação funcional e de segurança: papéis, isolamento entre tenants, onboarding, delegações e licenciamento."
+        description="Achados por área: funcionalidades e fluxos, administração da plataforma, UX/UI e a validação de segurança (papéis, isolamento entre tenants, onboarding, delegações e licenciamento)."
       />
 
       <Card>
@@ -115,6 +137,23 @@ export default function ValidationReport() {
 
       <Card>
         <CardHeader className="pb-3">
+          <CardTitle className="text-base">{ROUND_META.round}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm">{ROUND_META.scope}</p>
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Método</p>
+            <p className="text-sm text-muted-foreground">{ROUND_META.method}</p>
+          </div>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            {ROUND_META.limitation}
+          </div>
+          <p className="text-xs text-muted-foreground">Registada em {ROUND_META.date}.</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
           <CardTitle className="flex flex-wrap items-center gap-2 text-base">
             <FlaskConical className="h-4 w-4 text-muted-foreground" />
             Parecer de prontidão do Core
@@ -125,105 +164,92 @@ export default function ValidationReport() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm">{VERDICT.summary}</p>
-          <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Bloqueadores que impedem o parecer
-            </p>
-            <ul className="list-disc space-y-1 pl-4 text-sm">
-              {VERDICT.blockers.map((b) => (
-                <li key={b}>{b}</li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Pontos positivos verificados por inspeção
-            </p>
-            <ul className="space-y-1 text-sm">
-              {VERDICT.positives.map((p) => (
-                <li key={p} className="flex items-start gap-2">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                  <span>{p}</span>
-                </li>
-              ))}
-            </ul>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Bloqueadores que impedem o parecer
+              </p>
+              <ul className="list-disc space-y-1 pl-4 text-sm">
+                {VERDICT.blockers.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Pontos positivos verificados por inspeção
+              </p>
+              <ul className="list-disc space-y-1 pl-4 text-sm">
+                {VERDICT.positives.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Wrench className="h-4 w-4 text-muted-foreground" />
-            Estado das correções
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-center gap-2">
-          {STATUSES.map((s) => (
-            <Badge key={s.id} variant="outline" className={cn('text-sm', s.classes)}>
-              {s.label}: {statusCounts[s.id] || 0}
-            </Badge>
-          ))}
-          <span className="text-xs text-muted-foreground">Total: {ISSUES.length}</span>
-        </CardContent>
-      </Card>
+      <SeveritySummary
+        severityCounts={severityCounts}
+        statusCounts={statusCounts}
+        total={FINDINGS.length}
+      />
 
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-base font-semibold text-foreground">
-            Problemas por prioridade
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
-              {visible.length} de {ISSUES.length}
-            </span>
-          </h2>
-          <div className="flex flex-wrap gap-2">
+      <AreaNav areas={areas} />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-base font-semibold text-foreground">
+          Achados por área
+          <span className="ml-2 text-sm font-normal text-muted-foreground">
+            {visibleCount} de {FINDINGS.length}
+          </span>
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={severity === 'todas' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSeverity('todas')}
+          >
+            Todas {FINDINGS.length}
+          </Button>
+          {SEVERITIES.map((s) => (
             <Button
-              variant={severity === 'todas' ? 'default' : 'outline'}
+              key={s.id}
+              variant={severity === s.id ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setSeverity('todas')}
+              onClick={() => setSeverity(s.id)}
             >
-              Todas ({ISSUES.length})
+              {s.label} {severityCounts[s.id] || 0}
             </Button>
-            {SEVERITIES.map((s) => (
-              <Button
-                key={s.id}
-                variant={severity === s.id ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSeverity(s.id)}
-              >
-                {s.label} ({counts[s.id]})
-              </Button>
-            ))}
-          </div>
+          ))}
         </div>
-
-        {groups.map((g) => (
-          <div key={g.id} className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className={cn('text-sm', g.classes)}>
-                {g.label}
-              </Badge>
-              <span className="text-xs text-muted-foreground">{g.items.length} problema(s)</span>
-            </div>
-            <div className="space-y-3">
-              {g.items.map((issue) => (
-                <ValidationIssueCard
-                  key={issue.id}
-                  issue={issue}
-                  open={openIds.has(issue.id)}
-                  onToggle={() => toggle(issue.id)}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
       </div>
 
+      {visibleCount === 0 ? (
+        <EmptyState
+          icon={ClipboardList}
+          title="Sem achados com esta severidade"
+          description="Nenhuma área tem achados com a severidade selecionada. Escolha outra severidade ou «Todas»."
+        />
+      ) : (
+        <div className="space-y-5">
+          {visibleAreas.map((area) => (
+            <AreaSection
+              key={area.id}
+              area={area}
+              findings={area.visible}
+              openIds={openIds}
+              onToggle={toggle}
+            />
+          ))}
+        </div>
+      )}
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Wrench className="h-4 w-4 text-muted-foreground" />
-            Plano de correções (executado em código)
+            Plano de correções da ronda de segurança (executado em código)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -276,6 +302,10 @@ export default function ValidationReport() {
           ))}
         </CardContent>
       </Card>
+
+      <p className={cn('text-xs text-muted-foreground')}>
+        Áreas cobertas: {AREAS.map((a) => a.label).join(' · ')}.
+      </p>
     </div>
   );
 }

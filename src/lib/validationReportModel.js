@@ -1,0 +1,151 @@
+/**
+ * Modelo do relatório de validação — achados agrupados por área.
+ *
+ * Junta as duas rondas de inspeção num só modelo:
+ *  - Ronda 1/2 (segurança e RBAC): `src/lib/validationReportData.js`, mantido como
+ *    fonte de verdade dos achados F1–F15, do estado das correções e dos residuais.
+ *  - Ronda 3 (funcional, administração e UX/UI): `src/lib/platformAssessmentData.js`.
+ *
+ * A página `/validacao-seguranca` e os seus componentes leem tudo daqui: nenhum
+ * achado, contagem ou área é escrito na página, para que o relatório não possa
+ * divergir do conteúdo das duas fontes.
+ */
+
+import {
+  FOLLOW_UPS,
+  FIX_PLAN,
+  ISSUES,
+  NOT_EXECUTED,
+  REPORT_META,
+  SEVERITIES,
+  STATUSES,
+  VERDICT,
+  countBySeverity,
+  countByStatus,
+  issueStatus,
+  severityMeta,
+  statusMeta,
+} from './validationReportData';
+import { ASSESSMENT_AREAS, ASSESSMENT_FINDINGS, ROUND_META } from './platformAssessmentData';
+
+/**
+ * Área dos achados da ronda anterior. Os F1–F15 ficam intactos em
+ * `validationReportData.js` e são apenas etiquetados com a área «Segurança e
+ * RBAC» — a rastreabilidade do relatório anterior não se perde.
+ */
+const SECURITY_AREA = {
+  id: 'seguranca',
+  label: 'Segurança e RBAC',
+  description:
+    'Validação da ronda anterior: papéis e capacidades, isolamento entre tenants, onboarding, delegações e licenciamento (F1–F15).',
+  accent: [220, 38, 38],
+  summary: VERDICT.summary,
+  solid: VERDICT.positives,
+  gaps: VERDICT.blockers,
+};
+
+/** Áreas por ordem de apresentação: as três desta ronda e, por fim, a anterior. */
+export const AREAS = [...ASSESSMENT_AREAS, SECURITY_AREA];
+
+const LEGACY_AREA_ID = SECURITY_AREA.id;
+
+/** Normaliza um achado da ronda anterior para o formato comum do relatório. */
+function normalizeLegacyIssue(issue) {
+  const { status = 'pendente', note = '' } = issueStatus(issue.id);
+  return {
+    id: issue.id,
+    area: LEGACY_AREA_ID,
+    severity: issue.severity,
+    title: issue.title,
+    status,
+    statusNote: note,
+    persona: issue.persona,
+    flow: issue.flow,
+    evidence: issue.location || [],
+    impact: issue.impact,
+    recommendation: issue.fix,
+    reproduction: issue.reproduction,
+    check: issue.regression,
+    legacy: true,
+  };
+}
+
+/** Normaliza um achado desta ronda (já no formato comum). */
+function normalizeAssessmentFinding(finding) {
+  return { ...finding, legacy: false };
+}
+
+/** Todos os achados das duas rondas, na ordem das áreas. */
+export const FINDINGS = [
+  ...ASSESSMENT_FINDINGS.map(normalizeAssessmentFinding),
+  ...ISSUES.map(normalizeLegacyIssue),
+];
+
+/** Achados de uma área. */
+export function findingsByArea(areaId) {
+  return FINDINGS.filter((f) => f.area === areaId);
+}
+
+/** Contagem de achados de uma área por severidade. */
+export function areaSeverityCounts(areaId) {
+  return SEVERITIES.reduce((acc, s) => {
+    acc[s.id] = FINDINGS.filter((f) => f.area === areaId && f.severity === s.id).length;
+    return acc;
+  }, {});
+}
+
+/** Contagem de achados de uma área por estado da recomendação. */
+export function areaStatusCounts(areaId) {
+  return STATUSES.reduce((acc, s) => {
+    acc[s.id] = FINDINGS.filter((f) => f.area === areaId && f.status === s.id).length;
+    return acc;
+  }, {});
+}
+
+/** Contagem global por severidade, nas duas rondas. */
+export function totalSeverityCounts() {
+  return SEVERITIES.reduce((acc, s) => {
+    acc[s.id] = FINDINGS.filter((f) => f.severity === s.id).length;
+    return acc;
+  }, {});
+}
+
+/** Contagem global por estado da recomendação. */
+export function totalStatusCounts() {
+  return STATUSES.reduce((acc, s) => {
+    acc[s.id] = FINDINGS.filter((f) => f.status === s.id).length;
+    return acc;
+  }, {});
+}
+
+/**
+ * Modelo pronto a renderizar: cada área com os seus achados e contagens.
+ */
+export function buildReportModel() {
+  return AREAS.map((area) => ({
+    ...area,
+    findings: findingsByArea(area.id),
+    severityCounts: areaSeverityCounts(area.id),
+    statusCounts: areaStatusCounts(area.id),
+  }));
+}
+
+/** Rótulo curto do estado de um achado (ex.: «Corrigido», «Pendente»). */
+export function findingStatusLabel(finding) {
+  return statusMeta(finding.id).label;
+}
+
+export {
+  FIX_PLAN,
+  FOLLOW_UPS,
+  NOT_EXECUTED,
+  REPORT_META,
+  ROUND_META,
+  SEVERITIES,
+  STATUSES,
+  VERDICT,
+  countBySeverity,
+  countByStatus,
+  severityMeta,
+  statusMeta,
+};
