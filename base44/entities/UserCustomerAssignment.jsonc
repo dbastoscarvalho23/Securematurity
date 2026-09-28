@@ -1,0 +1,85 @@
+{
+  "name": "UserCustomerAssignment",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to the User being assigned"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Denormalized user email for display"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to the Customer the user is delegated to access"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "workspace_id": {
+      "type": "string",
+      "description": "Reference to the Workspace (optional, for workspace-scoped delegation)"
+    },
+    "role_in_customer": {
+      "type": "string",
+      "enum": [
+        "viewer",
+        "contributor",
+        "admin"
+      ],
+      "default": "viewer",
+      "description": "The role this user has for this specific customer (delegated access level)"
+    },
+    "assigned_by": {
+      "type": "string",
+      "description": "Email of the admin who created this assignment"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "revoked"
+      ],
+      "default": "active",
+      "description": "Whether this assignment is currently active"
+    }
+  },
+  "required": [
+    "user_id",
+    "customer_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

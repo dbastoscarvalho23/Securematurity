@@ -1,112 +1,35 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Building2,
-  ClipboardCheck,
-  BarChart3,
-  ShieldCheck,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  ScrollText,
-  Shield,
-  BookOpen,
-  ListTodo,
-  Target,
-  TrendingUp,
-  FolderLock,
-  Activity,
-  TriangleAlert,
-  Paperclip,
-  MapPin,
-  MailCheck,
-  Truck,
-  Database,
-  Siren,
-  Users,
-  Bug,
-  Gauge,
-  GraduationCap,
-  Bot,
-  Network
+  LayoutDashboard, Building2, ClipboardCheck, BarChart3, ShieldCheck,
+  Settings, ChevronLeft, ChevronRight, ScrollText, Shield, BookOpen,
+  ListTodo, Target, TrendingUp, FolderLock, Activity, TriangleAlert,
+  Paperclip, MapPin, MailCheck, Truck, Database, Siren, Users, Bug,
+  Gauge, GraduationCap, Bot, Network, UserCog,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import { getNavGroups } from '@/lib/rbac';
+
+const ICON_MAP = {
+  LayoutDashboard, Building2, ClipboardCheck, BarChart3, ShieldCheck,
+  Settings, ScrollText, Shield, BookOpen, ListTodo, Target, TrendingUp,
+  FolderLock, Activity, TriangleAlert, Paperclip, MapPin, MailCheck,
+  Truck, Database, Siren, Users, Bug, Gauge, GraduationCap, Bot, Network, UserCog,
+};
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onCloseMobile }) {
   const location = useLocation();
   const { user } = useAuth();
   const { t } = useLanguage();
-  const isAdmin = user?.role === 'admin';
-  const isCustomerAdmin = user?.role === 'customer_admin';
 
-  const isUser = user?.role === 'user';
+  const role = user?.role;
   const hasCustomer = !!user?.customer_id;
 
-  // "Principal" nav items — visible to all roles (user needs customer assigned)
-  const mainNavItems = [
-    { path: '/', labelKey: 'nav_dashboard', icon: LayoutDashboard },
-    // Customers list only for admin
-    ...(isAdmin ? [{ path: '/customers', labelKey: 'nav_customers', icon: Building2 }] : []),
-    { path: '/compliance-journey', labelKey: 'nav_compliance_journey', icon: MapPin },
-    { path: '/assessments', labelKey: 'nav_assessments', icon: ClipboardCheck },
-    { path: '/evidence', labelKey: 'nav_evidence', icon: Paperclip },
-    { path: '/tasks', labelKey: 'nav_tasks', icon: ListTodo },
-    { path: '/task-analytics', labelKey: 'nav_task_analytics', icon: TrendingUp },
-    { path: '/risk-assessment', labelKey: 'nav_risk_assessment', icon: TriangleAlert },
-    { path: '/security-documents', labelKey: 'nav_documents', icon: FolderLock },
-    { path: '/document-audit-trail', labelKey: 'nav_doc_audit_trail', icon: Activity },
-    { path: '/reports', labelKey: 'nav_reports', icon: BarChart3 },
-  ];
-
-  // For plain 'user' with no customer, only show dashboard
-  const visibleMainItems = (isUser && !hasCustomer)
-    ? mainNavItems.filter(i => i.path === '/')
-    : mainNavItems;
-
-  const toolsNavItems = [
-    { path: '/action-plan', labelKey: 'nav_action_plan', icon: Target },
-    { path: '/question-bank', labelKey: 'nav_question_bank', icon: BookOpen },
-  ];
-
-  const systemItems = [
-    ...(isAdmin ? [
-      { path: '/admin', labelKey: 'nav_admin', icon: ShieldCheck },
-      { path: '/workspaces', labelKey: 'nav_workspaces', icon: Network },
-      { path: '/audit-log', labelKey: 'nav_audit_log', icon: ScrollText },
-      { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
-    ] : []),
-    ...(isCustomerAdmin ? [
-      { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
-    ] : []),
-    { path: '/settings', labelKey: 'nav_settings', icon: Settings },
-  ];
-
-  const developmentItems = [
-    { path: '/ropa', labelKey: 'nav_ropa', icon: Database },
-    { path: '/dsr', labelKey: 'nav_dsr', icon: Users },
-    { path: '/vulnerabilities', labelKey: 'nav_vulnerabilities', icon: Bug },
-    { path: '/incidents', labelKey: 'nav_incidents', icon: Siren },
-    { path: '/compliance-metrics', labelKey: 'nav_compliance_metrics', icon: Gauge },
-    { path: '/training', labelKey: 'nav_training', icon: GraduationCap },
-    { path: '/framework-guide', labelKey: 'nav_framework_guide', icon: Bot },
-  ];
-
-  const supplyChainItems = [
-    { path: '/suppliers', labelKey: 'nav_suppliers', icon: Building2 },
-    { path: '/supply-chain', labelKey: 'nav_supply_chain', icon: Truck },
-  ];
-
-  const navGroups = [
-    { labelKey: 'nav_main', items: visibleMainItems },
-    { labelKey: 'nav_supply_chain_group', items: supplyChainItems },
-    ...(isAdmin ? [{ labelKey: 'nav_tools', items: toolsNavItems }] : []),
-    { labelKey: 'nav_system', items: systemItems },
-    ...(isAdmin ? [{ labelKey: 'nav_development', items: developmentItems }] : []),
-  ];
+  // Single source of truth: get nav groups from RBAC system
+  const navGroups = getNavGroups(role, hasCustomer);
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -150,6 +73,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
                   const isActive = item.path === '/'
                     ? location.pathname === '/'
                     : location.pathname.startsWith(item.path);
+                  const Icon = ICON_MAP[item.icon] || LayoutDashboard;
                   const link = (
                     <Link
                       key={item.path}
@@ -162,7 +86,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
                           : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                       )}
                     >
-                      <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "opacity-100" : "opacity-70")} />
+                      <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "opacity-100" : "opacity-70")} />
                       {!collapsed && <span className="truncate">{label}</span>}
                     </Link>
                   );

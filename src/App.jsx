@@ -44,6 +44,10 @@ import FrameworkGuide from '@/pages/FrameworkGuide';
 import RouteGuard from '@/components/layout/RouteGuard';
 import Licensing from '@/pages/Licensing';
 import Workspaces from '@/pages/Workspaces';
+import Organization from '@/pages/Organization';
+import Configuration from '@/pages/Configuration';
+import SystemStatus from '@/pages/SystemStatus';
+import UserAssignments from '@/pages/UserAssignments';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings } = useAuth();
@@ -99,6 +103,10 @@ const AuthenticatedApp = () => {
           <Route path="/email-report" element={<RouteGuard path="/email-report"><EmailReport /></RouteGuard>} />
           <Route path="/licensing" element={<RouteGuard path="/licensing"><Licensing /></RouteGuard>} />
           <Route path="/workspaces" element={<RouteGuard path="/workspaces"><Workspaces /></RouteGuard>} />
+          <Route path="/organization" element={<RouteGuard path="/organization"><Organization /></RouteGuard>} />
+          <Route path="/configuration" element={<RouteGuard path="/configuration"><Configuration /></RouteGuard>} />
+          <Route path="/system-status" element={<RouteGuard path="/system-status"><SystemStatus /></RouteGuard>} />
+          <Route path="/user-assignments" element={<RouteGuard path="/user-assignments"><UserAssignments /></RouteGuard>} />
         </Route>
         </Route>
       </Route>

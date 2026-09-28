@@ -54,6 +54,10 @@ const PAGE_TITLE_KEYS = {
   '/compliance-metrics': 'page_compliance_metrics',
   '/suppliers': 'suppliers_title',
   '/workspaces': 'page_workspaces',
+  '/organization': 'page_organization',
+  '/configuration': 'page_configuration',
+  '/system-status': 'page_system_status',
+  '/user-assignments': 'page_user_assignments',
   '/licensing': 'page_licensing',
 };
 

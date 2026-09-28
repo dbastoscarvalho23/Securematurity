@@ -32,7 +32,10 @@ export const ROUTE_MODULE = {
   "/configuration": null,
   "/licensing": null,
   "/workspaces": null,
+  "/organization": null,
+  "/configuration": null,
   "/system-status": null,
+  "/user-assignments": null,
 
   // nis2_journey
   "/compliance-journey": "nis2_journey",

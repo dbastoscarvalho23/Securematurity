@@ -5,27 +5,16 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { moduleForRoute } from '@/lib/licenseModules';
 import { isModuleLicensed, moduleDenialReason } from '@/lib/license';
+import { canAccess } from '@/lib/rbac';
 
 /**
- * Access rules:
- * - admin: full access everywhere
- * - customer_admin: all customer-scoped routes, no /admin /audit-log
- * - user (with customer): principal routes + /settings only
- * - user (no customer): / only
+ * Centralized route guard — uses RBAC capability system from src/lib/rbac.js
+ * plus license module gating from src/lib/licenseModules.js.
  *
- * License check: for tenant users, routes mapped to a module are gated
- * by the effective license. If the module is not licensed, redirect to /licensing.
+ * Access flow:
+ * 1. RBAC check (canAccess) — role + capability based
+ * 2. License check — module-gated routes for tenant users
  */
-
-// Routes accessible by 'user' role (with a customer assigned)
-const USER_ALLOWED = [
-  '/', '/compliance-journey', '/assessments', '/evidence',
-  '/tasks', '/task-analytics', '/risk-assessment', '/security-documents',
-  '/document-audit-trail', '/supply-chain', '/suppliers', '/reports', '/settings',
-];
-
-// Routes NOT accessible by customer_admin
-const CUSTOMER_ADMIN_BLOCKED = ['/admin', '/audit-log', '/customers', '/question-bank', '/ropa', '/incidents', '/dsr', '/vulnerabilities', '/compliance-metrics', '/training', '/workspaces'];
 
 export default function RouteGuard({ path, children }) {
   const { user } = useAuth();
@@ -41,21 +30,10 @@ export default function RouteGuard({ path, children }) {
     staleTime: 60000,
   });
 
-  // --- Role-based access control ---
-  if (role === 'admin') return children;
-
-  if (role === 'customer_admin') {
-    if (CUSTOMER_ADMIN_BLOCKED.includes(path)) return <Navigate to="/" replace />;
-    // Fall through to license check
-  } else {
-    // role === 'user'
-    if (!hasCustomer) {
-      if (path !== '/') return <Navigate to="/" replace />;
-      return children;
-    }
-    const allowed = USER_ALLOWED.some(p => path === p || (p !== '/' && path.startsWith(p)));
-    if (!allowed) return <Navigate to="/" replace />;
-    // Fall through to license check
+  // --- RBAC capability check ---
+  const access = canAccess(role, path, hasCustomer);
+  if (!access.allowed) {
+    return <Navigate to="/" replace />;
   }
 
   // --- License module check (tenant users only) ---

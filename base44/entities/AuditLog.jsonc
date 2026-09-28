@@ -67,7 +67,11 @@
         "ropa_updated",
         "ropa_deleted",
         "retention_purge_executed",
-        "license_migrated"
+        "license_migrated",
+        "workspace_migrated",
+        "user_assignment_created",
+        "user_assignment_updated",
+        "user_assignment_deleted"
       ],
       "description": "Action type"
     },
