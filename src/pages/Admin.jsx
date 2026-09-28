@@ -525,7 +525,7 @@ export default function Admin() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">{t('common_no_data')}</p>
+              <EmptyState compact title={t('common_no_data')} />
             )}
           </CardContent>
         </Card>
@@ -551,7 +551,7 @@ export default function Admin() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">{t('common_no_data')}</p>
+              <EmptyState compact title={t('common_no_data')} />
             )}
           </CardContent>
         </Card>
@@ -586,7 +586,7 @@ export default function Admin() {
                 </ResponsiveContainer>
               );
             })() : (
-              <p className="text-sm text-muted-foreground text-center py-8">{t('common_no_data')}</p>
+              <EmptyState compact title={t('common_no_data')} />
             )}
           </CardContent>
         </Card>

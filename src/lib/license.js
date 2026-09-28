@@ -67,10 +67,21 @@ export function isModuleLicensed(license, moduleCode) {
 
 /**
  * Check if a standard is licensed.
+ * Fail closed, exactly like isModuleLicensed (FS1): an unresolved licence (still
+ * loading, error state or missing tenant) never declares a standard licensed.
  */
 export function isStandardLicensed(license, standardCode) {
-  if (!license) return true;
-  if (!license.standards || !Array.isArray(license.standards)) return true;
+  if (!standardCode) return true;
+
+  // Licence not resolved yet (loading or missing tenant) — no standard.
+  if (!license) return false;
+
+  // The licence could not be resolved — no standard.
+  if (license.status === "error") return false;
+
+  // Malformed licence payload — no standard.
+  if (!Array.isArray(license.standards)) return false;
+
   return license.standards.includes(standardCode);
 }
 

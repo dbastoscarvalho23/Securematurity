@@ -124,14 +124,14 @@ export default function CustomerStoragePanel() {
                     ) : isConnected(id) ? (
                       <Badge
                         variant="outline"
-                        className="flex-shrink-0 border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
+                        className="flex-shrink-0 border-chart-2/20 bg-chart-2/10 text-chart-2"
                       >
                         {t('storage_providers_status_connected')}
                       </Badge>
                     ) : (
                       <Badge
                         variant="outline"
-                        className="flex-shrink-0 border-amber-500/20 bg-amber-500/10 text-amber-600"
+                        className="flex-shrink-0 border-chart-3/20 bg-chart-3/10 text-chart-3"
                       >
                         {t('storage_providers_status_disconnected')}
                       </Badge>
@@ -155,7 +155,7 @@ export default function CustomerStoragePanel() {
             </div>
 
             {!isConnected(provider) && (
-              <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
+              <div className="flex items-start gap-2 rounded-lg border border-chart-3/20 bg-chart-3/10 p-3 text-xs text-chart-3">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>{t('storage_customer_not_connected_warning')}</span>
               </div>

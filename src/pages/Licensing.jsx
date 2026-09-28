@@ -230,8 +230,8 @@ export default function Licensing() {
               ))}
               {subscriptions.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    {t('licensing_no_subscriptions')}
+                  <TableCell colSpan={5}>
+                    <EmptyState compact icon={Package} title={t('licensing_no_subscriptions')} />
                   </TableCell>
                 </TableRow>
               )}

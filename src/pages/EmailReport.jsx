@@ -17,11 +17,11 @@ import { cn } from '@/lib/utils';
 import { isPlatformOwner } from '@/lib/rbac';
 
 const EMAIL_TYPE_CONFIG = {
-  Task: { labelKey: 'email_report_type_task', icon: CheckCircle2, color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  RiskItem: { labelKey: 'email_report_type_risk', icon: ShieldAlert, color: 'bg-orange-100 text-orange-700 border-orange-200' },
-  SecurityDocument: { labelKey: 'email_report_type_doc', icon: FileText, color: 'bg-green-100 text-green-700 border-green-200' },
-  SupplierQuestionnaire: { labelKey: 'email_report_type_supply_chain', icon: Link, color: 'bg-purple-100 text-purple-700 border-purple-200' },
-  default: { labelKey: 'email_report_type_system', icon: Mail, color: 'bg-slate-100 text-slate-700 border-slate-200' },
+  Task: { labelKey: 'email_report_type_task', icon: CheckCircle2, color: 'bg-chart-1/10 text-chart-1 border-chart-1/20' },
+  RiskItem: { labelKey: 'email_report_type_risk', icon: ShieldAlert, color: 'bg-chart-3/10 text-chart-3 border-chart-3/20' },
+  SecurityDocument: { labelKey: 'email_report_type_doc', icon: FileText, color: 'bg-chart-2/10 text-chart-2 border-chart-2/20' },
+  SupplierQuestionnaire: { labelKey: 'email_report_type_supply_chain', icon: Link, color: 'bg-chart-4/10 text-chart-4 border-chart-4/20' },
+  default: { labelKey: 'email_report_type_system', icon: Mail, color: 'bg-muted text-muted-foreground border-border' },
 };
 
 function detectEmailType(details = '') {
@@ -141,21 +141,21 @@ export default function EmailReport() {
           label={t('email_report_task_emails')}
           value={last14ByType['Task'] || 0}
           sub={t('email_report_task_sub')}
-          iconClass="text-blue-600 bg-blue-100"
+          iconClass="text-chart-1 bg-chart-1/10"
         />
         <KpiCard
           icon={ShieldAlert}
           label={t('email_report_risk_emails')}
           value={last14ByType['RiskItem'] || 0}
           sub={t('email_report_risk_sub')}
-          iconClass="text-orange-600 bg-orange-100"
+          iconClass="text-chart-3 bg-chart-3/10"
         />
         <KpiCard
           icon={FileText}
           label={t('email_report_doc_emails')}
           value={last14ByType['SecurityDocument'] || 0}
           sub={t('email_report_doc_sub')}
-          iconClass="text-green-600 bg-green-100"
+          iconClass="text-chart-2 bg-chart-2/10"
         />
       </div>
 

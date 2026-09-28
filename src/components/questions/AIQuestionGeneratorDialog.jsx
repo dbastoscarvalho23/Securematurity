@@ -280,8 +280,8 @@ CRITICAL RULES:
                     "p-4 rounded-lg border cursor-pointer transition-all",
                     q._isSimilar
                       ? selected[i]
-                        ? "border-amber-400/60 bg-amber-50/50 dark:bg-amber-900/10"
-                        : "border-amber-300/40 opacity-70 hover:opacity-90"
+                        ? "border-chart-3/60 bg-chart-3/10"
+                        : "border-chart-3/40 opacity-70 hover:opacity-90"
                       : selected[i]
                         ? "border-primary/40 bg-primary/5"
                         : "border-border opacity-60 hover:opacity-80"
@@ -304,7 +304,7 @@ CRITICAL RULES:
                           <span className="text-xs font-mono text-muted-foreground">{q.control_id}</span>
                         )}
                         {q._isSimilar && (
-                          <Badge variant="outline" className="text-xs gap-1 border-amber-400/60 text-amber-600 bg-amber-50">
+                          <Badge variant="outline" className="text-xs gap-1 border-chart-3/40 text-chart-3 bg-chart-3/10">
                             <AlertTriangle className="w-3 h-3" />
                             {t('aiqg_similar', { pct: Math.round(q._similarity * 100) })}
                           </Badge>
@@ -312,7 +312,7 @@ CRITICAL RULES:
                       </div>
                       <p className="text-sm font-medium leading-snug">{q.question_text}</p>
                       {q._isSimilar && q._matchedQuestion && (
-                        <p className="text-xs text-amber-600/80 mt-1 bg-amber-50 rounded px-2 py-1">
+                        <p className="text-xs text-chart-3 mt-1 bg-chart-3/10 rounded px-2 py-1">
                           <span className="font-medium">{t('aiqg_similar_existing')}</span> {q._matchedQuestion.question_text}
                         </p>
                       )}

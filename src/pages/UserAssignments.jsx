@@ -236,7 +236,7 @@ export default function UserAssignments() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{a.assigned_by || '—'}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={`text-xs ${a.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-500'}`}>
+                        <Badge variant="outline" className={`text-xs ${a.status === 'active' ? 'bg-chart-2/10 text-chart-2 border-chart-2/20' : 'bg-muted text-muted-foreground'}`}>
                           {STATUS_BADGES[a.status] ? t(STATUS_BADGES[a.status].labelKey) : a.status}
                         </Badge>
                       </TableCell>

@@ -4,7 +4,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import { LanguageProvider } from '@/lib/LanguageContext';
+import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import MaintenanceGuard from '@/components/layout/MaintenanceGuard';
@@ -62,9 +62,10 @@ const TechnicalDocs = lazy(() => import('@/pages/TechnicalDocs'));
 const ValidationReport = lazy(() => import('@/pages/ValidationReport'));
 
 function PageFallback() {
+  const { t } = useLanguage();
   return (
     <div className="flex items-center justify-center py-20">
-      <div className="animate-pulse text-muted-foreground">Loading…</div>
+      <div className="animate-pulse text-muted-foreground">{t('common_loading')}</div>
     </div>
   );
 }
@@ -99,7 +100,7 @@ const AuthenticatedApp = () => {
           <Route path="/assessments/:id" element={<RouteGuard path="/assessments"><AssessmentDetail /></RouteGuard>} />
           <Route path="/recommendations" element={<RouteGuard path="/recommendations"><Recommendations /></RouteGuard>} />
           <Route path="/reports" element={<RouteGuard path="/reports"><Reports /></RouteGuard>} />
-          <Route path="/audit-package" element={<RouteGuard path="/audit-package"><AuditPackage /></RouteGuard>} />
+          <Route path="/audit-package" element={<RouteGuard path="/audit-package"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><AuditPackage /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/admin" element={<RouteGuard path="/admin"><Admin /></RouteGuard>} />
           <Route path="/audit-log" element={<RouteGuard path="/audit-log"><AuditLog /></RouteGuard>} />
           <Route path="/settings" element={<Navigate to="/configuration" replace />} />

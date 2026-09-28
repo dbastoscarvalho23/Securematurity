@@ -100,6 +100,10 @@ export const BASE_GROUPS = [
     labelKey: 'nav_platform_management',
     items: [
       mk('/organization', 'nav_organization', 'Building2', 'organization'),
+      // FB2 — páginas de administração que existiam mas não estavam na navegação.
+      mk('/workspaces', 'nav_workspaces', 'Network', 'organization'),
+      mk('/user-assignments', 'nav_user_assignments', 'UserCog', 'organization'),
+      mk('/admin', 'nav_admin', 'ShieldAlert', 'organization'),
       mk('/licensing', 'nav_licensing', 'ShieldCheck', 'licensing'),
       mk('/configuration', 'nav_configuration', 'Settings', 'settings'),
       mk('/system-status', 'nav_system_status', 'Activity', 'system_status'),

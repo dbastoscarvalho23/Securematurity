@@ -31,6 +31,7 @@ import Logo from './Logo';
 import RoleSimulationSelector from './RoleSimulationSelector';
 import WorkspaceSwitcher from './WorkspaceSwitcher';
 import { isPlatformOwner } from '@/lib/rbac';
+import { useActiveCustomer } from '@/lib/tenantContext';
 
 export const PAGE_TITLE_KEYS = {
   '/': 'page_dashboard',
@@ -80,6 +81,7 @@ export default function TopBar({ collapsed, onToggleCollapse, onMenuClick, pageT
   const { user, refreshUser } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const { theme, setTheme } = useTheme();
+  const { customerName: activeCustomerName } = useActiveCustomer();
   const [profileOpen, setProfileOpen] = useState(false);
   const [name, setName] = useState('');
   const [selectedLang, setSelectedLang] = useState(language);
@@ -159,10 +161,23 @@ export default function TopBar({ collapsed, onToggleCollapse, onMenuClick, pageT
 
         {/* Right section — above the content */}
         <div className="flex-1 flex items-center justify-between px-6 min-w-0">
-          {/* Título único da página: a barra de contexto é a sua fonte (FC1). */}
-          <h1 className="text-base font-heading font-semibold text-sidebar-foreground truncate">
-            {pageTitle}
-          </h1>
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Título único da página: a barra de contexto é a sua fonte (FC1). */}
+            <h1 className="text-base font-heading font-semibold text-sidebar-foreground truncate">
+              {pageTitle}
+            </h1>
+            {/* Indicador do contexto de tenant ativo (FB3): o seletor de workspace
+                muda os dados, por isso tem de ser visível em que cliente se opera. */}
+            <span
+              className="hidden lg:inline-flex items-center gap-1.5 max-w-[220px] rounded-full border border-border bg-muted/40 px-2.5 py-0.5 text-xs text-muted-foreground"
+              title={t('context_active_customer')}
+            >
+              <Building2 className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">
+                {activeCustomerName || t('context_no_customer')}
+              </span>
+            </span>
+          </div>
 
           <div className="flex items-center gap-2 md:gap-3">
             <WorkspaceSwitcher />

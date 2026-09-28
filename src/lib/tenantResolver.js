@@ -112,3 +112,17 @@ export function resolveActiveCustomerId({
 
   return accessible[0] || '';
 }
+
+/**
+ * Nome do cliente do contexto ativo, para o indicador de contexto do cabeçalho
+ * (FB3): o workspace selecionado não muda só os dados — tem de ser visível em
+ * que tenant se está a operar. Devolve "" quando não há contexto.
+ */
+export function resolveActiveCustomerName({ user, workspaces = [], customerId = '' } = {}) {
+  if (!customerId) return '';
+  if (user?.customer_id === customerId && user?.customer_name) return user.customer_name;
+  const workspace = (workspaces || []).find(
+    (ws) => ws.customer_id === customerId && ws.customer_name,
+  );
+  return workspace?.customer_name || '';
+}

@@ -88,8 +88,8 @@ export default function RiskExposureTrend({ customerId, isAdmin }) {
   const TrendIcon = delta === null ? Activity : delta < 0 ? TrendingDown : delta > 0 ? TrendingUp : Minus;
 
   const trendColor = delta === null ? 'text-muted-foreground'
-    : delta < 0 ? 'text-emerald-600'
-    : delta > 0 ? 'text-red-500'
+    : delta < 0 ? 'ankora-risk-low'
+    : delta > 0 ? 'ankora-risk-critical'
     : 'text-muted-foreground';
 
   const trendLabel = delta === null ? t('risk_trend_no_data')
@@ -97,21 +97,21 @@ export default function RiskExposureTrend({ customerId, isAdmin }) {
     : delta > 0 ? `↑ ${delta} ${t('risk_trend_vs_last')} (${t('risk_trend_worsening')})`
     : t('risk_trend_unchanged');
 
-  const currentLevel = latestScore >= 16 ? 'red' : latestScore >= 9 ? 'orange' : latestScore >= 4 ? 'yellow' : 'green';
-  const gradientColor = {
-    red: ['#ef4444', '#fca5a5'],
-    orange: ['#f97316', '#fdba74'],
-    yellow: ['#eab308', '#fde047'],
-    green: ['#10b981', '#6ee7b7'],
-  }[currentLevel];
+  // Escala de risco pelos tokens do design system (FC2), em vez de hex rígidos.
+  const RISK_TOKEN = { low: '--risk-low', medium: '--risk-medium', high: '--risk-high', critical: '--risk-critical' };
+  const currentLevel = latestScore >= 16 ? 'critical' : latestScore >= 9 ? 'high' : latestScore >= 4 ? 'medium' : 'low';
+  const gradientColor = [
+    `hsl(var(${RISK_TOKEN[currentLevel]}))`,
+    `hsl(var(${RISK_TOKEN[currentLevel]}) / 0.5)`,
+  ];
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
     const val = payload[0]?.value;
-    const level = val >= 16 ? { label: t('risk_trend_critical'), cls: 'text-red-600' }
-      : val >= 9  ? { label: t('risk_trend_high'),     cls: 'text-orange-600' }
-      : val >= 4  ? { label: t('risk_trend_medium'),   cls: 'text-yellow-600' }
-      : val !== null ? { label: t('risk_trend_low'),   cls: 'text-emerald-600' }
+    const level = val >= 16 ? { label: t('risk_trend_critical'), cls: 'ankora-risk-critical' }
+      : val >= 9  ? { label: t('risk_trend_high'),     cls: 'ankora-risk-high' }
+      : val >= 4  ? { label: t('risk_trend_medium'),   cls: 'ankora-risk-medium' }
+      : val !== null ? { label: t('risk_trend_low'),   cls: 'ankora-risk-low' }
       : { label: t('risk_trend_no_data'), cls: 'text-muted-foreground' };
 
     return (
@@ -177,9 +177,9 @@ export default function RiskExposureTrend({ customerId, isAdmin }) {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
               <XAxis dataKey="period" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
               <YAxis domain={[0, 25]} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} ticks={[0, 4, 9, 16, 25]} />
-              <ReferenceLine y={4}  stroke="#10b981" strokeDasharray="4 3" strokeOpacity={0.5} />
-              <ReferenceLine y={9}  stroke="#eab308" strokeDasharray="4 3" strokeOpacity={0.5} />
-              <ReferenceLine y={16} stroke="#ef4444" strokeDasharray="4 3" strokeOpacity={0.5} />
+              <ReferenceLine y={4}  stroke="hsl(var(--risk-low))" strokeDasharray="4 3" strokeOpacity={0.5} />
+              <ReferenceLine y={9}  stroke="hsl(var(--risk-medium))" strokeDasharray="4 3" strokeOpacity={0.5} />
+              <ReferenceLine y={16} stroke="hsl(var(--risk-critical))" strokeDasharray="4 3" strokeOpacity={0.5} />
               <Tooltip content={<CustomTooltip />} />
               <Area
                 type="monotone"
@@ -196,10 +196,10 @@ export default function RiskExposureTrend({ customerId, isAdmin }) {
         )}
 
         <div className="flex gap-4 mt-1 text-[10px] text-muted-foreground justify-center flex-wrap">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> {t('risk_trend_low')} (&lt;4)</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> {t('risk_trend_medium')} (4–8)</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> {t('risk_trend_high')} (9–15)</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> {t('risk_trend_critical')} (16+)</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: 'hsl(var(--risk-low))' }} /> {t('risk_trend_low')} (&lt;4)</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: 'hsl(var(--risk-medium))' }} /> {t('risk_trend_medium')} (4–8)</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: 'hsl(var(--risk-high))' }} /> {t('risk_trend_high')} (9–15)</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: 'hsl(var(--risk-critical))' }} /> {t('risk_trend_critical')} (16+)</span>
         </div>
       </CardContent>
     </Card>

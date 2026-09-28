@@ -13,6 +13,7 @@ import {
   accessibleCustomerIds,
   activeDelegatedCustomerIds,
   resolveActiveCustomerId,
+  resolveActiveCustomerName,
   selectedWorkspaceIdOf,
   userEmailOf,
   userIdOf,
@@ -88,8 +89,14 @@ export function useActiveCustomer() {
     [user, workspaces, delegatedCustomerIds],
   );
 
+  const customerName = useMemo(
+    () => resolveActiveCustomerName({ user, workspaces, customerId }),
+    [user, workspaces, customerId],
+  );
+
   return {
     customerId,
+    customerName,
     customerIds,
     delegatedCustomerIds,
     workspaceId: selectedWorkspaceIdOf(user) || userWorkspaceIdOf(user),

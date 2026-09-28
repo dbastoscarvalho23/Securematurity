@@ -52,7 +52,7 @@ function Nis2TimerBadge({ detected_at, sent, deadlineHours, label, overdueLabel,
   if (sent) return <Badge variant="outline" className="text-xs bg-chart-2/10 text-chart-2 border-chart-2/20"><CheckCircle2 className="w-3 h-3 mr-1" />{label}</Badge>;
   if (hours === null) return <Badge variant="outline" className="text-xs text-muted-foreground">{label}</Badge>;
   if (hours < 0) return <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/20"><AlertOctagon className="w-3 h-3 mr-1" />{label} {overdueLabel}</Badge>;
-  return <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20"><Clock className="w-3 h-3 mr-1" />{label}: {hours}h {leftLabel}</Badge>;
+  return <Badge variant="outline" className="text-xs bg-chart-3/10 text-chart-3 border-chart-3/20"><Clock className="w-3 h-3 mr-1" />{label}: {hours}h {leftLabel}</Badge>;
 }
 
 export default function IncidentManagement() {

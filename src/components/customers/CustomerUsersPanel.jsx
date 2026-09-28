@@ -147,15 +147,15 @@ export default function CustomerUsersPanel({ customer }) {
 
       {/* At-limit warning + request button */}
       {atLimit && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800 px-3 py-2">
-          <div className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-400">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-chart-3/20 bg-chart-3/10 px-3 py-2">
+          <div className="flex items-center gap-2 text-xs text-chart-3">
             <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
             <span>{t('cup_seat_limit_contact')}</span>
           </div>
           <Button
             size="sm"
             variant="outline"
-            className="h-7 text-xs gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-700 dark:text-orange-400 flex-shrink-0"
+            className="h-7 text-xs gap-1.5 border-chart-3/30 text-chart-3 hover:bg-chart-3/10 flex-shrink-0"
             onClick={handleRequestMoreSeats}
             disabled={requestingSeat}
           >
@@ -240,7 +240,7 @@ export default function CustomerUsersPanel({ customer }) {
           {pendingInvites.map(inv => (
             <div key={inv.id} className="flex items-center justify-between gap-2 py-1.5 border-b last:border-0">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                <div className="w-6 h-6 rounded-full bg-chart-3/10 text-chart-3 flex items-center justify-center text-xs font-bold flex-shrink-0">
                   {inv.email?.[0]?.toUpperCase()}
                 </div>
                 <div className="min-w-0">

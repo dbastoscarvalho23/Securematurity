@@ -701,7 +701,7 @@ export default function Settings() {
                           </TableCell>
                           <TableCell>
                             {!isPlatformOwner(u.role) && !u.customer_id ? (
-                              <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
+                              <Badge className="bg-chart-3/10 text-chart-3 border-chart-3/20">
                                 <Clock className="w-3 h-3 mr-1" />
                                 {t('settings_pending_activation')}
                               </Badge>

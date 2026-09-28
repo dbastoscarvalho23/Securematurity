@@ -43,8 +43,8 @@ export default function LicenseUnavailable() {
       <Card className="max-w-md w-full">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-950/30 flex items-center justify-center">
-              <Lock className="w-5 h-5 text-amber-600" />
+            <div className="w-10 h-10 rounded-full bg-chart-4/10 flex items-center justify-center">
+              <Lock className="w-5 h-5 text-chart-4" />
             </div>
             <div>
               <CardTitle className="text-lg">{t(titleKey)}</CardTitle>

@@ -57,7 +57,7 @@ export default function Organization() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg"><Users className="w-5 h-5 text-blue-600" /></div>
+              <div className="p-2 rounded-lg bg-chart-1/10"><Users className="w-5 h-5 text-chart-1" /></div>
               <div>
                 <p className="text-2xl font-bold">{visibleUsers.length}</p>
                 <p className="text-xs text-muted-foreground">{t('org_total_users')}</p>
@@ -69,7 +69,7 @@ export default function Organization() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-50 rounded-lg"><Building2 className="w-5 h-5 text-green-600" /></div>
+                <div className="p-2 rounded-lg bg-chart-2/10"><Building2 className="w-5 h-5 text-chart-2" /></div>
                 <div>
                   <p className="text-2xl font-bold">{customers.length}</p>
                   <p className="text-xs text-muted-foreground">{t('org_total_customers')}</p>
@@ -81,7 +81,7 @@ export default function Organization() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-50 rounded-lg"><Shield className="w-5 h-5 text-purple-600" /></div>
+              <div className="p-2 rounded-lg bg-chart-4/10"><Shield className="w-5 h-5 text-chart-4" /></div>
               <div>
                 <p className="text-2xl font-bold">{frameworks.length}</p>
                 <p className="text-xs text-muted-foreground">{t('org_total_frameworks')}</p>
@@ -92,7 +92,7 @@ export default function Organization() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-50 rounded-lg"><Network className="w-5 h-5 text-amber-600" /></div>
+              <div className="p-2 rounded-lg bg-chart-3/10"><Network className="w-5 h-5 text-chart-3" /></div>
               <div>
                 <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/workspaces')}>
                   {t('nav_workspaces')} →
@@ -144,7 +144,9 @@ export default function Organization() {
               ))}
               {visibleUsers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">{t('common_no_data')}</TableCell>
+                  <TableCell colSpan={5}>
+                    <EmptyState compact icon={Users} title={t('common_no_data')} />
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>

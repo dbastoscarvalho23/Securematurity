@@ -207,10 +207,10 @@ export default function MaintenanceWindowPanel({ isAdmin }) {
             {form.enabled && (
               <div className={`flex items-center gap-2 text-sm p-3 rounded-lg border ${
                 currentlyActive
-                  ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
+                  ? 'bg-chart-3/10 text-chart-3 border-chart-3/20'
                   : 'bg-muted text-muted-foreground border-border'
               }`}>
-                <span className={`w-2 h-2 rounded-full ${currentlyActive ? 'bg-amber-500 animate-pulse' : 'bg-muted-foreground'}`} />
+                <span className={`w-2 h-2 rounded-full ${currentlyActive ? 'bg-chart-3 animate-pulse' : 'bg-muted-foreground'}`} />
                 {currentlyActive
                   ? (t('maintenance_preview_active') || 'Com a configuração atual, a janela estaria ativa neste momento.')
                   : (t('maintenance_preview_inactive') || 'Com a configuração atual, a janela está inativa neste momento.')}

@@ -183,8 +183,8 @@ export default function TechnicalDocs() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
-        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+      <div className="flex items-start gap-3 rounded-lg border border-chart-4/20 bg-chart-4/10 p-4 text-chart-4">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-chart-4" />
         <div className="space-y-1">
           <p className="text-sm font-semibold">Documento interno de engenharia</p>
           <p className="text-sm">{DOCS_META.scope}</p>
