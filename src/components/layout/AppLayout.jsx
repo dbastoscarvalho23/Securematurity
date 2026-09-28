@@ -13,18 +13,20 @@ export default function AppLayout() {
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <Sidebar
-        collapsed={collapsed}
-        onToggle={() => setCollapsed(!collapsed)}
-        mobileOpen={mobileOpen}
-        onCloseMobile={() => setMobileOpen(false)}
-      />
-      <div className={cn("flex-1 flex flex-col transition-all duration-300 min-h-screen", collapsed ? "md:ml-16" : "md:ml-60")}>
-        <TopBar onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
-          <Outlet />
-        </main>
+    <div className="min-h-screen bg-background flex flex-col">
+      <TopBar onMenuClick={() => setMobileOpen(true)} />
+      <div className="flex flex-1 min-h-0">
+        <Sidebar
+          collapsed={collapsed}
+          onToggle={() => setCollapsed(!collapsed)}
+          mobileOpen={mobileOpen}
+          onCloseMobile={() => setMobileOpen(false)}
+        />
+        <div className={cn("flex-1 flex flex-col transition-all duration-300 min-h-0", collapsed ? "md:ml-16" : "md:ml-60")}>
+          <main className="flex-1 p-4 md:p-6 overflow-auto">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );

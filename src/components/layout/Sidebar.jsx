@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, ClipboardCheck, BarChart3, ShieldCheck,
-  Settings, ChevronLeft, ChevronRight, ScrollText, Shield, BookOpen,
+  Settings, ChevronLeft, ChevronRight, ScrollText, BookOpen,
   ListTodo, Target, TrendingUp, FolderLock, Activity, TriangleAlert,
   Paperclip, MapPin, MailCheck, Truck, Database, Siren, Users, Bug,
   Gauge, GraduationCap, Bot, Network, UserCog,
@@ -12,10 +12,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { getNavGroups } from '@/lib/rbac';
+import Logo from './Logo';
 
 const ICON_MAP = {
   LayoutDashboard, Building2, ClipboardCheck, BarChart3, ShieldCheck,
-  Settings, ScrollText, Shield, BookOpen, ListTodo, Target, TrendingUp,
+  Settings, ScrollText, BookOpen, ListTodo, Target, TrendingUp,
   FolderLock, Activity, TriangleAlert, Paperclip, MapPin, MailCheck,
   Truck, Database, Siren, Users, Bug, Gauge, GraduationCap, Bot, Network, UserCog,
 };
@@ -42,19 +43,17 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
       )}
       <aside
         className={cn(
-          "fixed left-0 top-0 h-screen bg-sidebar text-sidebar-foreground z-50 flex flex-col transition-all duration-300 border-r border-sidebar-border w-64",
+          "fixed left-0 top-14 h-[calc(100vh-3.5rem)] bg-sidebar text-sidebar-foreground z-50 flex flex-col transition-all duration-300 border-r border-sidebar-border w-64",
           collapsed ? "md:w-16" : "md:w-60",
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         {/* Logo */}
         <div className="h-16 flex items-center px-4 border-b border-sidebar-border flex-shrink-0">
-          <Shield className="w-7 h-7 text-primary flex-shrink-0" />
-          {!collapsed && (
-            <div className="ml-3 overflow-hidden">
-              <span className="font-bold text-base tracking-tight block leading-tight">AnkoraOne</span>
-              <span className="text-xs text-sidebar-foreground/40 block">{t('sidebar_subtitle')}</span>
-            </div>
+          {collapsed ? (
+            <Logo variant="icon" size={32} />
+          ) : (
+            <Logo variant="full" size={130} />
           )}
         </div>
 

@@ -12,7 +12,8 @@ module.exports = {
   theme: {
   	extend: {
   		fontFamily: {
-  			sans: ['var(--font-sans)', 'sans-serif']
+  			sans: ['var(--font-sans)', 'sans-serif'],
+  			heading: ['"Inter"', 'sans-serif'],
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
@@ -73,25 +74,37 @@ module.exports = {
   		},
   		keyframes: {
   			'accordion-down': {
-  				from: {
-  					height: '0'
-  				},
-  				to: {
-  					height: 'var(--radix-accordion-content-height)'
-  				}
+  				from: { height: '0' },
+  				to: { height: 'var(--radix-accordion-content-height)' }
   			},
   			'accordion-up': {
-  				from: {
-  					height: 'var(--radix-accordion-content-height)'
-  				},
-  				to: {
-  					height: '0'
-  				}
+  				from: { height: 'var(--radix-accordion-content-height)' },
+  				to: { height: '0' }
+  			},
+  			'ankora-fade-in': {
+  				from: { opacity: '0' },
+  				to: { opacity: '1' }
+  			},
+  			'ankora-fade-out': {
+  				from: { opacity: '1' },
+  				to: { opacity: '0' }
+  			},
+  			'ankora-scale-in': {
+  				from: { opacity: '0', transform: 'translateY(4px) scale(0.98)' },
+  				to: { opacity: '1', transform: 'translateY(0) scale(1)' }
+  			},
+  			'ankora-slide-in-right': {
+  				from: { transform: 'translateX(100%)' },
+  				to: { transform: 'translateX(0)' }
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'ankora-fade-in': 'ankora-fade-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+  			'ankora-fade-out': 'ankora-fade-out 150ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+  			'ankora-scale-in': 'ankora-scale-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+  			'ankora-slide-in-right': 'ankora-slide-in-right 220ms cubic-bezier(0.2, 0.8, 0.2, 1)'
   		}
   	}
   },

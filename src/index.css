@@ -1,80 +1,180 @@
+@import url("https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap");
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /* ── Primitive Colors (HSL channels) ────────────────────────── */
   :root {
-    --font-sans: 'Inter', sans-serif;
-    --background: 220 20% 97%;
+    /* Navy */
+    --ankora-navy-1000: 225 50% 4%;
+    --ankora-navy-950:  225 46% 5%;
+    --ankora-navy-900:  222 41% 8%;
+    --ankora-navy-850:  221 31% 12%;
+    --ankora-navy-800:  221 35% 14%;
+    --ankora-navy-700:  222 25% 18%;
+    --ankora-navy-600:  214 20% 21%;
+    --ankora-navy-500:  222 22% 32%;
+
+    /* Slate */
+    --ankora-slate-900: 222 47% 11%;
+    --ankora-slate-500: 215 16% 47%;
+    --ankora-slate-400: 215 20% 65%;
+    --ankora-slate-200: 214 32% 91%;
+    --ankora-slate-50:  210 40% 98%;
+
+    /* Accents */
+    --ankora-gold-500:   39 58% 56%;
+    --ankora-gold-700:   39 47% 48%;
+    --ankora-gold-300:   39 80% 64%;
+    --ankora-cyan-500:   189 94% 55%;
+    --ankora-teal-500:   172 66% 50%;
+    --ankora-teal-600:   174 63% 40%;
+    --ankora-blue-500:   220 70% 50%;
+    --ankora-green-500:  160 60% 45%;
+    --ankora-orange-500: 30 80% 55%;
+    --ankora-purple-500: 280 65% 60%;
+    --ankora-red-500:    0 72% 51%;
+
+    /* Charts */
+    --chart-1: var(--ankora-blue-500);
+    --chart-2: var(--ankora-green-500);
+    --chart-3: var(--ankora-orange-500);
+    --chart-4: var(--ankora-purple-500);
+    --chart-5: 340 75% 55%;
+
+    /* Typography */
+    --font-sans: 'Work Sans', sans-serif;
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    --text-3xl: 1.875rem;
+    --text-display: 4.5rem;
+    --leading-tight: 1.2;
+    --leading-normal: 1.5;
+
+    /* Radii */
+    --radius: 0.75rem;
+    --radius-sm: 0.5rem;
+    --radius-md: 0.625rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    --radius-full: 9999px;
+
+    /* Shadows */
+    --ankora-shadow-sm: 0 1px 2px hsl(222 47% 5% / 0.08);
+    --ankora-shadow-md: 0 8px 24px hsl(222 47% 5% / 0.12);
+    --ankora-shadow-lg: 0 24px 64px hsl(222 47% 5% / 0.22);
+    --ankora-glow-primary: 0 0 24px hsl(var(--primary) / 0.18);
+
+    /* Motion */
+    --ankora-duration-fast: 150ms;
+    --ankora-duration-normal: 220ms;
+    --ankora-duration-slow: 350ms;
+    --ankora-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+    /* Component tokens */
+    --ankora-sidebar-width: 16rem;
+    --ankora-control-height: 2.5rem;
+    --ankora-card-padding: 1.5rem;
+    --ankora-dialog-width: 42rem;
+    --ankora-overlay: 225 50% 4% / 0.72;
+    --ankora-nav-active: var(--ankora-gold-500);
+    --ankora-nav-active-foreground: var(--ankora-navy-950);
+
+    /* Risk / Status */
+    --risk-low: var(--ankora-teal-600);
+    --risk-medium: 44 73% 65%;
+    --risk-high: 26 89% 67%;
+    --risk-critical: 0 84% 60%;
+    --status-success: var(--ankora-teal-600);
+    --status-warning: 45 96% 46%;
+    --status-danger: 0 72% 51%;
+    --status-info: 189 94% 40%;
+
+    /* ── Semantic Tokens — Light Mode ──────────────────────────── */
+    color-scheme: light;
+    --background: 0 0% 100%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 20% 95%;
+    --primary: var(--ankora-gold-500);
+    --primary-foreground: var(--ankora-navy-950);
+    --accent: var(--ankora-cyan-500);
+    --accent-foreground: var(--ankora-navy-950);
+    --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 173 58% 39%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 43 74% 66%;
-    --chart-4: 27 87% 67%;
-    --chart-5: 262 52% 56%;
-    --radius: 0.625rem;
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 220 14% 96%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 40% 16%;
-    --sidebar-accent-foreground: 220 14% 96%;
-    --sidebar-border: 222 40% 18%;
-    --sidebar-ring: 217 91% 60%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: var(--ankora-gold-500);
+
+    /* Sidebar — unified with content background */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: var(--ankora-gold-500);
+    --sidebar-primary-foreground: var(--ankora-navy-950);
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: var(--ankora-gold-500);
   }
 
-  .dark {
-    --background: 222 47% 6%;
-    --foreground: 220 14% 96%;
-    --card: 222 47% 9%;
-    --card-foreground: 220 14% 96%;
-    --popover: 222 47% 9%;
-    --popover-foreground: 220 14% 96%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 222 40% 14%;
-    --secondary-foreground: 220 14% 96%;
-    --muted: 222 40% 14%;
-    --muted-foreground: 220 9% 56%;
-    --accent: 173 58% 39%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62% 30%;
+  /* ── Semantic Tokens — Dark Mode ─────────────────────────────── */
+  .dark, [data-theme="dark"] {
+    color-scheme: dark;
+    --background: 240 6% 10%;
+    --foreground: 210 40% 98%;
+    --card: 240 8% 14%;
+    --card-foreground: 210 40% 98%;
+    --popover: 240 8% 14%;
+    --popover-foreground: 210 40% 98%;
+    --primary: var(--ankora-gold-500);
+    --primary-foreground: var(--ankora-navy-950);
+    --accent: var(--ankora-cyan-500);
+    --accent-foreground: var(--ankora-navy-950);
+    --secondary: var(--ankora-navy-800);
+    --secondary-foreground: 210 40% 98%;
+    --muted: var(--ankora-navy-850);
+    --muted-foreground: var(--ankora-slate-400);
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 222 40% 16%;
-    --input: 222 40% 16%;
-    --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 43 74% 66%;
-    --chart-4: 27 87% 67%;
-    --chart-5: 262 52% 56%;
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 220 14% 96%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 40% 12%;
-    --sidebar-accent-foreground: 220 14% 96%;
-    --sidebar-border: 222 40% 14%;
-    --sidebar-ring: 217 91% 60%;
+    --border: var(--ankora-navy-700);
+    --input: var(--ankora-navy-700);
+    --ring: var(--ankora-gold-500);
+
+    /* Sidebar — unified with content background */
+    --sidebar-background: 240 6% 10%;
+    --sidebar-foreground: 240 5% 96%;
+    --sidebar-primary: var(--ankora-gold-500);
+    --sidebar-primary-foreground: 240 6% 10%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 240 5% 96%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: var(--ankora-gold-500);
+
+    --status-success: 174 67% 58%;
+    --status-warning: 45 96% 56%;
+    --status-danger: 0 84% 60%;
+    --status-info: 216 12% 84%;
+
+    /* Dark mode shadows */
+    --ankora-shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.25);
+    --ankora-shadow-md: 0 10px 30px hsl(0 0% 0% / 0.32);
+    --ankora-shadow-lg: 0 25px 64px hsl(0 0% 0% / 0.5);
   }
 }
 
@@ -82,24 +182,305 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground font-sans;
+
+  html, body, button, input, textarea, select {
     font-family: var(--font-sans);
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Focus visible */
+  a, button, input, textarea, select, summary,
+  [role="button"], [tabindex] {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+  a:focus-visible, button:focus-visible, input:focus-visible,
+  textarea:focus-visible, select:focus-visible, summary:focus-visible,
+  [role="button"]:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Selection */
+  ::selection {
+    background: hsl(var(--primary) / 0.28);
+  }
+
+  /* Inputs / comboboxes */
+  input, textarea, select {
+    border-color: hsl(var(--input));
+    border-radius: var(--radius-sm);
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.18);
+  }
+
+  /* Buttons */
+  button {
+    transition: color var(--ankora-duration-fast) var(--ankora-ease),
+                background-color var(--ankora-duration-fast) var(--ankora-ease),
+                border-color var(--ankora-duration-fast) var(--ankora-ease),
+                box-shadow var(--ankora-duration-fast) var(--ankora-ease),
+                transform var(--ankora-duration-fast) var(--ankora-ease);
+  }
+  button:active {
+    transform: translateY(1px);
+  }
+
+  /* Table rows */
+  tr:hover {
+    background: hsl(var(--muted) / 0.72);
+  }
+
+  /* Badges */
+  .badge, [class*="badge"] {
+    border-radius: var(--radius-full);
   }
 }
 
-/* Custom scrollbar */
+@layer components {
+  /* ── Typography utilities ───────────────────────────────────── */
+  .ankora-heading-2xl {
+    font-size: var(--text-2xl);
+    line-height: 2rem;
+    font-weight: 500;
+  }
+  .ankora-heading-3xl {
+    font-size: var(--text-3xl);
+    line-height: 2.25rem;
+    font-weight: 500;
+  }
+  .ankora-number-lg {
+    font-size: 1.75rem;
+    line-height: 2rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Risk / Status utilities ────────────────────────────────── */
+  .ankora-risk-low      { color: hsl(var(--risk-low)); }
+  .ankora-risk-medium   { color: hsl(var(--risk-medium)); }
+  .ankora-risk-high     { color: hsl(var(--risk-high)); }
+  .ankora-risk-critical { color: hsl(var(--risk-critical)); }
+  .ankora-status-success { color: hsl(var(--status-success)); }
+  .ankora-status-warning { color: hsl(var(--status-warning)); }
+  .ankora-status-danger  { color: hsl(var(--status-danger)); }
+  .ankora-status-info    { color: hsl(var(--status-info)); }
+
+  /* ── Framework colors ───────────────────────────────────────── */
+  .ankora-framework-nis2     { --framework-color: var(--ankora-teal-500); }
+  .ankora-framework-iso27001 { --framework-color: var(--ankora-teal-600); }
+  .ankora-framework-nist     { --framework-color: 44 73% 65%; }
+  .ankora-framework-cis      { --framework-color: 26 88% 67%; }
+  .ankora-framework-gdpr     { --framework-color: var(--ankora-purple-500); }
+
+  .ankora-framework-nis2[data-fill="true"],
+  .ankora-framework-iso27001[data-fill="true"],
+  .ankora-framework-nist[data-fill="true"],
+  .ankora-framework-cis[data-fill="true"],
+  .ankora-framework-gdpr[data-fill="true"] {
+    background: hsl(var(--framework-color) / 0.14);
+    border-color: hsl(var(--framework-color) / 0.32);
+  }
+
+  /* ── Logo utility ────────────────────────────────────────────── */
+  .ankora-logo {
+    display: block;
+    width: 154px;
+    height: 35px;
+    object-fit: contain;
+  }
+
+  /* ── Badge override ─────────────────────────────────────────── */
+  .ankora-badge {
+    border-radius: var(--radius-full);
+  }
+
+  /* ── Dialogs / menus ─────────────────────────────────────────── */
+  [data-radix-popper-content-wrapper] > * {
+    border-color: hsl(var(--border));
+    box-shadow: var(--ankora-shadow-lg);
+    background: hsl(var(--popover));
+  }
+
+  /* ── Sidebar active nav button ──────────────────────────────── */
+  .sidebar-nav-active {
+    background: hsl(var(--ankora-nav-active));
+    color: hsl(var(--ankora-nav-active-foreground));
+  }
+}
+
+/* ── Custom scrollbar ───────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
-  border-radius: 3px;
+  background: hsl(var(--border));
+  border: 2px solid hsl(var(--background));
+  border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: hsl(var(--muted-foreground) / 0.65);
+}
+
+/* ── Keyframes ──────────────────────────────────────────────────── */
+@keyframes ankora-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ankora-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes ankora-scale-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ankora-slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Apply animations to Radix data-state transitions */
+[data-state="open"].animate-ankora-fade-in,
+[data-state="open"] .animate-ankora-fade-in {
+  animation: ankora-fade-in var(--ankora-duration-normal) var(--ankora-ease);
+}
+[data-state="closed"].animate-ankora-fade-out,
+[data-state="closed"] .animate-ankora-fade-out {
+  animation: ankora-fade-out var(--ankora-duration-fast) var(--ankora-ease);
+}
+[data-state="open"].animate-ankora-scale-in,
+[data-state="open"] .animate-ankora-scale-in {
+  animation: ankora-scale-in var(--ankora-duration-normal) var(--ankora-ease);
+}
+
+/* ── Knowledge Base — Scoped Dark Institutional Theme ───────────── */
+.kb-scope {
+  --kb-canvas: #090D16;
+  --kb-surface: #121826;
+  --kb-surface-hover: #1A2234;
+  --kb-border: #222E45;
+  --kb-muted: #8E9BB0;
+  --kb-text: #F1F5F9;
+  --kb-accent: #6366F1;
+  --kb-accent-glow: rgba(99, 102, 241, 0.15);
+  --kb-emerald: #10B981;
+  --kb-amber: #F59E0B;
+  --kb-font-display: 'Plus Jakarta Sans', sans-serif;
+  --kb-font-body: 'Inter', sans-serif;
+  --kb-font-mono: 'JetBrains Mono', monospace;
+  background-color: var(--kb-canvas);
+  color: var(--kb-text);
+  font-family: var(--kb-font-body);
+  min-height: 100vh;
+}
+
+.kb-bg-canvas { background-color: var(--kb-canvas); }
+.kb-bg-surface { background-color: var(--kb-surface); }
+.kb-bg-hover { background-color: var(--kb-surface-hover); }
+.kb-bg-accent { background-color: var(--kb-accent); }
+.kb-border-c { border-color: var(--kb-border); }
+.kb-text-muted { color: var(--kb-muted); }
+.kb-text-light { color: var(--kb-text); }
+.kb-text-accent { color: var(--kb-accent); }
+.kb-text-emerald { color: var(--kb-emerald); }
+.kb-text-amber { color: var(--kb-amber); }
+.kb-font-display { font-family: var(--kb-font-display); }
+.kb-font-mono { font-family: var(--kb-font-mono); }
+.kb-accent-glow { box-shadow: 0 0 24px var(--kb-accent-glow); }
+
+.kb-title {
+  font-family: var(--kb-font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--kb-text);
+}
+.kb-card-title {
+  font-family: var(--kb-font-display);
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--kb-text);
+}
+.kb-meta-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--kb-muted);
+}
+
+.kb-input {
+  background-color: var(--kb-surface);
+  border: 1px solid var(--kb-border);
+  color: var(--kb-text);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--kb-font-body);
+}
+.kb-input:focus {
+  border-color: var(--kb-accent);
+  box-shadow: 0 0 0 3px var(--kb-accent-glow);
+  outline: none;
+}
+
+.kb-prose h2 {
+  font-family: var(--kb-font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--kb-text);
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+.kb-prose p {
+  color: var(--kb-text);
+  line-height: 1.7;
+  margin-bottom: 0.75rem;
+}
+.kb-prose ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+.kb-prose li {
+  color: var(--kb-text);
+  margin-bottom: 0.25rem;
+}
+.kb-prose strong {
+  color: var(--kb-text);
+  font-weight: 600;
+}
+.kb-prose code {
+  font-family: var(--kb-font-mono);
+  background-color: var(--kb-surface);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  color: var(--kb-accent);
+}
+
+.kb-card-hover {
+  transition: transform var(--ankora-duration-normal) var(--ankora-ease),
+              box-shadow var(--ankora-duration-normal) var(--ankora-ease);
+}
+.kb-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px hsl(0 0% 0% / 0.3);
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
