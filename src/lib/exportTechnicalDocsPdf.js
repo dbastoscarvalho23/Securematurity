@@ -13,6 +13,7 @@ import {
   DEV_GUIDE,
   DOCS_META,
   LAYERS,
+  LICENSE_CATALOG,
   SECURITY_MODEL,
   STACK,
   TENANCY_MODELS,
@@ -571,6 +572,23 @@ function sectionModules(doc) {
         accent: module.accent,
         size: 6.5,
       });
+    });
+    y += h + GAP;
+  }
+
+  // FB7 — o catálogo é curado em código; as entidades são o espelho semeado.
+  y = ensure(doc, y, 24);
+  y = bandTitle(doc, y, 'Catálogo comercial: onde vive e como se altera', accent) + 1;
+  for (let i = 0; i < LICENSE_CATALOG.length; i += cols) {
+    const row = LICENSE_CATALOG.slice(i, i + cols);
+    const heights = row.map((block) => 11 + bulletsHeight(doc, block.items, colW - 10, 7.5));
+    const h = Math.max(...heights);
+    y = ensure(doc, y, h + GAP);
+    row.forEach((block, c) => {
+      const x = M + c * (colW + GAP);
+      card(doc, x, y, colW, h, { accent });
+      text(doc, block.title, x + 4.5, y + 5.5, { size: 8.5, style: 'bold', color: NAVY });
+      bulletList(doc, block.items, x + 4.5, y + 10, colW - 10, { size: 7.5 });
     });
     y += h + GAP;
   }

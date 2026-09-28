@@ -29,6 +29,9 @@ export const licenseEn = {
   common_back: 'Back',
   page_license_unavailable: 'License',
   licensing_subtitle: 'Commercial tiers, modules and tenant subscriptions.',
+  licensing_catalog_notice_title: 'Curated catalogue, versioned in code',
+  licensing_catalog_notice_body:
+    'Tiers, modules and standards shown here are a seeded mirror of src/lib/licenseModules.js (frontend) and base44/shared/licenseGuard.ts (backend). Changing the offer means editing that code and re-running seedLicenseData — not editing these entities. This page is where the catalogue is read and where a tier is assigned to a customer (the daily operation).',
   licensing_stat_tiers: 'Tiers on sale',
   licensing_stat_tiers_total: 'tiers in the catalogue',
   licensing_stat_modules: 'Modules in the offering',
@@ -116,6 +119,9 @@ export const licensePt = {
   common_back: 'Voltar',
   page_license_unavailable: 'Licença',
   licensing_subtitle: 'Níveis comerciais, módulos e subscrições dos clientes.',
+  licensing_catalog_notice_title: 'Catálogo curado, versionado em código',
+  licensing_catalog_notice_body:
+    'Os tiers, módulos e standards aqui apresentados são um espelho semeado de src/lib/licenseModules.js (frontend) e de base44/shared/licenseGuard.ts (backend). Alterar a oferta é editar esse código e voltar a correr seedLicenseData — não é editar estas entidades. Esta página é onde o catálogo se lê e onde se atribui um tier a um cliente (a operação diária).',
   licensing_stat_tiers: 'Níveis em venda',
   licensing_stat_tiers_total: 'níveis no catálogo',
   licensing_stat_modules: 'Módulos na oferta',

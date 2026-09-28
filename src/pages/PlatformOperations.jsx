@@ -6,9 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Play, Save, ShieldCheck } from 'lucide-react';
+import { Megaphone, Play, Save, ShieldCheck } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
@@ -19,18 +20,47 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { isPlatformOwner } from '@/lib/rbac';
 
 /**
- * Automações e conservação (FB4).
+ * Automações, conservação e anúncios (FB4/FB8).
  *
  * Dá ao master_admin o que faltava: a última execução (e as últimas cinco) de
  * cada automação, com duração e erro; a política de conservação por entidade e
- * por tenant; e uma simulação de purga que não apaga nada. Toda a leitura e
- * escrita passa por `managePlatformOperations` — a página não escreve entidades.
+ * por tenant; uma simulação de purga que não apaga nada; e o canal de
+ * comunicação com os tenants (anúncios com âmbito, janela e severidade). Toda a
+ * leitura e escrita passa por `managePlatformOperations` / `manageAnnouncements`
+ * — a página não escreve entidades.
  */
 
 const STATUS_STYLE = {
   success: { key: 'ops_status_success', variant: 'outline', className: 'bg-chart-2/10 text-chart-2 border-chart-2/20' },
   failed: { key: 'ops_status_failed', variant: 'outline', className: 'bg-destructive/10 text-destructive border-destructive/20' },
 };
+
+const ANNOUNCEMENT_STATE_STYLE = {
+  active: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
+  scheduled: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
+  expired: 'bg-muted text-muted-foreground',
+  archived: 'bg-muted text-muted-foreground',
+};
+
+const SEVERITY_STYLE = {
+  info: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
+  warning: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
+  maintenance: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
+};
+
+// Âmbitos e severidades espelham SEVERITIES/SCOPES em manageAnnouncements (FB8).
+const SEVERITIES = ['info', 'warning', 'maintenance'];
+const SCOPES = ['global', 'tier', 'customer'];
+const TIER_CODES = ['core', 'professional', 'advanced'];
+
+/** Estado derivado do anúncio: o mesmo critério que a função aplica ao servir a faixa. */
+function announcementState(announcement) {
+  if (announcement.is_active === false) return 'archived';
+  const now = Date.now();
+  if (announcement.starts_at && new Date(announcement.starts_at).getTime() > now) return 'scheduled';
+  if (announcement.ends_at && new Date(announcement.ends_at).getTime() < now) return 'expired';
+  return 'active';
+}
 
 // Acções suportadas por entidade, enquanto o catálogo do servidor não chega —
 // a fonte é RETENTION_ENTITIES em managePlatformOperations (devolvido no `overview`).
@@ -60,12 +90,32 @@ export default function PlatformOperations() {
     notes: '',
   });
   const [simulation, setSimulation] = useState(null);
+  const [annForm, setAnnForm] = useState({
+    title: '',
+    message: '',
+    severity: 'info',
+    scope: 'global',
+    tier_code: 'core',
+    customer_id: '',
+    starts_at: '',
+    ends_at: '',
+  });
 
   const overview = useQuery({
     queryKey: ['platform-operations'],
     queryFn: async () => {
       const result = await base44.functions.invoke('managePlatformOperations', { action: 'overview' });
       return result?.data || result;
+    },
+    enabled: allowed,
+  });
+
+  const announcements = useQuery({
+    queryKey: ['platform-announcements'],
+    queryFn: async () => {
+      const result = await base44.functions.invoke('manageAnnouncements', { action: 'overview' });
+      const payload = result?.data || result;
+      return payload?.announcements || [];
     },
     enabled: allowed,
   });
@@ -101,6 +151,56 @@ export default function PlatformOperations() {
     onError: () => toast({ title: t('ops_simulation_error'), variant: 'destructive' }),
   });
 
+  // ── Anúncios (FB8) ──────────────────────────────────────────────────
+  const refreshAnnouncements = () => {
+    queryClient.invalidateQueries({ queryKey: ['platform-announcements'] });
+    queryClient.invalidateQueries({ queryKey: ['platform-announcements-active'] });
+  };
+
+  const publishAnnouncement = useMutation({
+    mutationFn: () => base44.functions.invoke('manageAnnouncements', {
+      action: 'publish',
+      announcement: {
+        ...annForm,
+        customer_id: annForm.customer_id || null,
+        customer_name: customers.find((c) => c.id === annForm.customer_id)?.name || '',
+        starts_at: annForm.starts_at ? new Date(annForm.starts_at).toISOString() : null,
+        ends_at: annForm.ends_at ? new Date(annForm.ends_at).toISOString() : null,
+      },
+    }),
+    onSuccess: () => {
+      refreshAnnouncements();
+      setAnnForm((f) => ({ ...f, title: '', message: '', starts_at: '', ends_at: '' }));
+      toast({ title: t('ann_published') });
+    },
+    onError: () => toast({ title: t('ann_publish_error'), variant: 'destructive' }),
+  });
+
+  const archiveAnnouncement = useMutation({
+    mutationFn: (announcement) => base44.functions.invoke('manageAnnouncements', {
+      action: 'archive',
+      id: announcement.id,
+    }),
+    onSuccess: () => {
+      refreshAnnouncements();
+      toast({ title: t('ann_archived') });
+    },
+    onError: () => toast({ title: t('ann_archive_error'), variant: 'destructive' }),
+  });
+
+  const republishAnnouncement = useMutation({
+    mutationFn: (announcement) => base44.functions.invoke('manageAnnouncements', {
+      action: 'update',
+      id: announcement.id,
+      announcement: { ...announcement, is_active: true },
+    }),
+    onSuccess: () => {
+      refreshAnnouncements();
+      toast({ title: t('ann_published') });
+    },
+    onError: () => toast({ title: t('ann_reactivate_error'), variant: 'destructive' }),
+  });
+
   if (!allowed) {
     return <EmptyState icon={ShieldCheck} title={t('common_no_permission')} className="h-64" />;
   }
@@ -109,12 +209,14 @@ export default function PlatformOperations() {
     dateStyle: 'short',
     timeStyle: 'short',
   });
-  const formatDate = (value) => (value ? dateFormatter.format(new Date(value)) : t('ops_never_run'));
+  const formatDate = (value) => (value ? dateFormatter.format(new Date(value)) : null);
+  const formatDateTime = (value) => formatDate(value) || t('ops_never_run');
 
   const data = overview.data || {};
   const workflows = data.workflows || [];
   const policies = data.policies || [];
   const entities = data.entities || [];
+  const announcementList = announcements.data || [];
   const entityActions = (name) =>
     entities.find((e) => e.name === name)?.actions || ENTITY_ACTIONS[name] || ['purge', 'archive', 'anonymise'];
   const chooseEntity = (name) =>
@@ -124,9 +226,194 @@ export default function PlatformOperations() {
       action: entityActions(name).includes(f.action) ? f.action : entityActions(name)[0],
     }));
 
+  const announcementWindow = (announcement) => {
+    const start = formatDate(announcement.starts_at);
+    const end = formatDate(announcement.ends_at) || t('ann_window_open');
+    if (!start && !end) return '—';
+    return `${start || '—'} → ${end}`;
+  };
+  const announcementScope = (announcement) => {
+    if (announcement.scope === 'tier') return `${t('ann_scope_tier')} · ${t(`ann_tier_label_${announcement.tier_code}`)}`;
+    if (announcement.scope === 'customer') return announcement.customer_name || t('ann_scope_customer');
+    return t('ann_scope_global');
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader description={t('platform_ops_subtitle')} />
+
+      {/* ── Anúncios da plataforma ───────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t('ann_title')}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t('ann_subtitle')}</p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {announcements.isError ? (
+            <ErrorState variant="inline" onRetry={() => announcements.refetch()} />
+          ) : announcements.isLoading ? (
+            <LoadingState variant="skeleton" rows={4} label={t('common_loading')} />
+          ) : announcementList.length === 0 ? (
+            <EmptyState compact icon={Megaphone} title={t('ann_history_empty')} />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('ann_col_title')}</TableHead>
+                  <TableHead>{t('ann_col_severity')}</TableHead>
+                  <TableHead>{t('ann_col_scope')}</TableHead>
+                  <TableHead>{t('ann_col_window')}</TableHead>
+                  <TableHead>{t('ann_col_state')}</TableHead>
+                  <TableHead className="text-right">{t('ops_col_action')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {announcementList.map((announcement) => {
+                  const state = announcementState(announcement);
+                  return (
+                    <TableRow key={announcement.id}>
+                      <TableCell className="max-w-[320px]">
+                        <p className="text-sm font-medium">{announcement.title}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{announcement.message}</p>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={SEVERITY_STYLE[announcement.severity] || ''}>
+                          {t(`ann_severity_${announcement.severity}`)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{announcementScope(announcement)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{announcementWindow(announcement)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={ANNOUNCEMENT_STATE_STYLE[state]}>
+                          {t(`ann_state_${state}`)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {state === 'archived' ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs"
+                            onClick={() => republishAnnouncement.mutate(announcement)}
+                            disabled={republishAnnouncement.isPending}
+                          >
+                            {t('ann_reactivate')}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs"
+                            onClick={() => archiveAnnouncement.mutate(announcement)}
+                            disabled={archiveAnnouncement.isPending}
+                          >
+                            {t('ann_archive')}
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+
+          {/* Formulário de publicação */}
+          <div className="space-y-4 border-t pt-4">
+            <p className="text-sm font-medium">{t('ann_form_title')}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-1.5 lg:col-span-2">
+                <Label className="text-xs">{t('ann_field_title')}</Label>
+                <Input
+                  value={annForm.title}
+                  onChange={(e) => setAnnForm((f) => ({ ...f, title: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('ann_field_severity')}</Label>
+                <Select value={annForm.severity} onValueChange={(v) => setAnnForm((f) => ({ ...f, severity: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {SEVERITIES.map((code) => (
+                      <SelectItem key={code} value={code}>{t(`ann_severity_${code}`)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('ann_field_scope')}</Label>
+                <Select value={annForm.scope} onValueChange={(v) => setAnnForm((f) => ({ ...f, scope: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {SCOPES.map((code) => (
+                      <SelectItem key={code} value={code}>{t(`ann_scope_${code}`)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {annForm.scope === 'tier' && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t('ann_field_tier')}</Label>
+                  <Select value={annForm.tier_code} onValueChange={(v) => setAnnForm((f) => ({ ...f, tier_code: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {TIER_CODES.map((code) => (
+                        <SelectItem key={code} value={code}>{t(`ann_tier_label_${code}`)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {annForm.scope === 'customer' && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t('ann_field_customer')}</Label>
+                  <Select value={annForm.customer_id || ''} onValueChange={(v) => setAnnForm((f) => ({ ...f, customer_id: v }))}>
+                    <SelectTrigger><SelectValue placeholder={t('ann_field_customer')} /></SelectTrigger>
+                    <SelectContent>
+                      {customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('ann_field_starts')}</Label>
+                <Input
+                  type="datetime-local"
+                  value={annForm.starts_at}
+                  onChange={(e) => setAnnForm((f) => ({ ...f, starts_at: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('ann_field_ends')}</Label>
+                <Input
+                  type="datetime-local"
+                  value={annForm.ends_at}
+                  onChange={(e) => setAnnForm((f) => ({ ...f, ends_at: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5 md:col-span-2 lg:col-span-4">
+                <Label className="text-xs">{t('ann_field_message')}</Label>
+                <Textarea
+                  rows={2}
+                  value={annForm.message}
+                  onChange={(e) => setAnnForm((f) => ({ ...f, message: e.target.value }))}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {annForm.scope === 'global'
+                ? t('ann_scope_all_tenants_hint')
+                : t('ann_field_window_hint')}
+            </p>
+            <Button size="sm" className="gap-2" onClick={() => publishAnnouncement.mutate()} disabled={publishAnnouncement.isPending}>
+              <Megaphone className="w-3.5 h-3.5" /> {t('ann_publish')}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ── Automações agendadas ─────────────────────────────────── */}
       <Card>
@@ -164,7 +451,7 @@ export default function PlatformOperations() {
                         {workflow.trigger === 'scheduled' ? t('ops_trigger_scheduled') : t('ops_trigger_event')}
                         {workflow.cron ? ` · ${workflow.cron}` : ''}
                       </TableCell>
-                      <TableCell className="text-sm">{formatDate(last?.started_at)}</TableCell>
+                      <TableCell className="text-sm">{formatDateTime(last?.started_at)}</TableCell>
                       <TableCell className="text-sm">{last ? formatDuration(last.duration_ms, '—') : '—'}</TableCell>
                       <TableCell>
                         <Badge variant={style.variant} className={style.className}>{t(style.key)}</Badge>

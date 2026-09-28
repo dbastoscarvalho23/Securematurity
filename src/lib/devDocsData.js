@@ -306,6 +306,39 @@ export const SECURITY_MODEL = [
   },
 ];
 
+/**
+ * Catálogo comercial (FB7): onde vive e como se altera.
+ *
+ * As entidades LicenseTier/LicenseModule/LicenseStandard são um espelho semeado,
+ * não a fonte: a oferta é curada em código para ficar versionada e revista com os
+ * gates que a aplicam.
+ */
+export const LICENSE_CATALOG = [
+  {
+    title: 'Onde vive a fonte única',
+    items: [
+      'Frontend: src/lib/licenseModules.js (MODULE_CODES, MODULE_META, TIER_MODULES, COMMERCIALLY_AVAILABLE_TIERS) alimenta a navegação, o gating de rota e esta documentação.',
+      'Backend: base44/shared/licenseGuard.ts (modulesForTier, TIER_MODULES, LEGACY_TIER_ALIASES) é a versão aplicada nos gates de servidor.',
+      'LicenseTier, LicenseModule e LicenseStandard são o espelho semeado: seedLicenseData e migrateExistingLicenses reescrevem-nas a partir de modulesForTier.',
+    ],
+  },
+  {
+    title: 'Como se altera a oferta',
+    items: [
+      'Editar o conjunto no código dos dois lados (licenseModules.js e licenseGuard.ts) e correr seedLicenseData para reconciliar o espelho.',
+      'O catálogo é cumulativo (Core ⊂ Profissional ⊂ Avançado) e modulesForTier é a única função que compõe cada conjunto.',
+      'A alteração fica no Git, revista a par do código que a aplica — não escapa por edição de dados.',
+    ],
+  },
+  {
+    title: 'O que se faz na interface',
+    items: [
+      '/licensing lê o catálogo e é onde se atribui um tier a um cliente — a operação diária (FB1), não a curadoria.',
+      'O provisioning por cliente passa por funções de backend (provisionTenantLicense), nunca por escrita directa às entidades de catálogo.',
+    ],
+  },
+];
+
 export const DEV_GUIDE = {
   commands: [
     { label: 'Arrancar a aplicação (sandbox)', command: 'docker compose -f docker-compose.base44.yml up -d' },

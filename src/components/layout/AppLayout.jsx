@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import TopBar, { PAGE_TITLE_KEYS } from './TopBar';
 import ImpersonationBanner from './ImpersonationBanner';
 import SimulationBanner from './SimulationBanner';
+import AnnouncementBanner from './AnnouncementBanner';
 import { RoleSimulationProvider, useIsSimulating, useEffectiveRole } from '@/lib/RoleSimulationContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { toast } from 'sonner';
@@ -131,6 +132,7 @@ function LayoutContent() {
         )}>
           <ImpersonationBanner />
           <SimulationBanner />
+          <AnnouncementBanner />
           <main className="flex-1 p-4 md:p-6 overflow-auto">
             {/* Título da página: fonte única é o TopBar (barra de contexto). A página
                 começa directamente no seu conteúdo, com a mesma distância ao topo (FC1). */}

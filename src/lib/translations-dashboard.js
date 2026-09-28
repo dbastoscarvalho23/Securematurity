@@ -3,7 +3,8 @@
 
 export const dashboardEn = {
   // Admin dashboard
-  admin_dashboard_subtitle: 'Platform-wide business analytics and operations',
+  admin_dashboard_subtitle: 'Platform-wide business analytics and licensing indicators',
+  admin_dashboard_open_ops: 'Administrative operations',
   admin_dashboard_active_tenants: 'Active Tenants',
   admin_dashboard_total_users: 'Total Users',
   admin_dashboard_subs_distribution: 'Subscription Distribution',
@@ -75,7 +76,8 @@ export const dashboardEn = {
 
 export const dashboardPt = {
   // Admin dashboard
-  admin_dashboard_subtitle: 'Análise de negócio e operações da plataforma',
+  admin_dashboard_subtitle: 'Indicadores de negócio e de licenciamento da plataforma',
+  admin_dashboard_open_ops: 'Operações administrativas',
   admin_dashboard_active_tenants: 'Tenants Ativos',
   admin_dashboard_total_users: 'Total de Utilizadores',
   admin_dashboard_subs_distribution: 'Distribuição de Subscrições',

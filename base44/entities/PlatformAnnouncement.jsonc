@@ -1,0 +1,90 @@
+{
+  "name": "PlatformAnnouncement",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Short announcement headline shown in the banner and in the history list"
+    },
+    "message": {
+      "type": "string",
+      "description": "Announcement body shown under the headline"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "warning", "maintenance"],
+      "default": "info",
+      "description": "Announcement kind: information, warning or scheduled maintenance"
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["global", "tier", "customer"],
+      "default": "global",
+      "description": "Who sees the announcement: every tenant, one license tier, or one tenant"
+    },
+    "tier_code": {
+      "type": ["string", "null"],
+      "description": "License tier the announcement is addressed to (only when scope = tier)"
+    },
+    "customer_id": {
+      "type": ["string", "null"],
+      "description": "Customer the announcement is addressed to (only when scope = customer)"
+    },
+    "customer_name": {
+      "type": ["string", "null"],
+      "description": "Denormalized customer name for the history list"
+    },
+    "starts_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Start of the display window; empty means visible immediately"
+    },
+    "ends_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "End of the display window; empty means visible until archived"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the announcement is published (archiving sets it to false)"
+    },
+    "published_by": {
+      "type": "string",
+      "description": "Email of the master_admin who published it"
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Publication timestamp"
+    },
+    "archived_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "When the announcement was archived; null while active"
+    }
+  },
+  "required": ["title", "message", "severity", "scope"],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    }
+  }
+}

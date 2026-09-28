@@ -326,7 +326,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FB6',
     area: 'administracao',
     severity: 'media',
-    status: 'pendente',
+    status: 'corrigido',
+    statusNote:
+      'Consolidação feita por divisão de papéis: o dashboard de plataforma (`PlatformAdminDashboard`, rota `/`) é a única consola de indicadores e o `/admin` é a área de operações administrativas. Os quatro gráficos duplicados do `/admin` (maturidade por setor, estado dos clientes, uso de frameworks e quebra de riscos — os mesmos que o `PlatformOverview` desenha a partir das mesmas entidades) foram removidos com os cálculos que os alimentavam; ficaram os cartões com drill-down, o ranking por cliente e a gestão de lugares. Cada página liga à outra e o AGENTS.md regista qual é a consola de plataforma.',
     title: 'Duas consolas de plataforma sobrepostas',
     evidence: [
       'src/pages/Admin.jsx (678 linhas) — dashboards de clientes, utilizadores e avaliações com drill-down, sobre os mesmos dados.',
@@ -344,7 +346,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FB7',
     area: 'administracao',
     severity: 'media',
-    status: 'pendente',
+    status: 'corrigido',
+    statusNote:
+      'Decisão explicitada e documentada: o catálogo (tiers, módulos, standards) mantém-se curado em código — `src/lib/licenseModules.js` no frontend, `base44/shared/licenseGuard.ts` no backend — e as entidades de catálogo passam a estar documentadas como espelho semeado por `seedLicenseData`/`migrateExistingLicenses`, que reescrevem tudo a partir de `modulesForTier`. A secção «Módulos e licenciamento» de `/documentacao-tecnica` (e o PDF que sai do mesmo modelo) ganhou o bloco «Catálogo comercial: onde vive e como se altera», e a página `/licensing` mostra o mesmo aviso. A gestão diária é a atribuição por cliente, que já existe na interface (FB1); a curadoria continua a passar por código revisto, não por edição de dados.',
     title: 'Catálogo comercial (tiers, módulos, standards) apenas de leitura',
     evidence: [
       'src/pages/Licensing.jsx — lê LicenseTier, LicenseModule, LicenseStandard e TenantSubscription e apresenta-os; não há criação nem edição.',
@@ -361,7 +365,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FB8',
     area: 'administracao',
     severity: 'media',
-    status: 'pendente',
+    status: 'corrigido',
+    statusNote:
+      'Canal de anúncios implementado: entidade `PlatformAnnouncement` (título, mensagem, severidade, âmbito, janela, estado) e uma única porta de escrita, `manageAnnouncements` — `active` resolve o âmbito no servidor (global / tier / cliente) a partir das subscrições e dos clientes que o utilizador pode ler, `overview`/`publish`/`update`/`archive` são master_admin e todas as escritas ficam na trilha de auditoria. No layout, `AnnouncementBanner` mostra a faixa por severidade (informação/aviso/manutenção), revalida a cada 60 s e dispensa por sessão; a publicação e o histórico vivem em `/platform-operations`. A entidade só é legível por master_admin, pelo que o âmbito nunca é decidido no browser. Residual: a faixa foi verificada localmente com âmbito global; os âmbitos por tier e por cliente dependem de subscrições reais para serem observados ponta a ponta.',
     title: 'Sem canal de comunicação da plataforma para os tenants',
     evidence: [
       'src/components/layout/NotificationBell.jsx — lê base44.entities.Notification filtradas por user_email (notificações individuais) e faz polling de 60 s.',

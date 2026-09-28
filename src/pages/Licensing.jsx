@@ -118,6 +118,16 @@ export default function Licensing() {
     <div className="space-y-6">
       <PageHeader description={t('licensing_subtitle')} />
 
+      {/* FB7 — o catálogo é curado em código e espelhado nas entidades; a
+          gestão diária é a atribuição por cliente (TenantLicensePanel, FB1). */}
+      <div className="flex items-start gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
+        <Info className="w-4 h-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+        <div>
+          <p className="font-medium">{t('licensing_catalog_notice_title')}</p>
+          <p className="text-xs text-muted-foreground">{t('licensing_catalog_notice_body')}</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title={t('licensing_stat_tiers')}

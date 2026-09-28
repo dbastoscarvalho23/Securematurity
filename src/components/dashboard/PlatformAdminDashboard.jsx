@@ -4,9 +4,11 @@
  * and consumption/alerts.
  */
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Building2, Users, Layers, Zap } from 'lucide-react';
+import { Building2, Users, Layers, Zap, Settings2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import StatCard from '@/components/dashboard/StatCard';
 import PlatformOverview from '@/components/dashboard/PlatformOverview';
 import TierDistributionWidget from '@/components/dashboard/platform/TierDistributionWidget';
@@ -51,11 +53,21 @@ export default function PlatformAdminDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* FB6 — consola única de indicadores da plataforma. As operações
+          administrativas (drill-downs e ranking por cliente) vivem em /admin. */}
       <PageHeader
         description={t('admin_dashboard_subtitle')}
         actions={
-          <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-            {new Date().toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          <div className="flex items-center gap-2">
+            <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+              {new Date().toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </div>
+            <Button asChild variant="outline" size="sm" className="gap-2">
+              <Link to="/admin">
+                <Settings2 className="w-3.5 h-3.5" />
+                {t('admin_dashboard_open_ops')}
+              </Link>
+            </Button>
           </div>
         }
       />

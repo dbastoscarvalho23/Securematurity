@@ -8,14 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Link } from 'react-router-dom';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, Legend,
-} from 'recharts';
-import {
-  ShieldCheck, Building2, BarChart3, Users, AlertTriangle, ClipboardList,
-  ChevronRight, X, Search, TrendingUp, TrendingDown, CheckCircle2, Clock,
-  FileText,
+  ShieldCheck, Building2, BarChart3, Users, AlertTriangle, ClipboardList, Search,
 } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import SeatManagementPanel from '@/components/customers/SeatManagementPanel';
@@ -29,15 +24,6 @@ import LoadingState from '@/components/shared/LoadingState';
 import ErrorState from '@/components/shared/ErrorState';
 import { isPlatformOwner } from '@/lib/rbac';
 
-// Paleta dos gráficos vinda dos tokens do design system (FC2) — acompanha o
-// tema claro/escuro e não declara cor própria nesta página.
-const COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-];
 
 function DrillDownDialog({ title, children, open, onClose }) {
   return (
@@ -352,41 +338,6 @@ export default function Admin() {
     ? customers
     : customers.filter(c => c.sector === filterSector);
 
-  // Benchmark: avg score per sector
-  const sectorBenchmark = {};
-  completed.forEach(a => {
-    const customer = customers.find(c => c.id === a.customer_id);
-    if (!customer) return;
-    const sector = customer.sector || 'unknown';
-    if (!sectorBenchmark[sector]) sectorBenchmark[sector] = { scores: [], count: 0 };
-    sectorBenchmark[sector].scores.push(a.overall_score || 0);
-    sectorBenchmark[sector].count++;
-  });
-
-  const benchmarkData = Object.entries(sectorBenchmark).map(([sector, data]) => ({
-    sector: sector.replace(/_/g, ' '),
-    avg_score: Math.round((data.scores.reduce((a, b) => a + b, 0) / data.scores.length) * 10) / 10,
-    count: data.count,
-  })).sort((a, b) => b.avg_score - a.avg_score);
-
-  // Framework usage
-  const frameworkUsage = {};
-  assessments.forEach(a => {
-    (a.frameworks || []).forEach(f => {
-      frameworkUsage[f] = (frameworkUsage[f] || 0) + 1;
-    });
-  });
-  const frameworkData = Object.entries(frameworkUsage)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value);
-
-  // Customer status pie
-  const customerStatusData = [
-    { name: t('customers_status_active'), value: activeCustomers },
-    { name: t('customers_status_onboarding'), value: onboardingCustomers },
-    { name: t('customers_status_inactive'), value: customers.filter(c => c.status === 'inactive').length },
-  ].filter(d => d.value > 0);
-
   // Customer rankings
   const customerRankings = filteredCustomers.map(c => {
     const customerAssessments = completed.filter(a => a.customer_id === c.id);
@@ -419,7 +370,19 @@ export default function Admin() {
 
   return (
     <div className="space-y-6">
-      <PageHeader description={t('admin_subtitle')} />
+      <PageHeader
+        description={t('admin_subtitle')}
+        actions={
+          // FB6 — consola única de indicadores é o dashboard de plataforma; esta
+          // página é a área de operações administrativas (drill-downs e ranking).
+          <Button asChild variant="outline" size="sm" className="gap-2">
+            <Link to="/">
+              <BarChart3 className="w-3.5 h-3.5" />
+              {t('admin_open_dashboard')}
+            </Link>
+          </Button>
+        }
+      />
 
       {/* Platform Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -467,131 +430,6 @@ export default function Admin() {
           onClick={() => setDrillDown('tasks')}
           clickable
         />
-      </div>
-
-      {/* Charts grid — all cards same size and aspect */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sector Benchmark */}
-        <Card className="h-full flex flex-col">
-          <CardHeader>
-            <CardTitle className="text-base">{t('admin_maturity_by_sector')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex items-center justify-center">
-            {benchmarkData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={benchmarkData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="sector" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                  <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                  <Tooltip
-                    contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
-                    formatter={(val, name) => [val, t('admin_avg_maturity')]}
-                  />
-                  <Bar dataKey="avg_score" radius={[4, 4, 0, 0]}>
-                    {benchmarkData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">{t('admin_no_benchmark')}</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Customer Status Pie */}
-        <Card className="h-full flex flex-col">
-          <CardHeader>
-            <CardTitle className="text-base">{t('admin_customer_status')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex items-center justify-center">
-            {customerStatusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={240}>
-                <PieChart>
-                  <Pie
-                    data={customerStatusData}
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {customerStatusData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <EmptyState compact title={t('common_no_data')} />
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Framework usage */}
-        <Card className="h-full flex flex-col">
-          <CardHeader>
-            <CardTitle className="text-base">{t('admin_framework_usage')}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex items-center justify-center">
-            {frameworkData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={frameworkData} layout="vertical" margin={{ left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} width={80} />
-                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                    {frameworkData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <EmptyState compact title={t('common_no_data')} />
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Risk status breakdown */}
-        <Card className="h-full flex flex-col">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">{t('admin_risk_breakdown')}</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setDrillDown('risks')} className="text-xs gap-1">
-                {t('dashboard_view_all')} <ChevronRight className="w-3 h-3" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 flex items-center justify-center">
-            {risks.length > 0 ? (() => {
-              const riskStatusData = [
-                { name: t('risk_status_open'), value: risks.filter(r => r.status === 'open').length, color: COLORS[0] },
-                { name: t('risk_status_in_treatment'), value: risks.filter(r => r.status === 'in_treatment').length, color: COLORS[1] },
-                { name: t('risk_status_accepted'), value: risks.filter(r => r.status === 'accepted').length, color: COLORS[4] },
-                { name: t('risk_status_closed'), value: risks.filter(r => r.status === 'closed').length, color: COLORS[2] },
-              ].filter(d => d.value > 0);
-              return (
-                <ResponsiveContainer width="100%" height={240}>
-                  <PieChart>
-                    <Pie data={riskStatusData} cx="50%" cy="45%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
-                      {riskStatusData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                    </Pie>
-                    <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} />
-                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              );
-            })() : (
-              <EmptyState compact title={t('common_no_data')} />
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* Customer Rankings */}

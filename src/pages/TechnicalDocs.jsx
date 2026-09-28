@@ -17,6 +17,7 @@ import {
   DEV_GUIDE,
   DOCS_META,
   FEATURE_AREAS,
+  LICENSE_CATALOG,
   SECURITY_MODEL,
   STACK,
 } from '@/lib/devDocsData';
@@ -329,6 +330,23 @@ export default function TechnicalDocs() {
               {layer.available ? ' · comercializável' : ' · não vendido'}
             </p>
           ))}
+        </div>
+
+        {/* FB7 — o catálogo é curado em código; as entidades são o espelho semeado. */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Catálogo comercial: onde vive e como se altera</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {LICENSE_CATALOG.map((block) => (
+              <div key={block.title} className="rounded-lg border p-3">
+                <p className="text-sm font-medium">{block.title}</p>
+                <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+                  {block.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       </DocsSection>
 
