@@ -27,7 +27,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import GlobalSearch from './GlobalSearch';
 import NotificationBell from './NotificationBell';
-import Logo from './Logo';
+
 
 const PAGE_TITLE_KEYS = {
   '/': 'page_dashboard',
@@ -134,10 +134,6 @@ export default function TopBar({ onMenuClick }) {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <div className="hidden md:block mr-2">
-            <Logo variant="full" size={120} className="ankora-logo" />
-          </div>
-          <div className="h-6 w-px bg-border hidden md:block" />
           <h2 className="text-base font-heading font-semibold text-foreground">{pageTitle}</h2>
         </div>
 
