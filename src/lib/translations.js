@@ -212,7 +212,13 @@ export const translations = {
     org_total_customers: 'Total Customers',
     org_total_frameworks: 'Frameworks',
     // configuration
-    config_subtitle: 'System configuration — reminders, storage, and integrations',
+    config_title: 'Configuration',
+    config_subtitle: 'Platform configuration — frameworks, notifications, reports and system',
+    config_tab_frameworks: 'Frameworks',
+    config_tab_notifications: 'Notifications',
+    config_tab_reports: 'Reports',
+    config_tab_system: 'System',
+    config_tab_storage: 'Storage',
     config_view_email_reports: 'View Email Reports',
     config_view_full_settings: 'View Full Settings',
     // system status
@@ -623,7 +629,13 @@ export const translations = {
     org_total_customers: 'Total de Clientes',
     org_total_frameworks: 'Frameworks',
     // configuration
-    config_subtitle: 'Configuração do sistema — lembretes, armazenamento e integrações',
+    config_title: 'Configuração',
+    config_subtitle: 'Configuração da plataforma — frameworks, notificações, relatórios e sistema',
+    config_tab_frameworks: 'Frameworks',
+    config_tab_notifications: 'Notificações',
+    config_tab_reports: 'Relatórios',
+    config_tab_system: 'Sistema',
+    config_tab_storage: 'Armazenamento',
     config_view_email_reports: 'Ver Relatórios de E-mail',
     config_view_full_settings: 'Ver Definições Completas',
     // system status

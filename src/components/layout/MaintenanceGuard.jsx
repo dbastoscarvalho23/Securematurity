@@ -56,10 +56,10 @@ export default function MaintenanceGuard() {
           </div>
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-sidebar-foreground">
-              {t('maintenance_title') || 'Em Manutenção'}
+              {t('maintenance_blocked_title') || 'Em Manutenção'}
             </h1>
             <p className="text-sidebar-foreground/70 text-sm leading-relaxed">
-              {config?.message || t('maintenance_default_message') || 'A plataforma encontra-se temporariamente indisponível para operações de suporte e manutenção. Por favor tente novamente mais tarde.'}
+              {config?.message || t('maintenance_blocked_default') || 'A plataforma encontra-se temporariamente indisponível para operações de suporte e manutenção. Por favor tente novamente mais tarde.'}
             </p>
           </div>
           {config?.start_time && config?.end_time && (

@@ -21,7 +21,6 @@ import Recommendations from '@/pages/Recommendations';
 import Reports from '@/pages/Reports';
 import Admin from '@/pages/Admin';
 import AuditLog from '@/pages/AuditLog';
-import Settings from '@/pages/Settings';
 import QuestionBank from '@/pages/QuestionBank';
 import Tasks from '@/pages/Tasks';
 import ActionPlan from '@/pages/ActionPlan';
@@ -96,7 +95,7 @@ const AuthenticatedApp = () => {
           <Route path="/reports" element={<RouteGuard path="/reports"><Reports /></RouteGuard>} />
           <Route path="/admin" element={<RouteGuard path="/admin"><Admin /></RouteGuard>} />
           <Route path="/audit-log" element={<RouteGuard path="/audit-log"><AuditLog /></RouteGuard>} />
-          <Route path="/settings" element={<RouteGuard path="/settings"><Settings /></RouteGuard>} />
+          <Route path="/settings" element={<Navigate to="/configuration" replace />} />
           <Route path="/question-bank" element={<RouteGuard path="/question-bank"><QuestionBank /></RouteGuard>} />
           <Route path="/tasks" element={<RouteGuard path="/tasks"><Tasks /></RouteGuard>} />
           <Route path="/task-analytics" element={<RouteGuard path="/task-analytics"><TaskAnalytics /></RouteGuard>} />
