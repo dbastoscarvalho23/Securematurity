@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Shield, Bell, FileBarChart, Settings as SettingsIcon, HardDrive, Mail } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
+import ErrorState from '@/components/shared/ErrorState';
 import FrameworksPanel from '@/components/settings/FrameworksPanel';
 import ReminderSettingsPanel from '@/components/settings/ReminderSettingsPanel';
 import GeneratedReportsPanel from '@/components/genreports/GeneratedReportsPanel';
@@ -35,7 +36,7 @@ export default function Configuration() {
   const isCustomerAdmin = currentUser?.role === 'customer_admin';
   const isReadOnly = hasRole(currentUser?.role, 'employee');
 
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [], isError: customersError, refetch: refetchCustomers } = useQuery({
     queryKey: ['customers'],
     queryFn: () => base44.entities.Customer.list(),
   });
@@ -43,6 +44,11 @@ export default function Configuration() {
   return (
     <div className="space-y-6">
       <PageHeader description={t('config_subtitle')} />
+
+      {/* A lista de clientes alimenta os separadores: se falhar, diz-se (FA4). */}
+      {customersError && (
+        <Card><CardContent className="p-0"><ErrorState variant="inline" onRetry={() => refetchCustomers()} /></CardContent></Card>
+      )}
 
       <Tabs defaultValue="frameworks">
         <TabsList>

@@ -16,8 +16,10 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import { listAssignments, createAssignment, updateAssignment, deleteAssignment, DELEGATION_ROLES, STATUS_BADGES } from '@/lib/delegation';
 import { isPlatformOwner } from '@/lib/rbac';
+import { useActiveCustomer } from '@/lib/tenantContext';
 
 function AssignmentFormDialog({ open, onClose, editing, users, customers, t }) {
   const queryClient = useQueryClient();
@@ -152,6 +154,8 @@ function AssignmentFormDialog({ open, onClose, editing, users, customers, t }) {
 
 export default function UserAssignments() {
   const { user } = useAuth();
+  // Âmbito do tenant pelo contexto único (FA2) — a página não o resolve por si.
+  const { customerId } = useActiveCustomer();
   const { t } = useLanguage();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -159,7 +163,7 @@ export default function UserAssignments() {
   const isAdmin = isPlatformOwner(user?.role);
   const isCustomerAdmin = user?.role === 'customer_admin';
 
-  const { data: assignments = [], isLoading } = useQuery({
+  const { data: assignments = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['assignments'],
     queryFn: () => listAssignments(),
     enabled: isAdmin || isCustomerAdmin,
@@ -181,7 +185,7 @@ export default function UserAssignments() {
     return <EmptyState icon={UserCog} title={t('common_no_permission')} className="h-64" />;
   }
 
-  const visibleAssignments = isAdmin ? assignments : assignments.filter(a => a.customer_id === user?.customer_id);
+  const visibleAssignments = isAdmin ? assignments : assignments.filter(a => a.customer_id === customerId);
 
   const handleAdd = () => {
     setEditing(null);
@@ -210,7 +214,9 @@ export default function UserAssignments() {
 
       <Card>
         <CardContent className="pt-6">
-          {isLoading ? (
+          {isError ? (
+            <ErrorState variant="inline" onRetry={() => refetch()} />
+          ) : isLoading ? (
             <LoadingState variant="skeleton" rows={5} label={t('common_loading')} />
           ) : visibleAssignments.length > 0 ? (
             <Table>

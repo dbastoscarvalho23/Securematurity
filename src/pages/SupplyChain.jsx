@@ -19,6 +19,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import { isPlatformOwner } from '@/lib/rbac';
 
 export default function SupplyChain() {
@@ -36,7 +37,7 @@ export default function SupplyChain() {
 
   const { customerId } = useActiveCustomer();
 
-  const { data: questionnaires = [], isLoading: loadingQuestionnaires } = useQuery({
+  const { data: questionnaires = [], isLoading: loadingQuestionnaires, isError: questionnairesError, refetch: refetchQuestionnaires } = useQuery({
     queryKey: ['supplier-questionnaires', customerId],
     queryFn: () => isAdmin
       ? base44.entities.SupplierQuestionnaire.list('-created_date')
@@ -151,8 +152,10 @@ export default function SupplyChain() {
       </div>
 
       {/* List */}
-      {loadingQuestionnaires ? (
-        <Card><CardContent className="p-0"><LoadingState label={t('common_loading')} className="py-16" /></CardContent></Card>
+      {questionnairesError ? (
+        <Card><CardContent className="p-0"><ErrorState variant="inline" onRetry={() => refetchQuestionnaires()} /></CardContent></Card>
+      ) : loadingQuestionnaires ? (
+        <Card><CardContent className="p-0"><LoadingState variant="skeleton" rows={5} label={t('common_loading')} /></CardContent></Card>
       ) : filtered.length === 0 ? (
         <Card><CardContent className="p-0"><EmptyState compact title={t('sc_empty')} /></CardContent></Card>
       ) : (

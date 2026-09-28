@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { isPlatformOwner } from '@/lib/rbac';
 
@@ -274,7 +275,7 @@ export default function ComplianceJourney() {
 
   const customerUsers = useCustomerUsers(activeCustomerId);
 
-  const { data: items = [], isLoading } = useQuery({
+  const { data: items = [], isLoading, isError, refetch } = useQuery({
     queryKey,
     queryFn: () => base44.entities.ComplianceChecklist.filter({ customer_id: activeCustomerId, framework: 'RJCS' }, 'section_order', 500),
     enabled: !!activeCustomerId,
@@ -348,8 +349,10 @@ export default function ComplianceJourney() {
         <Card><CardContent className="p-0">
           <EmptyState icon={Circle} title={t('compliance_select_customer_prompt')} />
         </CardContent></Card>
+      ) : isError ? (
+        <Card><CardContent className="p-0"><ErrorState variant="inline" onRetry={() => refetch()} /></CardContent></Card>
       ) : isLoading ? (
-        <LoadingState label={t('common_loading')} className="py-20" />
+        <LoadingState variant="skeleton" rows={6} label={t('common_loading')} />
       ) : items.length === 0 ? (
         <Card><CardContent className="p-0">
           <EmptyState

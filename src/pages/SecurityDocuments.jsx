@@ -19,6 +19,7 @@ import ApprovalDialog from '@/components/documents/ApprovalDialog';
 import NominationsPanel from '@/components/documents/NominationsPanel';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
 import { isPlatformOwner } from '@/lib/rbac';
 
 const LEVEL_CONFIGS = [
@@ -65,7 +66,7 @@ export default function SecurityDocuments() {
   const [approvalDoc, setApprovalDoc] = useState(null);
   const [approvalOpen, setApprovalOpen] = useState(false);
 
-  const { data: allDocs = [] } = useQuery({
+  const { data: allDocs = [], isError: docsError, refetch: refetchDocs } = useQuery({
     queryKey: ['securityDocuments'],
     queryFn: () => base44.entities.SecurityDocument.list('-created_date', 500),
   });
@@ -374,8 +375,10 @@ export default function SecurityDocuments() {
       {/* Nominations & Governance */}
       <NominationsPanel customers={customers} selectedCustomerId={effectiveCustomerId} />
 
-      {/* Level sections */}
-      {LEVELS.map(level => {
+      {/* Level sections — uma falha de leitura é erro com repetição (FA4) */}
+      {docsError ? (
+        <Card><CardContent className="p-0"><ErrorState variant="inline" onRetry={() => refetchDocs()} /></CardContent></Card>
+      ) : LEVELS.map(level => {
         const levelDocs = docs.filter(d => d.level === level.id);
         const Icon = level.icon;
         const isCollapsed = collapsed[level.id];

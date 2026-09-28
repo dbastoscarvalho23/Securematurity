@@ -315,6 +315,48 @@ export async function runApiSuite(report) {
     return statusOf(res, 403, "403 — sem delegação para o cliente");
   });
 
+  // ─── G6. FA5 — pacote de auditoria com a identidade do tenant ────
+  // O sintoma era o /audit-package a falhar para o papel autorizado, sem mensagem
+  // tratada na interface. Aqui prova-se o percurso no limite do servidor: o editor
+  // do tenant gera o pacote, o auditor — que só tem leitura — é recusado na
+  // criação e lê a trilha do seu próprio tenant sem a alargar. O que o emulador
+  // não decide (a leitura das entidades por identidade, porque a RLS é avaliada
+  // sobre a sessão autenticada) continua registado como não verificável.
+  const area5 = "FA5 pacote de auditoria";
+  let packageId = "";
+  await report.case("FA5.1", area5, "o editor do tenant gera o pacote de auditoria", async () => {
+    const res = await invoke("generateAuditPackage", {
+      actor: ids.grc_analyst_alfa,
+      body: { action: "generate", customer_id: tenants.tenant_alfa },
+    });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const pkg = res.data.package;
+    packageId = pkg?.id || "";
+    const entries = (pkg?.sections || []).reduce((acc, s) => acc + (s.entries || []).length, 0);
+    return packageId && pkg?.customer_id === tenants.tenant_alfa
+      ? { ok: true, detail: `200 — pacote v${pkg.package_version} do cliente Alfa, ${entries} entradas` }
+      : { ok: false, detail: `pacote inesperado: ${JSON.stringify(pkg).slice(0, 160)}` };
+  });
+  await report.case("FA5.2", area5, "o auditor lê o pacote mas não o gera", async () => {
+    const res = await invoke("generateAuditPackage", {
+      actor: ids.auditor_alfa,
+      body: { action: "generate", customer_id: tenants.tenant_alfa },
+    });
+    if (res.status !== 403) return statusOf(res, 403, "auditor na criação");
+    return packageId
+      ? { ok: true, detail: "403 — o auditor consome o pacote que o tenant gerou" }
+      : { ok: false, detail: "não ficou nenhum pacote para o auditor" };
+  });
+  await report.case("FA5.3", area5, "o auditor lê a trilha do seu tenant sem a alargar", async () => {
+    const res = await invoke("listAuditLog", { actor: ids.auditor_alfa, body: { limit: 50 } });
+    if (res.status !== 200) return statusOf(res, 200, "");
+    const entries = res.data.entries || [];
+    const foreign = entries.filter((e) => e.customer_id && e.customer_id !== tenants.tenant_alfa);
+    return foreign.length === 0
+      ? { ok: true, detail: `200 — ${entries.length} registos, nenhum fora do cliente Alfa` }
+      : { ok: false, detail: `${foreign.length} registos de outros clientes` };
+  });
+
   // ─── G5. Anúncios da plataforma (FB8) ─────────────────────────────
   // O âmbito (global / tier / cliente) tem de ser decidido no servidor: quem
   // publica vê tudo, um utilizador de tenant só vê o que lhe pertence. Os

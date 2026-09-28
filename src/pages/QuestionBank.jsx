@@ -19,6 +19,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 
 const FRAMEWORK_COLORS = {
   NIS2: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
@@ -47,7 +48,7 @@ export default function QuestionBank() {
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateProgress, setTranslateProgress] = useState({ done: 0, total: 0 });
 
-  const { data: questions = [], isLoading } = useQuery({
+  const { data: questions = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['questions'],
     queryFn: () => base44.entities.Question.list('order_index', 500),
   });
@@ -254,8 +255,10 @@ Return only valid JSON with the translations.`,
       {/* Table */}
       <Card>
         <CardContent className="p-0">
-          {isLoading ? (
-            <LoadingState label={t('common_loading')} className="h-48" />
+          {isError ? (
+            <ErrorState variant="inline" onRetry={() => refetch()} />
+          ) : isLoading ? (
+            <LoadingState variant="skeleton" rows={6} label={t('common_loading')} />
           ) : filtered.length === 0 ? (
             <EmptyState title={t('qb_empty')} action={<Button variant="outline" size="sm" onClick={handleNew}>{t('qb_create_first')}</Button>} className="h-48" />
           ) : (

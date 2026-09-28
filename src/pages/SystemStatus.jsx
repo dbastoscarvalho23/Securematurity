@@ -12,6 +12,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { normalizeRole } from '@/lib/rbac';
@@ -38,7 +39,7 @@ export default function SystemStatus() {
   const { user } = useAuth();
   const normalizedRole = normalizeRole(user?.role);
 
-  const { data: metrics, isLoading, error } = useQuery({
+  const { data: metrics, isLoading, error, refetch } = useQuery({
     queryKey: ['platform-metrics'],
     queryFn: async () => {
       const res = await base44.functions.invoke('getPlatformMetrics', {});
@@ -64,7 +65,7 @@ export default function SystemStatus() {
     return (
       <div className="space-y-6">
         <PageHeader description={t('system_status_subtitle')} />
-        <EmptyState icon={AlertTriangle} title={t('common_no_data')} className="h-64" />
+        <Card><CardContent className="p-0"><ErrorState variant="inline" onRetry={() => refetch()} /></CardContent></Card>
       </div>
     );
   }

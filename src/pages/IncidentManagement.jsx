@@ -21,6 +21,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import { isPlatformOwner } from '@/lib/rbac';
 
 const CATEGORIES = ['malware_ransomware','data_breach','ddos','phishing','unauthorized_access','insider_threat','system_failure','physical_security','supply_chain','other'];
@@ -70,7 +71,7 @@ export default function IncidentManagement() {
   const isAdmin = isPlatformOwner(user?.role);
   const { customerId } = useActiveCustomer();
 
-  const { data: records = [], isLoading } = useQuery({
+  const { data: records = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['incidents'],
     queryFn: () => base44.entities.Incident.list('-updated_date', 200),
   });
@@ -151,8 +152,10 @@ export default function IncidentManagement() {
 
       <Card>
         <CardContent className="p-0">
-          {isLoading ? (
-            <LoadingState label={t('common_loading')} className="py-12" />
+          {isError ? (
+            <ErrorState variant="inline" onRetry={() => refetch()} />
+          ) : isLoading ? (
+            <LoadingState variant="skeleton" rows={5} label={t('common_loading')} />
           ) : filtered.length === 0 ? (
             <EmptyState compact icon={AlertTriangle} title={t('inc_empty')} />
           ) : (

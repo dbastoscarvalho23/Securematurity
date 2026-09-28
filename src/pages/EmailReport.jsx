@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Mail, Send, AlertCircle, CheckCircle2, Search, TrendingUp, Users, FileText, ShieldAlert, Link } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import EmptyState from '@/components/shared/EmptyState';
 import { format, subDays, isAfter } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -55,7 +56,7 @@ export default function EmailReport() {
   const [rangeFilter, setRangeFilter] = useState('14');
   const [entityFilter, setEntityFilter] = useState('all');
 
-  const { data: rawLogs = [], isLoading } = useQuery({
+  const { data: rawLogs = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['email-audit-logs'],
     queryFn: () => base44.entities.AuditLog.filter({ action: 'email_sent' }, '-created_date', 500),
   });
@@ -256,8 +257,10 @@ export default function EmailReport() {
           )}
         </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? (
-            <LoadingState label={t('email_report_loading')} className="h-32" />
+          {isError ? (
+            <ErrorState variant="inline" onRetry={() => refetch()} />
+          ) : isLoading ? (
+            <LoadingState variant="skeleton" rows={4} label={t('email_report_loading')} />
           ) : filteredLogs.length === 0 ? (
             <EmptyState compact icon={Mail} title={t('email_report_empty')} className="h-32" />
           ) : (

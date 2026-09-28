@@ -11,6 +11,8 @@
  * na suíte de API (gating fail-closed e provisionamento) e no browser. Aqui
  * passa-se um licenciamento permissivo para isolar a matriz RBAC.
  */
+import fs from "node:fs";
+import path from "node:path";
 import { loadFrontendLib } from "../lib/loadLib.mjs";
 
 const ALWAYS_LICENSED = () => true;
@@ -97,6 +99,15 @@ export async function runUiSuite(report) {
       ? { ok: true, detail: "200 — pedidos e delegações" }
       : { ok: false, detail: "o consultor perdeu o acesso externo" };
   });
+  // A leitura delegada é um âmbito, não uma porta aberta: nada fora dos percursos
+  // que a delegação cobre (e da própria gestão de acesso) pode ficar alcançável.
+  await report.case("FA1.4", "FA1 consultor", "a leitura delegada não abre a administração nem os restantes módulos", async () => {
+    const allowed = [...READ_ROUTES_FA1, "/external-access"];
+    const leaked = ROUTES.filter((p) => !allowed.includes(p) && rbac.canAccessRoute("consultant", p));
+    return leaked.length === 0
+      ? { ok: true, detail: `só ${allowed.length} percursos: leitura delegada e acesso externo` }
+      : { ok: false, detail: `alcança também: ${leaked.join(", ")}` };
+  });
 
   // ─── Isolamento por papel: administradores não entram na conformidade ───
   await report.case("ISO-UI1", "isolamento por papel", "administradores de plataforma não abrem percursos de conformidade", async () => {
@@ -170,5 +181,34 @@ export async function runUiSuite(report) {
     return id !== "ws-desconhecido"
       ? { ok: true, detail: `mantém a carteira (${id || "sem contexto"})` }
       : { ok: false, detail: "adoptou um workspace fora do âmbito" };
+  });
+  // FA1.5 — o consultor não tem tenant próprio: tudo o que vê vem da delegação.
+  await report.case("FA1.5", "FA1 consultor", "o contexto do consultor vem só de delegações vivas", async () => {
+    const consultant = { role: "consultant", email: "consultor@teste.pt" };
+    const live = tenant.activeDelegatedCustomerIds(assignments, { email: consultant.email });
+    const withDelegation = tenant.resolveActiveCustomerId({ user: consultant, delegatedCustomerIds: live });
+    const withoutDelegation = tenant.resolveActiveCustomerId({ user: consultant });
+    return withDelegation === "cliente-alfa" && !withoutDelegation
+      ? { ok: true, detail: `delegação viva → ${withDelegation}; sem delegação → sem contexto` }
+      : { ok: false, detail: `obtido "${withDelegation}" / "${withoutDelegation}"` };
+  });
+
+  // FA2 — a regra é única: nenhuma página filtra o tenant por si. A verificação é
+  // estrutural (sobre o código das páginas), porque é isso que o achado pedia: que
+  // a decisão deixasse de existir em cada página. Linhas de comentário não contam.
+  await report.case("TEN6", "contrato de tenant", "nenhuma página resolve o tenant por si (FA2)", async () => {
+    const pagesDir = "src/pages";
+    const offenders = [];
+    for (const file of fs.readdirSync(pagesDir).filter((f) => f.endsWith(".jsx"))) {
+      const lines = fs.readFileSync(path.join(pagesDir, file), "utf8").split("\n");
+      lines.forEach((line, index) => {
+        const code = line.trim();
+        if (code.startsWith("//") || code.startsWith("*") || code.startsWith("/*")) return;
+        if (/user\??\.customer_id/.test(code)) offenders.push(`${file}:${index + 1}`);
+      });
+    }
+    return offenders.length === 0
+      ? { ok: true, detail: "o contexto único é a única porta — nenhuma página lê user.customer_id" }
+      : { ok: false, detail: `leituras directas: ${offenders.join(", ")}` };
   });
 }

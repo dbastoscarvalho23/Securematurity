@@ -16,9 +16,12 @@ import EditUserDialog from '@/components/settings/EditUserDialog';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isPlatformOwner, hasRole } from '@/lib/rbac';
+import { useActiveCustomer } from '@/lib/tenantContext';
 
 export default function Organization() {
   const { user } = useAuth();
+  // Âmbito do tenant pelo contexto único (FA2) — a página não o resolve por si.
+  const { customerId } = useActiveCustomer();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [userToEdit, setUserToEdit] = useState(null);
@@ -48,7 +51,7 @@ export default function Organization() {
   }
 
   const userList = Array.isArray(users?.users) ? users.users : Array.isArray(users) ? users : [];
-  const visibleUsers = isAdmin ? userList : userList.filter(u => u.customer_id === user?.customer_id);
+  const visibleUsers = isAdmin ? userList : userList.filter(u => u.customer_id === customerId);
 
   return (
     <div className="space-y-6">

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PageHeader from '@/components/shared/PageHeader';
+import ErrorState from '@/components/shared/ErrorState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight, Bell, Link, Upload, FileText, ExternalLink, FileBarChart, GraduationCap, Clock, HardDrive } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -196,7 +197,7 @@ export default function Settings() {
     queryFn: () => base44.entities.Question.list('-created_date', 500),
   });
 
-  const { data: users = [] } = useQuery({
+  const { data: users = [], isError: usersError, refetch: refetchUsers } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
       const res = await base44.functions.invoke('listUsers', {});
@@ -669,6 +670,9 @@ export default function Settings() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
+                  {usersError ? (
+                    <ErrorState variant="inline" onRetry={() => refetchUsers()} />
+                  ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -767,6 +771,7 @@ export default function Settings() {
                         ))}
                     </TableBody>
                   </Table>
+                  )}
                 </CardContent>
               </Card>
             </>

@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { translateDomain } from '@/lib/domainTranslations';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 
 export default function AssessmentDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -42,7 +43,7 @@ export default function AssessmentDetail() {
     setLanguage(globalLanguage);
   }, [globalLanguage]);
 
-  const { data: assessment } = useQuery({
+  const { data: assessment, isError, refetch } = useQuery({
     queryKey: ['assessment', assessmentId],
     queryFn: () => base44.entities.Assessment.list().then(list => list.find(a => a.id === assessmentId)),
     enabled: !!assessmentId,
@@ -221,6 +222,11 @@ IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 An
     responses.forEach(r => { map[r.question_id] = r; });
     return map;
   }, [responses]);
+
+  // Uma falha de leitura é erro e não «a carregar» para sempre (FA4).
+  if (isError) {
+    return <ErrorState variant="page" onRetry={() => refetch()} />;
+  }
 
   if (!assessment) {
     return <LoadingState label={t('common_loading')} fullHeight className="h-64" />;

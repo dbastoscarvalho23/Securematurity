@@ -41,7 +41,7 @@ export const ASSESSMENT_AREAS = [
       'Percursos do núcleo NIS2 e dos módulos ativos: cobertura por papel, contexto de tenant, estados de erro e exportações.',
     accent: [37, 99, 235],
     summary:
-      'O núcleo NIS2 está completo em páginas e funções (avaliações, riscos, evidências, documentos, planos de ação, relatórios e pacote de auditoria) e as escritas passam por funções de backend com verificação de papel. O que falha é a consistência do contexto: cada página resolve o tenant à sua maneira, o papel de consultor não tem cobertura funcional e os erros de leitura aparecem como listas vazias.',
+      'O núcleo NIS2 está completo em páginas e funções (avaliações, riscos, evidências, documentos, planos de ação, relatórios e pacote de auditoria) e as escritas passam por funções de backend com verificação de papel. Os quatro achados desta área estão corrigidos: o contexto de tenant passou a ser um só para todas as páginas, o consultor tem leitura delegada sem escrita, a exportação prometida pela matriz existe e os erros de leitura deixaram de se confundir com listas vazias. O que resta é confirmação, não trabalho: a leitura das entidades por identidade delegada (consultor e auditor) e a reprodução do estado de erro com a rede cortada, ambas fora do alcance do emulador local.',
     solid: [
       'Ciclo de avaliação ponta-a-ponta em servidor: completeAssessment calcula resultados, cobertura e metodologia sem confiar no cliente.',
       'Riscos, tarefas, documentos, evidências, fornecedores, incidentes, DSR/RoPA e formação têm página, entidade com RLS e função de escrita dedicada.',
@@ -49,11 +49,8 @@ export const ASSESSMENT_AREAS = [
       'Automações agendadas por evento e por calendário (8 workflows) para tarefas, riscos, documentos, relatórios mensais e conservação de dados.',
     ],
     gaps: [
-      'Cobertura funcional do papel consultant e do acesso delegado.',
-      'Contexto de tenant resolvido de forma divergente entre páginas.',
-      'Capacidades de exportação declaradas na matriz sem implementação.',
-      'Erros de leitura indistinguíveis de «sem dados».',
-      'Fluxo do pacote de auditoria (/audit-package) com falha registada por reproduzir.',
+      'Confirmação em backend real da leitura das entidades por identidade delegada (consultor e auditor) — o emulador local avalia a RLS sobre a sessão autenticada, uma só.',
+      'Reprodução manual, no browser, do estado de erro com a rede cortada (FA4).',
     ],
   },
   {
@@ -118,9 +115,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FA1',
     area: 'funcional',
     severity: 'alta',
-    status: 'parcial',
+    status: 'corrigido',
     statusNote:
-      'A matriz de capacidades passou a dar leitura ao consultor nos percursos operacionais (avaliações, riscos, evidências, documentos, tarefas e relatórios) sem lhe dar escrita, e o contexto único de tenant alarga o que ele vê às delegações vivas. Verificado na suíte de decisão do harness (FA1.1–FA1.3, ISO-UI2); falta a leitura real dos dados do cliente numa sessão de consultor — o emulador local não honra `delegated_edit_customer_ids` (esconde na leitura) e exige backend real.',
+      'Decisão tomada e alinhada nas duas camadas: o consultor passa a ter LEITURA nos percursos que a delegação cobre (avaliações, riscos, evidências, documentos, tarefas e relatórios) por `T_DELEGATED_READ` em `src/lib/rbac.js`, sem qualquer capacidade de escrita — quem limita os dados continua a ser a RLS, que só devolve os clientes delegados; as rotas derivam da mesma matriz, pelo que o menu e o RouteGuard acompanham. Verificado no harness local: FA1.1–FA1.5 (percursos delegados acessíveis, nenhuma escrita nesses recursos, acesso externo mantido, nada fora do âmbito alcançável — administração e restantes módulos fechados — e o contexto do consultor a vir apenas de delegações vivas) e, no limite das funções, DEL1–DEL10 (leitura do cliente delegado a 200; escrita recusada a 403 na delegação de leitura, expirada, revogada e restrita por módulo). Residual assumido: a leitura das entidades numa sessão de consultor não é reproduzível no emulador local, que avalia a RLS sobre a sessão autenticada (uma só) — confirma-se em backend real.',
     title: 'Papel consultant sem cobertura funcional fora do acesso externo',
     persona: 'Consultor convidado a trabalhar num tenant de cliente (delegação ativa)',
     flow: 'Delegação e trabalho por conta do cliente',
@@ -140,9 +137,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FA2',
     area: 'funcional',
     severity: 'media',
-    status: 'parcial',
+    status: 'corrigido',
     statusNote:
-      'As cinco páginas que resolviam o tenant por si (RiskAssessment, AuditPackage, Recommendations, Tasks, ActionPlan) passaram a ler o contexto único (`useActiveCustomer()` sobre `tenantResolver.js`), com prioridade ao workspace selecionado, depois o tenant próprio e por fim as delegações vivas (TEN1–TEN3 no harness). As restantes páginas operacionais continuam a ler `user.customer_id` diretamente — a migração é o que falta para a regra ser única.',
+      'Regra única e sem exceções. Todas as páginas que resolviam o tenant por si passaram a ler `useActiveCustomer()` (`tenantResolver.js` — workspace selecionado → tenant próprio → delegações vivas): além das cinco migradas na fase anterior (RiskAssessment, AuditPackage, Recommendations, Tasks, ActionPlan), fecharam-se nesta fase as duas últimas que ainda filtravam por `user.customer_id` na visão do `customer_admin` — Organization (lista de utilizadores) e UserAssignments (atribuições). O contrato é exercido pelo harness (TEN1–TEN5: tenant próprio, delegação viva, delegações expirada/revogada/pendente excluídas, workspace selecionado a mudar mesmo o contexto e workspace fora do âmbito ignorado) e a regra deixou de poder divergir em silêncio: o caso TEN6 percorre `src/pages` e falha se alguma página voltar a ler `user.customer_id`. O cabeçalho (TopBar) mostra o tenant ativo. Residual: a leitura dos dados do tenant delegado em cada página exige backend real (ver FA1).',
     title: 'Contexto de tenant resolvido de forma divergente entre páginas',
     evidence: [
       'src/pages/RiskAssessment.jsx:57 — `const customerId = user?.customer_id;` e a lista é filtrada por igualdade estrita (linha 138), pelo que quem não tem customer_id próprio vê a lista vazia mesmo com leitura delegada.',
@@ -181,9 +178,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FA4',
     area: 'funcional',
     severity: 'media',
-    status: 'parcial',
+    status: 'corrigido',
     statusNote:
-      'Os dois passos estão feitos na estrutura: (a) `ErrorState` (variante `inline`) é o estado de erro único, distinto do vazio, com mensagem própria e botão de repetir que chama o `refetch` da consulta; (b) a fronteira de erro passou para o `AppLayout`, com chave por rota, pelo que uma exceção numa página mostra um painel de erro e mantém menu e cabeçalho utilizáveis — as rotas que tinham fronteira própria passaram a depender da do layout. Consultas que já expõem o erro: ComplianceMetrics, StrategicReport, Reports, Assessments, RiskAssessment, AuditPackage e AuditLog (esta também com o estado de erro da leitura de servidor). Falta a passagem pelas restantes listas (Customers, Tasks, ActionPlan, Recommendations, EvidenceOverview, DocumentAuditTrail, PolicyAttestation, DSU/RoPA, Suppliers, Vulnerabilities, Training, Workspaces, Organization, Licensing), que mantêm o vazio como única saída.',
+      'O estado de erro passou a cobrir todas as listas das três famílias, sem exceções. `ErrorState` (variante `inline`) — distinto do `EmptyState`, com mensagem própria de falha e botão de repetir que chama o `refetch` da consulta — cobre agora também AssessmentDetail, ComplianceJourney, EmailReport, ExternalAccess, IncidentManagement, SecurityDocuments, SupplyChain, SystemStatus, TaskAnalytics, UserAssignments, Settings, QuestionBank e Configuration, além das sete consultas que já o tinham (ComplianceMetrics, StrategicReport, Reports, Assessments, RiskAssessment, AuditPackage, AuditLog) e das restantes listas entretanto cobertas (ActionPlan, Admin, Customers, DSRManagement, DocumentAuditTrail, EvidenceOverview, Licensing, Organization, PlatformOperations, PolicyAttestation, Recommendations, RoPA, Suppliers, Tasks, Training, VulnerabilityManagement, Workspaces). O carregamento das listas passou a `LoadingState variant="skeleton"`, que reserva o espaço em vez de o fazer saltar, e a fronteira de erro do `AppLayout` (chave por rota) mantém menu e cabeçalho utilizáveis quando uma página rebenta. Verificado por inspeção e no preview (render normal e estado vazio das páginas alcançáveis pela sessão local); a reprodução com a rede cortada fica na lista de testes por executar, porque exige uma execução manual no browser.',
     title: 'Erros de leitura apresentados como listas vazias e sem possibilidade de repetir',
     evidence: [
       'Nenhuma página trata `isError` do useQuery (verificação em src/pages: só existem onError de mutações); uma falha de função/RLS deixa `data` vazio e a interface mostra o EmptyState de «sem dados».',
@@ -201,9 +198,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FA5',
     area: 'funcional',
     severity: 'alta',
-    status: 'parcial',
+    status: 'corrigido',
     statusNote:
-      'O percurso deixou de poder falhar em silêncio: a leitura dos pacotes passou a expor o próprio erro (painel de erro com mensagem e repetição, diferente do EmptyState) e a rota está coberta pela fronteira de erro do layout, que mostra um painel e mantém navegação e cabeçalho em vez do ecrã em branco. O contexto de tenant é resolvido pelo resolvedor único (workspace selecionado → tenant próprio → delegações vivas) e, sem cliente resolvido, a página mostra o estado vazio próprio — e não uma lista vazia nem um erro. Falta a reprodução com uma sessão real de auditor sobre um tenant com pacotes (o emulador local só tem uma sessão), que é o que confirma o fim do sintoma.',
+      'O percurso deixou de poder falhar em silêncio e passou a ser exercido por identidade. Na página: a leitura dos pacotes expõe o próprio erro (painel com mensagem e repetição, diferente do `EmptyState`), o tenant é resolvido pelo contexto único e, sem cliente resolvido, mostra o estado vazio próprio; a rota está sob a fronteira de erro do `AppLayout`, pelo que uma exceção mantém navegação e cabeçalho em vez do ecrã em branco. No servidor, o harness fecha o que estava por reproduzir: FA5.1 gera o pacote com a identidade do editor do tenant (200 — pacote v1.0 do cliente Alfa, com âmbito e entradas), FA5.2 confirma que o auditor, papel de leitura, é recusado na criação (403) e consome o que o tenant gerou, e FA5.3 confirma que a leitura da trilha pelo auditor fica dentro do seu tenant. Residual assumido: a leitura das entidades `AuditPackage` por uma sessão de auditor real (a RLS é avaliada sobre a sessão autenticada, uma só no emulador) confirma-se em backend real.',
     title: 'Pacote de auditoria com falha de página registada e não reproduzida por inspeção',
     persona: 'Auditor autorizado a /audit-package',
     flow: 'Preparação de auditoria — geração e consulta de pacotes',

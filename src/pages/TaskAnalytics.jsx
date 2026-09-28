@@ -13,6 +13,7 @@ import { AlertTriangle, CheckCircle2, Clock, Users, ListTodo } from 'lucide-reac
 import { format, isAfter, parseISO } from 'date-fns';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
+import ErrorState from '@/components/shared/ErrorState';
 import { isPlatformOwner } from '@/lib/rbac';
 
 // Cores das séries vindas dos tokens do design system (FC2) e rótulos por chave
@@ -81,7 +82,7 @@ export default function TaskAnalytics() {
 
   const [drillDown, setDrillDown] = useState(null); // { title, description, tasks }
 
-  const { data: tasks = [] } = useQuery({
+  const { data: tasks = [], isError, refetch } = useQuery({
     queryKey: ['tasks-analytics', customerId],
     queryFn: () => isAdmin
       ? base44.entities.Task.list('-created_date', 500)
@@ -150,6 +151,16 @@ export default function TaskAnalytics() {
   const openDrillDown = (title, description, taskList) => {
     setDrillDown({ title, description, tasks: taskList });
   };
+
+  // Uma falha de leitura mostra-se como erro com repetição, nunca como gráficos
+  // de zeros (FA4).
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <ErrorState variant="inline" onRetry={() => refetch()} className="rounded-xl border bg-card" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

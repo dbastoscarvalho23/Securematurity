@@ -34,6 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import ErrorState from '@/components/shared/ErrorState';
 import { MODULE_META } from '@/lib/licenseModules';
 import { toast } from 'sonner';
 import {
@@ -272,7 +273,7 @@ export default function ExternalAccess() {
   const [onboardingDialog, setOnboardingDialog] = useState(false);
 
   // Fetch assignments
-  const { data: assignments = [], isLoading } = useQuery({
+  const { data: assignments = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['external-access', user?.id],
     queryFn: () => listAssignments({ userId: role === 'consultant' ? user?.id : undefined }),
   });
@@ -381,7 +382,9 @@ export default function ExternalAccess() {
         </Card>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <ErrorState variant="inline" onRetry={() => refetch()} />
+      ) : isLoading ? (
         <LoadingState variant="skeleton" rows={4} label={t('common_loading')} />
       ) : (
         <>
