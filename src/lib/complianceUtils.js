@@ -78,7 +78,7 @@ export function slaStatus(dueDate) {
 
 export const SLA_STATUS_STYLES = {
   breached: 'bg-destructive/10 text-destructive border-destructive/20',
-  critical: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  critical: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
   warning: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
   ok: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
   unknown: 'bg-muted text-muted-foreground',
@@ -86,7 +86,7 @@ export const SLA_STATUS_STYLES = {
 
 export const SEVERITY_STYLES = {
   critical: 'bg-destructive/10 text-destructive border-destructive/20',
-  high: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  high: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
   medium: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
   low: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
 };
@@ -95,12 +95,12 @@ export const STATUS_STYLES = {
   active: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
   inactive: 'bg-muted text-muted-foreground',
   draft: 'bg-muted text-muted-foreground',
-  detected: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  detected: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
   investigating: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
-  contained: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  contained: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
   resolved: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
   closed: 'bg-muted text-muted-foreground',
-  received: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  received: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
   identity_verification: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
   in_progress: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
   completed: 'bg-chart-2/10 text-chart-2 border-chart-2/20',

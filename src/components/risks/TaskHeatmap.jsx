@@ -4,30 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Badge } from '@/components/ui/badge';
 import { X, ClipboardList } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
-
-const CELL_BG = (score) => {
-  if (score >= 20) return '#dc2626';
-  if (score >= 16) return '#ef4444';
-  if (score >= 12) return '#f97316';
-  if (score >= 9)  return '#fb923c';
-  if (score >= 6)  return '#facc15';
-  if (score >= 4)  return '#fde047';
-  if (score >= 2)  return '#bbf7d0';
-  return '#dcfce7';
-};
-
-const CELL_TEXT = (score) => {
-  if (score >= 9) return '#fff';
-  if (score >= 6) return '#713f12';
-  return '#166534';
-};
-
-const LEVEL_KEY = (score) => {
-  if (score >= 16) return 'risk_level_critical';
-  if (score >= 9)  return 'risk_level_high';
-  if (score >= 4)  return 'risk_level_medium';
-  return 'risk_level_low';
-};
+import { RISK_LEVELS, RISK_LEVEL_KEYS, riskColor, riskForeground, riskColorForScore, riskForegroundForScore, riskLevelFor } from '@/lib/palette';
 
 const TASK_STATUS_STYLES = {
   todo:        'bg-muted text-muted-foreground border-border',
@@ -57,18 +34,13 @@ const PRIORITY_KEYS = {
 };
 
 function ScoreZoneLegend({ t }) {
-  const zones = [
-    { color: '#dcfce7', text: '#166534', label: t('risk_heatmap_legend_low') },
-    { color: '#fde047', text: '#713f12', label: t('risk_heatmap_legend_medium') },
-    { color: '#fb923c', text: '#fff',    label: t('risk_heatmap_legend_high') },
-    { color: '#ef4444', text: '#fff',    label: t('risk_heatmap_legend_critical') },
-  ];
   return (
     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-      {zones.map(({ color, text, label }) => (
-        <span key={label} className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded flex items-center justify-center text-[9px] font-bold" style={{ background: color, color: text }}>●</span>
-          {label}
+      {RISK_LEVELS.map((level) => (
+        <span key={level} className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded flex items-center justify-center text-[9px] font-bold"
+            style={{ background: riskColor(level), color: riskForeground(level) }}>●</span>
+          {t(`risk_heatmap_legend_${level}`)}
         </span>
       ))}
     </div>
@@ -187,8 +159,8 @@ export default function TaskHeatmap({ risks }) {
                       const score = impact * likelihood;
                       const cell = getCell(impact, likelihood);
                       const isSelected = selected?.impact === impact && selected?.likelihood === likelihood;
-                      const bg = CELL_BG(score);
-                      const fg = CELL_TEXT(score);
+                      const bg = riskColorForScore(score);
+                      const fg = riskForegroundForScore(score);
                       const hasTasks = cell.length > 0;
 
                       return (
@@ -261,7 +233,7 @@ export default function TaskHeatmap({ risks }) {
                 }`}
                 variant="outline"
               >
-                {t(LEVEL_KEY(selectedScore))} · {t('risk_score')} {selectedScore}
+                {t(RISK_LEVEL_KEYS[riskLevelFor(selectedScore)])} · {t('risk_score')} {selectedScore}
               </Badge>
               <span className="text-xs text-muted-foreground">{selectedTasks.length} {selectedTasks.length !== 1 ? t('risk_mit_task_plural') : t('risk_mit_task_singular')}</span>
             </div>

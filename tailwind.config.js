@@ -8,6 +8,14 @@ module.exports = {
       'bg-chart-3/10', 'text-chart-3', 'border-chart-3/20',
       'bg-chart-4/10', 'text-chart-4', 'border-chart-4/20',
       'bg-chart-5/10', 'text-chart-5', 'border-chart-5/20',
+      'bg-risk-low/10', 'text-risk-low', 'border-risk-low/20',
+      'bg-risk-medium/10', 'text-risk-medium', 'border-risk-medium/20',
+      'bg-risk-high/10', 'text-risk-high', 'border-risk-high/20',
+      'bg-risk-critical/10', 'text-risk-critical', 'border-risk-critical/20',
+      'bg-status-success/10', 'text-status-success', 'border-status-success/20',
+      'bg-status-warning/10', 'text-status-warning', 'border-status-warning/20',
+      'bg-status-danger/10', 'text-status-danger', 'border-status-danger/20',
+      'bg-status-info/10', 'text-status-info', 'border-status-info/20',
     ],
   theme: {
   	extend: {
@@ -60,6 +68,18 @@ module.exports = {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
+  			},
+  			risk: {
+  				low: 'hsl(var(--risk-low))',
+  				medium: 'hsl(var(--risk-medium))',
+  				high: 'hsl(var(--risk-high))',
+  				critical: 'hsl(var(--risk-critical))'
+  			},
+  			status: {
+  				success: 'hsl(var(--status-success))',
+  				warning: 'hsl(var(--status-warning))',
+  				danger: 'hsl(var(--status-danger))',
+  				info: 'hsl(var(--status-info))'
   			},
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',

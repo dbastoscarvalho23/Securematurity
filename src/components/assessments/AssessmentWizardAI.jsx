@@ -169,7 +169,7 @@ ${JSON.stringify(questionList)}`,
       </div>
 
       {dbQuestions.length === 0 && !loadingQuestions && (
-        <div className="flex items-center gap-2 p-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-sm">
+        <div className="flex items-center gap-2 p-3 rounded-lg border border-status-warning/30 bg-status-warning/10 text-foreground text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {t('assessment_wizard_no_qs_warning')} ({meta.frameworks.join(', ')}). {t('assessment_wizard_add_questions_first')}
         </div>

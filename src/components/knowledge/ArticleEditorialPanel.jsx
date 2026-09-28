@@ -13,7 +13,7 @@ import { Loader2, Upload, ShieldCheck, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/lib/LanguageContext';
-import { ARTICLE_ACTIONS_BY_STATUS, KB_FRAMEWORKS, getArticleFrameworkColor } from '@/lib/kbFrameworks';
+import { ARTICLE_ACTIONS_BY_STATUS, KB_FRAMEWORKS, getArticleFrameworkColor, getArticleFrameworkTint } from '@/lib/kbFrameworks';
 
 const STATUS_STYLES = {
   draft: 'bg-muted text-muted-foreground',
@@ -115,7 +115,7 @@ export default function ArticleEditorialPanel({ articles = [] }) {
                   {fw && (
                     <span
                       className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-                      style={{ backgroundColor: `${fwColor}20`, color: fwColor }}
+                      style={{ backgroundColor: getArticleFrameworkTint(article), color: fwColor }}
                     >
                       {article.framework}
                     </span>

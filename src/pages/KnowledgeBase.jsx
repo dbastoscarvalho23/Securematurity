@@ -12,7 +12,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { useEffectiveRole } from '@/lib/RoleSimulationContext';
 import { can } from '@/lib/rbac';
 import { useKnowledgeArticles } from '@/lib/useKnowledgeArticles';
-import { KB_FRAMEWORKS, getArticleFrameworkColor } from '@/lib/kbFrameworks';
+import { KB_FRAMEWORKS, getArticleFrameworkColor, getArticleFrameworkTint } from '@/lib/kbFrameworks';
 import ArticleEditorialPanel from '@/components/knowledge/ArticleEditorialPanel';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -122,7 +122,7 @@ export default function KnowledgeBase() {
             {fw && (
               <span
                 className="px-2 py-0.5 rounded-md text-xs font-medium"
-                style={{ backgroundColor: getArticleFrameworkColor(selectedArticle) + '20', color: getArticleFrameworkColor(selectedArticle) }}
+                style={{ backgroundColor: getArticleFrameworkTint(selectedArticle), color: getArticleFrameworkColor(selectedArticle) }}
               >
                 {fw.name}
               </span>
@@ -277,7 +277,7 @@ export default function KnowledgeBase() {
                           <div className="flex items-start gap-3">
                             <div
                               className="p-2 rounded-lg flex-shrink-0"
-                              style={{ backgroundColor: fwColor + '20' }}
+                              style={{ backgroundColor: getArticleFrameworkTint(article) }}
                             >
                               <Icon className="w-4 h-4" style={{ color: fwColor }} />
                             </div>
@@ -288,7 +288,7 @@ export default function KnowledgeBase() {
                                 {article.framework && (
                                   <span
                                     className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-                                    style={{ backgroundColor: fwColor + '20', color: fwColor }}
+                                    style={{ backgroundColor: getArticleFrameworkTint(article), color: fwColor }}
                                   >
                                     {article.framework}
                                   </span>

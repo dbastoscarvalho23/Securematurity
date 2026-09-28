@@ -19,9 +19,9 @@ import { notifySeatChange, MIN_SEAT_LIMIT } from '@/lib/seatManagement';
 // Keyed by canonical role; look up with normalizeRole() so a record still
 // holding a legacy spelling resolves to the same style.
 const ROLE_STYLES = {
-  master_admin:   'bg-red-100 text-red-700 border-red-200',
-  customer_admin: 'bg-purple-100 text-purple-700 border-purple-200',
-  employee:       'bg-blue-100 text-blue-700 border-blue-200',
+  master_admin:   'bg-status-danger/10 text-status-danger border-status-danger/20',
+  customer_admin: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
+  employee:       'bg-chart-1/10 text-chart-1 border-chart-1/20',
 };
 
 const ROLE_LABELS = {
@@ -46,7 +46,7 @@ function SeatBar({ used, total }) {
             className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[9px] font-bold transition-colors ${
               i < used
                 ? atLimit ? 'bg-destructive border-destructive text-destructive-foreground'
-                  : nearLimit ? 'bg-orange-400 border-orange-400 text-white'
+                  : nearLimit ? 'bg-status-warning border-status-warning text-destructive-foreground'
                   : 'bg-primary border-primary text-primary-foreground'
                 : 'bg-muted border-muted-foreground/20 text-muted-foreground'
             }`}
@@ -63,7 +63,7 @@ function SeatBar({ used, total }) {
           </span>
         )}
         {!atLimit && nearLimit && (
-          <span className="text-orange-500 font-medium">{t('seat_remaining').replace('{count}', total - used)}</span>
+          <span className="text-status-warning font-medium">{t('seat_remaining').replace('{count}', total - used)}</span>
         )}
         {!atLimit && !nearLimit && (
           <span className="text-muted-foreground">{t('seat_available').replace('{count}', total - used)}</span>
@@ -244,8 +244,8 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
 
       {/* At-limit warning */}
       {atLimit && (
-        <div className="flex items-center gap-3 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800 px-3 py-2">
-          <p className="text-xs text-orange-700 dark:text-orange-400 flex items-center gap-1.5">
+        <div className="flex items-center gap-3 rounded-lg border border-status-warning/30 bg-status-warning/10 px-3 py-2">
+          <p className="text-xs text-status-warning flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
             {t('seat_limit_reached')}
           </p>

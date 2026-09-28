@@ -87,8 +87,8 @@ export default function ValidationReport() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
-        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+      <div className="flex items-start gap-3 rounded-lg border border-status-warning/30 bg-status-warning/10 p-4 text-foreground">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-status-warning" />
         <div className="space-y-1">
           <p className="text-sm font-semibold">Página temporária — documento de validação, não é produção</p>
           <p className="text-sm">
@@ -161,7 +161,7 @@ export default function ValidationReport() {
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Método</p>
             <p className="text-sm text-muted-foreground">{ROUND_META.method}</p>
           </div>
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <div className="rounded-lg border border-status-warning/30 bg-status-warning/10 p-3 text-sm text-foreground">
             {ROUND_META.limitation}
           </div>
           <p className="text-xs text-muted-foreground">Registada em {ROUND_META.date}.</p>
@@ -173,7 +173,7 @@ export default function ValidationReport() {
           <CardTitle className="flex flex-wrap items-center gap-2 text-base">
             <FlaskConical className="h-4 w-4 text-muted-foreground" />
             Parecer de prontidão do Core
-            <Badge variant="outline" className="border-amber-200 bg-amber-100 text-amber-700">
+            <Badge variant="outline" className="border-status-warning/30 bg-status-warning/10 text-status-warning">
               {VERDICT.classification}
             </Badge>
           </CardTitle>

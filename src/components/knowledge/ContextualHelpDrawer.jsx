@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { HelpCircle, Search, BookMarked, FileText, BookOpen, LayoutTemplate, GraduationCap, ArrowRight, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { getRouteContext, getContextualArticles } from '@/lib/kbContextMatcher';
-import { KB_FRAMEWORKS, getArticleFrameworkColor } from '@/lib/kbFrameworks';
+import { KB_FRAMEWORKS, getArticleFrameworkColor, getArticleFrameworkTint } from '@/lib/kbFrameworks';
 import { useKnowledgeArticles } from '@/lib/useKnowledgeArticles';
 
 const CATEGORY_ICONS = {
@@ -48,7 +48,7 @@ function ArticleRow({ article }) {
           {fw && (
             <span
               className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-              style={{ backgroundColor: `${fwColor}20`, color: fwColor }}
+              style={{ backgroundColor: getArticleFrameworkTint(article), color: fwColor }}
             >
               {article.framework}
             </span>

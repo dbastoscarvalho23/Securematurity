@@ -12,14 +12,19 @@ import {
 } from 'recharts';
 import { useLanguage } from '@/lib/LanguageContext';
 import { BarChart3, PieChart as PieIcon, Layers, AlertCircle } from 'lucide-react';
+import { chartColor } from '@/lib/palette';
 
-const SECTOR_COLORS = ['#3b82f6', '#22c55e', '#f97316', '#a855f7', '#ef4444', '#06b6d4'];
-const STATUS_COLORS = ['#22c55e', '#f97316', '#94a3b8'];
+/** Palettes resolved from the design-system tokens (FC2) — never a literal. */
+const STATUS_COLORS = {
+  Active: 'hsl(var(--chart-2))',
+  Onboarding: 'hsl(var(--chart-3))',
+  Inactive: 'hsl(var(--muted-foreground))',
+};
 const RISK_COLORS = {
-  open: '#ef4444',
-  in_treatment: '#f97316',
-  accepted: '#3b82f6',
-  closed: '#22c55e',
+  open: 'hsl(var(--destructive))',
+  in_treatment: 'hsl(var(--chart-3))',
+  accepted: 'hsl(var(--chart-1))',
+  closed: 'hsl(var(--chart-2))',
 };
 
 const tooltipStyle = {
@@ -122,7 +127,7 @@ export default function PlatformOverview() {
                 <Tooltip contentStyle={tooltipStyle} />
                 <Bar dataKey="avg_score" name={t('admin_avg_maturity')} radius={[0, 4, 4, 0]}>
                   {sectorData.map((_, i) => (
-                    <Cell key={i} fill={SECTOR_COLORS[i % SECTOR_COLORS.length]} />
+                    <Cell key={i} fill={chartColor(i)} />
                   ))}
                 </Bar>
               </BarChart>
@@ -145,7 +150,7 @@ export default function PlatformOverview() {
               <PieChart>
                 <Pie data={statusData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={3}>
                   {statusData.map((_, i) => (
-                    <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />
+                    <Cell key={i} fill={STATUS_COLORS[statusData[i].name]} />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle} />

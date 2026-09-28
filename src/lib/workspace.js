@@ -94,9 +94,9 @@ export function findWorkspaceInTree(tree, workspaceId) {
  * Workspace type metadata for display.
  */
 export const WORKSPACE_TYPES = {
-  root: { label: "Root", color: "text-blue-600", badge: "bg-blue-100 text-blue-700" },
-  organization: { label: "Organization", color: "text-indigo-600", badge: "bg-indigo-100 text-indigo-700" },
-  division: { label: "Division", color: "text-purple-600", badge: "bg-purple-100 text-purple-700" },
-  subsidiary: { label: "Subsidiary", color: "text-green-600", badge: "bg-green-100 text-green-700" },
-  department: { label: "Department", color: "text-amber-600", badge: "bg-amber-100 text-amber-700" },
+  root: { label: "Root", color: "text-chart-1", badge: "bg-chart-1/10 text-chart-1" },
+  organization: { label: "Organization", color: "text-chart-4", badge: "bg-chart-4/10 text-chart-4" },
+  division: { label: "Division", color: "text-chart-5", badge: "bg-chart-5/10 text-chart-5" },
+  subsidiary: { label: "Subsidiary", color: "text-chart-2", badge: "bg-chart-2/10 text-chart-2" },
+  department: { label: "Department", color: "text-chart-3", badge: "bg-chart-3/10 text-chart-3" },
 };

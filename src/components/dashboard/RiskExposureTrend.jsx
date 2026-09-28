@@ -9,6 +9,7 @@ import {
 import { TrendingDown, TrendingUp, Minus, Activity } from 'lucide-react';
 import { format, subMonths, parseISO } from 'date-fns';
 import { useLanguage } from '@/lib/LanguageContext';
+import { riskColor, riskLevelFor } from '@/lib/palette';
 
 function buildMonthBuckets(n = 6) {
   const buckets = [];
@@ -97,13 +98,9 @@ export default function RiskExposureTrend({ customerId, isAdmin }) {
     : delta > 0 ? `↑ ${delta} ${t('risk_trend_vs_last')} (${t('risk_trend_worsening')})`
     : t('risk_trend_unchanged');
 
-  // Escala de risco pelos tokens do design system (FC2), em vez de hex rígidos.
-  const RISK_TOKEN = { low: '--risk-low', medium: '--risk-medium', high: '--risk-high', critical: '--risk-critical' };
-  const currentLevel = latestScore >= 16 ? 'critical' : latestScore >= 9 ? 'high' : latestScore >= 4 ? 'medium' : 'low';
-  const gradientColor = [
-    `hsl(var(${RISK_TOKEN[currentLevel]}))`,
-    `hsl(var(${RISK_TOKEN[currentLevel]}) / 0.5)`,
-  ];
+  // Escala de risco pelos tokens do design system (FC2) — ver src/lib/palette.js.
+  const currentLevel = riskLevelFor(latestScore);
+  const gradientColor = [riskColor(currentLevel)];
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
@@ -187,8 +184,8 @@ export default function RiskExposureTrend({ customerId, isAdmin }) {
                 stroke={gradientColor[0]}
                 strokeWidth={2.5}
                 fill="url(#riskGradient)"
-                dot={{ r: 4, fill: gradientColor[0], strokeWidth: 2, stroke: '#fff' }}
-                activeDot={{ r: 6, fill: gradientColor[0], stroke: '#fff', strokeWidth: 2 }}
+                dot={{ r: 4, fill: gradientColor[0], strokeWidth: 2, stroke: 'hsl(var(--destructive-foreground))' }}
+                activeDot={{ r: 6, fill: gradientColor[0], stroke: 'hsl(var(--destructive-foreground))', strokeWidth: 2 }}
                 connectNulls
               />
             </AreaChart>

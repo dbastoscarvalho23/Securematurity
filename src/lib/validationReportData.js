@@ -44,21 +44,21 @@ export const VERDICT = {
   ],
 };
 
-// Ordem = prioridade. As classes seguem os tokens semânticos usados na app.
+// Ordem = prioridade. As classes seguem os tokens semânticos e a escala --risk-* (FC2).
 export const SEVERITIES = [
-  { id: 'critica', label: 'Crítica', classes: 'bg-destructive/10 text-destructive border-destructive/20' },
-  { id: 'alta', label: 'Alta', classes: 'bg-orange-100 text-orange-700 border-orange-200' },
-  { id: 'media', label: 'Média', classes: 'bg-amber-100 text-amber-700 border-amber-200' },
-  { id: 'baixa', label: 'Baixa', classes: 'bg-slate-100 text-slate-600 border-slate-200' },
-  { id: 'verificar', label: 'A verificar', classes: 'bg-blue-100 text-blue-700 border-blue-200' },
+  { id: 'critica', label: 'Crítica', classes: 'bg-status-danger/10 text-status-danger border-status-danger/20' },
+  { id: 'alta', label: 'Alta', classes: 'bg-status-warning/10 text-status-warning border-status-warning/20' },
+  { id: 'media', label: 'Média', classes: 'bg-chart-3/10 text-chart-3 border-chart-3/20' },
+  { id: 'baixa', label: 'Baixa', classes: 'bg-status-success/10 text-status-success border-status-success/20' },
+  { id: 'verificar', label: 'A verificar', classes: 'bg-status-info/10 text-status-info border-status-info/20' },
 ];
 
 // Estado das correções aplicadas em código (a validação live continua pendente —
 // ver FOLLOW_UPS). Não altera a severidade original de cada problema.
 export const STATUSES = [
-  { id: 'corrigido', label: 'Corrigido', classes: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  { id: 'parcial', label: 'Parcial', classes: 'bg-amber-100 text-amber-700 border-amber-200' },
-  { id: 'pendente', label: 'Pendente', classes: 'bg-destructive/10 text-destructive border-destructive/20' },
+  { id: 'corrigido', label: 'Corrigido', classes: 'bg-status-success/10 text-status-success border-status-success/20' },
+  { id: 'parcial', label: 'Parcial', classes: 'bg-status-warning/10 text-status-warning border-status-warning/20' },
+  { id: 'pendente', label: 'Pendente', classes: 'bg-status-danger/10 text-status-danger border-status-danger/20' },
 ];
 
 export const ISSUE_STATUS = {

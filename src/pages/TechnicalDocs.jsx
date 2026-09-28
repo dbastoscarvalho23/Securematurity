@@ -104,7 +104,7 @@ function RoleGrid({ t }) {
             style={{ borderColor: rgba(accent, 0.25), backgroundColor: rgba(accent, 0.04) }}
           >
             <div className="flex items-center justify-between gap-2">
-              <Badge className="text-xs" style={{ backgroundColor: rgba(accent), color: '#fff' }}>
+              <Badge className="text-xs" style={{ backgroundColor: rgba(accent), color: 'hsl(var(--destructive-foreground))' }}>
                 {t(`role_${role}`) || role}
               </Badge>
               <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
