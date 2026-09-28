@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Settings, Building2, Loader2, Clock, Sun, Moon, Monitor, Menu } from 'lucide-react';
+import { User, LogOut, Settings, Building2, Loader2, Clock, Sun, Moon, Monitor, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTheme } from '@/lib/ThemeContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,11 +23,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import GlobalSearch from './GlobalSearch';
 import NotificationBell from './NotificationBell';
 import Logo from './Logo';
+import RoleSimulationSelector from './RoleSimulationSelector';
+import WorkspaceSwitcher from './WorkspaceSwitcher';
 
 export const PAGE_TITLE_KEYS = {
   '/': 'page_dashboard',
@@ -60,13 +62,19 @@ export const PAGE_TITLE_KEYS = {
   '/system-status': 'page_system_status',
   '/user-assignments': 'page_user_assignments',
   '/licensing': 'page_licensing',
+  '/strategic-report': 'page_reports',
+  '/knowledge-base': 'nav_knowledge_base',
+  '/training': 'nav_training',
+  '/policy-attestation': 'nav_policy_attestation',
+  '/external-access': 'nav_external_access',
+  '/framework-guide': 'nav_framework_guide',
+  '/supply-chain': 'nav_supply_chain',
 };
 
-export default function TopBar({ onMenuClick }) {
+export default function TopBar({ collapsed, onToggleCollapse, onMenuClick, pageTitle }) {
   const { user, refreshUser } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const { theme, setTheme } = useTheme();
-  const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
   const [name, setName] = useState('');
   const [selectedLang, setSelectedLang] = useState(language);
@@ -118,115 +126,136 @@ export default function TopBar({ onMenuClick }) {
 
   return (
     <>
-      <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0 sticky top-0 z-40">
-        <div className="flex items-center gap-3">
+      <header className="h-16 bg-sidebar border-b border-sidebar-border flex items-center sticky top-0 z-30">
+        {/* Left section — above the sidebar */}
+        <div className={`flex items-center gap-2 px-4 border-r border-sidebar-border ${collapsed ? 'w-auto md:w-16' : 'w-auto md:w-60'} flex-shrink-0 h-full`}>
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden h-9 w-9"
+            className="hidden md:flex h-9 w-9 flex-shrink-0"
+            onClick={onToggleCollapse}
+            aria-label="Toggle sidebar"
+          >
+            {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+          </Button>
+          <div className="flex items-center flex-1 min-w-0">
+            <Logo variant={collapsed ? 'icon' : 'full'} size={collapsed ? 32 : 120} className="ankora-logo" />
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden h-9 w-9 flex-shrink-0"
             onClick={onMenuClick}
             aria-label="Menu"
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <Logo variant="full" size={120} className="ankora-logo" />
         </div>
 
-        <div className="flex items-center gap-3">
-          <GlobalSearch />
-          <NotificationBell />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2.5 text-sm font-medium h-9 px-3">
-                <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-                  {initials}
-                </div>
-                <div className="hidden md:flex flex-col items-start leading-tight">
-                  <span className="text-sm font-medium">{displayName}</span>
-                  {!isAdmin && customerName && (
-                    <span className="text-xs text-muted-foreground">{customerName}</span>
-                  )}
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60">
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-semibold">{displayName}</p>
-                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                  <p className="text-xs text-primary font-medium">{roleLabel}</p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Clock className="w-3 h-3 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground font-mono">
-                      {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                    </p>
+        {/* Right section — above the content */}
+        <div className="flex-1 flex items-center justify-between px-6 min-w-0">
+          <h2 className="text-base font-heading font-semibold text-sidebar-foreground truncate">
+            {pageTitle}
+          </h2>
+
+          <div className="flex items-center gap-2 md:gap-3">
+            <WorkspaceSwitcher />
+            <GlobalSearch />
+            <RoleSimulationSelector />
+            <NotificationBell />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="gap-2.5 text-sm font-medium h-9 px-3">
+                  <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                    {initials}
                   </div>
-                  {!isAdmin && customerName && (
+                  <div className="hidden md:flex flex-col items-start leading-tight">
+                    <span className="text-sm font-medium">{displayName}</span>
+                    {!isAdmin && customerName && (
+                      <span className="text-xs text-muted-foreground">{customerName}</span>
+                    )}
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-semibold">{displayName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    <p className="text-xs text-primary font-medium">{roleLabel}</p>
                     <div className="flex items-center gap-1 mt-0.5">
-                      <Building2 className="w-3 h-3 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground truncate">{customerName}</p>
+                      <Clock className="w-3 h-3 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </p>
                     </div>
-                  )}
+                    {!isAdmin && customerName && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Building2 className="w-3 h-3 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground truncate">{customerName}</p>
+                      </div>
+                    )}
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <div className="flex items-center gap-2 px-2 py-1.5">
+                  <span className="text-sm text-muted-foreground flex-1">{t('profile_language')}</span>
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      const next = language === 'en' ? 'pt' : 'en';
+                      setLanguage(next);
+                      base44.auth.updateMe({ language: next });
+                    }}
+                    className="flex items-center bg-muted rounded-full h-6 w-[3.25rem] relative border border-border overflow-hidden"
+                  >
+                    <span className={`absolute inset-y-0.5 w-[calc(50%-1px)] rounded-full bg-primary transition-all duration-200 ${language === 'en' ? 'left-0.5' : 'left-[calc(50%+1px)]'}`} />
+                    <span className={`relative z-10 w-1/2 text-center text-[10px] font-bold transition-colors duration-200 ${language === 'en' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>EN</span>
+                    <span className={`relative z-10 w-1/2 text-center text-[10px] font-bold transition-colors duration-200 ${language === 'pt' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>PT</span>
+                  </button>
                 </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <div className="flex items-center gap-2 px-2 py-1.5">
-                <span className="text-sm text-muted-foreground flex-1">{t('profile_language')}</span>
-                <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    const next = language === 'en' ? 'pt' : 'en';
-                    setLanguage(next);
-                    base44.auth.updateMe({ language: next });
-                  }}
-                  className="flex items-center bg-muted rounded-full h-6 w-[3.25rem] relative border border-border overflow-hidden"
-                >
-                  <span className={`absolute inset-y-0.5 w-[calc(50%-1px)] rounded-full bg-primary transition-all duration-200 ${language === 'en' ? 'left-0.5' : 'left-[calc(50%+1px)]'}`} />
-                  <span className={`relative z-10 w-1/2 text-center text-[10px] font-bold transition-colors duration-200 ${language === 'en' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>EN</span>
-                  <span className={`relative z-10 w-1/2 text-center text-[10px] font-bold transition-colors duration-200 ${language === 'pt' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>PT</span>
-                </button>
-              </div>
-              <div className="flex items-center gap-2 px-2 py-1.5">
-                <span className="text-sm text-muted-foreground flex-1">{t('profile_theme')}</span>
-                <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5 border border-border">
-                  {[
-                    { value: 'light', icon: Sun },
-                    { value: 'system', icon: Monitor },
-                    { value: 'dark', icon: Moon },
-                  ].map(({ value, icon: Icon }) => (
-                    <button
-                      key={value}
-                      onClick={e => { e.stopPropagation(); setTheme(value); base44.auth.updateMe({ theme: value }); }}
-                      className={`p-1 rounded transition-colors ${theme === value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                      <Icon className="w-3 h-3" />
-                    </button>
-                  ))}
+                <div className="flex items-center gap-2 px-2 py-1.5">
+                  <span className="text-sm text-muted-foreground flex-1">{t('profile_theme')}</span>
+                  <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5 border border-border">
+                    {[
+                      { value: 'light', icon: Sun },
+                      { value: 'system', icon: Monitor },
+                      { value: 'dark', icon: Moon },
+                    ].map(({ value, icon: Icon }) => (
+                      <button
+                        key={value}
+                        onClick={e => { e.stopPropagation(); setTheme(value); base44.auth.updateMe({ theme: value }); }}
+                        className={`p-1 rounded transition-colors ${theme === value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      >
+                        <Icon className="w-3 h-3" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={openProfile}>
-                <User className="w-4 h-4 mr-2" />
-                {t('my_profile')}
-              </DropdownMenuItem>
-              {isAdmin && (
-                <DropdownMenuItem asChild>
-                  <Link to="/settings">
-                    <Settings className="w-4 h-4 mr-2" />
-                    {t('settings')}
-                  </Link>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={openProfile}>
+                  <User className="w-4 h-4 mr-2" />
+                  {t('my_profile')}
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => base44.auth.logout()}
-                className="text-destructive focus:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                {t('sign_out')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/configuration">
+                      <Settings className="w-4 h-4 mr-2" />
+                      {t('settings')}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => base44.auth.logout()}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  {t('sign_out')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 

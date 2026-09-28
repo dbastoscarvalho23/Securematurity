@@ -2,56 +2,132 @@
  * Centralized RBAC — capability-based access control.
  *
  * Single source of truth for:
- * - Route access (canAccess)
- * - Sidebar navigation visibility (getNavGroups)
+ * - Role normalization (normalizeRole)
+ * - Route access (canAccess, canAccessRoute)
+ * - Resource visibility (canView)
  * - Role capabilities (getCapabilities)
  *
- * This replaces the hardcoded lists previously scattered across
- * RouteGuard.jsx and Sidebar.jsx.
+ * Supports 8-role tier system with backward compatibility for the
+ * legacy 3-role system (admin, customer_admin, user).
  */
 
-// ─── Role definitions ──────────────────────────────────────────
+// ─── Role definitions (8-role tier) ─────────────────────────────
 export const ROLES = {
-  ADMIN: 'admin',
+  MASTER_ADMIN: 'master_admin',
+  WORKSPACE_ADMIN: 'workspace_admin',
+  PARTNER_ADMIN: 'partner_admin',
   CUSTOMER_ADMIN: 'customer_admin',
+  GRC_ANALYST: 'grc_analyst',
+  CONTROL_OWNER: 'control_owner',
+  EXECUTIVE: 'executive',
+  AUDITOR: 'auditor',
+  EMPLOYEE: 'employee',
+  // Legacy aliases (backward compat)
+  ADMIN: 'admin',
   USER: 'user',
 };
 
-// ─── Capability definitions per role ────────────────────────────
-// Each capability is a named permission that grants access to a set of routes.
-const ROLE_CAPABILITIES = {
-  [ROLES.ADMIN]: [
-    'platform_admin',      // /admin, /audit-log, /workspaces
-    'manage_customers',   // /customers
-    'manage_users',        // user CRUD
-    'manage_frameworks',   // /question-bank, framework config
-    'manage_storage',      // storage settings
-    'manage_reminders',    // reminder settings
-    'view_reports',        // /email-report, generated reports
-    'view_all_modules',    // all module-gated routes
-    'view_development',     // /ropa, /dsr, /incidents, /vulnerabilities, /compliance-metrics, /training
-    'view_organization',   // /organization
-    'view_configuration',   // /configuration
-    'view_system_status',   // /system-status
-    'manage_assignments',  // user-customer delegation
+export const ALL_ROLES = [
+  'master_admin', 'workspace_admin', 'partner_admin', 'customer_admin',
+  'grc_analyst', 'control_owner', 'executive', 'auditor', 'employee',
+];
+
+/**
+ * Normalize a backend role to the 8-role tier system.
+ * Maps legacy roles to their new equivalents.
+ */
+export function normalizeRole(role) {
+  if (!role) return 'employee';
+  const map = {
+    admin: 'master_admin',
+    customer_admin: 'customer_admin',
+    user: 'employee',
+    master_admin: 'master_admin',
+    workspace_admin: 'workspace_admin',
+    partner_admin: 'partner_admin',
+    grc_analyst: 'grc_analyst',
+    control_owner: 'control_owner',
+    executive: 'executive',
+    auditor: 'auditor',
+    employee: 'employee',
+  };
+  return map[role] || 'employee';
+}
+
+// ─── Resource visibility per role ───────────────────────────────
+// Defines which nav resources each role can see.
+const RESOURCE_ACCESS = {
+  master_admin: '*',
+  workspace_admin: [
+    'dashboard', 'customers', 'compliance_journey', 'framework_guide',
+    'assessments', 'action_plan', 'question_bank', 'compliance_metrics',
+    'tasks', 'task_analytics', 'documents', 'evidence', 'document_audit',
+    'reports', 'strategic_report', 'email_report',
+    'risks', 'vulnerabilities', 'incidents',
+    'suppliers', 'supply_chain', 'knowledge_base',
+    'ropa', 'dsr', 'training', 'policy_attestation', 'external_access',
+    'organization', 'licensing', 'settings', 'system_status', 'audit_log',
   ],
-  [ROLES.CUSTOMER_ADMIN]: [
-    'manage_users',        // invite/edit users in own tenant
-    'view_reports',        // /email-report
-    'view_all_modules',    // all module-gated routes (license permitting)
-    'view_settings',       // /settings
+  partner_admin: [
+    'dashboard', 'customers', 'compliance_journey', 'framework_guide',
+    'assessments', 'action_plan', 'compliance_metrics',
+    'tasks', 'task_analytics', 'documents', 'evidence', 'document_audit',
+    'reports', 'strategic_report', 'email_report',
+    'risks', 'vulnerabilities', 'incidents',
+    'suppliers', 'supply_chain', 'knowledge_base',
+    'ropa', 'dsr', 'training', 'policy_attestation',
+    'organization', 'licensing',
   ],
-  [ROLES.USER]: [
-    'view_principal',      // dashboard + core compliance routes
-    'view_settings',       // /settings (own profile only)
+  customer_admin: [
+    'dashboard', 'compliance_journey', 'framework_guide',
+    'assessments', 'action_plan', 'question_bank', 'compliance_metrics',
+    'tasks', 'task_analytics', 'documents', 'evidence', 'document_audit',
+    'reports', 'email_report',
+    'risks', 'vulnerabilities', 'incidents',
+    'suppliers', 'supply_chain', 'knowledge_base',
+    'ropa', 'dsr', 'training', 'policy_attestation', 'external_access',
+    'settings',
+  ],
+  grc_analyst: [
+    'dashboard', 'compliance_journey', 'framework_guide',
+    'assessments', 'action_plan', 'question_bank', 'compliance_metrics',
+    'tasks', 'task_analytics', 'documents', 'evidence', 'document_audit',
+    'reports', 'risks', 'vulnerabilities', 'incidents',
+    'suppliers', 'supply_chain', 'knowledge_base',
+    'ropa', 'dsr',
+  ],
+  control_owner: [
+    'dashboard', 'tasks', 'task_analytics', 'evidence',
+    'documents', 'incidents', 'knowledge_base',
+    'training', 'policy_attestation', 'external_access',
+  ],
+  executive: [
+    'dashboard', 'reports', 'strategic_report', 'compliance_metrics',
+    'risks',
+  ],
+  auditor: [
+    'dashboard', 'audit_log', 'document_audit', 'evidence',
+    'ropa', 'dsr', 'reports',
+  ],
+  employee: [
+    'dashboard', 'tasks', 'incidents', 'training',
+    'knowledge_base', 'policy_attestation', 'external_access',
   ],
 };
 
-// ─── Route → required capability mapping ───────────────────────
-// null = no capability required (license module gates instead)
-// string = the capability required to access this route
+/**
+ * Check if a role can view a specific resource.
+ */
+export function canView(role, resource) {
+  const normalized = normalizeRole(role);
+  const access = RESOURCE_ACCESS[normalized];
+  if (!access) return false;
+  if (access === '*') return true;
+  return access.includes(resource);
+}
+
+// ─── Route → required capability mapping (legacy compat) ────────
 const ROUTE_CAPABILITY = {
-  // Admin-only routes
   '/admin': 'platform_admin',
   '/audit-log': 'platform_admin',
   '/workspaces': 'platform_admin',
@@ -61,13 +137,9 @@ const ROUTE_CAPABILITY = {
   '/configuration': 'view_configuration',
   '/system-status': 'view_system_status',
   '/user-assignments': 'manage_assignments',
-  '/licensing': null, // accessible to all (shows denial info)
-
-  // Shared routes
+  '/licensing': null,
   '/settings': 'view_settings',
   '/email-report': 'view_reports',
-
-  // Development/module routes (admin sees all; others gated by license)
   '/ropa': 'view_development',
   '/dsr': 'view_development',
   '/incidents': 'view_development',
@@ -75,8 +147,6 @@ const ROUTE_CAPABILITY = {
   '/compliance-metrics': 'view_development',
   '/training': 'view_development',
   '/framework-guide': 'view_development',
-
-  // Principal routes (accessible to all authenticated users with customer)
   '/': null,
   '/dashboard': null,
   '/compliance-journey': null,
@@ -94,96 +164,138 @@ const ROUTE_CAPABILITY = {
   '/suppliers': null,
 };
 
-// Routes accessible by 'user' role (with a customer assigned)
-// These are the principal routes that don't require a special capability.
-const USER_PRINCIPAL_ROUTES = [
-  '/', '/compliance-journey', '/assessments', '/evidence',
-  '/tasks', '/task-analytics', '/risk-assessment', '/security-documents',
-  '/document-audit-trail', '/supply-chain', '/suppliers', '/reports', '/settings',
-];
+const ROLE_CAPABILITIES = {
+  admin: [
+    'platform_admin', 'manage_customers', 'manage_users', 'manage_frameworks',
+    'manage_storage', 'manage_reminders', 'view_reports', 'view_all_modules',
+    'view_development', 'view_organization', 'view_configuration',
+    'view_system_status', 'manage_assignments',
+  ],
+  customer_admin: [
+    'manage_users', 'view_reports', 'view_all_modules', 'view_settings',
+  ],
+  user: ['view_principal', 'view_settings'],
+};
 
-// Prefix-based fallback for dynamic routes
-const ROUTE_PREFIX_CAPABILITY = [
-  { prefix: '/assessments', capability: null },
-];
-
-// ─── Helper functions ──────────────────────────────────────────
+// ─── Route → resource mapping (for canView) ─────────────────────
+const ROUTE_RESOURCE = {
+  '/': 'dashboard',
+  '/dashboard': 'dashboard',
+  '/customers': 'customers',
+  '/compliance-journey': 'compliance_journey',
+  '/framework-guide': 'framework_guide',
+  '/assessments': 'assessments',
+  '/action-plan': 'action_plan',
+  '/question-bank': 'question_bank',
+  '/compliance-metrics': 'compliance_metrics',
+  '/tasks': 'tasks',
+  '/task-analytics': 'task_analytics',
+  '/security-documents': 'documents',
+  '/evidence': 'evidence',
+  '/document-audit-trail': 'document_audit',
+  '/reports': 'reports',
+  '/strategic-report': 'strategic_report',
+  '/email-report': 'email_report',
+  '/risk-assessment': 'risks',
+  '/vulnerabilities': 'vulnerabilities',
+  '/incidents': 'incidents',
+  '/suppliers': 'suppliers',
+  '/supply-chain': 'supply_chain',
+  '/knowledge-base': 'knowledge_base',
+  '/ropa': 'ropa',
+  '/dsr': 'dsr',
+  '/audit-log': 'audit_log',
+  '/training': 'training',
+  '/policy-attestation': 'policy_attestation',
+  '/external-access': 'external_access',
+  '/organization': 'organization',
+  '/licensing': 'licensing',
+  '/configuration': 'settings',
+  '/settings': 'settings',
+  '/system-status': 'system_status',
+  '/workspaces': 'organization',
+  '/user-assignments': 'organization',
+  '/admin': 'organization',
+};
 
 /**
- * Get the list of capabilities for a role.
+ * Get the resource name for a route path.
  */
-export function getCapabilities(role) {
-  return ROLE_CAPABILITIES[role] || [];
+export function resourceForRoute(path) {
+  return ROUTE_RESOURCE[path] || null;
 }
 
 /**
- * Check if a role has a specific capability.
- */
-export function hasCapability(role, capability) {
-  return getCapabilities(role).includes(capability);
-}
-
-/**
- * Resolve the required capability for a route path.
- * Returns null if no capability is required (license module gates instead).
- */
-export function capabilityForRoute(path) {
-  if (ROUTE_CAPABILITY[path] !== undefined) return ROUTE_CAPABILITY[path];
-
-  for (const { prefix, capability } of ROUTE_PREFIX_CAPABILITY) {
-    if (path.startsWith(prefix)) return capability;
-  }
-
-  return null;
-}
-
-/**
- * Check if a user can access a route.
- * Combines RBAC capability check with role-based route lists.
+ * Check if a role can access a specific route.
+ * Uses the new canView system with fallback to legacy capability check.
  *
- * @param {string} role - User role
+ * @param {string} role - User role (raw or normalized)
  * @param {string} path - Route path
  * @param {boolean} hasCustomer - Whether user has a customer assigned
  * @returns {{ allowed: boolean, reason: string|null }}
  */
 export function canAccess(role, path, hasCustomer) {
-  // Admin: full access
-  if (role === ROLES.ADMIN) return { allowed: true, reason: null };
+  const normalized = normalizeRole(role);
 
-  // User without customer: only dashboard
-  if (role === ROLES.USER && !hasCustomer) {
-    if (path === '/') return { allowed: true, reason: null };
-    return { allowed: false, reason: 'no_customer' };
-  }
-
-  // Check capability requirement
-  const requiredCap = capabilityForRoute(path);
-
-  // No capability required — check principal route access for 'user' role
-  if (requiredCap === null) {
-    if (role === ROLES.USER) {
-      const allowed = USER_PRINCIPAL_ROUTES.some(p =>
-        path === p || (p !== '/' && path.startsWith(p))
-      );
-      return allowed
-        ? { allowed: true, reason: null }
-        : { allowed: false, reason: 'not_principal_route' };
-    }
-    // customer_admin: principal routes are allowed
+  // Master admin: full access
+  if (normalized === 'master_admin' || role === 'admin') {
     return { allowed: true, reason: null };
   }
 
-  // Check if role has the required capability
-  if (hasCapability(role, requiredCap)) {
+  // Check resource visibility
+  const resource = resourceForRoute(path);
+  if (resource && canView(normalized, resource)) {
+    return { allowed: true, reason: null };
+  }
+
+  // Fallback to legacy capability check for backward compat
+  const requiredCap = capabilityForRoute(path);
+  if (requiredCap === null) {
+    // Principal routes — check if it's a basic route
+    const principalRoutes = ['/', '/dashboard', '/compliance-journey', '/assessments',
+      '/evidence', '/tasks', '/task-analytics', '/risk-assessment',
+      '/security-documents', '/document-audit-trail', '/supply-chain',
+      '/suppliers', '/reports', '/settings'];
+    if (principalRoutes.some(p => path === p || (p !== '/' && path.startsWith(p)))) {
+      return { allowed: true, reason: null };
+    }
+  }
+  if (requiredCap && hasCapability(role, requiredCap)) {
     return { allowed: true, reason: null };
   }
 
   return { allowed: false, reason: 'missing_capability' };
 }
 
-// ─── Sidebar navigation definition ──────────────────────────────
-// Icons are referenced by name to avoid importing lucide here.
-// The Sidebar component maps these to actual icon components.
+/**
+ * Check if a role can access a route (simple boolean, for RouteGuard).
+ */
+export function canAccessRoute(role, path) {
+  const normalized = normalizeRole(role);
+  if (normalized === 'master_admin') return true;
+  const resource = resourceForRoute(path);
+  if (resource && canView(normalized, resource)) return true;
+  // Fallback to legacy
+  const result = canAccess(role, path, true);
+  return result.allowed;
+}
+
+// ─── Legacy helper functions (backward compat) ──────────────────
+
+export function getCapabilities(role) {
+  return ROLE_CAPABILITIES[role] || [];
+}
+
+export function hasCapability(role, capability) {
+  return getCapabilities(role).includes(capability);
+}
+
+export function capabilityForRoute(path) {
+  if (ROUTE_CAPABILITY[path] !== undefined) return ROUTE_CAPABILITY[path];
+  return null;
+}
+
+// ─── Legacy sidebar nav (backward compat — replaced by sidebarGroups.js) ──
 export const NAV_GROUPS_CONFIG = [
   {
     labelKey: 'nav_main',
@@ -245,19 +357,11 @@ export const NAV_GROUPS_CONFIG = [
   },
 ];
 
-/**
- * Get the visible nav groups for a user.
- * Filters items based on role capabilities and customer assignment.
- *
- * @param {string} role - User role
- * @param {boolean} hasCustomer - Whether user has a customer assigned
- * @returns {Array} - Filtered nav groups
- */
 export function getNavGroups(role, hasCustomer) {
+  const normalized = normalizeRole(role);
   const caps = getCapabilities(role);
 
-  // User without customer: only dashboard
-  if (role === ROLES.USER && !hasCustomer) {
+  if (normalized === 'employee' && !hasCustomer) {
     return NAV_GROUPS_CONFIG.map(group => ({
       ...group,
       items: group.items.filter(item => item.path === '/'),
@@ -265,17 +369,13 @@ export function getNavGroups(role, hasCustomer) {
   }
 
   return NAV_GROUPS_CONFIG.map(group => {
-    // Skip admin-only groups for non-admins
-    if (group.adminOnly && role !== ROLES.ADMIN) {
+    if (group.adminOnly && normalized !== 'master_admin' && role !== 'admin') {
       return { ...group, items: [] };
     }
-
-    // Filter items by capability
     const items = group.items.filter(item => {
-      if (!item.capability) return true; // No capability required
+      if (!item.capability) return true;
       return caps.includes(item.capability);
     });
-
     return { ...group, items };
   }).filter(group => group.items.length > 0);
 }

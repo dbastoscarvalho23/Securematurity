@@ -11,26 +11,36 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { getNavGroups } from '@/lib/rbac';
-
+import { useEffectiveRole } from '@/lib/RoleSimulationContext';
+import { getVisibleSidebarGroups } from '@/lib/sidebarGroups';
+import { useLicense } from '@/hooks/useLicense';
+import { isModuleLicensed } from '@/lib/license';
+import { moduleForRoute } from '@/lib/licenseModules';
 
 const ICON_MAP = {
   LayoutDashboard, Building2, ClipboardCheck, BarChart3, ShieldCheck,
-  Settings, ScrollText, BookOpen, ListTodo, Target, TrendingUp,
-  FolderLock, Activity, TriangleAlert, Paperclip, MapPin, MailCheck,
-  Truck, Database, Siren, Users, Bug, Gauge, GraduationCap, Bot, Network, UserCog,
+  Settings, ChevronLeft, ChevronRight, ScrollText, BookOpen,
+  ListTodo, Target, TrendingUp, FolderLock, Activity, TriangleAlert,
+  Paperclip, MapPin, MailCheck, Truck, Database, Siren, Users, Bug,
+  Gauge, GraduationCap, Bot, Network, UserCog,
 };
 
-export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onCloseMobile }) {
+export default function Sidebar({ collapsed, mobileOpen = false, onCloseMobile }) {
   const location = useLocation();
   const { user } = useAuth();
   const { t } = useLanguage();
+  const role = useEffectiveRole();
+  const { data: license } = useLicense();
 
-  const role = user?.role;
   const hasCustomer = !!user?.customer_id;
 
-  // Single source of truth: get nav groups from RBAC system
-  const navGroups = getNavGroups(role, hasCustomer);
+  // Get visible nav groups: filtered by role (canView) and module license
+  const navGroups = getVisibleSidebarGroups(
+    role,
+    license,
+    isModuleLicensed,
+    moduleForRoute
+  );
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -43,7 +53,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
       )}
       <aside
         className={cn(
-          "fixed left-0 top-14 h-[calc(100vh-3.5rem)] bg-sidebar text-sidebar-foreground z-50 flex flex-col transition-all duration-300 border-r border-sidebar-border w-64",
+          "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-sidebar text-sidebar-foreground z-40 flex flex-col transition-all duration-300 border-r border-sidebar-border w-64",
           collapsed ? "md:w-16" : "md:w-60",
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
@@ -94,14 +104,6 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
             </div>
           ))}
         </nav>
-
-        {/* Collapse Toggle */}
-        <button
-          onClick={onToggle}
-          className="hidden md:flex h-10 items-center justify-center border-t border-sidebar-border text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors flex-shrink-0"
-        >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
       </aside>
     </TooltipProvider>
   );
