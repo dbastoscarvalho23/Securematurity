@@ -52,7 +52,6 @@ export default function PlatformAdminDashboard() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('page_dashboard')}
         description={t('admin_dashboard_subtitle')}
         actions={
           <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">

@@ -10,8 +10,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { ShieldCheck, Plus, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
+import { ShieldCheck, Plus, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
+import LoadingState from '@/components/shared/LoadingState';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,11 +27,12 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { hasRole } from '@/lib/rbac';
 
+// Cores dos tokens semânticos (FC2) e rótulo por chave de tradução (FC3).
 const STATUS_CONFIG = {
-  pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100', label: 'Pending' },
-  accepted: { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Accepted' },
-  rejected: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100', label: 'Rejected' },
-  expired: { icon: XCircle, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Expired' },
+  pending: { icon: Clock, color: 'text-chart-3', bg: 'bg-chart-3/10', labelKey: 'pa_pending' },
+  accepted: { icon: CheckCircle2, color: 'text-chart-2', bg: 'bg-chart-2/10', labelKey: 'pa_accepted' },
+  rejected: { icon: XCircle, color: 'text-destructive', bg: 'bg-destructive/10', labelKey: 'pa_rejected' },
+  expired: { icon: XCircle, color: 'text-muted-foreground', bg: 'bg-muted', labelKey: 'pa_expired' },
 };
 
 export default function PolicyAttestation() {
@@ -104,7 +106,6 @@ export default function PolicyAttestation() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('nav_policy_attestation')}
         description={t('pa_subtitle')}
         actions={isAdmin && (
           <Button onClick={() => setNewDialog(true)} className="gap-2">
@@ -118,7 +119,7 @@ export default function PolicyAttestation() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-100 text-amber-600">
+            <div className="p-2.5 rounded-xl bg-chart-3/10 text-chart-3">
               <Clock className="w-5 h-5" />
             </div>
             <div>
@@ -129,7 +130,7 @@ export default function PolicyAttestation() {
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-600">
+            <div className="p-2.5 rounded-xl bg-chart-2/10 text-chart-2">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
@@ -140,7 +141,7 @@ export default function PolicyAttestation() {
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-red-100 text-red-600">
+            <div className="p-2.5 rounded-xl bg-destructive/10 text-destructive">
               <XCircle className="w-5 h-5" />
             </div>
             <div>
@@ -155,9 +156,7 @@ export default function PolicyAttestation() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
+            <LoadingState variant="skeleton" rows={5} label={t('common_loading')} />
           ) : pending.length === 0 ? (
             <EmptyState icon={ShieldCheck} title={t('pa_no_pending')} />
           ) : (
@@ -233,7 +232,7 @@ export default function PolicyAttestation() {
                       </p>
                     </div>
                     <Badge variant="secondary" className={cn('text-xs ml-2', cfg?.color)}>
-                      {cfg?.label || a.status}
+                      {cfg?.labelKey ? t(cfg.labelKey) : a.status}
                     </Badge>
                   </div>
                 );

@@ -15,7 +15,8 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { toast } from 'sonner';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
-import { listAssignments, createAssignment, updateAssignment, deleteAssignment, DELEGATION_ROLES } from '@/lib/delegation';
+import LoadingState from '@/components/shared/LoadingState';
+import { listAssignments, createAssignment, updateAssignment, deleteAssignment, DELEGATION_ROLES, STATUS_BADGES } from '@/lib/delegation';
 import { isPlatformOwner } from '@/lib/rbac';
 
 function AssignmentFormDialog({ open, onClose, editing, users, customers, t }) {
@@ -120,7 +121,7 @@ function AssignmentFormDialog({ open, onClose, editing, users, customers, t }) {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(DELEGATION_ROLES).map(([code, meta]) => (
-                  <SelectItem key={code} value={code}>{meta.label}</SelectItem>
+                  <SelectItem key={code} value={code}>{t(meta.labelKey)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -210,9 +211,7 @@ export default function UserAssignments() {
       <Card>
         <CardContent className="pt-6">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
+            <LoadingState variant="skeleton" rows={5} label={t('common_loading')} />
           ) : visibleAssignments.length > 0 ? (
             <Table>
               <TableHeader>
@@ -233,17 +232,24 @@ export default function UserAssignments() {
                       <TableCell className="font-medium text-sm">{a.user_email || '—'}</TableCell>
                       <TableCell className="text-sm">{a.customer_name || '—'}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-xs">{roleMeta.label}</Badge>
+                        <Badge variant="outline" className="text-xs">{t(roleMeta.labelKey)}</Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{a.assigned_by || '—'}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`text-xs ${a.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-500'}`}>
-                          {a.status}
+                          {STATUS_BADGES[a.status] ? t(STATUS_BADGES[a.status].labelKey) : a.status}
                         </Badge>
                       </TableCell>
                       {isAdmin && (
                         <TableCell>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(a)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleEdit(a)}
+                            aria-label={t('assignment_edit')}
+                            title={t('assignment_edit')}
+                          >
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
                         </TableCell>

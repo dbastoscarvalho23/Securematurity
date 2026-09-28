@@ -11,24 +11,26 @@ import { Users, Activity, AlertTriangle, Database, HardDrive, Clock } from 'luci
 import PageHeader from '@/components/shared/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { normalizeRole } from '@/lib/rbac';
 
-const ENTITY_LABELS = {
-  assessment: 'Assessments',
-  task: 'Tasks',
-  risk: 'Risks',
-  security_document: 'Security Documents',
-  customer: 'Customers',
-  user: 'Users',
-  nomination: 'Nominations',
-  incident: 'Incidents',
-  vulnerability: 'Vulnerabilities',
-  supplier: 'Suppliers',
-  training_user: 'Training Users',
-  knowledge_article: 'Knowledge Articles',
-  assessment_response: 'Assessment Responses',
+/** Nome apresentável de cada entidade — sempre por chave de tradução (FC3). */
+const ENTITY_LABEL_KEYS = {
+  assessment: 'sys_entity_assessment',
+  task: 'sys_entity_task',
+  risk: 'sys_entity_risk',
+  security_document: 'sys_entity_security_document',
+  customer: 'sys_entity_customer',
+  user: 'sys_entity_user',
+  nomination: 'sys_entity_nomination',
+  incident: 'sys_entity_incident',
+  vulnerability: 'sys_entity_vulnerability',
+  supplier: 'sys_entity_supplier',
+  training_user: 'sys_entity_training_user',
+  knowledge_article: 'sys_entity_knowledge_article',
+  assessment_response: 'sys_entity_assessment_response',
 };
 
 export default function SystemStatus() {
@@ -52,10 +54,8 @@ export default function SystemStatus() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title={t('system_status_title')} description={t('system_status_subtitle')} />
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
-        </div>
+        <PageHeader description={t('system_status_subtitle')} />
+        <LoadingState label={t('common_loading')} fullHeight />
       </div>
     );
   }
@@ -63,7 +63,7 @@ export default function SystemStatus() {
   if (error || !metrics) {
     return (
       <div className="space-y-6">
-        <PageHeader title={t('system_status_title')} description={t('system_status_subtitle')} />
+        <PageHeader description={t('system_status_subtitle')} />
         <EmptyState icon={AlertTriangle} title={t('common_no_data')} className="h-64" />
       </div>
     );
@@ -80,7 +80,7 @@ export default function SystemStatus() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('system_status_title')} description={t('system_status_subtitle')} />
+      <PageHeader description={t('system_status_subtitle')} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -111,25 +111,25 @@ export default function SystemStatus() {
       {/* Estimated metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="p-4 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-950/30 flex items-center justify-center">
-            <HardDrive className="w-5 h-5 text-amber-600" />
+          <div className="w-10 h-10 rounded-lg bg-chart-3/10 flex items-center justify-center">
+            <HardDrive className="w-5 h-5 text-chart-3" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <p className="text-sm font-medium text-muted-foreground">{t('metric_storage_estimated')}</p>
-              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">{t('metric_estimated_badge')}</Badge>
+              <Badge variant="outline" className="text-xs bg-chart-3/10 text-chart-3 border-chart-3/20">{t('metric_estimated_badge')}</Badge>
             </div>
             <p className="text-2xl font-bold mt-0.5">{metrics.storageEstimated?.totalMB?.toLocaleString() || 0} MB</p>
           </div>
         </Card>
         <Card className="p-4 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-950/30 flex items-center justify-center">
-            <Clock className="w-5 h-5 text-amber-600" />
+          <div className="w-10 h-10 rounded-lg bg-chart-3/10 flex items-center justify-center">
+            <Clock className="w-5 h-5 text-chart-3" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <p className="text-sm font-medium text-muted-foreground">{t('metric_uptime_estimated')}</p>
-              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">{t('metric_estimated_badge')}</Badge>
+              <Badge variant="outline" className="text-xs bg-chart-3/10 text-chart-3 border-chart-3/20">{t('metric_estimated_badge')}</Badge>
             </div>
             <p className="text-2xl font-bold mt-0.5">{metrics.uptimeEstimated?.percentage?.toFixed(2) || 0}%</p>
             <p className="text-xs text-muted-foreground">{metrics.uptimeEstimated?.label}</p>
@@ -198,7 +198,7 @@ export default function SystemStatus() {
             <TableBody>
               {Object.entries(metrics.entityCounts || {}).map(([entity, count]) => (
                 <TableRow key={entity}>
-                  <TableCell className="font-medium">{ENTITY_LABELS[entity] || entity.replace(/_/g, ' ')}</TableCell>
+                  <TableCell className="font-medium">{ENTITY_LABEL_KEYS[entity] ? t(ENTITY_LABEL_KEYS[entity]) : entity.replace(/_/g, ' ')}</TableCell>
                   <TableCell className="text-right font-bold">{count}</TableCell>
                 </TableRow>
               ))}

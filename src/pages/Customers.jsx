@@ -47,7 +47,7 @@ export default function Customers() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setShowForm(false);
     },
-    onError: (err) => toast.error(err?.message || 'Failed to create customer'),
+    onError: (err) => toast.error(err?.message || t('customers_create_failed')),
   });
 
   const updateMutation = useMutation({
@@ -61,7 +61,7 @@ export default function Customers() {
       setShowForm(false);
       setEditingCustomer(null);
     },
-    onError: (err) => toast.error(err?.message || 'Failed to update customer'),
+    onError: (err) => toast.error(err?.message || t('customers_update_failed')),
   });
 
   const deleteMutation = useMutation({
@@ -73,7 +73,7 @@ export default function Customers() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setSelectedCustomer(null);
     },
-    onError: (err) => toast.error(err?.message || 'Failed to delete customer'),
+    onError: (err) => toast.error(err?.message || t('customers_delete_failed')),
   });
 
   const filtered = customers.filter(c =>
@@ -149,7 +149,7 @@ export default function Customers() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8}><LoadingState label={t('common_loading')} /></TableCell>
+                    <TableCell colSpan={8}><LoadingState variant="skeleton" rows={4} label={t('common_loading')} /></TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
@@ -158,13 +158,21 @@ export default function Customers() {
                 ) : filtered.map(c => (
                   <TableRow
                     key={c.id}
+                    tabIndex={0}
+                    aria-label={t('aria_customer_open', { name: c.name })}
                     className={cn(
-                      "group cursor-pointer transition-colors",
+                      "group cursor-pointer transition-colors focus-visible:outline-none focus-visible:bg-muted/60",
                       selectedCustomer?.id === c.id
                         ? "bg-primary/5 border-l-2 border-l-primary"
                         : "hover:bg-muted/30"
                     )}
                     onClick={() => handleRowClick(c)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleRowClick(c);
+                      }
+                    }}
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -197,7 +205,13 @@ export default function Customers() {
                     <TableCell onClick={e => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity"
+                            aria-label={t('aria_customer_actions')}
+                            title={t('aria_customer_actions')}
+                          >
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -232,6 +246,8 @@ export default function Customers() {
             <button
               onClick={() => setSelectedCustomer(null)}
               className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full bg-muted hover:bg-muted-foreground/20 flex items-center justify-center transition-colors"
+              aria-label={t('aria_close')}
+              title={t('aria_close')}
             >
               <X className="w-3.5 h-3.5 text-muted-foreground" />
             </button>

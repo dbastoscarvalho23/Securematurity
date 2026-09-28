@@ -14,6 +14,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { toast } from 'sonner';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 import { fetchWorkspaceTree, flattenWorkspaceTree, WORKSPACE_TYPES, migrateExistingWorkspaces } from '@/lib/workspace';
 import { isPlatformOwner } from '@/lib/rbac';
 
@@ -29,7 +30,12 @@ function WorkspaceNode({ node, onAddChild, onEdit, onDelete, t }) {
         style={{ marginLeft: `${(node._depth || 0) * 24}px` }}
       >
         {hasChildren ? (
-          <button onClick={() => setExpanded(!expanded)} className="text-muted-foreground hover:text-foreground">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-muted-foreground hover:text-foreground"
+            aria-label={t('aria_workspace_toggle')}
+            aria-expanded={expanded}
+          >
             {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </button>
         ) : (
@@ -42,17 +48,17 @@ function WorkspaceNode({ node, onAddChild, onEdit, onDelete, t }) {
           <span className="text-xs text-muted-foreground hidden sm:inline">{node.customer_name}</span>
         )}
         {node.status === 'inactive' && (
-          <Badge variant="outline" className="text-xs bg-gray-100 text-gray-500">{t('common_inactive')}</Badge>
+          <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">{t('common_inactive')}</Badge>
         )}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAddChild(node)}>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAddChild(node)} aria-label={t('aria_workspace_add_child')} title={t('aria_workspace_add_child')}>
             <Plus className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(node)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(node)} aria-label={t('aria_workspace_edit')} title={t('aria_workspace_edit')}>
             <Pencil className="w-3.5 h-3.5" />
           </Button>
           {!hasChildren && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(node)}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(node)} aria-label={t('aria_workspace_delete')} title={t('aria_workspace_delete')}>
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
           )}
@@ -283,9 +289,7 @@ export default function Workspaces() {
       <Card>
         <CardContent className="pt-6">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
+            <LoadingState variant="skeleton" rows={5} label={t('common_loading')} />
           ) : tree.length > 0 ? (
             <div className="space-y-1">
               {tree.map(node => (

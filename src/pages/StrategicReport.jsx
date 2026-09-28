@@ -19,16 +19,23 @@ import EmptyState from '@/components/shared/EmptyState';
 import { cn } from '@/lib/utils';
 import { isPlatformOwner } from '@/lib/rbac';
 
-const MATURITY_LABELS = {
-  0: 'Not Implemented', 1: 'Initial', 2: 'Developing',
-  3: 'Defined', 4: 'Managed', 5: 'Optimized',
+// Rótulos de maturidade por chave de tradução (FC3).
+const MATURITY_LABEL_KEYS = {
+  0: 'maturity_0', 1: 'maturity_1', 2: 'maturity_2',
+  3: 'maturity_3', 4: 'maturity_4', 5: 'maturity_5',
 };
 
+function maturityLabel(t, score) {
+  const key = MATURITY_LABEL_KEYS[Math.round(score)];
+  return key ? t(key) : '—';
+}
+
+// Escala de maturidade nos tokens do design system (FC2).
 function maturityColor(score) {
-  if (score >= 4) return 'text-emerald-600';
-  if (score >= 3) return 'text-blue-600';
-  if (score >= 2) return 'text-amber-600';
-  return 'text-red-600';
+  if (score >= 4) return 'text-accent';
+  if (score >= 3) return 'text-chart-1';
+  if (score >= 2) return 'text-chart-3';
+  return 'text-destructive';
 }
 
 function MaturityBar({ score }) {
@@ -138,7 +145,6 @@ export default function StrategicReport() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('nav_strategic_report')}
         description={t('strategic_report_subtitle')}
         actions={isAdmin && (
           <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
@@ -165,7 +171,7 @@ export default function StrategicReport() {
               {avgMaturity.toFixed(1)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {MATURITY_LABELS[Math.round(avgMaturity)] || '—'} · {completedAssessments.length} {t('strategic_completed_assessments')}
+              {maturityLabel(t, avgMaturity)} · {completedAssessments.length} {t('strategic_completed_assessments')}
             </p>
           </CardContent>
         </Card>
@@ -264,10 +270,10 @@ export default function StrategicReport() {
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         'w-3 h-3 rounded-full',
-                        priority === 'critical' && 'bg-red-500',
-                        priority === 'high' && 'bg-orange-500',
-                        priority === 'medium' && 'bg-amber-500',
-                        priority === 'low' && 'bg-blue-500',
+                        priority === 'critical' && 'bg-destructive',
+                        priority === 'high' && 'bg-chart-3',
+                        priority === 'medium' && 'bg-chart-4',
+                        priority === 'low' && 'bg-chart-1',
                       )} />
                       <span className="text-sm capitalize">{priority}</span>
                     </div>

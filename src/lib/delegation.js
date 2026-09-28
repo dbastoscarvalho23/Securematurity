@@ -156,12 +156,13 @@ export async function deleteAssignment(assignmentId) {
 }
 
 /**
- * Delegation role metadata.
+ * Delegation role metadata. Labels live in the translation files (FC3) — the
+ * consumer renders them with `t(meta.labelKey)`.
  */
 export const DELEGATION_ROLES = {
-  viewer: { label: "Viewer", description: "Read-only access to customer data" },
-  contributor: { label: "Contributor", description: "Can create and edit customer data" },
-  admin: { label: "Admin", description: "Full access to customer data and settings" },
+  viewer: { labelKey: "delegation_role_viewer", descriptionKey: "delegation_role_viewer_desc" },
+  contributor: { labelKey: "delegation_role_contributor", descriptionKey: "delegation_role_contributor_desc" },
+  admin: { labelKey: "delegation_role_admin", descriptionKey: "delegation_role_admin_desc" },
 };
 
 /**
@@ -173,12 +174,12 @@ export const ASSIGNMENT_TYPES = {
 };
 
 /**
- * Status badge variants.
+ * Status badge variants. The label is a translation key (FC3).
  */
 export const STATUS_BADGES = {
-  pending: { variant: "secondary", label: "Pending" },
-  active: { variant: "default", label: "Active" },
-  expired: { variant: "outline", label: "Expired" },
-  revoked: { variant: "destructive", label: "Revoked" },
-  onboarding: { variant: "secondary", label: "Onboarding" },
+  pending: { variant: "secondary", labelKey: "assignment_status_pending" },
+  active: { variant: "default", labelKey: "assignment_status_active" },
+  expired: { variant: "outline", labelKey: "assignment_status_expired" },
+  revoked: { variant: "destructive", labelKey: "assignment_status_revoked" },
+  onboarding: { variant: "secondary", labelKey: "ea_status_onboarding" },
 };

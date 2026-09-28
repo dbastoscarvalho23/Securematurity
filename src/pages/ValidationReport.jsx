@@ -94,9 +94,10 @@ export default function ValidationReport() {
           <p className="text-sm">
             Ronda 1: inspeção de código e configuração. Ronda 2: correções de F1–F15 aplicadas no
             código, registadas como aplicadas e revistas por inspeção — não como verificadas. Ronda 3:
-            avaliação funcional, de administração e de UX/UI, com recomendações por aplicar (nenhuma
-            correção feita). A página deve ser retirada quando a validação por identidade real estiver
-            concluída.
+            avaliação funcional, de administração e de UX/UI, com o plano de correção em fases a ser
+            executado — a Fase 1 (quick wins de apresentação, FC1/FC2/FC3/FC5/FC6) está aplicada e o
+            estado de cada achado, com o que falta, está no próprio cartão. A página deve ser retirada
+            quando a validação por identidade real estiver concluída.
           </p>
         </div>
       </div>

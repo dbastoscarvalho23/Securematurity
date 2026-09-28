@@ -77,7 +77,6 @@ export default function ExecutiveDashboard({ readOnly = true }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('page_dashboard')}
         description={t('dashboard_subtitle')}
         actions={
           <div className="flex items-center gap-3">

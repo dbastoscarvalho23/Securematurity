@@ -87,7 +87,8 @@ function LayoutContent() {
           <ImpersonationBanner />
           <SimulationBanner />
           <main className="flex-1 p-4 md:p-6 overflow-auto">
-            <h1 className="text-xl font-heading font-semibold tracking-tight text-foreground mb-4">{pageTitle}</h1>
+            {/* Título da página: fonte única é o TopBar (barra de contexto). A página
+                começa directamente no seu conteúdo, com a mesma distância ao topo (FC1). */}
             <Outlet />
           </main>
         </div>

@@ -6,7 +6,9 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import PageHeader from '@/components/shared/PageHeader';
+import LoadingState from '@/components/shared/LoadingState';
+import EmptyState from '@/components/shared/EmptyState';
+import { GraduationCap } from 'lucide-react';
 import TrainingSummary from '@/components/training/TrainingSummary';
 import TrainingUserRoster from '@/components/training/TrainingUserRoster';
 import TrainingList from '@/components/training/TrainingList';
@@ -43,8 +45,6 @@ export default function Training() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('training_page_title')} />
-
       {isAdmin && (
         <div className="flex items-end gap-3">
           <div className="w-72">
@@ -80,10 +80,10 @@ export default function Training() {
             <TrainingCalendar customer={customer} />
           </TabsContent>
         </Tabs>
+      ) : isAdmin ? (
+        <EmptyState icon={GraduationCap} title={t('training_no_customer_admin')} />
       ) : (
-        <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-          {isAdmin ? t('training_no_customer_admin') : t('common_loading')}
-        </div>
+        <LoadingState label={t('common_loading')} fullHeight />
       )}
     </div>
   );

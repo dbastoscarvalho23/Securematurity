@@ -71,6 +71,9 @@ export const PAGE_TITLE_KEYS = {
   '/external-access': 'nav_external_access',
   '/framework-guide': 'nav_framework_guide',
   '/supply-chain': 'nav_supply_chain',
+  '/audit-package': 'page_audit_package',
+  '/documentacao-tecnica': 'nav_technical_docs',
+  '/validacao-seguranca': 'nav_validation_report',
 };
 
 export default function TopBar({ collapsed, onToggleCollapse, onMenuClick, pageTitle }) {
@@ -156,9 +159,10 @@ export default function TopBar({ collapsed, onToggleCollapse, onMenuClick, pageT
 
         {/* Right section — above the content */}
         <div className="flex-1 flex items-center justify-between px-6 min-w-0">
-          <h2 className="text-base font-heading font-semibold text-sidebar-foreground truncate">
+          {/* Título único da página: a barra de contexto é a sua fonte (FC1). */}
+          <h1 className="text-base font-heading font-semibold text-sidebar-foreground truncate">
             {pageTitle}
-          </h2>
+          </h1>
 
           <div className="flex items-center gap-2 md:gap-3">
             <WorkspaceSwitcher />

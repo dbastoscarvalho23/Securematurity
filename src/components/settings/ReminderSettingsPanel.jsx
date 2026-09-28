@@ -54,7 +54,7 @@ function SettingsForm({ initialData, customerId, customerName, onSaved }) {
     const formErrors = validateForm(form, schema);
     setErrors(formErrors);
     if (hasErrors(formErrors)) {
-      toast.error('Please correct the highlighted fields.');
+      toast.error(t('common_fix_highlighted'));
       return;
     }
     setSaving(true);

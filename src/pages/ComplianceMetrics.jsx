@@ -13,7 +13,14 @@ const VULN_STATUS_LABELS = { open: 'vuln_status_open', in_progress: 'vuln_status
 const SEVERITY_LABELS = { critical: 'risk_level_critical', high: 'risk_level_high', medium: 'risk_level_medium', low: 'risk_level_low' };
 const DSR_TYPE_LABELS = { access: 'dsr_type_access', rectification: 'dsr_type_rectification', erasure: 'dsr_type_erasure', restriction: 'dsr_type_restriction', portability: 'dsr_type_portability', objection: 'dsr_type_objection' };
 
-const CHART_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7'];
+// Escala de severidade nas variáveis de risco do design system (FC2) — a mesma
+// grandeza tem a mesma cor em todas as páginas e acompanha o tema claro/escuro.
+const SEVERITY_COLORS = [
+  'hsl(var(--risk-critical))',
+  'hsl(var(--risk-high))',
+  'hsl(var(--risk-medium))',
+  'hsl(var(--risk-low))',
+];
 
 function KpiCard({ icon: Icon, label, value, sub, color = 'text-primary' }) {
   return (
@@ -87,9 +94,9 @@ export default function ComplianceMetrics() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard icon={AlertTriangle} label={t('cm_open_incidents')} value={openIncidents.length} sub={`${criticalIncidents.length} ${t('cm_critical')} · ${nis2Overdue.length} ${t('cm_nis2_overdue')}`} color="text-orange-500" />
+        <KpiCard icon={AlertTriangle} label={t('cm_open_incidents')} value={openIncidents.length} sub={`${criticalIncidents.length} ${t('cm_critical')} · ${nis2Overdue.length} ${t('cm_nis2_overdue')}`} color="text-chart-3" />
         <KpiCard icon={Bug} label={t('cm_open_vulns')} value={openVulns.length} sub={`${slaBreachedVulns.length} ${t('cm_sla_breached')}`} color="text-destructive" />
-        <KpiCard icon={Users} label={t('cm_open_dsrs')} value={openDsrs.length} sub={`${overdueDsrs.length} ${t('cm_overdue')} · ${dsrComplianceRate}% ${t('cm_compliance')}`} color="text-blue-500" />
+        <KpiCard icon={Users} label={t('cm_open_dsrs')} value={openDsrs.length} sub={`${overdueDsrs.length} ${t('cm_overdue')} · ${dsrComplianceRate}% ${t('cm_compliance')}`} color="text-chart-1" />
         <KpiCard icon={Database} label={t('cm_active_ropa')} value={activeRopas.length} sub={`${ropasNeedingReview.length} ${t('cm_need_review')}`} color="text-chart-2" />
       </div>
 
@@ -102,7 +109,7 @@ export default function ComplianceMetrics() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="rounded-lg border p-4 text-center">
-              <p className="text-2xl font-bold text-orange-500">{incidents.filter(i => !i.early_warning_sent && hoursRemaining(i.detected_at, 24) < 0 && i.status !== 'closed').length}</p>
+              <p className="text-2xl font-bold text-chart-3">{incidents.filter(i => !i.early_warning_sent && hoursRemaining(i.detected_at, 24) < 0 && i.status !== 'closed').length}</p>
               <p className="text-xs text-muted-foreground mt-1">{t('cm_early_warning_overdue')}</p>
             </div>
             <div className="rounded-lg border p-4 text-center">
@@ -144,7 +151,7 @@ export default function ComplianceMetrics() {
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie data={vulnsBySeverity.filter(d => d.value > 0)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                  {vulnsBySeverity.map((_, i) => <Cell key={i} fill={CHART_COLORS[i]} />)}
+                  {vulnsBySeverity.map((_, i) => <Cell key={i} fill={SEVERITY_COLORS[i]} />)}
                 </Pie>
                 <Tooltip />
               </PieChart>
@@ -152,7 +159,7 @@ export default function ComplianceMetrics() {
             <div className="flex justify-center gap-3 mt-2">
               {vulnsBySeverity.map((s, i) => (
                 <div key={s.name} className="flex items-center gap-1">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: CHART_COLORS[i] }} />
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: SEVERITY_COLORS[i] }} />
                   <span className="text-xs capitalize">{s.name} ({s.value})</span>
                 </div>
               ))}
@@ -211,7 +218,7 @@ export default function ComplianceMetrics() {
             </div>
             <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Users className="w-4 h-4 text-blue-500" />
+                <Users className="w-4 h-4 text-chart-1" />
                 <p className="text-sm font-medium">{t('cm_dsr_sla')}</p>
               </div>
               <p className="text-2xl font-bold">{overdueDsrs.length} {t('cm_overdue')}</p>

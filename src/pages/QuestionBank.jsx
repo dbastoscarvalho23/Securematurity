@@ -98,10 +98,10 @@ export default function QuestionBank() {
   const handleTranslate = async () => {
     const untranslated = questions.filter(q => !q.question_text_pt);
     if (untranslated.length === 0) {
-      toast.success('All questions already have a Portuguese translation!');
+      toast.success(t('qb_all_translated'));
       return;
     }
-    if (!confirm(`Translate ${untranslated.length} question${untranslated.length !== 1 ? 's' : ''} to European Portuguese?`)) return;
+    if (!confirm(t('qb_confirm_translate', { count: untranslated.length }))) return;
 
     setIsTranslating(true);
     setTranslateProgress({ done: 0, total: untranslated.length });
@@ -170,11 +170,11 @@ Return only valid JSON with the translations.`,
     }
 
     if (toDelete.length === 0) {
-      toast.success('No duplicates found — your question bank is clean!');
+      toast.success(t('qb_no_duplicates'));
       return;
     }
 
-    if (!confirm(`Found ${toDelete.length} duplicate question${toDelete.length !== 1 ? 's' : ''}. Delete them now?`)) return;
+    if (!confirm(t('qb_confirm_duplicates', { count: toDelete.length }))) return;
 
     setIsDeduplicating(true);
     await Promise.all(toDelete.map(id => base44.entities.Question.delete(id)));
@@ -185,7 +185,7 @@ Return only valid JSON with the translations.`,
   };
 
   const handleDelete = (q) => {
-    if (confirm(`Delete question "${q.question_text.substring(0, 60)}..."?`)) {
+    if (confirm(t('qb_confirm_delete', { text: q.question_text.substring(0, 60) }))) {
       deleteMutation.mutate(q);
     }
   };

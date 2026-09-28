@@ -42,7 +42,7 @@ export default function Configuration() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('config_title')} description={t('config_subtitle')} />
+      <PageHeader description={t('config_subtitle')} />
 
       <Tabs defaultValue="frameworks">
         <TabsList>

@@ -107,7 +107,7 @@ export default function NominationsPanel({ customers, selectedCustomerId }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['nominationDocuments'] });
-      toast.success('Nomination document deleted');
+      toast.success(t('nomination_doc_deleted'));
     },
   });
 

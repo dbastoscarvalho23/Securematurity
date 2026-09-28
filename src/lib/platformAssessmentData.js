@@ -368,7 +368,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FC1',
     area: 'ux',
     severity: 'media',
-    status: 'pendente',
+    status: 'corrigido',
+    statusNote:
+      'Fonte única de título. A duplicação real era a barra de contexto (TopBar) mais o `<h1>` do AppLayout com o mesmo texto — o título da página passa a existir só na barra de contexto, agora como `h1`, e o AppLayout deixou de o repetir. O PageHeader deixou de renderizar títulos de página: reserva-se à descrição e às ações e, quando usado dentro de uma secção ou aba (Formação), dá um título de secção em `h2`. `PAGE_TITLE_KEYS` foi completado com as rotas que faltavam (/audit-package, /documentacao-tecnica, /validacao-seguranca), para que nenhuma página caia no título genérico. Verificado no preview em /admin e /customers: exactamente um `h1` visível por página. Residual: /assessments/:id, /framework-guide e /knowledge-base mantêm um `h1` de conteúdo (nome do registo) além do título da página.',
     title: 'Título da página duplicado (TopBar e PageHeader)',
     evidence: [
       'src/components/layout/TopBar.jsx — o cabeçalho global apresenta sempre o título da rota (PAGE_TITLE_KEYS → pageTitle) num h2.',
@@ -386,7 +388,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FC2',
     area: 'ux',
     severity: 'media',
-    status: 'pendente',
+    status: 'parcial',
+    statusNote:
+      'As quatro superfícies apontadas passaram a usar os tokens: Admin.jsx (COLORS → chart-1..5, escala de risco para ankora-risk-*, badges de contagem para bg-chart-*/text-chart-*), ComplianceMetrics.jsx (CHART_COLORS → --risk-* na escala de severidade, ícones para chart-1/chart-3), TaskAnalytics.jsx (séries por estado em chart-1..3) e GlobalSearch.jsx (cor por tipo de resultado em chart-1..5). Foram também limpas as páginas que esta fase já tocava — ExternalAccess, SystemStatus, PolicyAttestation, Workspaces e StrategicReport (escala de maturidade e prioridades). Falta a passagem nas restantes superfícies (EmailReport, Organization, TechnicalDocs, LicenseUnavailable, banners de simulação e os componentes de risco). Medição: as classes de paleta rígida em src/ passaram de 127 ocorrências em 30 ficheiros para 106.',
     title: 'Paletas de gráficos e de pesquisa fora dos tokens do design system',
     evidence: [
       'src/pages/Admin.jsx:30 — COLORS com seis valores hsl() rígidos, usados nas séries dos gráficos.',
@@ -406,7 +410,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FC3',
     area: 'ux',
     severity: 'media',
-    status: 'pendente',
+    status: 'corrigido',
+    statusNote:
+      'Todas as mensagens visíveis encontradas passaram a chaves de tradução PT/EN, novas em `src/lib/translations-phase1.js`. O ExternalAccess estava integralmente em inglês — não só as sete mensagens de retorno: diálogos, rótulos, notas de apoio, estados vazios e cabeçalhos de secção foram todos traduzidos. Além dele: QuestionBank (três mensagens e os dois diálogos de confirmação), Customers (três mensagens de erro), NominationsPanel, ReminderSettingsPanel, SystemStatus (os 13 ENTITY_LABELS), TaskAnalytics (estados de tarefa e vazios), StatCard («vs last period»), StrategicReport (escala de maturidade) e os rótulos de nível de acesso e estado de `src/lib/delegation.js`, que passaram a `labelKey`/`descriptionKey` e são usados em ExternalAccess e UserAssignments. Verificação: não resta nenhum `toast.*`/`confirm()` com texto literal em inglês em src/pages e src/components (fora do ui/).',
     title: 'Mensagens de retorno em inglês numa interface em português',
     evidence: [
       'src/pages/ExternalAccess.jsx:84,181,287,293,299,305,311 — toast.success com «Delegation request sent», «Onboarding created», «Delegation approved/rejected/revoked», «Onboarding accepted/revoked».',
@@ -443,7 +449,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FC5',
     area: 'ux',
     severity: 'baixa',
-    status: 'pendente',
+    status: 'parcial',
+    statusNote:
+      'Passa a haver um indicador de carregamento só: `LoadingState`, que ganhou `variant="skeleton"` — linhas pulsantes que reservam o espaço da lista em vez de um spinner que a faz saltar. Substituiu os indicadores próprios das páginas (Workspaces, UserAssignments, PolicyAttestation, ExternalAccess, SystemStatus, Training e a tabela de Customers), e o vazio passa por `EmptyState` com mensagem específica da página. Residual: três tabelas (Admin, Organization, Licensing) mostram ainda uma linha própria com a mensagem traduzida em vez do componente partilhado.',
     title: 'Padrões de carregamento e de vazio divergentes entre páginas',
     evidence: [
       'src/components/shared/LoadingState.jsx é usado em 16 páginas (Customers, Assessments, Reports, ComplianceJourney, AuditPackage…), mas há spinners inline em 26 páginas (SystemStatus, Customers, Admin…) e textos próprios noutras (KnowledgeBase usa a chave kb_loading).',
@@ -460,7 +468,9 @@ export const ASSESSMENT_FINDINGS = [
     id: 'FC6',
     area: 'ux',
     severity: 'baixa',
-    status: 'pendente',
+    status: 'corrigido',
+    statusNote:
+      'Nome acessível nas ações de ícone e operação por teclado: Workspaces (expandir/recolher com aria-label e aria-expanded; adicionar, editar e eliminar nó com aria-label e title, e as ações passam a aparecer quando recebem foco), Customers (menu de ações do cliente e fecho do painel com nome acessível; a linha abre o detalhe com Enter/Espaço, com foco visível e nome próprio) e Admin (o StatCard é agora `role="button"` com `tabIndex` e nome, abrindo o detalhe por Enter — verificado no preview: o cartão recebe foco e a tecla abre o diálogo de detalhe). Os badges de estado e severidade já levavam rótulo textual além da cor (StatusBadge). Percorrer Customers e Workspaces só com teclado dá nome e ordem previsível a cada ação.',
     title: 'Acessibilidade fraca em ações de ícone e em tabelas interativas',
     evidence: [
       'Verificação sobre 45 páginas: 14 aria-label no total; botões só de ícone sem nome acessível em Workspaces (adicionar/editar/eliminar nó), Customers (abrir detalhe), Admin (drill-down e fecho) e nas barras de ações de listagem.',

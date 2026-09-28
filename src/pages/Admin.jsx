@@ -27,7 +27,15 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import { isPlatformOwner } from '@/lib/rbac';
 
-const COLORS = ['hsl(217,91%,60%)', 'hsl(173,58%,39%)', 'hsl(43,74%,66%)', 'hsl(27,87%,67%)', 'hsl(262,52%,56%)', 'hsl(0,84%,60%)'];
+// Paleta dos gráficos vinda dos tokens do design system (FC2) — acompanha o
+// tema claro/escuro e não declara cor própria nesta página.
+const COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+];
 
 function DrillDownDialog({ title, children, open, onClose }) {
   return (
@@ -224,7 +232,7 @@ function RisksDrillDown({ risks, customers, t }) {
                 <TableCell className="text-sm">{r.impact ?? '—'}</TableCell>
                 <TableCell className="text-sm">{r.likelihood ?? '—'}</TableCell>
                 <TableCell>
-                  <span className={`font-bold ${score >= 20 ? 'text-red-600' : score >= 12 ? 'text-orange-500' : score >= 6 ? 'text-yellow-600' : 'text-green-600'}`}>
+                  <span className={`font-bold ${score >= 20 ? 'ankora-risk-critical' : score >= 12 ? 'ankora-risk-high' : score >= 6 ? 'ankora-risk-medium' : 'ankora-risk-low'}`}>
                     {score}
                   </span>
                 </TableCell>
@@ -627,7 +635,7 @@ export default function Admin() {
                   <TableCell className="text-sm font-mono">{c.latestPeriod}</TableCell>
                   <TableCell>
                     {c.latestScore != null ? (
-                      <span className={`font-bold ${c.latestScore >= 3.5 ? 'text-green-600' : c.latestScore >= 2 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      <span className={`font-bold ${c.latestScore >= 3.5 ? 'ankora-risk-low' : c.latestScore >= 2 ? 'ankora-risk-medium' : 'ankora-risk-critical'}`}>
                         {c.latestScore.toFixed(1)}
                       </span>
                     ) : (
@@ -636,14 +644,14 @@ export default function Admin() {
                   </TableCell>
                   <TableCell>
                     {c.openRisks > 0 ? (
-                      <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">{c.openRisks}</Badge>
+                      <Badge variant="outline" className="text-xs bg-chart-3/10 text-chart-3 border-chart-3/20">{c.openRisks}</Badge>
                     ) : (
                       <span className="text-muted-foreground text-xs">0</span>
                     )}
                   </TableCell>
                   <TableCell>
                     {c.openTasks > 0 ? (
-                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">{c.openTasks}</Badge>
+                      <Badge variant="outline" className="text-xs bg-chart-1/10 text-chart-1 border-chart-1/20">{c.openTasks}</Badge>
                     ) : (
                       <span className="text-muted-foreground text-xs">0</span>
                     )}
@@ -655,7 +663,7 @@ export default function Admin() {
               ))}
               {customerRankings.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">{t('common_no_data')}</TableCell>
+                  <TableCell colSpan={10}><EmptyState compact icon={Building2} title={t('common_no_data')} /></TableCell>
                 </TableRow>
               )}
             </TableBody>
