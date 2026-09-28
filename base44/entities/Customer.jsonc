@@ -107,6 +107,10 @@
       ],
       "default": "base44",
       "description": "External cloud storage provider where this customer's uploaded and generated files are stored"
+    },
+    "workspace_id": {
+      "type": "string",
+      "description": "Reference to the Workspace this customer belongs to in the organizational hierarchy"
     }
   },
   "required": [

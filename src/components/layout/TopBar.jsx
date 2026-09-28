@@ -53,6 +53,8 @@ const PAGE_TITLE_KEYS = {
   '/vulnerabilities': 'page_vulnerabilities',
   '/compliance-metrics': 'page_compliance_metrics',
   '/suppliers': 'suppliers_title',
+  '/workspaces': 'page_workspaces',
+  '/licensing': 'page_licensing',
 };
 
 export default function TopBar({ onMenuClick }) {

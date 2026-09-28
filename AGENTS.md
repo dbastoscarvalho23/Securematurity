@@ -17,15 +17,17 @@ docker compose -f docker-compose.base44.yml up -d
 ## Structure
 - `src/pages/` — 34 page components; 32 are routed in `App.jsx`.
 - `src/components/` — 112 app components + 49 shadcn/ui primitives.
-- `base44/entities/` — 34 entity definitions (JSONC).
-- `base44/functions/` — 16 backend functions (TypeScript `entry.ts`).
+- `base44/entities/` — 35 entity definitions (JSONC), including Workspace for multi-tenant hierarchy.
+- `base44/functions/` — 19 backend functions (TypeScript `entry.ts`), including getWorkspaceTree, resolveWorkspaceAccess, migrateExistingWorkspaces.
 - `base44/workflows/` — 8 workflow definitions (JSONC).
 - `base44/connectors/` — 2 connectors (googledrive, one_drive).
 - `base44/agents/` — 1 AI agent (framework_guide).
-- `base44/shared/` — shared utils (automationSecret, escapeHtml).
+- `base44/shared/` — shared utils (automationSecret, escapeHtml, licenseGuard).
+- `src/lib/workspace.js` — frontend workspace utilities (tree fetch, access resolution, migration trigger).
 
 ## Notes / quirks
 - `Landing.jsx` was removed (was orphaned); orphan `landing_*` translation keys were cleaned from `translations-ui.js`.
 - `OAuthConsent.jsx` is a platform-managed MCP consent page, NOT routed in `App.jsx`; it references `base44/mcp/config.json` (a platform-managed file not exported to GitHub).
 - `FrameworkControl` entity is used by the AI agent (framework_guide) but not directly in frontend code.
 - All 46 JSONC files validated; no broken `@/` imports across `src/`.
+- Phase 2 (Workspace hierarchy): Workspace entity with ancestor-chain tracking; Customer and User entities have `workspace_id`; admin-only `/workspaces` page for tree management; `migrateExistingWorkspaces` creates root workspaces for existing customers idempotently.

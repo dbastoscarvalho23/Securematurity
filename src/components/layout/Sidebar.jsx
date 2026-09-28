@@ -28,7 +28,8 @@ import {
   Bug,
   Gauge,
   GraduationCap,
-  Bot
+  Bot,
+  Network
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -74,6 +75,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
   const systemItems = [
     ...(isAdmin ? [
       { path: '/admin', labelKey: 'nav_admin', icon: ShieldCheck },
+      { path: '/workspaces', labelKey: 'nav_workspaces', icon: Network },
       { path: '/audit-log', labelKey: 'nav_audit_log', icon: ScrollText },
       { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
     ] : []),

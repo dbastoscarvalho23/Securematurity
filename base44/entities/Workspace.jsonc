@@ -1,0 +1,91 @@
+{
+  "name": "Workspace",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Workspace display name"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "root",
+        "organization",
+        "division",
+        "subsidiary",
+        "department"
+      ],
+      "default": "organization",
+      "description": "Workspace type in the hierarchy"
+    },
+    "parent_id": {
+      "type": "string",
+      "description": "Parent workspace ID (null for root workspaces)"
+    },
+    "ancestor_ids": {
+      "type": "array",
+      "description": "All ancestor workspace IDs from root to immediate parent (for efficient descendant queries)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Associated Customer ID (for workspaces that map directly to a customer/tenant)"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active",
+      "description": "Workspace status"
+    },
+    "path": {
+      "type": "string",
+      "description": "Display path (e.g. 'Group > Division > Subsidiary')"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional workspace description"
+    }
+  },
+  "required": [
+    "name",
+    "type"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

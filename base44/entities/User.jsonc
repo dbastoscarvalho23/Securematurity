@@ -23,6 +23,10 @@
       "type": "string",
       "description": "Denormalized customer name"
     },
+    "workspace_id": {
+      "type": "string",
+      "description": "Reference to the Workspace this user is assigned to (for hierarchy-aware access)"
+    },
     "language": {
       "type": "string",
       "enum": [

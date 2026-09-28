@@ -31,6 +31,7 @@ export const ROUTE_MODULE = {
   "/organization": null,
   "/configuration": null,
   "/licensing": null,
+  "/workspaces": null,
   "/system-status": null,
 
   // nis2_journey

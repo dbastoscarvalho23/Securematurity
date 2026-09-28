@@ -25,7 +25,7 @@ const USER_ALLOWED = [
 ];
 
 // Routes NOT accessible by customer_admin
-const CUSTOMER_ADMIN_BLOCKED = ['/admin', '/audit-log', '/customers', '/question-bank', '/ropa', '/incidents', '/dsr', '/vulnerabilities', '/compliance-metrics', '/training'];
+const CUSTOMER_ADMIN_BLOCKED = ['/admin', '/audit-log', '/customers', '/question-bank', '/ropa', '/incidents', '/dsr', '/vulnerabilities', '/compliance-metrics', '/training', '/workspaces'];
 
 export default function RouteGuard({ path, children }) {
   const { user } = useAuth();

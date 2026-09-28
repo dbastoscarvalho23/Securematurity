@@ -43,6 +43,7 @@ import Training from '@/pages/Training';
 import FrameworkGuide from '@/pages/FrameworkGuide';
 import RouteGuard from '@/components/layout/RouteGuard';
 import Licensing from '@/pages/Licensing';
+import Workspaces from '@/pages/Workspaces';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings } = useAuth();
@@ -97,6 +98,7 @@ const AuthenticatedApp = () => {
           <Route path="/framework-guide" element={<RouteGuard path="/framework-guide"><FrameworkGuide /></RouteGuard>} />
           <Route path="/email-report" element={<RouteGuard path="/email-report"><EmailReport /></RouteGuard>} />
           <Route path="/licensing" element={<RouteGuard path="/licensing"><Licensing /></RouteGuard>} />
+          <Route path="/workspaces" element={<RouteGuard path="/workspaces"><Workspaces /></RouteGuard>} />
         </Route>
         </Route>
       </Route>
