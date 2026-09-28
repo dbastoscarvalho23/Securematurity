@@ -9,7 +9,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { HelpCircle, Search, BookMarked, FileText, BookOpen, LayoutTemplate, GraduationCap, ArrowRight, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { getRouteContext, getContextualArticles } from '@/lib/kbContextMatcher';
-import { KB_FRAMEWORKS, getArticleFrameworkColor } from '@/lib/knowledgeBaseMockData';
+import { KB_FRAMEWORKS, getArticleFrameworkColor } from '@/lib/kbFrameworks';
+import { useKnowledgeArticles } from '@/lib/useKnowledgeArticles';
 
 const CATEGORY_ICONS = {
   article: FileText,
@@ -36,7 +37,7 @@ function ArticleRow({ article }) {
 
   return (
     <Link
-      to={`/knowledge-base/${article.id}`}
+      to={`/knowledge-base/${article.slug || article.id}`}
       className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
     >
       <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
@@ -68,8 +69,12 @@ export default function ContextualHelpDrawer() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
+  const { articles } = useKnowledgeArticles();
   const routeContext = useMemo(() => getRouteContext(location.pathname), [location.pathname]);
-  const matchedArticles = useMemo(() => getContextualArticles(routeContext), [routeContext]);
+  const matchedArticles = useMemo(
+    () => getContextualArticles(articles, routeContext),
+    [articles, routeContext],
+  );
 
   const filtered = useMemo(() => {
     if (!search.trim()) return matchedArticles;

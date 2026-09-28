@@ -53,6 +53,7 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 const StrategicReport = lazy(() => import('@/pages/StrategicReport'));
 const KnowledgeBase = lazy(() => import('@/pages/KnowledgeBase'));
+const AuditPackage = lazy(() => import('@/pages/AuditPackage'));
 const PolicyAttestation = lazy(() => import('@/pages/PolicyAttestation'));
 const ExternalAccess = lazy(() => import('@/pages/ExternalAccess'));
 
@@ -94,6 +95,7 @@ const AuthenticatedApp = () => {
           <Route path="/assessments/:id" element={<RouteGuard path="/assessments"><AssessmentDetail /></RouteGuard>} />
           <Route path="/recommendations" element={<RouteGuard path="/recommendations"><Recommendations /></RouteGuard>} />
           <Route path="/reports" element={<RouteGuard path="/reports"><Reports /></RouteGuard>} />
+          <Route path="/audit-package" element={<RouteGuard path="/audit-package"><AuditPackage /></RouteGuard>} />
           <Route path="/admin" element={<RouteGuard path="/admin"><Admin /></RouteGuard>} />
           <Route path="/audit-log" element={<RouteGuard path="/audit-log"><AuditLog /></RouteGuard>} />
           <Route path="/settings" element={<Navigate to="/configuration" replace />} />

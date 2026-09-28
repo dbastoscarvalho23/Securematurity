@@ -2,10 +2,11 @@
  * Contextual Help — route-to-article matching logic.
  *
  * getRouteContext(pathname) → { page, framework, domain }
- * getContextualArticles({ page, framework, domain, route }) → article[]
+ * getContextualArticles(articles, { page, framework, domain, route }) → article[]
+ *
+ * The articles are persisted (KnowledgeArticle) and passed in by the caller, so
+ * this module only holds the route → context mapping.
  */
-
-import { KB_ARTICLES } from './knowledgeBaseMockData';
 
 // Route → page label key mapping (subset of PAGE_TITLE_KEYS from TopBar)
 const ROUTE_PAGE_MAP = {
@@ -100,15 +101,15 @@ export function getRouteContext(pathname) {
   };
 }
 
-export function getContextualArticles({ page, framework, domain, route } = {}) {
-  if (!KB_ARTICLES || KB_ARTICLES.length === 0) return [];
+export function getContextualArticles(articles = [], { page, framework, domain, route } = {}) {
+  if (!articles || articles.length === 0) return [];
 
   // If no context, return general platform guide articles
   if (!page && !framework && (!domain || domain.length === 0)) {
-    return KB_ARTICLES.filter(a => a.category === 'guide' || a.category === 'faq').slice(0, 8);
+    return articles.filter(a => a.category === 'guide' || a.category === 'faq').slice(0, 8);
   }
 
-  const scored = KB_ARTICLES.map(article => {
+  const scored = articles.map(article => {
     let score = 0;
     const titleLower = (article.title || '').toLowerCase();
     const summaryLower = (article.summary || '').toLowerCase();

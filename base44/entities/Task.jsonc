@@ -92,6 +92,10 @@
           },
           "uploaded_at": {
             "type": "string"
+          },
+          "hash": {
+            "type": "string",
+            "description": "SHA-256 hash of the file computed at upload time"
           }
         }
       }

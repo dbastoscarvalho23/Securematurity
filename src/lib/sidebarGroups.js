@@ -55,6 +55,7 @@ export const BASE_GROUPS = [
     labelKey: 'nav_reporting_audit',
     items: [
       mk('/reports', 'nav_reports', 'BarChart3', 'reports'),
+      mk('/audit-package', 'nav_audit_package', 'PackageCheck', 'audit_package'),
       mk('/strategic-report', 'nav_strategic_report', 'TrendingUp', 'strategic_report'),
       mk('/email-report', 'nav_email_report', 'MailCheck', 'email_report'),
     ],
@@ -137,7 +138,7 @@ export const ROLE_GROUP_OVERRIDES = {
   auditor: [
     {
       labelKey: 'nav_audit',
-      pullPaths: ['/audit-log', '/document-audit-trail', '/evidence', '/ropa', '/dsr'],
+      pullPaths: ['/audit-log', '/document-audit-trail', '/evidence', '/audit-package', '/ropa', '/dsr'],
       position: 'after:nav_main',
     },
   ],

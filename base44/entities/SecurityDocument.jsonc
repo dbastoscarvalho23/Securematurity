@@ -69,6 +69,14 @@
       "type": "string",
       "description": "Original file name"
     },
+    "content_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the uploaded file (evidence integrity, verified at upload)"
+    },
+    "review_note": {
+      "type": "string",
+      "description": "Reviewer note for the latest review decision"
+    },
     "tags": {
       "type": "array",
       "items": {

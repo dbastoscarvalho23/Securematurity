@@ -1,0 +1,117 @@
+{
+  "name": "KnowledgeArticle",
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string",
+      "description": "Stable identifier used by the seed and by deep links (e.g. cp-nis2-overview)"
+    },
+    "title": {
+      "type": "string",
+      "description": "Article title"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Short abstract shown in lists and in the contextual help drawer"
+    },
+    "body": {
+      "type": "string",
+      "description": "Article content (markdown-like: ## headings, paragraphs, - lists)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "article",
+        "guide",
+        "faq",
+        "template",
+        "training"
+      ],
+      "default": "article"
+    },
+    "framework": {
+      "type": "string",
+      "description": "Framework code (NIS2, ISO27001, NIST_CSF, CIS_V8, GDPR) or empty for platform content"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Search and contextual-matching keywords"
+    },
+    "section": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "compliance"
+      ],
+      "default": "platform",
+      "description": "Catalogue section the article belongs to"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "in_review",
+        "published",
+        "archived"
+      ],
+      "default": "draft",
+      "description": "Editorial state; only published articles are shown in the catalogue"
+    },
+    "author_email": {
+      "type": "string",
+      "description": "Author of the current draft"
+    },
+    "reviewer_email": {
+      "type": "string",
+      "description": "Reviewer who last decided on this article"
+    },
+    "review_note": {
+      "type": "string",
+      "description": "Reviewer note (rejection reason or approval note)"
+    },
+    "published_at": {
+      "type": "string",
+      "description": "Date/time of the last publication"
+    },
+    "version": {
+      "type": "number",
+      "default": 1,
+      "description": "Content revision, incremented on every publication"
+    },
+    "order_index": {
+      "type": "number",
+      "description": "Display order inside the section"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "slug",
+    "title",
+    "section",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

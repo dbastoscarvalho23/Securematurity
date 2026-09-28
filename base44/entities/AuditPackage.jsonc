@@ -1,0 +1,188 @@
+{
+  "name": "AuditPackage",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "title": {
+      "type": "string",
+      "description": "Package title (e.g. Pacote de auditoria NIS2 — 2025)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "final"
+      ],
+      "default": "draft",
+      "description": "Editorial state of the package"
+    },
+    "package_version": {
+      "type": "string",
+      "default": "1.0",
+      "description": "Schema version of the generated package"
+    },
+    "period_start": {
+      "type": ["string", "null"],
+      "description": "Assessment period start (YYYY-MM-DD) covered by the package"
+    },
+    "period_end": {
+      "type": ["string", "null"],
+      "description": "Assessment period end (YYYY-MM-DD) covered by the package"
+    },
+    "frameworks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Frameworks covered by the package"
+    },
+    "scope": {
+      "type": ["object", "null"],
+      "description": "Scope of the audit: tenant, frameworks, standards, period and methodology versions",
+      "properties": {
+        "customer_id": { "type": "string" },
+        "customer_name": { "type": "string" },
+        "frameworks": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "standards": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "period_start": { "type": ["string", "null"] },
+        "period_end": { "type": ["string", "null"] },
+        "assessments_considered": { "type": "number" },
+        "methodology_versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "version": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "index": {
+      "type": "array",
+      "description": "Table of contents: one row per package section with its item count",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string" },
+          "label": { "type": "string" },
+          "description": { "type": "string" },
+          "count": { "type": "number" }
+        }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "description": "Frozen package content: versions, controls, evidence and decisions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string" },
+          "label": { "type": "string" },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ref": { "type": "string" },
+                "label": { "type": "string" },
+                "detail": { "type": "string" },
+                "status": { "type": "string" },
+                "hash": { "type": "string" },
+                "date": { "type": ["string", "null"] },
+                "url": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": ["object", "null"],
+      "description": "Counters used by the package header",
+      "properties": {
+        "versions": { "type": "number" },
+        "controls": { "type": "number" },
+        "controls_not_implemented": { "type": "number" },
+        "evidence": { "type": "number" },
+        "decisions": { "type": "number" },
+        "open_actions": { "type": "number" }
+      }
+    },
+    "generated_by": {
+      "type": "string",
+      "description": "User who generated the package (set by the server)"
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "Generation timestamp (set by the server)"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "title",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        },
+        {
+          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        },
+        {
+          "data.customer_id": "{{user.data.delegated_view_customer_ids}}"
+        },
+        {
+          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+        },
+        {
+          "data.customer_id": "{{user.data.onboarding_customer_ids}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        },
+        {
+          "data.customer_id": "{{user.data.delegated_edit_customer_ids}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    }
+  }
+}

@@ -28,6 +28,10 @@
     "file_name": {
       "type": "string"
     },
+    "content_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the file at the time of this version"
+    },
     "approved_by": {
       "type": "string"
     },

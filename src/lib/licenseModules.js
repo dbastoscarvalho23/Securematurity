@@ -55,6 +55,7 @@ export const ROUTE_MODULE = {
   "/reports": "reporting_audit_prep",
   "/strategic-report": "reporting_audit_prep",
   "/compliance-metrics": "reporting_audit_prep",
+  "/audit-package": "reporting_audit_prep",
 
   // risk_management
   "/risk-assessment": "risk_management",
@@ -110,7 +111,7 @@ export const MODULE_RESOURCES = {
   nis2_journey: ["compliance_journey"],
   assessments_action_plan: ["assessments", "action_plan", "task_analytics", "recommendations", "tasks"],
   documents_evidence: ["security_documents", "document_audit_trail", "evidence"],
-  reporting_audit_prep: ["reports", "compliance_metrics"],
+  reporting_audit_prep: ["reports", "audit_package", "compliance_metrics"],
   risk_management: ["risk_assessment"],
   incident_management: ["incidents", "vulnerabilities"],
   supplier_management: ["supply_chain", "suppliers"],
