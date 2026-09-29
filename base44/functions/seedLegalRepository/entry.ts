@@ -1019,6 +1019,27 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ─── 6. Ligar os artigos editoriais à versão do layer 1 ──────
+    // Regra do plano (§2): nada nos layers 2+ cita uma norma sem apontar para a
+    // versão concreta. Um artigo que já nomeia um framework ganha a referência à
+    // versão em vigor; um artigo que já tem `legal_refs` não é tocado, para
+    // re-executar o seed não reescrever uma citação já revista por uma pessoa.
+    const articles = await base44.asServiceRole.entities.KnowledgeArticle.list("-created_date", 500);
+    let articlesLinked = 0;
+    for (const article of articles) {
+      const code = article.framework;
+      if (!code || (article.legal_refs || []).length) continue;
+      const inForce = (VERSIONS[code] || []).find((v: any) => v.status === "current" && v.official_url);
+      const versionRow = inForce ? versionsByKey.get(versionKey(code, inForce.version_label)) : null;
+      if (!versionRow?.id) continue;
+      await base44.asServiceRole.entities.KnowledgeArticle.update(article.id, {
+        legal_refs: [
+          { framework_code: code, version_id: versionRow.id, version_label: versionRow.version_label },
+        ],
+      });
+      articlesLinked += 1;
+    }
+
     const summary = {
       authorities: { created: authoritiesCreated.length, reused: AUTHORITIES.length - authoritiesCreated.length },
       profiles: { created: profilesCreated.length, reused: FRAMEWORK_CATALOGUE.length - profilesCreated.length },
@@ -1031,6 +1052,7 @@ Deno.serve(async (req) => {
         notes: linkNotes,
       },
       frameworks_linked: frameworksLinked,
+      articles_linked: articlesLinked,
     };
 
     await writeLegalAuditLog(

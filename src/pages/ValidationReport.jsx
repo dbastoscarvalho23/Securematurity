@@ -330,14 +330,17 @@ export default function ValidationReport() {
         <CardHeader className="pb-3">
           <CardTitle className="flex flex-wrap items-center gap-2 text-base">
             <ListChecks className="h-4 w-4 text-muted-foreground" />
-            Tarefas em aberto (to-do)
-            <Badge variant="secondary">{TODO_LIST.length}</Badge>
+            Tarefas registadas (to-do)
+            <Badge variant="secondary">
+              {TODO_LIST.filter((todo) => todo.status !== 'concluido').length} em aberto · {TODO_LIST.length}
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
             Trabalho combinado que não é achado de validação nem residual de uma correção — fica
-            registado aqui para não se perder.
+            registado aqui para não se perder. O estado de cada tarefa é o seu <code>status</code>:
+            uma tarefa entregue fica «Concluído», com a nota a dizer o que ficou feito.
           </p>
           {TODO_LIST.map((todo) => (
             <div key={todo.id} className="border-b pb-3 last:border-b-0 last:pb-0">

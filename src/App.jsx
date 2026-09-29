@@ -54,6 +54,7 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 const StrategicReport = lazy(() => import('@/pages/StrategicReport'));
 const KnowledgeBase = lazy(() => import('@/pages/KnowledgeBase'));
+const FrameworkProfile = lazy(() => import('@/pages/FrameworkProfile'));
 const AuditPackage = lazy(() => import('@/pages/AuditPackage'));
 const PolicyAttestation = lazy(() => import('@/pages/PolicyAttestation'));
 // Documentação técnica interna (separador «Dev»).
@@ -134,6 +135,8 @@ const AuthenticatedApp = () => {
           <Route path="/platform-operations" element={<RouteGuard path="/platform-operations"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><PlatformOperations /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/user-assignments" element={<RouteGuard path="/user-assignments"><Delegations /></RouteGuard>} />
           <Route path="/strategic-report" element={<RouteGuard path="/strategic-report"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><StrategicReport /></Suspense></ErrorBoundary></RouteGuard>} />
+          {/* Ficha de framework do repositório legal (Layer 1). */}
+          <Route path="/knowledge-base/framework/:code" element={<RouteGuard path="/knowledge-base"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><FrameworkProfile /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/knowledge-base" element={<RouteGuard path="/knowledge-base"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/knowledge-base/:slug" element={<RouteGuard path="/knowledge-base"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense></ErrorBoundary></RouteGuard>} />
           <Route path="/policy-attestation" element={<RouteGuard path="/policy-attestation"><ErrorBoundary fallback={<PageFallback />}><Suspense fallback={<PageFallback />}><PolicyAttestation /></Suspense></ErrorBoundary></RouteGuard>} />

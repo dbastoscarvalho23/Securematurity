@@ -1,20 +1,35 @@
 /**
- * KnowledgeBase — searchable article library with dark scoped theme.
- * Uses the .kb-scope CSS classes from index.css (Plus Jakarta Sans titles,
- * Inter body, JetBrains Mono code). Articles are persisted (KnowledgeArticle
- * entity) and edited through the editorial workflow; only published articles
- * appear in the catalogue.
+ * KnowledgeBase — a base de conhecimento com dois modos, no tema escopo
+ * `.kb-scope` (Plus Jakarta Sans nos títulos, Inter no corpo, JetBrains Mono no
+ * código):
+ *
+ *  - **Repositório legal** (Layer 1, por omissão) — a grelha dos frameworks do
+ *    catálogo único, lida de `FrameworkProfile` / `LegalDocumentVersion` /
+ *    `CompetentAuthority` pelo modelo `src/lib/legalRepository.js`; cada cartão
+ *    abre a ficha em `/knowledge-base/framework/:code`. Nada aqui escreve
+ *    entidades: a carga inicial passa por `seedLegalRepository`, restrita à
+ *    administração da plataforma.
+ *  - **Artigos** (Layer 4) — o catálogo editorial persistido (`KnowledgeArticle`),
+ *    com as abas Catálogo/Editorial; só os artigos publicados aparecem e a
+ *    edição passa pelo fluxo editorial.
  */
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Search, BookOpen, ArrowLeft, Tag } from 'lucide-react';
+import { Search, BookOpen, ArrowLeft, Tag, Landmark, Loader2 } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useEffectiveRole } from '@/lib/RoleSimulationContext';
-import { can } from '@/lib/rbac';
+import { can, isPlatformOwner } from '@/lib/rbac';
 import { useKnowledgeArticles } from '@/lib/useKnowledgeArticles';
+import { buildRepositoryCards, useLegalRepository } from '@/lib/legalRepository';
 import { KB_FRAMEWORKS, getArticleFrameworkColor, getArticleFrameworkTint } from '@/lib/kbFrameworks';
+import { FRAMEWORK_BY_CODE, frameworkName } from '@/lib/frameworkCatalogue';
 import ArticleEditorialPanel from '@/components/knowledge/ArticleEditorialPanel';
+import FrameworkGrid from '@/components/knowledge/repository/FrameworkGrid';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const SECTION_LABELS = {
@@ -44,18 +59,69 @@ function renderBody(body) {
 }
 
 export default function KnowledgeBase() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { slug } = useParams();
   const role = useEffectiveRole();
   const canEdit = can(role, 'edit', 'knowledge_base');
 
+  const [mode, setMode] = useState('repository');
   const [tab, setTab] = useState('catalogue');
   const [search, setSearch] = useState('');
   const [activeSection, setActiveSection] = useState('all');
   const [activeFramework, setActiveFramework] = useState('all');
 
   const { articles, allArticles, isLoading } = useKnowledgeArticles({ includeUnpublished: canEdit });
+
+  // ─── Repositório legal (Layer 1) ─────────────────────────────
+  // A vista por omissão. Os cartões, a versão em vigor e a frescura vêm do
+  // modelo — aqui só se filtra a pesquisa e se decide o que mostrar quando o
+  // repositório ainda não foi carregado.
+  const {
+    profiles,
+    versions,
+    authorities,
+    isLoading: isRepositoryLoading,
+    isError: isRepositoryError,
+    refetch: refetchRepository,
+  } = useLegalRepository();
+
+  const canLoadRepository = isPlatformOwner(role);
+
+  const repositoryCards = useMemo(
+    () => buildRepositoryCards({ profiles, versions, authorities }, language === 'en' ? 'en' : 'pt'),
+    [profiles, versions, authorities, language],
+  );
+
+  const repositoryLoaded = profiles.length > 0 || versions.length > 0;
+
+  const visibleCards = useMemo(() => {
+    if (!search) return repositoryCards;
+    const query = search.toLowerCase();
+    return repositoryCards.filter((card) =>
+      [
+        card.name,
+        card.acronym,
+        card.code,
+        card.catalogueEntry?.full_name?.pt,
+        card.catalogueEntry?.full_name?.en,
+        card.version?.version_label,
+        card.version?.document_title,
+      ]
+        .concat(card.authorities.map((authority) => authority.name))
+        .some((value) => (value || '').toLowerCase().includes(query)),
+    );
+  }, [repositoryCards, search]);
+
+  const seedRepository = useMutation({
+    mutationFn: () => base44.functions.invoke('seedLegalRepository', {}),
+    onSuccess: async () => {
+      toast.success(t('repo_seed_done'));
+      await refetchRepository();
+    },
+    onError: (error) =>
+      toast.error(error?.response?.data?.error || error?.data?.error || t('repo_seed_error')),
+  });
 
   const filtered = useMemo(() => {
     return articles.filter(a => {
@@ -151,47 +217,115 @@ export default function KnowledgeBase() {
     );
   }
 
-  // ─── Catalogue / Editorial ──────────────────────────────────
+  // ─── Seletor de modo e caixa de pesquisa (comuns) ───────────
+  const modeTabs = (
+    <div className="flex items-center gap-1 kb-bg-surface kb-border-c border rounded-lg p-1">
+      {['repository', 'articles'].map(key => (
+        <button
+          key={key}
+          onClick={() => setMode(key)}
+          className={cn(
+            'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+            mode === key ? 'kb-bg-accent text-white' : 'kb-text-muted hover:kb-text-light',
+          )}
+        >
+          {t(key === 'repository' ? 'repo_mode_repository' : 'repo_mode_articles')}
+        </button>
+      ))}
+    </div>
+  );
+
+  const searchBox = (placeholder) => (
+    <div className="relative mb-4">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 kb-text-muted" />
+      <Input
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder={placeholder}
+        className="kb-input pl-10"
+      />
+    </div>
+  );
+
+  // ─── Repositório legal (Layer 1) ────────────────────────────
+  const repositoryView = (
+    <>
+      {searchBox(t('repo_search_placeholder'))}
+
+      {isRepositoryLoading ? (
+        <div className="py-16 text-center kb-text-muted text-sm">{t('repo_loading')}</div>
+      ) : isRepositoryError ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          <Landmark className="w-10 h-10 kb-text-muted mb-3" />
+          <p className="kb-text-muted text-sm">{t('repo_seed_error')}</p>
+        </div>
+      ) : !repositoryLoaded ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          <Landmark className="w-10 h-10 kb-text-muted mb-3" />
+          <p className="kb-text-muted text-sm">{t('repo_empty')}</p>
+          {canLoadRepository && (
+            <Button
+              size="sm"
+              className="mt-4 gap-1.5"
+              disabled={seedRepository.isPending}
+              onClick={() => seedRepository.mutate()}
+            >
+              {seedRepository.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {seedRepository.isPending ? t('repo_seeding') : t('repo_seed')}
+            </Button>
+          )}
+        </div>
+      ) : visibleCards.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          <Landmark className="w-10 h-10 kb-text-muted mb-3" />
+          <p className="kb-text-muted text-sm">{t('repo_no_match')}</p>
+        </div>
+      ) : (
+        <FrameworkGrid
+          cards={visibleCards}
+          onOpen={code => navigate(`/knowledge-base/framework/${code}`)}
+        />
+      )}
+    </>
+  );
+
+  // ─── Vistas: repositório legal (por omissão) / artigos ──────
   return (
     <div className="kb-scope kb-bg-canvas rounded-xl p-6 min-h-[60vh]">
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="kb-title text-2xl mb-1">{t('nav_knowledge_base')}</h1>
-          <p className="kb-text-muted text-sm">{t('kb_subtitle')}</p>
+          <p className="kb-text-muted text-sm">
+            {mode === 'repository' ? t('repo_subtitle') : t('kb_subtitle')}
+          </p>
         </div>
-        {canEdit && (
-          <div className="flex items-center gap-1 kb-bg-surface kb-border-c border rounded-lg p-1">
-            {['catalogue', 'editorial'].map(key => (
-              <button
-                key={key}
-                onClick={() => setTab(key)}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-                  tab === key ? 'kb-bg-accent text-white' : 'kb-text-muted hover:kb-text-light',
-                )}
-              >
-                {t(key === 'catalogue' ? 'kb_tab_catalogue' : 'kb_tab_editorial')}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {modeTabs}
+          {canEdit && mode === 'articles' && (
+            <div className="flex items-center gap-1 kb-bg-surface kb-border-c border rounded-lg p-1">
+              {['catalogue', 'editorial'].map(key => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+                    tab === key ? 'kb-bg-accent text-white' : 'kb-text-muted hover:kb-text-light',
+                  )}
+                >
+                  {t(key === 'catalogue' ? 'kb_tab_catalogue' : 'kb_tab_editorial')}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {tab === 'editorial' && canEdit ? (
+      {mode === 'repository' ? repositoryView : tab === 'editorial' && canEdit ? (
         <ArticleEditorialPanel articles={allArticles} />
       ) : (
         <>
-          {/* Search */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 kb-text-muted" />
-            <Input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder={t('kb_search_placeholder')}
-              className="kb-input pl-10"
-            />
-          </div>
+          {searchBox(t('kb_search_placeholder'))}
 
           {/* Filters */}
           <div className="flex flex-wrap gap-2 mb-6">

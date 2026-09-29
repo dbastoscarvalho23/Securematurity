@@ -114,6 +114,9 @@ export const repositoryEn = {
   repo_related_controls: 'Assessment controls',
   repo_related_controls_hint: 'Controls of the assessment layer that belong to this framework.',
   repo_related_none: 'Nothing linked yet.',
+  // Versão normativa citada por um artigo editorial (layer 4 → layer 1).
+  repo_article_norm: 'Normative version cited',
+  repo_article_norm_open: 'Open the framework profile',
 
   // ─── Gestão ──────────────────────────────────────────────────
   repo_manage: 'Manage repository',
@@ -289,6 +292,9 @@ export const repositoryPt = {
   repo_related_controls: 'Controlos de avaliação',
   repo_related_controls_hint: 'Controlos da camada de avaliação que pertencem a este framework.',
   repo_related_none: 'Ainda sem ligações.',
+  // Versão normativa citada por um artigo editorial (layer 4 → layer 1).
+  repo_article_norm: 'Versão normativa citada',
+  repo_article_norm_open: 'Abrir ficha do framework',
 
   // ─── Gestão ──────────────────────────────────────────────────
   repo_manage: 'Gerir repositório',

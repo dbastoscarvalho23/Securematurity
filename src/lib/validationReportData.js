@@ -69,6 +69,9 @@ export const SEVERITIES = [
 // Estado das correções aplicadas em código (a validação live continua pendente —
 // ver FOLLOW_UPS). Não altera a severidade original de cada problema.
 export const STATUSES = [
+  // «Concluído» é o estado de uma tarefa do to-do (trabalho combinado), não de um achado:
+  // um achado fecha-se com «corrigido», uma tarefa entrega-se com «concluído».
+  { id: 'concluido', label: 'Concluído', classes: 'bg-status-success/10 text-status-success border-status-success/20' },
   { id: 'corrigido', label: 'Corrigido', classes: 'bg-status-success/10 text-status-success border-status-success/20' },
   { id: 'parcial', label: 'Parcial', classes: 'bg-status-warning/10 text-status-warning border-status-warning/20' },
   { id: 'pendente', label: 'Pendente', classes: 'bg-status-danger/10 text-status-danger border-status-danger/20' },
