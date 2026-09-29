@@ -190,6 +190,16 @@ export const ARCHIVED_FINDINGS = [
       'Inspeção: ExternalAccess.jsx não tem cadeias literais em inglês (61 chamadas a t()) e delegation.js expõe labelKey/descriptionKey em vez de rótulos.',
   },
   {
+    id: 'FC4',
+    area: 'ux',
+    severity: 'media',
+    title: 'Bloqueio de escrita na simulação de papel por heurística de texto e ícone',
+    correction:
+      'A decisão deixou de ser heurística e passou a ser de capacidade: o rótulo (ou o atributo `data-capability`) indica a ação, o recurso vem da rota e quem decide é `can(effectiveRole, ação, recurso)`. Sem recurso identificado não há bloqueio, a navegação nunca é bloqueada e a submissão de formulário é intercetada no evento `submit`. O contentor do sonner (`AppToaster`, `App.jsx`) passou a estar montado, pelo que a recusa da escrita é visível.',
+    confirmation:
+      'Inspeção: `WriteBlocker` (src/components/layout/AppLayout.jsx) decide por `can(...)` e `resourceForRoute(...)`, com `isNavigation()` a excluir ligações e menus. Preview (2026-09-29, master_admin a simular o papel `auditor`): o clique em «Guardar» do perfil não produz nenhum pedido, o diálogo mantém-se aberto e o aviso «Esta ação não faz parte do papel simulado.» aparece; a submissão do formulário pelo evento `submit` é recusada do mesmo modo; a navegação continua livre (a rota mudou com a simulação ativa). Residual assumido: é uma guarda de interface e não substitui a autorização do servidor.',
+  },
+  {
     id: 'FC6',
     area: 'ux',
     severity: 'baixa',
