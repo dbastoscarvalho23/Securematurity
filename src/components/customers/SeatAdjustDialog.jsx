@@ -46,6 +46,8 @@ export default function SeatAdjustDialog({
               variant="outline"
               size="icon"
               className="h-10 w-10 rounded-full"
+              aria-label={t('common_decrease')}
+              title={t('common_decrease')}
               onClick={() => setValue(clamp(value - 1))}
               disabled={value <= MIN_SEAT_LIMIT}
             >
@@ -69,6 +71,8 @@ export default function SeatAdjustDialog({
               variant="outline"
               size="icon"
               className="h-10 w-10 rounded-full"
+              aria-label={t('common_increase')}
+              title={t('common_increase')}
               onClick={() => setValue(clamp(value + 1))}
             >
               <Plus className="w-4 h-4" />

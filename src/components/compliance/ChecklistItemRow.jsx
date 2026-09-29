@@ -138,7 +138,7 @@ export default function ChecklistItemRow({ item, queryKey, displayText, customer
         <div className="flex items-center gap-1 flex-shrink-0">
           <Badge variant="outline" className={cn('text-xs border', cfg.bg, cfg.color)}>{t(cfg.labelKey)}</Badge>
           {!editing && (
-            <Button size="icon" variant="ghost" className="w-6 h-6" onClick={() => { setForm({ status: item.status, owner: item.owner || '', due_date: item.due_date || '', notes: item.notes || '' }); setEditing(true); }}>
+            <Button size="icon" variant="ghost" className="w-6 h-6" aria-label={t('common_edit')} title={t('common_edit')} onClick={() => { setForm({ status: item.status, owner: item.owner || '', due_date: item.due_date || '', notes: item.notes || '' }); setEditing(true); }}>
               <Pencil className="w-3 h-3" />
             </Button>
           )}

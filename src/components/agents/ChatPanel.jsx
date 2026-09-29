@@ -49,7 +49,7 @@ export default function ChatPanel({ language, conversation, messages, onSend, se
           rows={1}
           className="resize-none max-h-32"
         />
-        <Button onClick={handleSend} disabled={!input.trim() || sending} size="icon">
+        <Button onClick={handleSend} disabled={!input.trim() || sending} size="icon" aria-label={s.send} title={s.send}>
           <Send className="h-4 w-4" />
         </Button>
       </div>

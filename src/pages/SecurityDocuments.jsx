@@ -333,11 +333,11 @@ export default function SecurityDocuments() {
                   </div>
                   <div className="flex gap-1">
                     {doc.file_url && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" asChild aria-label={t('aria_open_document')} title={t('aria_open_document')}>
                         <a href={doc.file_url} target="_blank" rel="noreferrer"><ExternalLink className="w-3.5 h-3.5" /></a>
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setHistoryDoc(doc); setHistoryOpen(true); }}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t('docs_version_history')} title={t('docs_version_history')} onClick={() => { setHistoryDoc(doc); setHistoryOpen(true); }}>
                       <History className="w-3.5 h-3.5" />
                     </Button>
                   </div>
@@ -458,23 +458,24 @@ export default function SecurityDocuments() {
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {doc.file_url && (
-                            <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" asChild aria-label={t('aria_open_document')} title={t('aria_open_document')}>
                               <a href={doc.file_url} target="_blank" rel="noreferrer">
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                             </Button>
                           )}
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title={t('docs_version_history')}
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" aria-label={t('docs_version_history')} title={t('docs_version_history')}
                             onClick={() => { setHistoryDoc(doc); setHistoryOpen(true); }}>
                             <History className="w-3.5 h-3.5" />
                           </Button>
                           {canEditDoc(doc) && (
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(doc)}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t('common_edit')} title={t('common_edit')} onClick={() => handleEdit(doc)}>
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
                           )}
                           {canDeleteDoc(doc) && (
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                              aria-label={t('common_delete')} title={t('common_delete')}
                               onClick={() => deleteMutation.mutate(doc)}>
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>

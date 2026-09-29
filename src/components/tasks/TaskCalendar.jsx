@@ -64,13 +64,13 @@ export default function TaskCalendar({ tasks, onEdit }) {
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
+          <Button variant="outline" size="icon" className="h-8 w-8" aria-label={t('aria_previous_month')} title={t('aria_previous_month')} onClick={() => navigate(-1)}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => setCursor(new Date())}>
             {t('tasks_calendar_today')}
           </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(1)}>
+          <Button variant="outline" size="icon" className="h-8 w-8" aria-label={t('aria_next_month')} title={t('aria_next_month')} onClick={() => navigate(1)}>
             <ChevronRight className="w-4 h-4" />
           </Button>
           <h3 className="text-sm font-semibold ml-2 capitalize">{title}</h3>

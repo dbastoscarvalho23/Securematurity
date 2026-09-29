@@ -225,7 +225,7 @@ export default function TrainingEnrollmentDialog({ open, onClose, training, cust
                         </Badge>
                       </td>
                       <td className="px-3 py-2 text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleRemove(enr)}>
+                        <Button variant="ghost" size="icon" aria-label={t('common_remove')} title={t('common_remove')} onClick={() => handleRemove(enr)}>
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </td>

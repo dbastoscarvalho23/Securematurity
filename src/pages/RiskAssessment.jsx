@@ -411,10 +411,11 @@ export default function RiskAssessment() {
                           <ClipboardList className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">{t('risk_tasks_button')}</span>
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(risk)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t('common_edit')} title={t('common_edit')} onClick={() => handleEdit(risk)}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                          aria-label={t('common_delete')} title={t('common_delete')}
                           onClick={() => deleteMutation.mutate(risk)}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>

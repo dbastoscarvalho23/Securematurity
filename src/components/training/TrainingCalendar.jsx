@@ -75,13 +75,13 @@ export default function TrainingCalendar({ customer }) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold capitalize">{format(month, 'MMMM yyyy', { locale })}</h3>
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="icon" onClick={() => setMonth(m => addMonths(m, -1))}>
+                <Button variant="outline" size="icon" aria-label={t('aria_previous_month')} title={t('aria_previous_month')} onClick={() => setMonth(m => addMonths(m, -1))}>
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => { setMonth(startOfMonth(new Date())); setSelected(new Date()); }}>
                   {t('training_calendar_today')}
                 </Button>
-                <Button variant="outline" size="icon" onClick={() => setMonth(m => addMonths(m, 1))}>
+                <Button variant="outline" size="icon" aria-label={t('aria_next_month')} title={t('aria_next_month')} onClick={() => setMonth(m => addMonths(m, 1))}>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>

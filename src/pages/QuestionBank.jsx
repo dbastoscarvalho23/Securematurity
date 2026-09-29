@@ -364,10 +364,10 @@ Return only valid JSON with the translations.`,
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(q)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t('common_edit')} title={t('common_edit')} onClick={() => handleEdit(q)}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(q)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" aria-label={t('common_delete')} title={t('common_delete')} onClick={() => handleDelete(q)}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>

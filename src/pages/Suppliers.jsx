@@ -326,7 +326,7 @@ export default function Suppliers() {
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('common_actions')} title={t('common_actions')}><MoreHorizontal className="w-4 h-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => openEdit(s)}><Pencil className="w-4 h-4 mr-2" /> {t('suppliers_edit')}</DropdownMenuItem>

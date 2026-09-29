@@ -350,6 +350,7 @@ export const uiEn = {
   nb_notifications: 'Notifications',
   nb_mark_all_read: 'Mark all read',
   nb_no_notifications: 'No notifications',
+  nb_delete: 'Delete notification',
 
   // Task list view
   tlv_no_tasks: 'No tasks found.',
@@ -770,6 +771,7 @@ export const uiPt = {
   nb_notifications: 'Notificações',
   nb_mark_all_read: 'Marcar todas como lidas',
   nb_no_notifications: 'Sem notificações',
+  nb_delete: 'Eliminar notificação',
 
   // Task list view
   tlv_no_tasks: 'Nenhuma tarefa encontrada.',

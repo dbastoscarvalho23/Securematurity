@@ -203,7 +203,7 @@ export default function NominationsPanel({ customers, selectedCustomerId }) {
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {n.file_url && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" asChild aria-label={t('aria_open_document')} title={t('aria_open_document')}>
                           <a href={n.file_url} target="_blank" rel="noreferrer">
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
@@ -211,12 +211,14 @@ export default function NominationsPanel({ customers, selectedCustomerId }) {
                       )}
                       {canEdit(n) && (
                         <Button variant="ghost" size="icon" className="h-7 w-7"
+                          aria-label={t('common_edit')} title={t('common_edit')}
                           onClick={() => { setEditing(n); setDialogOpen(true); }}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
                       )}
                       {canDelete(n) && (
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                          aria-label={t('common_delete')} title={t('common_delete')}
                           onClick={() => deleteMutation.mutate(n)}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>

@@ -99,7 +99,7 @@ export default function TaskListView({ tasks, onStatusChange, onEdit, onDelete, 
                   )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t('common_actions')} title={t('common_actions')}>
                         <MoreHorizontal className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>

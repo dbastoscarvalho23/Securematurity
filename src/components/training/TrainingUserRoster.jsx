@@ -174,10 +174,10 @@ export default function TrainingUserRoster({ customer }) {
                           <Button variant="ghost" size="icon" title={t('training_report_generate')} onClick={() => handleReport(u)} disabled={generatingId === u.id}>
                             <FileText className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => { setEditing(u); setFormOpen(true); }}>
+                          <Button variant="ghost" size="icon" aria-label={t('common_edit')} title={t('common_edit')} onClick={() => { setEditing(u); setFormOpen(true); }}>
                             <Pencil className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(u)}>
+                          <Button variant="ghost" size="icon" aria-label={t('common_delete')} title={t('common_delete')} onClick={() => setDeleteTarget(u)}>
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
                         </div>

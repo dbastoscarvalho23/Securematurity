@@ -205,7 +205,7 @@ export default function AssessmentWizardManual({ meta, selectedCustomer, onBack,
                     </div>
                     <p className="leading-snug">{language === 'pt' && q.question_text_pt ? q.question_text_pt : q.question_text}</p>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive flex-shrink-0" onClick={() => removeNew(q._tempId)}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive flex-shrink-0" aria-label={t('common_remove')} title={t('common_remove')} onClick={() => removeNew(q._tempId)}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>

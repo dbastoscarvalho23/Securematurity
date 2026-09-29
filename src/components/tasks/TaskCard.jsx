@@ -34,7 +34,7 @@ export default function TaskCard({ task, onStatusChange, onEdit, onDelete }) {
           <p className="text-sm font-medium leading-snug flex-1">{task.title}</p>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
+              <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" aria-label={t('common_actions')} title={t('common_actions')}>
                 <MoreHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>

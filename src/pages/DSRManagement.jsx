@@ -198,7 +198,7 @@ export default function DSRManagement() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell><Button variant="ghost" size="icon" onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button></TableCell>
+                      <TableCell><Button variant="ghost" size="icon" aria-label={t('common_edit')} title={t('common_edit')} onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button></TableCell>
                     </TableRow>
                   );
                 })}

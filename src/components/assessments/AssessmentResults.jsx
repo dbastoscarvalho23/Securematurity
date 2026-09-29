@@ -175,7 +175,7 @@ export default function AssessmentResults({ assessment, responses }) {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link to="/assessments">
-          <Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" aria-label={t('common_back')} title={t('common_back')}><ArrowLeft className="w-4 h-4" /></Button>
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">

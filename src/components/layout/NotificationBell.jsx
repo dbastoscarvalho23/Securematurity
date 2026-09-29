@@ -102,7 +102,7 @@ export default function NotificationBell() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+        <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label={t('nb_notifications')} title={t('nb_notifications')}>
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center">
@@ -161,6 +161,7 @@ export default function NotificationBell() {
 }
 
 function NotificationItem({ notif, onClick, onDelete }) {
+  const { t } = useLanguage();
   const icon = TYPE_ICONS[notif.type] || '💬';
   const timeAgo = notif.created_date
     ? formatDistanceToNow(new Date(notif.created_date), { addSuffix: true })
@@ -193,6 +194,8 @@ function NotificationItem({ notif, onClick, onDelete }) {
 
       <button
         onClick={onDelete}
+        aria-label={t('nb_delete')}
+        title={t('nb_delete')}
         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground"
       >
         <X className="w-3 h-3" />

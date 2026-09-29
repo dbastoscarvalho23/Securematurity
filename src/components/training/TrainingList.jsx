@@ -113,10 +113,10 @@ export default function TrainingList({ customer }) {
                   <Button size="sm" variant="default" className="flex-1 gap-2" onClick={() => setEnrollmentTarget(tr)}>
                     <Users className="w-4 h-4" /> {t('training_open_enrollments')}
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => { setEditing(tr); setFormOpen(true); }}>
+                  <Button variant="ghost" size="icon" aria-label={t('common_edit')} title={t('common_edit')} onClick={() => { setEditing(tr); setFormOpen(true); }}>
                     <Pencil className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(tr)}>
+                  <Button variant="ghost" size="icon" aria-label={t('common_delete')} title={t('common_delete')} onClick={() => setDeleteTarget(tr)}>
                     <Trash2 className="w-4 h-4 text-destructive" />
                   </Button>
                 </div>

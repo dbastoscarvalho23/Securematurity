@@ -123,6 +123,9 @@ export const phase1En = {
   aria_customer_open: 'Open detail of {name}',
   aria_admin_drilldown: 'Show details of {name}',
   aria_close: 'Close',
+  aria_open_document: 'Open file',
+  aria_previous_month: 'Previous month',
+  aria_next_month: 'Next month',
   stat_vs_last_period: 'vs last period',
   pa_expired: 'Expired',
 };
@@ -241,6 +244,9 @@ export const phase1Pt = {
   aria_customer_open: 'Abrir detalhe de {name}',
   aria_admin_drilldown: 'Ver detalhes de {name}',
   aria_close: 'Fechar',
+  aria_open_document: 'Abrir ficheiro',
+  aria_previous_month: 'Mês anterior',
+  aria_next_month: 'Mês seguinte',
   stat_vs_last_period: 'vs período anterior',
   pa_expired: 'Expirada',
 };

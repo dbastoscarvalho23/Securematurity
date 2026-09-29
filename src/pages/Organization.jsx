@@ -141,7 +141,7 @@ export default function Organization() {
                     {customers.find(c => c.id === u.customer_id)?.name || u.customer_name || '—'}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setUserToEdit(u)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t('common_edit')} title={t('common_edit')} onClick={() => setUserToEdit(u)}>
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
                   </TableCell>

@@ -156,7 +156,7 @@ export default function RiskMatrix({ risks, onEdit }) {
                     )}
                   </div>
                   {onEdit && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => onEdit(risk)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" aria-label={t('common_edit')} title={t('common_edit')} onClick={() => onEdit(risk)}>
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
                   )}
