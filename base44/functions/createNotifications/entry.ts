@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-import { AUTOMATION_SECRET } from '../../shared/automationSecret.ts';
+import { getAutomationSecret } from '../../shared/automationSecret.ts';
 
 const ENTITY_MAP = {
   Task: 'Task',
@@ -39,13 +39,11 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'entity not found' });
     }
 
-    // Authorization: entity automations pass the shared automation secret;
-    // manual calls require an authenticated user authorized over the record.
-    // Anonymous callers are rejected before any service-role write.
-    const hasAutomationSecret =
-      req.headers.get('x-automation-secret') === AUTOMATION_SECRET ||
-      payload?.args?.automation_secret === AUTOMATION_SECRET ||
-      payload?.automation_secret === AUTOMATION_SECRET;
+    // Authorization: entity automations present the shared automation secret
+    // (read from the app's secrets); manual calls require an authenticated user
+    // authorized over the record. Anonymous callers are rejected before any
+    // service-role write.
+    const hasAutomationSecret = !!(await getAutomationSecret(req, payload));
     if (!hasAutomationSecret) {
       let user = null;
       try {

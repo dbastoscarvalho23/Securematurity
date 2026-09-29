@@ -25,7 +25,7 @@
           "with": {
             "function_name": "documentNotifications",
             "args": {
-              "automation_secret": "cm-automation-7f3a9b2e1d8c4a6f0b5e2c9d1a7f4e3b"
+              "automation_secret": "${ secrets.AUTOMATION_SECRET }"
             }
           },
           "then": "end"

@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
-import { AUTOMATION_SECRET } from '../../shared/automationSecret.ts';
+import { getAutomationSecret } from '../../shared/automationSecret.ts';
 
 async function getSettings(base44ServiceRole, customerId) {
   const all = await base44ServiceRole.entities.ReminderSettings.list();
@@ -25,10 +25,7 @@ Deno.serve(async (req) => {
     // Entity automation: triggered by SecurityDocument update.
     // Only platform automations may use this branch — they carry the shared
     // automation secret. Anonymous/foreign callers are rejected up front.
-    const hasAutomationSecret =
-      req.headers.get('x-automation-secret') === AUTOMATION_SECRET ||
-      body?.args?.automation_secret === AUTOMATION_SECRET ||
-      body?.automation_secret === AUTOMATION_SECRET;
+    const hasAutomationSecret = !!(await getAutomationSecret(req, body));
     if (!hasAutomationSecret) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
