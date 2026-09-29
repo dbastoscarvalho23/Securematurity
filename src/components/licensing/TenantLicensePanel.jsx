@@ -12,8 +12,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertTriangle, Loader2, Package, ShieldPlus, SlidersHorizontal, PauseCircle, PlayCircle, ListChecks } from 'lucide-react';
+import { AlertTriangle, GitCompareArrows, Loader2, Package, ShieldPlus, SlidersHorizontal, PauseCircle, PlayCircle, ListChecks } from 'lucide-react';
 import { addonLabel, formatMoney } from '@/lib/commercialOffer';
+import TierChangeSimulatorDialog from '@/components/licensing/TierChangeSimulatorDialog';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
 
@@ -52,6 +53,7 @@ export default function TenantLicensePanel() {
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState(null);
   const [form, setForm] = useState({});
+  const [simulator, setSimulator] = useState(null);
   const [error, setError] = useState('');
 
   const { data, isLoading } = useQuery({
@@ -283,6 +285,11 @@ export default function TenantLicensePanel() {
                             <ListChecks className="w-3 h-3" /> {t('licensing_provision_standards')}
                           </Button>
                         )}
+                        {tenant.subscription && (
+                          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => setSimulator(tenant)}>
+                            <GitCompareArrows className="w-3 h-3" /> {t('licensing_simulate')}
+                          </Button>
+                        )}
                         {tenant.subscription && (sellablePacks.length > 0 || (tenant.addons || []).length > 0) && (
                           <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openDialog('addon', tenant)}>
                             <Package className="w-3 h-3" /> {t('licensing_provision_addon')}
@@ -312,6 +319,20 @@ export default function TenantLicensePanel() {
           </Table>
         )}
       </CardContent>
+
+      {simulator && (
+        <TierChangeSimulatorDialog
+          tenant={simulator}
+          tiers={tiers}
+          // A simulação oferece o que a oferta vende, mais o que o cliente já tem
+          // contratado: um pack fora da oferta continua a poder ser retirado.
+          packs={packs.filter(
+            (pack) => pack.for_sale || (simulator.addons || []).some((addon) => addon.addon_code === pack.code),
+          )}
+          modules={modules}
+          onClose={() => setSimulator(null)}
+        />
+      )}
 
       <Dialog open={!!dialog} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>

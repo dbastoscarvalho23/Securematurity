@@ -20,6 +20,7 @@ import {
   addonForSale,
   addonIncludedAiCalls,
   addonPriceEntryFor,
+  monthlyCentsFor,
   offerVersionInForce,
   priceEntryFor,
   priceTableInForce,
@@ -63,6 +64,11 @@ import {
  * defeito do histórico comercial). Os filtros desta função chamam-se
  * `change_action` (histórico) e `period` (sinalizações de quota).
  *
+ * Leitura por cliente: `simulate_change` (OP-M5) compõe o que `change_tier` e
+ * `set_addon` fariam e devolve o antes/depois — não escreve nada (nem
+ * subscrição, nem excepções, nem histórico) e é por isso que a consola pode
+ * mostrar «o que muda se…» sem deixar rasto.
+ *
  * Cada acção deixa dois rastos: a entrada de `AuditLog` (trilha técnica) e uma
  * linha em `LicenseChangeLog` com o autor, o motivo e o antes/depois do estado
  * relevante (subscrição, módulos e standards) — é o que o cartão «Histórico de
@@ -81,6 +87,7 @@ const ACTIONS = [
   "change_tier",
   "close",
   "set_quotas",
+  "simulate_change",
   "lifecycle",
   "quota_overview",
   "record_quota_signals",
@@ -170,6 +177,8 @@ Deno.serve(async (req) => {
         return await closeSubscription(base44, user, customer, body);
       case "set_quotas":
         return await setQuotas(base44, user, customer, body);
+      case "simulate_change":
+        return await simulateChange(base44, customer, body);
       default:
         return Response.json({ error: "Acção inválida." }, { status: 400 });
     }
@@ -612,6 +621,196 @@ async function leavingGrants(base44: any, customerId: string, tierCode: string) 
   }
 
   return { modules, standards, offer_version_code: offerVersionCode };
+}
+
+/**
+ * Simulador «o que muda se…» (OP-M5): compõe o cálculo que `change_tier` e
+ * `set_addon` fazem — nível alvo, packs, tabela em vigor, retiradas necessárias
+ * e quotas resultantes — e devolve o antes/depois **sem escrever nada**. É a
+ * mesma matéria-prima das duas acções de escrita, para que a pré-visualização
+ * não possa divergir do que a operação aplica e para que a decisão comercial
+ * deixe de ser ensaio e erro (o `removals_required` de uma descida deixa de ser
+ * descoberto só ao falhar).
+ *
+ * Leitura apenas: nenhuma subscrição, excepção, pack ou linha de histórico é
+ * tocada e o `confirm_removals` da escrita é irrelevante aqui — o que ele
+ * faria aparece na lista de bloqueadores.
+ */
+async function simulateChange(base44: any, customer: any, body: any) {
+  const subscription = await findByCustomer(base44, customer.id);
+  if (!subscription) return Response.json({ error: "Cliente sem subscrição." }, { status: 404 });
+
+  const currentTier = resolveTier(subscription.tier_code) || subscription.tier_code;
+  const targetTier = body.tier_code === undefined ? currentTier : resolveTier(body.tier_code);
+  if (!targetTier) return Response.json({ error: "tier_code inválido." }, { status: 400 });
+
+  const at = today();
+  // Duas leituras de preço, de propósito: a tabela que a subscrição registou é o
+  // que se contrata hoje, a tabela em vigor é o que a operação passaria a
+  // registar. Sem uma delas, o antes/depois comparava coisas diferentes.
+  const versions = await base44.asServiceRole.entities.OfferVersion.list("-created_date", 200);
+  const offerVersion = offerVersionInForce(versions || [], at);
+  const tables = await base44.asServiceRole.entities.PriceTable.list("-created_date", 200);
+  const table = offerVersion ? priceTableInForce(tables || [], offerVersion.id, at) : null;
+  const currentTable = subscription.price_table_id
+    ? await base44.asServiceRole.entities.PriceTable.get(subscription.price_table_id).catch(() => null)
+    : null;
+
+  // Packs: o que está activo e o que a simulação propõe (uma alteração de cada vez).
+  const activeAddonCodes = (subscription.addons || [])
+    .filter((row: any) => row?.status === "active")
+    .map((row: any) => String(row.addon_code || ""));
+  const addonCode = String(body.addon_code || "");
+  if (addonCode && !addonCatalogueCodes().includes(addonCode)) {
+    return Response.json({ error: "addon_code desconhecido." }, { status: 422 });
+  }
+  const addonActive = body.addon_active !== false;
+  const targetAddonCodes = !addonCode
+    ? activeAddonCodes
+    : addonActive
+      ? Array.from(new Set([...activeAddonCodes, addonCode])).sort()
+      : activeAddonCodes.filter((code: string) => code !== addonCode).sort();
+
+  /** Uma linha de pack para a leitura: nome e valor da tabela em vigor (ou o já contratado). */
+  const addonRow = (code: string) => {
+    const entry = addonPriceEntryFor(table, code);
+    const existing = (subscription.addons || []).find((row: any) => row.addon_code === code) || null;
+    return {
+      addon_code: code,
+      name: addonName(code),
+      amount_cents: entry?.amount_cents ?? existing?.amount_cents ?? null,
+    };
+  };
+  const currentAddonCents = addonTotalCents(subscription.addons || []);
+  const targetAddonCents = targetAddonCodes.reduce(
+    (total, code) => total + (Number(addonRow(code).amount_cents ?? 0) || 0),
+    0,
+  );
+
+  // Módulos: catálogo do nível, excepções por módulo activas e o que cada pack
+  // abre. Numa descida, uma excepção que o novo nível não cobre é retirada (é o
+  // que `withdrawLeaving` faz) — a simulação aplica a mesma regra, para não
+  // prometer um acesso que a operação fecha no mesmo instante.
+  const overrides = await base44.asServiceRole.entities.TenantModule.filter({ customer_id: customer.id });
+  const now = Date.now();
+  const activeOverrides = (overrides || [])
+    .filter((row: any) => row.status === "active" && (!row.expires_at || new Date(row.expires_at).getTime() > now))
+    .map((row: any) => String(row.module_code));
+
+  const direction = tierRank(targetTier) > tierRank(currentTier)
+    ? "upgrade"
+    : tierRank(targetTier) < tierRank(currentTier)
+      ? "downgrade"
+      : "same";
+  const removals = direction === "downgrade"
+    ? await leavingGrants(base44, customer.id, targetTier)
+    : { modules: [], standards: [], offer_version_code: null };
+
+  const targetTierModules = new Set(modulesForTier(targetTier));
+  const keptOverrides = direction === "downgrade"
+    ? activeOverrides.filter((code: string) => targetTierModules.has(code))
+    : activeOverrides;
+  const moduleSet = (tier: string, overrideCodes: string[], addonCodes: string[]) =>
+    new Set([
+      ...modulesForTier(tier),
+      ...overrideCodes,
+      ...addonCodes.flatMap((code: string) => modulesForAddon(code)),
+    ]);
+
+  const currentModules = moduleSet(currentTier, activeOverrides, activeAddonCodes);
+  const targetModules = moduleSet(targetTier, keptOverrides, targetAddonCodes);
+  const modulesGained = [...targetModules].filter((code) => !currentModules.has(code)).sort();
+  const modulesLost = [...currentModules].filter((code) => !targetModules.has(code)).sort();
+  const addonsAdded = targetAddonCodes.filter((code) => !activeAddonCodes.includes(code));
+  const addonsRemoved = activeAddonCodes.filter((code) => !targetAddonCodes.includes(code));
+
+  // Quotas: uma mudança de nível não mexe nos lugares contratados, mas muda o
+  // incluído do novo nível e, com ele, o valor por omissão da quota — e a
+  // política de elevação (OP-M1) quando o incluído fica abaixo do que está em uso.
+  const seatsUsed = subscription.seats_used || 0;
+  const seatLimit = subscription.seat_limit || 0;
+  const targetEntry = table ? priceEntryFor(table, targetTier) : null;
+  const includedSeats = targetEntry?.included_seats ?? null;
+  const targetAddonAi = table
+    ? addonIncludedAiCalls(table, targetAddonCodes.map((code) => ({ addon_code: code, status: "active" })))
+    : 0;
+  const targetTierAi = targetEntry?.included_ai_calls ?? null;
+  const targetAiQuota = targetTierAi === null && targetAddonAi === 0
+    ? null
+    : (Number(targetTierAi) || 0) + targetAddonAi;
+
+  const currentEntry = currentTable ? priceEntryFor(currentTable, currentTier) : null;
+  const currentCents = currentTable
+    ? monthlyCentsFor(currentTable, currentTier, seatLimit, currentAddonCents)
+    : null;
+  const targetCents = table ? monthlyCentsFor(table, targetTier, seatLimit, targetAddonCents) : null;
+
+  // Bloqueadores: o que a operação real recusaria. A simulação não falha por
+  // eles — mostra-os, que é para isso que serve.
+  const blockers: any[] = [];
+  if (
+    direction === "downgrade" &&
+    (removals.modules.length > 0 || removals.standards.length > 0) &&
+    body.confirm_removals !== true
+  ) {
+    blockers.push({ code: "removals_required" });
+  }
+  if (addonCode && addonActive && offerVersion && !addonForSale(offerVersion, addonCode)) {
+    blockers.push({ code: "addon_not_for_sale", addon_code: addonCode });
+  }
+
+  return Response.json({
+    simulation: true,
+    today: at,
+    changed: targetTier !== currentTier || addonsAdded.length > 0 || addonsRemoved.length > 0,
+    offer_version_code: offerVersion?.code || null,
+    price_table_id: table?.id || null,
+    price_table_label: table?.label || null,
+    currency: table?.currency || currentTable?.currency || "EUR",
+    billing_period: table?.billing_period || currentTable?.billing_period || null,
+    current: {
+      tier_code: currentTier,
+      seat_limit: seatLimit,
+      seats_used: seatsUsed,
+      included_seats: currentEntry?.included_seats ?? null,
+      ai_quota_monthly: subscription.ai_quota_monthly ?? null,
+      price_table_id: subscription.price_table_id || null,
+      price_amount_cents: subscription.price_amount_cents ?? null,
+      addon_amount_cents: currentAddonCents,
+      monthly_cents: currentCents,
+      addons: activeAddonCodes.map(addonRow),
+      modules: [...currentModules].sort(),
+      module_count: currentModules.size,
+    },
+    target: {
+      tier_code: targetTier,
+      seat_limit: seatLimit,
+      seats_used: seatsUsed,
+      included_seats: includedSeats,
+      quota_elevated_from: includedSeats !== null && includedSeats < seatsUsed ? includedSeats : null,
+      ai_quota_default: targetAiQuota,
+      addon_amount_cents: targetAddonCents,
+      monthly_cents: targetCents,
+      addons: targetAddonCodes.map(addonRow),
+      modules: [...targetModules].sort(),
+      module_count: targetModules.size,
+    },
+    changes: {
+      direction,
+      tier_changed: targetTier !== currentTier,
+      from_tier: currentTier,
+      to_tier: targetTier,
+      addons_added: addonsAdded,
+      addons_removed: addonsRemoved,
+      modules_gained: modulesGained,
+      modules_lost: modulesLost,
+      monthly_delta_cents: currentCents !== null && targetCents !== null ? targetCents - currentCents : null,
+      ai_quota_from: subscription.ai_quota_monthly ?? null,
+      ai_quota_to: targetAiQuota,
+    },
+    removals,
+    blockers,
+  });
 }
 
 /**

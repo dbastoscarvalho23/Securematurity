@@ -95,6 +95,42 @@ export const licenseEn = {
   licensing_provision_addon_help:
     'Contracting a pack opens its modules as a module exception; withdrawing it closes only what the pack opened — a module the contracted tier already includes is never closed. The price in force is recorded on the subscription and nothing is charged in this phase.',
   licensing_provision_addon_none: 'No pack contracted',
+  // Simulador de mudança de nível ou pack (OP-M5)
+  licensing_simulate: 'Simulate',
+  licensing_simulate_title: 'What changes if…',
+  licensing_simulate_tier: 'Target tier',
+  licensing_simulate_addon: 'Pack to change',
+  licensing_simulate_addon_none: 'No pack change',
+  licensing_simulate_addon_state: 'Pack',
+  licensing_simulate_addon_grant: 'Contract the pack',
+  licensing_simulate_addon_revoke: 'Withdraw the pack',
+  licensing_simulate_col_field: 'Field',
+  licensing_simulate_col_now: 'Now',
+  licensing_simulate_col_after: 'After',
+  licensing_simulate_row_tier: 'Tier',
+  licensing_simulate_row_seats_included: 'Seats included in the tier',
+  licensing_simulate_row_ai_quota: 'Monthly AI quota (default)',
+  licensing_simulate_row_addons: 'Contracted packs',
+  licensing_simulate_row_modules: 'Open modules',
+  licensing_simulate_row_price: 'Contracted monthly value',
+  licensing_simulate_no_addons: 'No pack',
+  licensing_simulate_no_price: 'Not priced in the table in force',
+  licensing_simulate_gained: 'Modules that come in',
+  licensing_simulate_lost: 'Modules that go out',
+  licensing_simulate_none: 'None',
+  licensing_simulate_standards_lost: '{n} standard(s) withdrawn.',
+  licensing_simulate_removals_note:
+    'A tier change withdraws the module exceptions and standards the new tier does not cover — nothing is deleted: they stay inactive with a date.',
+  licensing_simulate_no_change: 'Nothing would change with this choice.',
+  licensing_simulate_nothing_written:
+    'Simulation only — nothing is written. The operation itself is still carried out in “Change” and “Packs”, with a reason and a record in the history.',
+  licensing_simulate_blockers: 'What would block the operation',
+  licensing_simulate_blocker_removals:
+    'The downgrade leaves module exceptions or standards outside the new tier — the operation requires confirming what is withdrawn.',
+  licensing_simulate_blocker_addon_not_for_sale: 'The pack {pack} is not for sale in the offer in force.',
+  licensing_simulate_seat_elevation:
+    'The new tier includes {from} seats, below the {to} in use: a default quota would be raised to the usage. Access does not depend on this.',
+  licensing_simulate_loading: 'Simulating the change…',
   // Oferta comercial e preço (FM1/FM2)
   commercial_offer_title: 'Commercial offer',
   commercial_offer_subtitle:
@@ -462,6 +498,42 @@ export const licensePt = {
   licensing_provision_addon_help:
     'Contratar um pack abre os seus módulos como excepção por módulo; retirá-lo fecha apenas o que o pack abriu — um módulo que o nível contratado já inclui nunca fecha. O preço vigente fica registado na subscrição e nada é cobrado nesta fase.',
   licensing_provision_addon_none: 'Nenhum pack contratado',
+  // Simulador de mudança de nível ou pack (OP-M5)
+  licensing_simulate: 'Simular',
+  licensing_simulate_title: 'O que muda se…',
+  licensing_simulate_tier: 'Nível de destino',
+  licensing_simulate_addon: 'Pack a alterar',
+  licensing_simulate_addon_none: 'Sem alteração de packs',
+  licensing_simulate_addon_state: 'Pack',
+  licensing_simulate_addon_grant: 'Contratar o pack',
+  licensing_simulate_addon_revoke: 'Retirar o pack',
+  licensing_simulate_col_field: 'Campo',
+  licensing_simulate_col_now: 'Agora',
+  licensing_simulate_col_after: 'Depois',
+  licensing_simulate_row_tier: 'Nível',
+  licensing_simulate_row_seats_included: 'Lugares incluídos no nível',
+  licensing_simulate_row_ai_quota: 'Quota de IA por mês (por omissão)',
+  licensing_simulate_row_addons: 'Packs contratados',
+  licensing_simulate_row_modules: 'Módulos abertos',
+  licensing_simulate_row_price: 'Valor mensal contratado',
+  licensing_simulate_no_addons: 'Nenhum pack',
+  licensing_simulate_no_price: 'Sem preço na tabela em vigor',
+  licensing_simulate_gained: 'Módulos que entram',
+  licensing_simulate_lost: 'Módulos que saem',
+  licensing_simulate_none: 'Nenhum',
+  licensing_simulate_standards_lost: '{n} norma(s) retirada(s).',
+  licensing_simulate_removals_note:
+    'Uma mudança de nível retira as excepções por módulo e as normas que o novo nível não cobre — nada é apagado: ficam inactivas com data.',
+  licensing_simulate_no_change: 'Com esta escolha nada muda.',
+  licensing_simulate_nothing_written:
+    'Simulação apenas — nada é gravado. A operação faz-se em «Alterar» e «Packs», com motivo e registo no histórico.',
+  licensing_simulate_blockers: 'O que impediria a operação',
+  licensing_simulate_blocker_removals:
+    'A descida de nível deixa excepções por módulo ou normas fora do novo nível — a operação exige confirmar o que é retirado.',
+  licensing_simulate_blocker_addon_not_for_sale: 'O pack {pack} não está à venda na oferta em vigor.',
+  licensing_simulate_seat_elevation:
+    'O novo nível inclui {from} lugares, abaixo dos {to} em uso: uma quota por omissão seria elevada ao valor em uso. O acesso não depende disto.',
+  licensing_simulate_loading: 'A simular a mudança…',
   // Oferta comercial e preço (FM1/FM2)
   commercial_offer_title: 'Oferta comercial',
   commercial_offer_subtitle:

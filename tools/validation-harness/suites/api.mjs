@@ -1103,6 +1103,58 @@ export async function runApiSuite(report) {
       : { ok: false, detail: `esperado registo idempotente: ${JSON.stringify({ period, recorded, again }).slice(0, 140)}` };
   });
 
+  // O simulador «o que muda se…» (OP-M5) compõe o que `change_tier` e `set_addon`
+  // fariam — mesma matéria-prima das duas acções de escrita, para a
+  // pré-visualização não poder divergir do que a operação aplica. O que se mede
+  // é a composição (nível alvo, incluído e quota de IA da tabela em vigor,
+  // módulos que entram e saem) e, sobretudo, que a simulação **não escreve**.
+  await report.case("FM4.5", area8, "o simulador compõe a mudança de nível sem escrever nada", async () => {
+    const beforeLicences = await invoke("listTenantLicenses", { actor: ids.master_admin });
+    const before = ((beforeLicences.data.tenants || []).find((tenant) => tenant.id === tenants.tenant_alfa) || {}).subscription || {};
+    if (!before.tier_code) return { ok: false, detail: "subscrição de verificação em falta para simular" };
+    const beforeHistory = await invoke("listLicenseChanges", {
+      actor: ids.master_admin,
+      body: { customer_id: tenants.tenant_alfa, limit: 100 },
+    });
+    const historyBefore = (beforeHistory.data?.entries || []).length;
+
+    // O alvo é sempre o outro nível da oferta, pelo que a composição muda seja
+    // qual for o estado que a execução anterior deixou.
+    const target = before.tier_code === "advanced" ? "core" : "advanced";
+    const expected = target === "advanced" ? { seats: 40, ai: 20000 } : { seats: 5, ai: 1000 };
+    const sim = await provision({ action: "simulate_change", customer_id: tenants.tenant_alfa, tier_code: target });
+    if (sim.status !== 200) return statusOf(sim, 200, "");
+    const data = sim.data || {};
+    const moved = (data.changes?.modules_gained || []).length + (data.changes?.modules_lost || []).length;
+    const composed = data.simulation === true &&
+      data.changes?.tier_changed === true &&
+      data.current?.tier_code === before.tier_code &&
+      data.target?.tier_code === target &&
+      moved > 0 &&
+      data.target?.included_seats === expected.seats &&
+      data.target?.ai_quota_default === expected.ai;
+
+    const afterLicences = await invoke("listTenantLicenses", { actor: ids.master_admin });
+    const after = ((afterLicences.data.tenants || []).find((tenant) => tenant.id === tenants.tenant_alfa) || {}).subscription || {};
+    const afterHistory = await invoke("listLicenseChanges", {
+      actor: ids.master_admin,
+      body: { customer_id: tenants.tenant_alfa, limit: 100 },
+    });
+    const wrote = JSON.stringify(after) !== JSON.stringify(before) ||
+      (afterHistory.data?.entries || []).length !== historyBefore;
+
+    if (!composed || wrote) {
+      return {
+        ok: false,
+        detail: `simulação inesperada: ${JSON.stringify({ composed, wrote, target: data.target, gained: data.changes?.modules_gained, lost: data.changes?.modules_lost }).slice(0, 220)}`,
+      };
+    }
+    return {
+      ok: true,
+      detail: `200 — ${before.tier_code} → ${target} composto sem escrever: ${data.changes.modules_gained.length} módulos entram, ${data.changes.modules_lost.length} saem, ${expected.seats} lugares e ${expected.ai} chamadas de IA por omissão; subscrição e histórico intactos`,
+    };
+  });
+
   await report.case("FM5.1", area8, "os indicadores comerciais comparam com o período anterior e não inventam receita", async () => {
     const res = await invoke("getCommercialMetrics", { actor: ids.master_admin, body: {} });
     if (res.status !== 200) return statusOf(res, 200, "");
