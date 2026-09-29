@@ -17,13 +17,16 @@ import {
  * `framework_code` nas fichas e `framework_code` + `version_label` nas versões
  * —, pelo que re-executar nunca duplica nem reescreve conteúdo já revisto.
  *
- * **Frescura verificada a sério.** A seed contacta a ligação oficial de cada
- * versão nova e só escreve `verified_at` quando o servidor oficial responde. Se
- * a ligação não puder ser confirmada automaticamente (servidores oficiais que
- * bloqueiam robôs, como o iso.org), a versão fica por verificar com
- * `verification_method: "link_check_failed"` — nunca se declara verificada uma
- * ligação que ninguém confirmou. A confirmação manual é a ação `verify` de
- * `manageLegalRepository`.
+ * **Frescura.** As versões novas entram por verificar (`verified_at` a null) e a
+ * confirmação é humana: a ação `verify` de `manageLegalRepository`, que regista
+ * quem verificou e quando. Nunca se declara verificada uma ligação que ninguém
+ * confirmou.
+ *
+ * A verificação automática da ligação (`check_links: true`) só corre quando é
+ * pedida: as funções correm em workerd sem saída de rede para servidores
+ * externos, pelo que um `fetch` a uma ligação oficial falha o TLS e enche o log
+ * de erros do runtime sem verificar coisa nenhuma. Fica disponível para quem
+ * correr a seed num ambiente com saída de rede.
  *
  * Direitos de autor (§7 do plano): NIS2, RGPD, NIST, QNRC e ENISA são de
  * reprodução livre e podem ser arquivados com hash; ISO/IEC 27001 e CIS Controls
@@ -864,6 +867,7 @@ Deno.serve(async (req) => {
     assertRepositoryWriter(user);
     const actor = user.email || "unknown";
     const now = new Date();
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
 
     // ─── 1. Entidades competentes (idempotente por `code`) ────────
     const existingAuthorities = await base44.asServiceRole.entities.CompetentAuthority.list("-created_date", 200);
@@ -958,36 +962,30 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ─── 4. Verificação real das ligações oficiais ────────────────
-    // Só as versões criadas agora são verificadas: re-executar o seed não
-    // reescreve a verificação de uma versão já revista por uma pessoa.
-    const checked = await Promise.all(
-      pending.map(async (entry) => ({
-        entry,
-        check: await checkOfficialLink(entry.created.official_url || ""),
-      })),
-    );
+    // ─── 4. Frescura das versões novas ────────────────────────────
+    // Por omissão ninguém contacta a rede: as versões novas ficam por verificar
+    // e a confirmação é humana. A verificação automática só corre a pedido
+    // explícito (`check_links: true`), num ambiente com saída de rede.
+    // Só as versões criadas agora são tocadas: re-executar o seed não reescreve
+    // a verificação de uma versão já revista por uma pessoa.
+    const wantLinkCheck = body?.check_links === true;
 
     let linkOk = 0;
     let linkInconclusive = 0;
     const linkNotes: string[] = [];
-    for (const { entry, check } of checked) {
-      const ok = check.ok;
-      const patch: Record<string, any> = ok
-        ? {
-            verified_at: now.toISOString(),
-            verified_by: actor,
-            verification_method: "link_check",
-            review_due_at: reviewDueFrom(now.toISOString(), REVIEW_CYCLE_MONTHS),
-          }
-        : {
-            verified_at: null,
-            verified_by: null,
-            verification_method: "link_check_failed",
-            review_due_at: reviewDueFrom(now.toISOString(), REVIEW_CYCLE_MONTHS),
-          };
-      if (ok) linkOk += 1;
-      else {
+    for (const entry of pending) {
+      const check = wantLinkCheck ? await checkOfficialLink(entry.created.official_url || "") : null;
+      const patch: Record<string, any> = {
+        verified_at: null,
+        verified_by: null,
+        verification_method: check ? (check.ok ? "link_check" : "link_check_failed") : null,
+        review_due_at: check?.ok ? reviewDueFrom(now.toISOString(), REVIEW_CYCLE_MONTHS) : null,
+      };
+      if (check?.ok) {
+        patch.verified_at = now.toISOString();
+        patch.verified_by = actor;
+        linkOk += 1;
+      } else if (check) {
         linkInconclusive += 1;
         linkNotes.push(`${entry.code} ${entry.created.version_label}: ${check.reason}`);
       }
@@ -1029,6 +1027,7 @@ Deno.serve(async (req) => {
         reused: existingVersions.length,
         links_verified: linkOk,
         links_not_conclusive: linkInconclusive,
+        awaiting_manual_verification: pending.length - linkOk,
         notes: linkNotes,
       },
       frameworks_linked: frameworksLinked,
