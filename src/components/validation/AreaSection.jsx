@@ -88,6 +88,11 @@ export default function AreaSection({ area, findings, openIds, onToggle }) {
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Lacunas identificadas
             </p>
+            {area.gaps.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Sem lacunas abertas: as identificadas nesta área estão fechadas.
+              </p>
+            )}
             <ul className="space-y-2">
               {area.gaps.map((gap) => {
                 const st = statusMeta(gap.status);
@@ -115,6 +120,12 @@ export default function AreaSection({ area, findings, openIds, onToggle }) {
                 );
               })}
             </ul>
+            {area.closedGapsCount > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {area.closedGapsCount} lacuna(s) identificada(s) já fechada(s), com o achado que as
+                fechou — ficam no registo de arquivo.
+              </p>
+            )}
           </div>
         </div>
 

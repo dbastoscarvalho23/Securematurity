@@ -216,9 +216,16 @@ export function buildReportModel() {
     // incluídos): «N já corrigido(s)» continua a ser dito, e um achado não sobe
     // a nota por desaparecer da lista.
     const listed = findings.filter((f) => !isArchived(f.id));
+    // Uma lacuna cujo achado está confirmado e corrigido sai da lista, tal como
+    // o próprio achado saiu do relatório: «Lacunas identificadas» mostra o que
+    // continua por resolver e as fechadas contam-se à parte. Sem isto, a lista
+    // mostrava a insígnia «Corrigido» a contradizer os cartões da mesma área.
+    const gaps = area.gaps.map(normalizeGap);
+    const openGaps = gaps.filter((gap) => gap.status !== 'corrigido');
     return {
       ...area,
-      gaps: area.gaps.map(normalizeGap),
+      gaps: openGaps,
+      closedGapsCount: gaps.length - openGaps.length,
       findings: listed,
       openFindings: listed.filter(isOpenFinding),
       archivedCount: findings.length - listed.length,
