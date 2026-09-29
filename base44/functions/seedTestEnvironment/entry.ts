@@ -16,8 +16,11 @@ import {
   DOMAINS,
   MARKER,
   PARTNERS,
+  VALIDATION_NIF_PREFIX,
   dayOffset,
   instantOffset,
+  isValidationCustomer,
+  isValidationIdentifier,
 } from "../../shared/testSeedData.ts";
 import {
   contractedCents,
@@ -78,6 +81,25 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Âmbito de validação declarado por identificador. Esta função escreve e
+    // apaga registos, pelo que numa base real não pode tocar em nada que não
+    // seja seu: exige que lhe digam qual é o tenant de validação (um NIF do
+    // portefólio, ou o próprio prefixo) e confere-o antes de escrever.
+    if (!isValidationIdentifier(String(body.validation_tenant || ""))) {
+      return Response.json(
+        {
+          error: "Âmbito de validação em falta: indique o identificador do tenant de validação.",
+          code: "validation_scope_required",
+          expected: { validation_tenant: `${VALIDATION_NIF_PREFIX}…` },
+        },
+        { status: 400 },
+      );
+    }
+
+    // `seed` (por omissão) repõe e semeia; `cleanup` remove o que o seed criou e
+    // não cria nada — é a saída que deixa a base como estava.
+    const action = body.action === "cleanup" ? "cleanup" : "seed";
+
     // Data de referência única: todas as datas do seed derivam dela, para que
     // duas execuções produzam exactamente o mesmo estado.
     const referenceDate = /^\d{4}-\d{2}-\d{2}$/.test(String(body.reference_date || ""))
@@ -95,12 +117,35 @@ Deno.serve(async (req) => {
     };
 
     // ─── 0. Reposição: remover o que uma execução anterior semeou ────
+    // A fronteira primeiro: um cliente com o marcador do seed mas com NIF fora
+    // do prefixo de validação bloqueia a execução (409) em vez de ser apagado —
+    // é o que impede um marcador herdado de destruir dados reais.
     const known = await base44.asServiceRole.entities.Customer.list("name", 1000);
-    const seededIds = (known || [])
-      .filter((row: any) => `${row.name || ""} ${row.notes || ""}`.includes(MARKER))
-      .map((row: any) => row.id);
+    const seeded = (known || []).filter((row: any) =>
+      `${row.name || ""} ${row.notes || ""}`.includes(MARKER),
+    );
+    const foreign = seeded.filter((row: any) => !isValidationCustomer(row));
+    if (foreign.length > 0) {
+      return Response.json(
+        {
+          error: `${foreign.length} cliente(s) com o marcador ${MARKER} têm NIF fora do prefixo de validação — nada foi tocado.`,
+          code: "outside_validation_scope",
+          blocked: foreign
+            .slice(0, 5)
+            .map((row: any) => ({ id: row.id, name: row.name, nif: row.nif })),
+        },
+        { status: 409 },
+      );
+    }
+
+    const seededIds = seeded.map((row: any) => row.id);
     summary.removed.customers_in_scope = seededIds.length;
     await resetSeededAreas(base44, summary, seededIds);
+
+    if (action === "cleanup") {
+      await cleanupTopology(base44, summary, seededIds);
+      return Response.json({ ...summary, action: "cleanup", scope: "validation" });
+    }
 
     // ─── 1. Workspaces (2 partners) ──────────────────────────────
     const workspaces: Record<string, any> = {};
@@ -782,4 +827,59 @@ async function ensureAssignments(
     }
   }
   return result;
+}
+
+/**
+ * Remove a topologia do seed — a acção `cleanup`.
+ *
+ * As áreas por cliente ficam a cargo do `resetSeededAreas`, que corre antes
+ * (clientes, avaliações, riscos, documentos, planos, subscrições, histórico,
+ * anúncios e a oferta/preço semeados); o que sobra é o que não pertence a
+ * nenhum cliente: os clientes em si, os workspaces, as perguntas, os controlos
+ * e o framework. Só recebe os ids que passaram a fronteira do âmbito de
+ * validação, pelo que nada fora do portefólio pode ser removido por aqui.
+ *
+ * A trilha de auditoria do próprio seed fica como está: a limpeza também é um
+ * facto registado, e apagá-la seria apagar a prova de que os dados existiram.
+ */
+async function cleanupTopology(base44: any, summary: any, customerIds: string[]) {
+  const remove = async (entity: string, row: any, match: boolean) => {
+    if (!match) return;
+    try {
+      await base44.asServiceRole.entities[entity].delete(row.id);
+      summary.removed[entity] = (summary.removed[entity] || 0) + 1;
+    } catch (error: any) {
+      summary.skipped[`cleanup:${entity}:${row.id}`] = String(error?.message || error).slice(0, 200);
+    }
+  };
+
+  for (const id of customerIds) {
+    try {
+      await base44.asServiceRole.entities.Customer.delete(id);
+      summary.removed.Customer = (summary.removed.Customer || 0) + 1;
+    } catch (error: any) {
+      summary.skipped[`cleanup:Customer:${id}`] = String(error?.message || error).slice(0, 200);
+    }
+  }
+
+  const workspaces = (await base44.asServiceRole.entities.Workspace.list("name", 1000).catch(() => [])) || [];
+  for (const row of workspaces) {
+    await remove("Workspace", row, String(row.name || "").includes(MARKER));
+  }
+
+  const questions = (await base44.asServiceRole.entities.Question.list("order_index", 500).catch(() => [])) || [];
+  for (const row of questions) {
+    await remove("Question", row, String(row.question_text || "").startsWith(MARKER));
+  }
+
+  const controls =
+    (await base44.asServiceRole.entities.FrameworkControl.list("control_id", 500).catch(() => [])) || [];
+  for (const row of controls) {
+    await remove("FrameworkControl", row, String(row.title || "").startsWith(MARKER));
+  }
+
+  const frameworks = (await base44.asServiceRole.entities.Framework.list("code", 100).catch(() => [])) || [];
+  for (const row of frameworks) {
+    await remove("Framework", row, String(row.description || "").includes(MARKER));
+  }
 }

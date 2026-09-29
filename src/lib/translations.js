@@ -22,6 +22,7 @@ import { phase3En, phase3Pt } from './translations-phase3';
 import { importEn, importPt } from './translations-import';
 import { navEn, navPt } from './translations-nav';
 import { repositoryEn, repositoryPt } from './translations-repository';
+import { previewEn, previewPt } from './translations-preview';
 export const translations = {
   en: {
     // legal repository (Layer 1)
@@ -925,3 +926,5 @@ Object.assign(translations.en, importEn);
 Object.assign(translations.pt, importPt);
 Object.assign(translations.en, navEn);
 Object.assign(translations.pt, navPt);
+Object.assign(translations.en, previewEn);
+Object.assign(translations.pt, previewPt);

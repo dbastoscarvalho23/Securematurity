@@ -16,6 +16,28 @@
 export const MARKER = "[TESTE]";
 export const CONFIRMATION = "create-test-conditions";
 
+/**
+ * Prefixo de NIF do portefólio de validação.
+ *
+ * Este seed cria e **apaga** registos. Num backend a sério não pode tocar em
+ * nada que não seja seu, pelo que o âmbito tem de ser declarado e verificável:
+ * todos os clientes do cenário usam um NIF deste prefixo (9000000xx), e é ele
+ * que `seedTestEnvironment` exige e confere antes de escrever ou remover seja o
+ * que for. Um cliente com o marcador do seed mas com NIF de fora do prefixo
+ * bloqueia a execução em vez de ser apagado.
+ */
+export const VALIDATION_NIF_PREFIX = "9000000";
+
+/** O identificador (um NIF ou o próprio prefixo) pertence ao âmbito de validação? */
+export function isValidationIdentifier(value: string): boolean {
+  return String(value || "").replace(/\s+/g, "").startsWith(VALIDATION_NIF_PREFIX);
+}
+
+/** O cliente pertence ao portefólio de validação? */
+export function isValidationCustomer(row: { nif?: string } | null | undefined): boolean {
+  return isValidationIdentifier(String(row?.nif || ""));
+}
+
 export interface SeedPartner {
   key: string;
   name: string;

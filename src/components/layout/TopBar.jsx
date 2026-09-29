@@ -30,6 +30,7 @@ import NotificationBell from './NotificationBell';
 import Logo from './Logo';
 import RoleSimulationSelector from './RoleSimulationSelector';
 import WorkspaceSwitcher from './WorkspaceSwitcher';
+import PreviewTargetBadge from './PreviewTargetBadge';
 import { isPlatformOwner } from '@/lib/rbac';
 import { useActiveCustomer } from '@/lib/tenantContext';
 
@@ -182,6 +183,9 @@ export default function TopBar({ collapsed, onToggleCollapse, onMenuClick, pageT
                 {activeCustomerName || t('context_no_customer')}
               </span>
             </span>
+            {/* Contra que backend esta preview corre: a evidência do relatório
+                tem de ser legível numa captura de ecrã. */}
+            <PreviewTargetBadge />
           </div>
 
           <div className="flex items-center gap-2 md:gap-3">

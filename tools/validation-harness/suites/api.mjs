@@ -11,13 +11,22 @@
  * pelo que o isolamento depende do token e não da identidade de teste; um
  * tenant presente apenas em `delegated_edit_customer_ids` é oculto na leitura.
  */
-import { invoke, listEntity } from "../lib/client.mjs";
+import { invoke, listEntity, isCloud } from "../lib/client.mjs";
 import { seedIdentity, buildIdentities } from "../lib/identities.mjs";
 
 const CONFIRM = "create-test-conditions";
 
+// Âmbito de validação exigido pelo seed (VALIDATION_NIF_PREFIX em
+// base44/shared/testSeedData.ts): o seed só escreve dentro do portefólio dele.
+const VALIDATION_TENANT = "9000000";
+
 function statusOf(res, expected, note) {
   if (res.status === expected) return { ok: true, detail: note };
+  // No alvo cloud correm os limites reais (OP-S2): um 429 é limite atingido,
+  // não um defeito — reporta-se como não verificável e nunca como aprovação.
+  if (isCloud() && res.status === 429) {
+    return { skip: true, detail: "limite de ritmo real atingido (429) — não é defeito" };
+  }
   return {
     ok: false,
     detail: `esperado ${expected}, obtido ${res.status} — ${JSON.stringify(res.data).slice(0, 160)}`,
@@ -30,7 +39,10 @@ function hasModule(license, code) {
 
 export async function runApiSuite(report) {
   // ─── Preparação: topologia de teste + identidades reais da sessão ───
-  const users = await listEntity("User");
+  // No alvo cloud não há sessão de CLI: quem semeia é a conta real do
+  // master_admin, cujo token vem do ficheiro de tokens. No alvo local mantém-se
+  // como sempre foi — a sessão do CLI e o id que a leitura de `User` devolver.
+  const users = isCloud() ? { data: [] } : await listEntity("User");
   const realUser = Array.isArray(users.data) ? users.data[0] : null;
   const seedActor = seedIdentity(realUser?.id);
 
@@ -48,7 +60,7 @@ export async function runApiSuite(report) {
   // (Delta sem subscrição, carteira ligada ao workspace, avaliações concluídas).
   const seeded = await invoke("seedTestEnvironment", {
     actor: seedActor,
-    body: { confirm: CONFIRM },
+    body: { confirm: CONFIRM, validation_tenant: VALIDATION_TENANT },
   });
   if (seeded.status !== 200) {
     report.fail("PREP", "preparação", `seedTestEnvironment devolveu ${seeded.status}: ${JSON.stringify(seeded.data).slice(0, 200)}`);

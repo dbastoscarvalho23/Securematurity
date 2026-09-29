@@ -10,7 +10,8 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
     "preview": "vite preview",
-    "validate:harness": "docker compose -f docker-compose.base44.yml exec -T web node tools/validation-harness/run.mjs"
+    "validate:harness": "docker compose -f docker-compose.base44.yml exec -T web node tools/validation-harness/run.mjs",
+    "validate:harness:cloud": "docker compose -f docker-compose.base44.yml exec -T web node tools/validation-harness/run.mjs --target=cloud"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.51",
