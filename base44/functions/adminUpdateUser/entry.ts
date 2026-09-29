@@ -38,12 +38,17 @@ const PLATFORM_ROLES = ["admin", "master_admin", "workspace_admin", "partner_adm
 const ALLOWED_ROLES = [...TENANT_ROLES, ...PLATFORM_ROLES];
 
 import { resolveActor } from "../../shared/devActor.ts";
+import { guardRateLimit } from "../../shared/rateLimit.ts";
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const currentUser = await resolveActor(base44, req);
     if (!currentUser) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+    // OP-S2 — escrita sensível: papéis, lugares e âmbito de um utilizador.
+    const limited = guardRateLimit(currentUser, "write_sensitive", req);
+    if (limited) return limited;
 
     const currentRole = normalizeRole(currentUser.role);
     const isOwner = currentRole === "master_admin";

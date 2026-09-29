@@ -42,12 +42,17 @@ class ReviewError extends Error {
 }
 
 import { resolveActor } from "../../shared/devActor.ts";
+import { guardRateLimit } from "../../shared/rateLimit.ts";
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+    // OP-S2 — ritmo por ator na revisão de documentos e versões.
+    const limited = guardRateLimit(user, "write", req);
+    if (limited) return limited;
 
     const body = await req.json().catch(() => ({}));
     const action = body.action;

@@ -83,16 +83,17 @@ export const TODO_LIST = [
     title: 'Plano de fecho pós-validação (achados abertos e optimizações)',
     note:
       'Plano de execução em cinco fases, ordenado por «quick wins primeiro»: esforço baixo antes do que exige desenho, e só o que é executável neste ambiente. Cobre os cinco achados executáveis aqui (FB3, FC4, FC5, FM4, FM5) e as oportunidades OP-* que não dependem de backend real — OP-F1/F2/F3/F4, OP-B1, OP-C1/C2/C3/C4/C5/C6, OP-M2/M3/M4 e OP-S1/S2 —, distribuídas pelas fases. Ficam deliberadamente fora, registadas como tal: OP-B3 (verificação por identidade fora do emulador de sessão única), OP-B4 (retenção e pedidos de titular) e OP-S3 (revalidação da expiração da delegação na leitura), tal como o residual de F15, o caso RLS1, o âmbito do auditor na trilha (residual de FB5) e a confirmação em backend real das RLS das entidades. A ordem das fases é a decisão única do plano e a etiqueta de cada oportunidade continua a ser derivada por optimizationBand() — o plano não reclassifica nada. Nenhum achado passa a «corrigido» por execução do plano: a mudança de estado continua a exigir as duas metades da confirmação e o registo em validationArchive.js. As fases 4 e 5 mantêm as dependências ditas: o segundo fator depende do fluxo de autenticação gerido pela plataforma e a limitação de ritmo vive em base44/shared/ (ponto único, coerente com o fail-closed do licenciamento).',
-    next: 'Executar a PL1.0 (quick wins) e remedir a evidência de cada item onde ela nasceu.',
+    next: 'Executar a PL1.1 (fechar os parciais que só dependem daqui) e remedir a evidência de cada item onde ela nasceu.',
     source: 'src/lib/platformAssessmentData.js · src/lib/platformOptimizationData.js',
   },
   {
     id: 'PL1.0',
-    status: 'pendente',
+    status: 'concluido',
     title: 'Fase 1 — quick wins (esforço baixo)',
     note:
       'Entrega: limitação de ritmo por ator nas funções de escrita e nos caminhos de IA (OP-S2, a única faixa «Quick win» que o modelo já classifica), dependências instaladas sem import removidas do package.json (OP-F1), política de cache por família de dados no query-client (OP-F3), listas cortadas com total e «ver mais» (OP-F4), páginas de acesso em PT-PT por chaves de tradução (OP-C1), aria-label/title nos botões só com ícone (OP-C2), ConfirmDialog em vez de confirm() (OP-C3) e markdown pelos componentes que a app já traz (OP-C6). Critério de aceitação: a fase fecha quando a evidência de cada item é remedida onde ela nasceu — package.json, query-client.js, contagem de aria-label, literais das páginas de acesso, confirm( e translations*.js — e o harness multi-identidade (npm run validate:harness) volta verde.',
-    next: 'Começar por OP-S2 (limitação de ritmo, em base44/shared/) e OP-F1 (retirar do package.json as nove dependências sem import).',
+    next:
+      'Nada em aberto nesta fase. Entregue na ronda 7 a última peça, OP-S2: base44/shared/rateLimit.ts é o ponto único da limitação de ritmo (baldes ai, ai_extract, write e write_sensitive), aplicada às dezanove funções de escrita e aos dois caminhos que chamam IA (searchDocuments, extractQuestionBank), com a resposta 429 e o Retry-After; medido em execução (21.ª chamada do mesmo ator recusada) e com o harness verde (88 casos, 87 ok, 0 falhas, 1 não verificável). Ficam de fora, por serem automação e trabalho de uma só vez, as funções agendadas, os seeds e as migrações.',
     source: 'src/lib/platformOptimizationData.js (OP-S2, OP-F1, OP-F3, OP-F4, OP-C1, OP-C2, OP-C3, OP-C6)',
   },
   {

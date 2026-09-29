@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { guardRateLimit } from '../../shared/rateLimit.ts';
 
 // Folder created inside the connected Google Drive / OneDrive account.
 const FOLDER_NAME = 'AnkoraOne';
@@ -113,6 +114,10 @@ export default async function (req) {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // OP-S2 — ritmo por ator: escrita em armazenamento externo.
+    const limited = guardRateLimit(user, 'write', req);
+    if (limited) return limited;
 
     const body = await req.json();
     const fileUrl = body.file_url;

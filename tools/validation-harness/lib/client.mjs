@@ -30,13 +30,21 @@ export function actorHeader(actor) {
   return Buffer.from(JSON.stringify(actor), "utf8").toString("base64");
 }
 
-/** Invoca uma função de backend, opcionalmente com uma identidade explícita. */
-export async function invoke(name, { actor, body = {} } = {}) {
+/**
+ * Invoca uma função de backend, opcionalmente com uma identidade explícita.
+ *
+ * `rateLimit` diz à limitação de ritmo (OP-S2) o que fazer com esta chamada. O
+ * harness corre centenas de chamadas do mesmo ator, pelo que pede `off` por
+ * omissão — o cabeçalho só é honrado quando `BASE44_DEV_IDENTITY=1` (o fecho
+ * hermético do `devActor.ts`). Um caso que queira medir o `429` passa `on`.
+ */
+export async function invoke(name, { actor, body = {}, rateLimit = "off" } = {}) {
   const { appId, token } = env();
   const headers = {
     "Content-Type": "application/json",
     "Base44-App-Id": appId,
     Authorization: `Bearer ${token}`,
+    "x-base44-rate-limit": rateLimit,
   };
   if (actor) headers["x-base44-dev-actor"] = actorHeader(actor);
 

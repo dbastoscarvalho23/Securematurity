@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
 import { normalizeRole, isPlatformOwner, writeAccessAuditLog } from "../../shared/accessUtils.ts";
 import { resolveActor } from "../../shared/devActor.ts";
+import { guardRateLimit } from "../../shared/rateLimit.ts";
 import { addonName, modulesForAddon } from "../../shared/licenseGuard.ts";
 import {
   BILLING_PERIODS,
@@ -74,6 +75,10 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+    // OP-S2 — escrita sensível: oferta em vigor e tabela de preços.
+    const limited = guardRateLimit(user, "write_sensitive", req);
+    if (limited) return limited;
 
     const role = normalizeRole(user.role);
     if (!isPlatformOwner(role)) {

@@ -1,10 +1,15 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { guardRateLimit } from '../../shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // OP-S2 — caminho de IA: uma resposta por busca, com custo por token.
+    const limited = guardRateLimit(user, 'ai', req);
+    if (limited) return limited;
 
     const { query, customer_id } = await req.json();
     if (!query?.trim()) return Response.json({ results: [] });

@@ -5,6 +5,7 @@ import {
   resolveReadableCustomerIds,
 } from "../../shared/accessUtils.ts";
 import { resolveActor } from "../../shared/devActor.ts";
+import { guardRateLimit } from "../../shared/rateLimit.ts";
 
 /**
  * manageAnnouncements — anúncios da plataforma (FB8).
@@ -95,6 +96,10 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+    // OP-S2 — ritmo por ator: publicar, alterar e arquivar anúncios.
+    const limited = guardRateLimit(user, "write", req);
+    if (limited) return limited;
 
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const action = body.action || "active";

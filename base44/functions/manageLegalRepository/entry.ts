@@ -1,4 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
+import { guardRateLimit } from "../../shared/rateLimit.ts";
 import { FRAMEWORK_BY_CODE } from "../../shared/frameworkCatalogue.ts";
 import {
   AUTHORITY_COUNTRIES,
@@ -105,6 +106,10 @@ Deno.serve(async (req) => {
   try {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+    // OP-S2 — ritmo por ator: versões, fichas e verificações do repositório legal.
+    const limited = guardRateLimit(user, "write", req);
+    if (limited) return limited;
 
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const action = body.action;

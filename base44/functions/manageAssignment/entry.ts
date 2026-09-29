@@ -14,12 +14,17 @@ import { normalizeRole } from "../../shared/accessUtils.ts";
  * Request body: { action, ...params }
  */
 import { resolveActor } from "../../shared/devActor.ts";
+import { guardRateLimit } from "../../shared/rateLimit.ts";
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+    // OP-S2 — escrita sensível: atribuições e âmbito de acesso por cliente.
+    const limited = guardRateLimit(user, "write_sensitive", req);
+    if (limited) return limited;
 
     const role = normalizeRole(user.role);
     const body = await req.json();

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { guardRateLimit } from '../../shared/rateLimit.ts';
 import { normalizeRole } from '../../shared/accessUtils.ts';
 
 const ALLOWED_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
@@ -11,6 +12,10 @@ export default async function (req) {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // OP-S2 — ritmo por ator: alterar o armazenamento de um cliente é escrita sensível.
+    const limited = guardRateLimit(user, 'write_sensitive', req);
+    if (limited) return limited;
 
     const role = normalizeRole(user.role);
     const isAdmin = role === 'master_admin';

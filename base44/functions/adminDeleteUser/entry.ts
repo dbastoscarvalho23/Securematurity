@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { guardRateLimit } from '../../shared/rateLimit.ts';
 import { normalizeRole } from '../../shared/accessUtils.ts';
 
 Deno.serve(async (req) => {
@@ -9,6 +10,10 @@ Deno.serve(async (req) => {
     if (!user || (role !== 'master_admin' && role !== 'customer_admin')) {
       return Response.json({ error: 'Forbidden: Admin or Customer Admin access required' }, { status: 403 });
     }
+
+    // OP-S2 — escrita sensível: eliminar um utilizador.
+    const limited = guardRateLimit(user, 'write_sensitive', req);
+    if (limited) return limited;
 
     let body;
     try {

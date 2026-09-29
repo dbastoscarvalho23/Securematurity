@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
 import { normalizeRole, isPlatformOwner } from "../../shared/accessUtils.ts";
 import { resolveActor } from "../../shared/devActor.ts";
+import { guardRateLimit } from "../../shared/rateLimit.ts";
 
 /**
  * managePlatformOperations — operação das automações e da conservação (FB4).
@@ -59,6 +60,10 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+    // OP-S2 — escrita sensível: política de retenção e operação da plataforma.
+    const limited = guardRateLimit(user, "write_sensitive", req);
+    if (limited) return limited;
 
     const role = normalizeRole(user.role);
     if (!isPlatformOwner(role)) return Response.json({ error: "Forbidden" }, { status: 403 });

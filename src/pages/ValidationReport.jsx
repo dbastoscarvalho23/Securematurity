@@ -96,7 +96,13 @@ export default function ValidationReport() {
             deixou de as repetir num filtro. A ronda 6 confirmou, por inspeção do código e pela
             execução do harness, os achados que estavam «corrigido» e retirou-os do relatório — o
             que continua aberto fica nas áreas e o resto passa a viver no registo de arquivo
-            («Validation archive»), que guarda cada correção e o que a confirmou. A página
+            («Validation archive»), que guarda cada correção e o que a confirmou. A ronda 7 executa a
+            Fase 1 do plano de fecho pós-validação (PL1.0): a limitação de ritmo por ator passou a
+            viver num único sítio (<code>base44/shared/rateLimit.ts</code>), aplicada às funções de
+            escrita e aos dois caminhos que chamam IA — o mesmo ator recebe 429 quando passa o balde —
+            e a fase fecha com o harness verde (88 casos, 87 ok, 0 falhas, 1 não verificável). As
+            contagens do relatório aparecem agora uma só vez, no cartão «Achados abertos por
+            severidade». A página
             deve ser retirada quando a validação por identidade real estiver concluída.
           </p>
         </div>
@@ -216,17 +222,9 @@ export default function ValidationReport() {
 
       <AreaNav areas={areas} />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-foreground">
-          Achados por área
-          <span className="ml-2 text-sm font-normal text-muted-foreground">{openTotal} abertos</span>
-        </h2>
-        {archivedTotal > 0 && (
-          <p className="text-xs text-muted-foreground">
-            {archivedTotal} confirmados e corrigidos, no registo de arquivo
-          </p>
-        )}
-      </div>
+      {/* As contagens do relatório aparecem uma só vez, no cartão
+          `SeveritySummary`: o título da secção não as repete. */}
+      <h2 className="text-base font-semibold text-foreground">Achados por área</h2>
 
       {openTotal === 0 ? (
         <EmptyState

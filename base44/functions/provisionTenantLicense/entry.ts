@@ -7,6 +7,7 @@ import {
   writeAccessAuditLog,
 } from "../../shared/accessUtils.ts";
 import { resolveActor } from "../../shared/devActor.ts";
+import { guardRateLimit } from "../../shared/rateLimit.ts";
 import {
   TIER_MODULES,
   LEGACY_TIER_ALIASES,
@@ -108,6 +109,10 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await resolveActor(base44, req);
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+    // OP-S2 — escrita sensível: licenciamento, preço e ciclo de vida do contrato.
+    const limited = guardRateLimit(user, "write_sensitive", req);
+    if (limited) return limited;
 
     const role = normalizeRole(user.role);
     if (!isPlatformOwner(role) && !isPartnerAdmin(role)) {

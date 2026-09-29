@@ -1,4 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
+import { guardRateLimit } from "../../shared/rateLimit.ts";
 import {
   ARTICLE_TRANSITIONS,
   ContentError,
@@ -30,6 +31,10 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+    // OP-S2 — ritmo por ator: transições editoriais (única porta da base de conhecimento).
+    const limited = guardRateLimit(user, "write", req);
+    if (limited) return limited;
 
     assertContentManager(user);
 
