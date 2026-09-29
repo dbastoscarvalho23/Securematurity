@@ -259,7 +259,10 @@ export default function Workspaces() {
     setMigrating(true);
     try {
       const result = await migrateExistingWorkspaces();
-      toast.success(t('workspace_migrated', { count: result.migrated_count }));
+      // `functions.invoke` resolve para `{ data, … }` neste SDK (ver AGENTS.md):
+      // ler `result.migrated_count` mostrava `{{count}}` no aviso em vez do número.
+      const payload = result?.data || result;
+      toast.success(t('workspace_migrated', { count: payload?.migrated_count ?? 0 }));
     } catch (error) {
       toast.error(error.message || t('common_error'));
     } finally {

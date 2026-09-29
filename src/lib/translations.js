@@ -222,7 +222,7 @@ export const translations = {
     workspace_empty: 'No workspaces yet',
     workspace_empty_desc: 'Create a root workspace or migrate existing customers',
     workspace_migrate_existing: 'Migrate Existing Customers',
-    workspace_migrated: '{{count}} customers migrated to workspaces',
+    workspace_migrated: '{count} customers migrated to workspaces',
     common_required_field: 'This field is required',
     common_error: 'Something went wrong',
     // organization
@@ -647,7 +647,7 @@ export const translations = {
     workspace_empty: 'Sem workspaces',
     workspace_empty_desc: 'Crie um workspace raiz ou migre clientes existentes',
     workspace_migrate_existing: 'Migrar Clientes Existentes',
-    workspace_migrated: '{{count}} clientes migrados para workspaces',
+    workspace_migrated: '{count} clientes migrados para workspaces',
     common_required_field: 'Este campo é obrigatório',
     common_error: 'Ocorreu um erro',
     // organization

@@ -200,6 +200,16 @@ export const ARCHIVED_FINDINGS = [
       'Inspeção: `WriteBlocker` (src/components/layout/AppLayout.jsx) decide por `can(...)` e `resourceForRoute(...)`, com `isNavigation()` a excluir ligações e menus. Preview (2026-09-29, master_admin a simular o papel `auditor`): o clique em «Guardar» do perfil não produz nenhum pedido, o diálogo mantém-se aberto e o aviso «Esta ação não faz parte do papel simulado.» aparece; a submissão do formulário pelo evento `submit` é recusada do mesmo modo; a navegação continua livre (a rota mudou com a simulação ativa). Residual assumido: é uma guarda de interface e não substitui a autorização do servidor.',
   },
   {
+    id: 'FC5',
+    area: 'ux',
+    severity: 'baixa',
+    title: 'Padrões de carregamento e de vazio divergentes entre páginas',
+    correction:
+      'Indicador único: `LoadingState` ganhou `variant="skeleton"` (linhas pulsantes que reservam o espaço da lista) e passou a ser o indicador das listas em vez dos spinners próprios de cada página, e o vazio passa por `EmptyState` com mensagem da página.',
+    confirmation:
+      'Inspeção: as três tabelas (Admin.jsx:510, Organization.jsx:159, Licensing.jsx:269) chamam `LoadingState variant="skeleton"` na célula de carregamento, e os `animate-spin` que restam não são indicadores de lista: o arranque de sessão e a guarda de rota (App.jsx:84, ProtectedRoute.jsx:7, RouteGuard.jsx:66), os botões que guardam e o ícone de uma ferramenta em execução (MessageBubble.jsx:31). Preview (2026-09-29): o esqueleto das três tabelas foi visto durante o carregamento — o último numa recarga a frio de `/admin` observada no próprio documento, com `aria-busy` a mostrar 4 linhas pulsantes aos 4,3 s do arranque e a ser substituído pelas 2 linhas de dados.',
+  },
+  {
     id: 'FC6',
     area: 'ux',
     severity: 'baixa',
