@@ -34,6 +34,7 @@ import {
   ROUND_META,
 } from './platformAssessmentData';
 import { TODO_LIST } from './validationTodos';
+import { ARCHIVED_FINDINGS, ARCHIVE_META, isArchived } from './validationArchive';
 import {
   EFFORT_LEVELS,
   IMPACT_LEVELS,
@@ -95,6 +96,18 @@ export const FINDINGS = [
   ...ISSUES.map(normalizeLegacyIssue),
 ];
 
+/**
+ * Achados que continuam no relatório. Um achado confirmado e corrigido sai do
+ * relatório para o registo de arquivo (`validationArchive.js`) e deixa de ser
+ * listado — mas não desaparece do modelo: a nota de maturidade e as lacunas
+ * continuam a ler todos os achados da área, porque fechar um achado não apaga o
+ * que ele mediu.
+ */
+export const ACTIVE_FINDINGS = FINDINGS.filter((f) => !isArchived(f.id));
+
+/** Achados do relatório já arquivados (confirmados e corrigidos). */
+export const REPORT_ARCHIVED_FINDINGS = FINDINGS.filter((f) => isArchived(f.id));
+
 /** Achados de uma área. */
 export function findingsByArea(areaId) {
   return FINDINGS.filter((f) => f.area === areaId);
@@ -135,18 +148,22 @@ export function openFindings() {
   return FINDINGS.filter(isOpenFinding);
 }
 
-/** Contagem global por severidade, só dos achados abertos. */
-export function openSeverityCounts() {
+/**
+ * Contagem global por severidade, só dos achados abertos. `source` permite
+ * contar sobre um subconjunto (o relatório conta sobre os achados que ainda
+ * estão no relatório; por omissão conta sobre todos).
+ */
+export function openSeverityCounts(source = FINDINGS) {
   return SEVERITIES.reduce((acc, s) => {
-    acc[s.id] = FINDINGS.filter((f) => f.severity === s.id && isOpenFinding(f)).length;
+    acc[s.id] = source.filter((f) => f.severity === s.id && isOpenFinding(f)).length;
     return acc;
   }, {});
 }
 
 /** Contagem de achados abertos de uma área por severidade. */
-export function areaOpenSeverityCounts(areaId) {
+export function areaOpenSeverityCounts(areaId, source = FINDINGS) {
   return SEVERITIES.reduce((acc, s) => {
-    acc[s.id] = FINDINGS.filter(
+    acc[s.id] = source.filter(
       (f) => f.area === areaId && f.severity === s.id && isOpenFinding(f)
     ).length;
     return acc;
@@ -154,17 +171,17 @@ export function areaOpenSeverityCounts(areaId) {
 }
 
 /** Contagem de achados de uma área por severidade. */
-export function areaSeverityCounts(areaId) {
+export function areaSeverityCounts(areaId, source = FINDINGS) {
   return SEVERITIES.reduce((acc, s) => {
-    acc[s.id] = FINDINGS.filter((f) => f.area === areaId && f.severity === s.id).length;
+    acc[s.id] = source.filter((f) => f.area === areaId && f.severity === s.id).length;
     return acc;
   }, {});
 }
 
 /** Contagem de achados de uma área por estado da recomendação. */
-export function areaStatusCounts(areaId) {
+export function areaStatusCounts(areaId, source = FINDINGS) {
   return STATUSES.reduce((acc, s) => {
-    acc[s.id] = FINDINGS.filter((f) => f.area === areaId && f.status === s.id).length;
+    acc[s.id] = source.filter((f) => f.area === areaId && f.status === s.id).length;
     return acc;
   }, {});
 }
@@ -177,10 +194,10 @@ export function totalSeverityCounts() {
   }, {});
 }
 
-/** Contagem global por estado da recomendação. */
-export function totalStatusCounts() {
+/** Contagem global por estado da recomendação (por omissão, todos os achados). */
+export function totalStatusCounts(source = FINDINGS) {
   return STATUSES.reduce((acc, s) => {
-    acc[s.id] = FINDINGS.filter((f) => f.status === s.id).length;
+    acc[s.id] = source.filter((f) => f.status === s.id).length;
     return acc;
   }, {});
 }
@@ -193,14 +210,21 @@ export function totalStatusCounts() {
 export function buildReportModel() {
   return AREAS.map((area) => {
     const findings = findingsByArea(area.id);
+    // A listagem mostra só os achados que continuam no relatório — os que já
+    // estão no arquivo saem dela, e os contadores da listagem seguem o mesmo
+    // conjunto. A nota de maturidade lê todos os achados da área (arquivados
+    // incluídos): «N já corrigido(s)» continua a ser dito, e um achado não sobe
+    // a nota por desaparecer da lista.
+    const listed = findings.filter((f) => !isArchived(f.id));
     return {
       ...area,
       gaps: area.gaps.map(normalizeGap),
-      findings,
-      openFindings: findings.filter(isOpenFinding),
-      severityCounts: areaSeverityCounts(area.id),
-      openSeverityCounts: areaOpenSeverityCounts(area.id),
-      statusCounts: areaStatusCounts(area.id),
+      findings: listed,
+      openFindings: listed.filter(isOpenFinding),
+      archivedCount: findings.length - listed.length,
+      severityCounts: areaSeverityCounts(area.id, listed),
+      openSeverityCounts: areaOpenSeverityCounts(area.id, listed),
+      statusCounts: areaStatusCounts(area.id, listed),
       // Nota 0–5 da área, calculada dos seus achados (nunca escrita à mão).
       maturity: maturityForFindings(findings),
       // Oportunidades da área — a subsecção «Optimizações possíveis» — com a
@@ -376,6 +400,8 @@ export function findingStatusLabel(finding) {
 }
 
 export {
+  ARCHIVED_FINDINGS,
+  ARCHIVE_META,
   FIX_PLAN,
   FOLLOW_UPS,
   TODO_LIST,

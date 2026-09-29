@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { AlertTriangle, ClipboardList, FlaskConical, ListChecks, ShieldAlert, Wrench } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
@@ -11,11 +10,12 @@ import MaturityMatrix from '@/components/validation/MaturityMatrix';
 import SeveritySummary from '@/components/validation/SeveritySummary';
 import { cn } from '@/lib/utils';
 import {
+  ACTIVE_FINDINGS,
   AREAS,
   FIX_PLAN,
-  FINDINGS,
   FOLLOW_UPS,
   NOT_EXECUTED,
+  REPORT_ARCHIVED_FINDINGS,
   REPORT_META,
   ROUND_META,
   TODO_LIST,
@@ -36,35 +36,21 @@ import {
  * Deve ser retirada quando os achados estiverem tratados.
  *
  * As contagens por severidade vivem num único sítio — o cartão
- * `SeveritySummary` — e a listagem «Achados por área» mostra os achados do
- * âmbito escolhido (abertos ou todos), sem filtro por severidade.
+ * `SeveritySummary` — e a listagem «Achados por área» mostra só os achados que
+ * continuam abertos, sem filtro por severidade. Os achados confirmados e
+ * corrigidos saíram do relatório para o registo de arquivo
+ * (`validationArchive.js`), que guarda a correção e o que a confirmou.
  */
 export default function ValidationReport() {
-  const [scope, setScope] = useState('abertos');
   const [openIds, setOpenIds] = useState(() => new Set(['FB1']));
 
   const areas = useMemo(() => buildReportModel(), []);
-  const openCounts = useMemo(() => openSeverityCounts(), []);
-  const statusCounts = useMemo(() => totalStatusCounts(), []);
+  // O relatório conta só os achados que ainda estão nele: os confirmados e
+  // corrigidos saíram para o registo de arquivo (`validationArchive.js`).
+  const openCounts = useMemo(() => openSeverityCounts(ACTIVE_FINDINGS), []);
+  const statusCounts = useMemo(() => totalStatusCounts(ACTIVE_FINDINGS), []);
   const openTotal = useMemo(() => openFindings().length, []);
-
-  // A lista mostra por omissão só os achados abertos (parcial ou pendente);
-  // «Mostrar corrigidos» alarga-a ao relatório completo.
-  const scopeTotal = scope === 'abertos' ? openTotal : FINDINGS.length;
-
-  const visibleAreas = useMemo(
-    () =>
-      areas.map((area) => {
-        const scoped = scope === 'abertos' ? area.openFindings : area.findings;
-        return {
-          ...area,
-          scopedTotal: scoped.length,
-          severityCounts: scope === 'abertos' ? area.openSeverityCounts : area.severityCounts,
-          visible: scoped,
-        };
-      }),
-    [areas, scope]
-  );
+  const archivedTotal = REPORT_ARCHIVED_FINDINGS.length;
 
   const toggle = (id) => {
     setOpenIds((prev) => {
@@ -107,7 +93,10 @@ export default function ValidationReport() {
             as contagens do harness, os metadados de revisão e três optimizações entretanto realizadas —
             mantendo como residual apenas o que exige backend real. As contagens por severidade aparecem
             uma única vez, no cartão «Achados abertos por severidade», e a listagem de achados por área
-            deixou de as repetir num filtro. A página
+            deixou de as repetir num filtro. A ronda 6 confirmou, por inspeção do código e pela
+            execução do harness, os achados que estavam «corrigido» e retirou-os do relatório — o
+            que continua aberto fica nas áreas e o resto passa a viver no registo de arquivo
+            («Validation archive»), que guarda cada correção e o que a confirmou. A página
             deve ser retirada quando a validação por identidade real estiver concluída.
           </p>
         </div>
@@ -220,7 +209,7 @@ export default function ValidationReport() {
         severityCounts={openCounts}
         statusCounts={statusCounts}
         total={openTotal}
-        correctedCount={statusCounts.corrigido || 0}
+        archivedCount={archivedTotal}
       />
 
       <MaturityMatrix />
@@ -230,39 +219,28 @@ export default function ValidationReport() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-base font-semibold text-foreground">
           Achados por área
-          <span className="ml-2 text-sm font-normal text-muted-foreground">
-            {scopeTotal}
-            {scope === 'abertos' ? ' abertos' : ''}
-          </span>
+          <span className="ml-2 text-sm font-normal text-muted-foreground">{openTotal} abertos</span>
         </h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setScope(scope === 'abertos' ? 'todos' : 'abertos')}
-        >
-          {scope === 'abertos'
-            ? `Mostrar corrigidos (${statusCounts.corrigido || 0})`
-            : 'Mostrar só abertos'}
-        </Button>
+        {archivedTotal > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {archivedTotal} confirmados e corrigidos, no registo de arquivo
+          </p>
+        )}
       </div>
 
-      {scopeTotal === 0 ? (
+      {openTotal === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title={scope === 'abertos' ? 'Sem achados abertos' : 'Sem achados'}
-          description={
-            scope === 'abertos'
-              ? 'Nenhuma área tem achados abertos. Use «Mostrar corrigidos» para ver o relatório completo.'
-              : 'O modelo do relatório não devolveu nenhum achado.'
-          }
+          title="Sem achados abertos"
+          description="Nenhuma área tem achados abertos: os confirmados e corrigidos estão no registo de arquivo."
         />
       ) : (
         <div className="space-y-5">
-          {visibleAreas.map((area) => (
+          {areas.map((area) => (
             <AreaSection
               key={area.id}
               area={area}
-              findings={area.visible}
+              findings={area.findings}
               openIds={openIds}
               onToggle={toggle}
             />

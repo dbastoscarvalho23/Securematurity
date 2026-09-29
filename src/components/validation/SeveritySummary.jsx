@@ -7,10 +7,11 @@ import { SEVERITIES, STATUSES } from '@/lib/validationReportModel';
 /**
  * Sumário do relatório: contagem dos achados ABERTOS por severidade (cartões) e
  * o estado da recomendação de todos os achados (faixa de badges). As contagens
- * por severidade vêm do modelo (`openSeverityCounts()`); os achados já
- * corrigidos ficam fora delas e são referidos à parte, na faixa de estados.
+ * por severidade vêm do modelo (`openSeverityCounts()`); os achados confirmados
+ * e corrigidos saíram para o registo de arquivo e são referidos à parte, no fim
+ * do cartão.
  */
-export default function SeveritySummary({ severityCounts, statusCounts, total, correctedCount = 0 }) {
+export default function SeveritySummary({ severityCounts, statusCounts, total, archivedCount = 0 }) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -29,16 +30,17 @@ export default function SeveritySummary({ severityCounts, statusCounts, total, c
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {STATUSES.map((s) => (
+          {STATUSES.filter((s) => (statusCounts[s.id] || 0) > 0).map((s) => (
             <Badge key={s.id} variant="outline" className={cn('text-sm', s.classes)}>
-              {s.label}: {statusCounts[s.id] || 0}
+              {s.label}: {statusCounts[s.id]}
             </Badge>
           ))}
         </div>
-        {correctedCount > 0 && (
+        {archivedCount > 0 && (
           <p className="text-xs text-muted-foreground">
-            {correctedCount} achado(s) já corrigido(s) ficam fora das contagens por severidade —
-            o estado de cada um está na faixa acima e o detalhe abre com «Mostrar corrigidos».
+            {archivedCount} achado(s) confirmado(s) e corrigido(s) saíram do relatório para o
+            registo de arquivo (<code>src/lib/validationArchive.js</code>) — ficam fora das
+            contagens por severidade e da listagem, com a correção e o que a confirmou.
           </p>
         )}
       </CardContent>

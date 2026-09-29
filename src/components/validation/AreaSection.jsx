@@ -21,8 +21,10 @@ const AREA_ICONS = {
 
 /**
  * Secção de uma área da avaliação: cabeçalho com a cor da área, parecer em
- * parágrafo, o que está sólido vs. o que falta, e os achados agrupados por
- * severidade. Recebe os achados já filtrados pelo filtro global de severidade.
+ * parágrafo, o que está sólido vs. o que falta, e os achados abertos agrupados
+ * por severidade. Recebe só os achados que continuam no relatório — os
+ * confirmados e corrigidos estão no registo de arquivo e aparecem apenas na
+ * contagem de arquivados.
  */
 export default function AreaSection({ area, findings, openIds, onToggle }) {
   const Icon = AREA_ICONS[area.id] || ShieldAlert;
@@ -50,7 +52,12 @@ export default function AreaSection({ area, findings, openIds, onToggle }) {
           <div className="flex flex-wrap items-center gap-2">
             {/* Nota 0–5 da área, calculada no modelo a partir dos seus achados. */}
             <MaturityBadge maturity={area.maturity} />
-            <Badge variant="secondary">{area.scopedTotal} achado(s)</Badge>
+            <Badge variant="secondary">{findings.length} aberto(s)</Badge>
+            {area.archivedCount > 0 && (
+              <Badge variant="outline" className="text-xs text-muted-foreground">
+                {area.archivedCount} arquivado(s)
+              </Badge>
+            )}
             {SEVERITIES.filter((s) => (area.severityCounts[s.id] || 0) > 0).map((s) => (
               <Badge key={s.id} variant="outline" className={cn('text-xs', s.classes)}>
                 {s.label}: {area.severityCounts[s.id]}
@@ -114,8 +121,12 @@ export default function AreaSection({ area, findings, openIds, onToggle }) {
         {findings.length === 0 ? (
           <EmptyState
             icon={Icon}
-            title="Sem achados nesta área com o filtro atual"
-            description="Altere o filtro de severidade para ver os achados desta área."
+            title="Sem achados abertos nesta área"
+            description={
+              area.archivedCount > 0
+                ? `Os ${area.archivedCount} achados desta área estão confirmados e corrigidos, no registo de arquivo.`
+                : 'Esta área não tem achados em aberto.'
+            }
           />
         ) : (
           <div className="space-y-4">
