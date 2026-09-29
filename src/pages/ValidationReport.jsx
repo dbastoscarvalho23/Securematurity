@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, ClipboardList, FlaskConical, ShieldAlert, Wrench } from 'lucide-react';
+import { AlertTriangle, ClipboardList, FlaskConical, ListChecks, ShieldAlert, Wrench } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,10 +19,12 @@ import {
   REPORT_META,
   ROUND_META,
   SEVERITIES,
+  TODO_LIST,
   VERDICT,
   buildReportModel,
   openFindings,
   openSeverityCounts,
+  statusMeta,
   totalSeverityCounts,
   totalStatusCounts,
 } from '@/lib/validationReportModel';
@@ -316,6 +318,41 @@ export default function ValidationReport() {
                 <span className="font-mono text-xs text-muted-foreground">{f.ref}</span> — {f.title}
               </p>
               <p className="text-sm text-muted-foreground">{f.note}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+            <ListChecks className="h-4 w-4 text-muted-foreground" />
+            Tarefas em aberto (to-do)
+            <Badge variant="secondary">{TODO_LIST.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Trabalho combinado que não é achado de validação nem residual de uma correção — fica
+            registado aqui para não se perder.
+          </p>
+          {TODO_LIST.map((todo) => (
+            <div key={todo.id} className="border-b pb-3 last:border-b-0 last:pb-0">
+              <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+                <span className="font-mono text-xs text-muted-foreground">{todo.id}</span>
+                {todo.title}
+                <Badge variant="outline" className={statusMeta(todo.status).classes}>
+                  {statusMeta(todo.status).label}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">{todo.note}</p>
+              {todo.next && (
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Próximo passo: </span>
+                  {todo.next}
+                </p>
+              )}
+              {todo.source && <p className="font-mono text-xs text-muted-foreground">{todo.source}</p>}
             </div>
           ))}
         </CardContent>

@@ -33,6 +33,7 @@ import {
   NIS2_AREAS,
   ROUND_META,
 } from './platformAssessmentData';
+import { TODO_LIST } from './validationTodos';
 
 /**
  * Área dos achados da ronda anterior. Os F1–F15 ficam intactos em
@@ -322,6 +323,7 @@ export function findingStatusLabel(finding) {
 export {
   FIX_PLAN,
   FOLLOW_UPS,
+  TODO_LIST,
   NOT_EXECUTED,
   REPORT_META,
   ROUND_META,
