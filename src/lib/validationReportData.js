@@ -53,7 +53,7 @@ export const VERDICT = {
     'Ciclo de delegação com motivo, prazo, proibição de auto-aprovação e aprovação reservada ao cliente.',
     'Break-glass removido; cálculo de resultados, cobertura e metodologia sempre no servidor, com o ator retirado de `base44.auth.me()`.',
     'F1–F9, F11, F13 e F14 aplicadas em código; F15 com residual identificado (revalidação de expires_at na camada de entidades).',
-    'Harness multi-identidade: 88 casos, 87 ok, 0 falhas e 1 não verificável localmente (RLS1) — isolamento e âmbito de carteira, provisionamento de licenças com tolerância e fecho fail-closed, estados da delegação, matriz de capacidades por papel e contrato de tenant, a camada comercial (oferta e preço com vigência, ciclo de vida, quotas contratuais e indicadores) e os anúncios por âmbito. Duas execuções seguidas devolvem exatamente o mesmo resultado, pelo que nenhum caso depende do que a execução anterior deixou.',
+    'Harness multi-identidade (as contagens estão no resumo do parecer, acima): isolamento e âmbito de carteira, provisionamento de licenças com tolerância e fecho fail-closed, estados da delegação, matriz de capacidades por papel e contrato de tenant, a camada comercial (oferta e preço com vigência, ciclo de vida, quotas contratuais e indicadores) e os anúncios por âmbito. Duas execuções seguidas devolvem exatamente o mesmo resultado, pelo que nenhum caso depende do que a execução anterior deixou.',
   ],
 };
 

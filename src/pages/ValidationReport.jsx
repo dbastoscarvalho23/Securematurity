@@ -88,8 +88,7 @@ export default function ValidationReport() {
             área a subsecção «Optimizações possíveis»: pontos de optimização, melhorias e
             funcionalidades novas identificados nos mesmos percursos, classificados por impacto ×
             esforço (quick win, projeto ou candidato) segundo uma decisão única do modelo. A ronda 5 audita a fidelidade deste relatório:
-            confrontou cada afirmação com o código e com o harness (88 casos, 87 ok, 0 falhas, 1 não
-            verificável) e corrigiu o que estava desatualizado — o repositório legal (Layer 1), já entregue,
+            confrontou cada afirmação com o código e com o harness e corrigiu o que estava desatualizado — o repositório legal (Layer 1), já entregue,
             as contagens do harness, os metadados de revisão e três optimizações entretanto realizadas —
             mantendo como residual apenas o que exige backend real. As contagens por severidade aparecem
             uma única vez, no cartão «Achados abertos por severidade», e a listagem de achados por área
@@ -100,9 +99,9 @@ export default function ValidationReport() {
             Fase 1 do plano de fecho pós-validação (PL1.0): a limitação de ritmo por ator passou a
             viver num único sítio (<code>base44/shared/rateLimit.ts</code>), aplicada às funções de
             escrita e aos dois caminhos que chamam IA — o mesmo ator recebe 429 quando passa o balde —
-            e a fase fecha com o harness verde (88 casos, 87 ok, 0 falhas, 1 não verificável). As
-            contagens do relatório aparecem agora uma só vez, no cartão «Achados abertos por
-            severidade». A página
+            e a fase fecha com o harness verde. As contagens do relatório aparecem agora uma só vez,
+            no cartão «Achados abertos por severidade», e as contagens do harness vivem no cartão
+            «Parecer de prontidão do Core», deixando de se repetir neste aviso. A página
             deve ser retirada quando a validação por identidade real estiver concluída.
           </p>
         </div>
