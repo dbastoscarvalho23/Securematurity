@@ -4,6 +4,9 @@
  * Lê o mesmo modelo que a página /documentacao-tecnica (`src/lib/docsModel.js`)
  * e o conteúdo narrativo de `src/lib/devDocsData.js`, pelo que o documento
  * descarregado reflete sempre o RBAC e o catálogo de módulos do código.
+ *
+ * Branding igual ao da app: o logótipo abre a capa (à esquerda, sobre a faixa
+ * navy) e repete-se à esquerda no cabeçalho corrente de cada página de conteúdo.
  */
 
 import { jsPDF } from 'jspdf';
@@ -96,7 +99,7 @@ const pageSize = (doc) => ({
 
 function newPage(doc, orientation = 'portrait') {
   doc.addPage('a4', orientation);
-  return M + 6;
+  return pageHeader(doc);
 }
 
 function ensure(doc, y, needed, orientation = 'portrait') {
@@ -244,6 +247,76 @@ const bandTitle = (doc, y, label, accent) =>
 
 const roleLabel = (role, t) => (t && t(`role_${role}`)) || role;
 
+// ─── Branding (logótipo da app) ────────────────────────────────
+// O jsPDF não desenha SVG: cada variante do logótipo é rasterizada para PNG antes
+// de entrar no documento. `light` = tinta escura (papel claro, cabeçalho corrente);
+// `dark` = tinta clara (faixa navy da capa).
+const LOGO_URLS = {
+  light: 'https://media.base44.com/images/public/6ab5373e7f8f586c80cb9ed8/ef04d314c_a1-logo-light.svg',
+  dark: 'https://media.base44.com/images/public/6ab5373e7f8f586c80cb9ed8/7904d3a81_a1-logo-dark.svg',
+};
+const LOGO_W_COVER = 34; // largura do logótipo na capa (mm)
+const LOGO_W_HEAD = 24; // largura do logótipo no cabeçalho corrente (mm)
+const CONTENT_TOP = 24; // primeira linha útil abaixo do cabeçalho corrente
+
+/** Marca do documento, carregada no início da exportação (as imagens são assíncronas). */
+let BRAND = {};
+
+/** Rasteriza um SVG remoto para PNG e devolve também a proporção original. */
+async function rasterizeLogo(url) {
+  const svg = await (await fetch(url)).text();
+  const viewBox = /viewBox="([^"]+)"/.exec(svg)?.[1].trim().split(/\s+/).map(Number);
+  const ratio = viewBox?.[2] ? viewBox[3] / viewBox[2] : 0.2;
+  const blobUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = blobUrl;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = 960;
+    canvas.height = Math.round(960 * ratio);
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    return { dataUrl: canvas.toDataURL('image/png'), ratio };
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+}
+
+/** Carrega as duas variantes; sem rede o documento sai sem logótipo. */
+async function loadBrandLogos() {
+  const [light, dark] = await Promise.all(
+    [LOGO_URLS.light, LOGO_URLS.dark].map((url) => rasterizeLogo(url).catch(() => null)),
+  );
+  return { light, dark };
+}
+
+/** Coloca um logótipo já rasterizado, escalado pela largura pedida. */
+function drawLogo(doc, logo, x, y, width) {
+  if (!logo) return 0;
+  doc.addImage(logo.dataUrl, 'PNG', x, y, width, width * logo.ratio, undefined, 'FAST');
+  return width * logo.ratio;
+}
+
+/**
+ * Cabeçalho corrente das páginas de conteúdo — a mesma lógica de branding da
+ * folha: logótipo à esquerda, identificação do documento à direita.
+ */
+function pageHeader(doc) {
+  const { W } = pageSize(doc);
+  drawLogo(doc, BRAND.light, M, 7, LOGO_W_HEAD);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  setText(doc, MUTED);
+  doc.text(`${DOCS_META.app} · Documentação técnica`, W - M, 11.5, { align: 'right' });
+  setDraw(doc, BORDER);
+  doc.setLineWidth(0.3);
+  doc.line(M, 16.5, W - M, 16.5);
+  return CONTENT_TOP;
+}
+
 // ─── Secções ───────────────────────────────────────────────────
 
 function cover(doc) {
@@ -255,10 +328,12 @@ function cover(doc) {
   setFill(doc, BLUE);
   doc.rect(0, 84, W, 2.5, 'F');
 
-  text(doc, 'ANKORAONE PLATFORM', M, 22, { size: 9, style: 'bold', color: NAVY_SOFT });
-  text(doc, 'Documentação técnica', M, 38, { size: 26, style: 'bold', color: WHITE });
-  text(doc, `${DOCS_META.app} · ${DOCS_META.branch}`, M, 48, { size: 11, style: 'bold', color: NAVY_SOFT });
-  paragraph(doc, DOCS_META.scope, M, 58, W - 2 * M - 4, { size: 8.5, color: [180, 195, 230] });
+  // Logótipo à esquerda do cabeçalho, sobre a faixa navy (variante de tinta clara).
+  drawLogo(doc, BRAND.dark, M, 14, LOGO_W_COVER);
+  text(doc, 'ANKORAONE PLATFORM', M, 30, { size: 9, style: 'bold', color: NAVY_SOFT });
+  text(doc, 'Documentação técnica', M, 43, { size: 26, style: 'bold', color: WHITE });
+  text(doc, `${DOCS_META.app} · ${DOCS_META.branch}`, M, 53, { size: 11, style: 'bold', color: NAVY_SOFT });
+  paragraph(doc, DOCS_META.scope, M, 62, W - 2 * M - 4, { size: 8.5, color: [180, 195, 230] });
   text(doc, `Gerado em ${new Date().toLocaleDateString('pt-PT')}`, M, 77, { size: 8, color: [150, 168, 210] });
 
   let y = 96;
@@ -911,10 +986,12 @@ function sectionDev(doc) {
 
 /**
  * Gera e descarrega a documentação técnica em PDF.
+ * Assíncrona: o logótipo da app é rasterizado antes de entrar nas páginas.
  * @param {object} [options]
  * @param {function} [options.t] - tradutor da UI (rótulos de papel); PT por omissão.
  */
-export function exportTechnicalDocsPdf({ t } = {}) {
+export async function exportTechnicalDocsPdf({ t } = {}) {
+  BRAND = await loadBrandLogos();
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
   cover(doc);

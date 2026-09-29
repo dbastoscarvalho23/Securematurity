@@ -174,7 +174,9 @@ function AreaList() {
 export default function TechnicalDocs() {
   const { t } = useLanguage();
   const tierLayers = buildTierLayers();
-  const downloadPdf = () => exportTechnicalDocsPdf({ t });
+  const downloadPdf = async () => {
+    await exportTechnicalDocsPdf({ t });
+  };
 
   return (
     <div className="docs-paper">
