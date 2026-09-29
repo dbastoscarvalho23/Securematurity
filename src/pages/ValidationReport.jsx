@@ -18,14 +18,12 @@ import {
   NOT_EXECUTED,
   REPORT_META,
   ROUND_META,
-  SEVERITIES,
   TODO_LIST,
   VERDICT,
   buildReportModel,
   openFindings,
   openSeverityCounts,
   statusMeta,
-  totalSeverityCounts,
   totalStatusCounts,
 } from '@/lib/validationReportModel';
 
@@ -36,21 +34,22 @@ import {
  * (`src/lib/validationReportModel.js`, sobre `validationReportData.js` e
  * `platformAssessmentData.js`), sem leituras nem escritas sobre dados de tenants.
  * Deve ser retirada quando os achados estiverem tratados.
+ *
+ * As contagens por severidade vivem num único sítio — o cartão
+ * `SeveritySummary` — e a listagem «Achados por área» mostra os achados do
+ * âmbito escolhido (abertos ou todos), sem filtro por severidade.
  */
 export default function ValidationReport() {
-  const [severity, setSeverity] = useState('todas');
   const [scope, setScope] = useState('abertos');
   const [openIds, setOpenIds] = useState(() => new Set(['FB1']));
 
   const areas = useMemo(() => buildReportModel(), []);
-  const severityCounts = useMemo(() => totalSeverityCounts(), []);
   const openCounts = useMemo(() => openSeverityCounts(), []);
   const statusCounts = useMemo(() => totalStatusCounts(), []);
   const openTotal = useMemo(() => openFindings().length, []);
 
-  // As contagens e a lista mostram por omissão só os achados abertos (parcial ou
-  // pendente); «Mostrar corrigidos» alarga ambas ao relatório completo.
-  const scopedCounts = scope === 'abertos' ? openCounts : severityCounts;
+  // A lista mostra por omissão só os achados abertos (parcial ou pendente);
+  // «Mostrar corrigidos» alarga-a ao relatório completo.
   const scopeTotal = scope === 'abertos' ? openTotal : FINDINGS.length;
 
   const visibleAreas = useMemo(
@@ -61,13 +60,11 @@ export default function ValidationReport() {
           ...area,
           scopedTotal: scoped.length,
           severityCounts: scope === 'abertos' ? area.openSeverityCounts : area.severityCounts,
-          visible: severity === 'todas' ? scoped : scoped.filter((f) => f.severity === severity),
+          visible: scoped,
         };
       }),
-    [areas, severity, scope]
+    [areas, scope]
   );
-
-  const visibleCount = visibleAreas.reduce((acc, area) => acc + area.visible.length, 0);
 
   const toggle = (id) => {
     setOpenIds((prev) => {
@@ -108,7 +105,9 @@ export default function ValidationReport() {
             confrontou cada afirmação com o código e com o harness (88 casos, 87 ok, 0 falhas, 1 não
             verificável) e corrigiu o que estava desatualizado — o repositório legal (Layer 1), já entregue,
             as contagens do harness, os metadados de revisão e três optimizações entretanto realizadas —
-            mantendo como residual apenas o que exige backend real. A página
+            mantendo como residual apenas o que exige backend real. As contagens por severidade aparecem
+            uma única vez, no cartão «Achados abertos por severidade», e a listagem de achados por área
+            deixou de as repetir num filtro. A página
             deve ser retirada quando a validação por identidade real estiver concluída.
           </p>
         </div>
@@ -232,45 +231,30 @@ export default function ValidationReport() {
         <h2 className="text-base font-semibold text-foreground">
           Achados por área
           <span className="ml-2 text-sm font-normal text-muted-foreground">
-            {visibleCount} de {scopeTotal}
+            {scopeTotal}
             {scope === 'abertos' ? ' abertos' : ''}
           </span>
         </h2>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={severity === 'todas' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSeverity('todas')}
-          >
-            Todas {scopeTotal}
-          </Button>
-          {SEVERITIES.map((s) => (
-            <Button
-              key={s.id}
-              variant={severity === s.id ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSeverity(s.id)}
-            >
-              {s.label} {scopedCounts[s.id] || 0}
-            </Button>
-          ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setScope(scope === 'abertos' ? 'todos' : 'abertos')}
-          >
-            {scope === 'abertos'
-              ? `Mostrar corrigidos (${statusCounts.corrigido || 0})`
-              : 'Mostrar só abertos'}
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setScope(scope === 'abertos' ? 'todos' : 'abertos')}
+        >
+          {scope === 'abertos'
+            ? `Mostrar corrigidos (${statusCounts.corrigido || 0})`
+            : 'Mostrar só abertos'}
+        </Button>
       </div>
 
-      {visibleCount === 0 ? (
+      {scopeTotal === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title="Sem achados com esta severidade"
-          description="Nenhuma área tem achados com a severidade selecionada. Escolha outra severidade ou «Todas»."
+          title={scope === 'abertos' ? 'Sem achados abertos' : 'Sem achados'}
+          description={
+            scope === 'abertos'
+              ? 'Nenhuma área tem achados abertos. Use «Mostrar corrigidos» para ver o relatório completo.'
+              : 'O modelo do relatório não devolveu nenhum achado.'
+          }
         />
       ) : (
         <div className="space-y-5">
