@@ -16,6 +16,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Search, BookOpen, ArrowLeft, Tag, Landmark, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
@@ -43,19 +44,26 @@ const CATEGORY_ICONS = {
   faq: BookOpen,
 };
 
-/** Minimal renderer for the stored article body (## headings, - lists, paragraphs). */
+/**
+ * Corpo do artigo desenhado pelo `react-markdown` que a aplicação já traz (o
+ * mesmo do chat), em vez do tratamento à mão de «# »/«- » que deixava títulos,
+ * listas, ligações e ênfase como texto cru (OP-C6). O `react-markdown` v9 já
+ * não aceita `className`, pelo que o estilo vive no elemento que o envolve —
+ * o projeto não traz o plugin de tipografia, por isso os elementos são
+ * estilizados por seletor descendente.
+ */
+const BODY_CLASSES =
+  'text-sm leading-relaxed [&_h1]:mb-2 [&_h1]:text-base [&_h1]:font-semibold ' +
+  '[&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h3]:mb-1.5 [&_h3]:font-semibold ' +
+  '[&_p]:mb-2 [&_ul]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 ' +
+  '[&_li]:mb-1 [&_a]:text-primary [&_a]:underline [&_strong]:font-semibold [&_code]:font-mono [&_code]:text-xs';
+
 function renderBody(body) {
-  return (body || '')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line, index) => {
-      if (line.startsWith('## ')) return <h2 key={index}>{line.slice(3)}</h2>;
-      if (line.startsWith('# ')) return <h2 key={index}>{line.slice(2)}</h2>;
-      if (line.startsWith('- ')) return <p key={index} className="pl-4">• {line.slice(2)}</p>;
-      if (/^\d+\.\s/.test(line)) return <p key={index} className="pl-4">{line}</p>;
-      return <p key={index}>{line}</p>;
-    });
+  return (
+    <div className={BODY_CLASSES}>
+      <ReactMarkdown>{body || ''}</ReactMarkdown>
+    </div>
+  );
 }
 
 export default function KnowledgeBase() {

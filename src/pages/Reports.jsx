@@ -21,6 +21,7 @@ import EmptyState from '@/components/shared/EmptyState';
 import ErrorState from '@/components/shared/ErrorState';
 import LoadingState from '@/components/shared/LoadingState';
 import { isPlatformOwner } from '@/lib/rbac';
+import ListMoreToggle from '@/components/shared/ListMoreToggle';
 import { useActiveCustomer } from '@/lib/tenantContext';
 
 const MATURITY_LABEL_KEYS = ['maturity_not_implemented', 'maturity_initial', 'maturity_developing', 'maturity_defined', 'maturity_managed', 'maturity_optimized'];
@@ -132,6 +133,7 @@ export default function Reports() {
   const [selectedCustomer, setSelectedCustomer] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
   const [exportingId, setExportingId] = useState(null);
+  const [showAllTrend, setShowAllTrend] = useState(false);
 
   const handleExportPdf = async (a, e) => {
     e.stopPropagation();
@@ -163,8 +165,9 @@ export default function Reports() {
     .filter(a => a.status === 'completed')
     .filter(a => !isAdmin || selectedCustomer === 'all' || a.customer_id === selectedCustomer);
 
-  const trendData = completed
-    .slice(0, 10)
+  const trendSource = showAllTrend ? completed : completed.slice(0, 10);
+  const trendData = trendSource
+    .slice()
     .reverse()
     .map(a => {
       const point = { period: a.period };
@@ -238,6 +241,12 @@ export default function Reports() {
         <MaturityRadar data={radarData} title={t('reports_domain_coverage')} />
         <TrendChart data={trendData} frameworks={Object.keys(FRAMEWORK_NAMES)} title={t('reports_maturity_evolution')} />
       </div>
+      <ListMoreToggle
+        shown={trendSource.length}
+        total={completed.length}
+        expanded={showAllTrend}
+        onToggle={() => setShowAllTrend(v => !v)}
+      />
 
       {/* Assessment History */}
       <Card>

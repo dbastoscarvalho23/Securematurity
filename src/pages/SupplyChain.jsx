@@ -20,6 +20,7 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import ErrorState from '@/components/shared/ErrorState';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { isPlatformOwner } from '@/lib/rbac';
 
 export default function SupplyChain() {
@@ -34,6 +35,7 @@ export default function SupplyChain() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const { customerId } = useActiveCustomer();
 
@@ -58,11 +60,12 @@ export default function SupplyChain() {
     enabled: isAdmin || !!customerId,
   });
 
-  const handleDelete = async (q) => {
-    if (!confirm(`${t('sc_delete_confirm')} "${q.title}"?`)) return;
-    await base44.entities.SupplierQuestionnaire.delete(q.id);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await base44.entities.SupplierQuestionnaire.delete(deleteTarget.id);
     queryClient.invalidateQueries({ queryKey: ['supplier-questionnaires'] });
     toast.success(t('sc_questionnaire_deleted'));
+    setDeleteTarget(null);
   };
 
   const filtered = questionnaires.filter(q => {
@@ -203,7 +206,7 @@ export default function SupplyChain() {
                   <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('common_actions')} title={t('common_actions')}>
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -211,7 +214,7 @@ export default function SupplyChain() {
                         <DropdownMenuItem onClick={() => { setEditing(q); setDialogOpen(true); }}>
                           <Pencil className="w-4 h-4 mr-2" />{t('common_edit')}
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(q)} className="text-destructive">
+                        <DropdownMenuItem onClick={() => setDeleteTarget(q)} className="text-destructive">
                           <Trash2 className="w-4 h-4 mr-2" />{t('common_delete')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -232,6 +235,16 @@ export default function SupplyChain() {
         customers={customers}
         suppliers={suppliers}
         onSaved={() => queryClient.invalidateQueries({ queryKey: ['supplier-questionnaires'] })}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={`${t('sc_delete_confirm')} "${deleteTarget?.title || ''}"?`}
+        description={t('bulk_cannot_undo')}
+        confirmLabel={t('common_delete')}
+        cancelLabel={t('common_cancel')}
+        onConfirm={handleDelete}
       />
     </div>
   );

@@ -20,6 +20,7 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import ErrorState from '@/components/shared/ErrorState';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { isPlatformOwner } from '@/lib/rbac';
 
 const LEGAL_BASES = [
@@ -51,6 +52,7 @@ export default function RoPA() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const isAdmin = isPlatformOwner(user?.role);
   const { customerId } = useActiveCustomer();
@@ -123,12 +125,14 @@ export default function RoPA() {
     setSaving(false);
   };
 
-  const handleDelete = async (rec) => {
-    if (!confirm(t('ropa_delete_confirm').replace('{name}', rec.activity_name))) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const rec = deleteTarget;
     await base44.entities.DataProcessingActivity.delete(rec.id);
     await writeAuditLog({ action: 'ropa_deleted', entity_type: 'DataProcessingActivity', entity_id: rec.id, details: `RoPA deleted: ${rec.activity_name}` });
     toast.success(t('ropa_deleted'));
     queryClient.invalidateQueries({ queryKey: ['ropa'] });
+    setDeleteTarget(null);
   };
 
   return (
@@ -192,8 +196,8 @@ export default function RoPA() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(r)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(r)} aria-label={t('common_edit')} title={t('common_edit')}><Pencil className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(r)} aria-label={t('common_delete')} title={t('common_delete')}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -303,6 +307,16 @@ export default function RoPA() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={t('ropa_delete_confirm').replace('{name}', deleteTarget?.activity_name || '')}
+        description={t('bulk_cannot_undo')}
+        confirmLabel={t('common_delete')}
+        cancelLabel={t('common_cancel')}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

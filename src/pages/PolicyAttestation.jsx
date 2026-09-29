@@ -28,6 +28,7 @@ import { writeAuditLog } from '@/lib/auditLog';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { hasRole } from '@/lib/rbac';
+import ListMoreToggle from '@/components/shared/ListMoreToggle';
 
 // Cores dos tokens semânticos (FC2) e rótulo por chave de tradução (FC3).
 const STATUS_CONFIG = {
@@ -46,6 +47,7 @@ export default function PolicyAttestation() {
   const userEmail = user?.email;
   const [newDialog, setNewDialog] = useState(false);
   const [newForm, setNewForm] = useState({ policy_title: '', policy_version: '', user_email: '', due_date: '' });
+  const [showAllHistory, setShowAllHistory] = useState(false);
 
   const { data: attestations = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['policy-attestations', customerId],
@@ -224,7 +226,7 @@ export default function PolicyAttestation() {
               <h3 className="text-sm font-semibold">{t('pa_history')}</h3>
             </div>
             <div className="divide-y">
-              {completed.slice(0, 20).map(a => {
+              {(showAllHistory ? completed : completed.slice(0, 20)).map(a => {
                 const cfg = STATUS_CONFIG[a.status];
                 return (
                   <div key={a.id} className="flex items-center justify-between p-4">
@@ -241,6 +243,12 @@ export default function PolicyAttestation() {
                   </div>
                 );
               })}
+              <ListMoreToggle
+                shown={showAllHistory ? completed.length : Math.min(20, completed.length)}
+                total={completed.length}
+                expanded={showAllHistory}
+                onToggle={() => setShowAllHistory(v => !v)}
+              />
             </div>
           </CardContent>
         </Card>

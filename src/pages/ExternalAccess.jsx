@@ -18,6 +18,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { normalizeRole } from '@/lib/rbac';
+import ListMoreToggle from '@/components/shared/ListMoreToggle';
 import {
   Network, Plus, ShieldOff, ShieldCheck, UserCog,
   UserPlus, Clock, Check, X,
@@ -271,6 +272,7 @@ export default function ExternalAccess() {
 
   const [delegationDialog, setDelegationDialog] = useState(false);
   const [onboardingDialog, setOnboardingDialog] = useState(false);
+  const [showAllRevoked, setShowAllRevoked] = useState(false);
 
   // Fetch assignments
   const { data: assignments = [], isLoading, isError, refetch } = useQuery({
@@ -483,9 +485,15 @@ export default function ExternalAccess() {
               <CardContent className="p-0">
                 <div className="p-4 border-b"><h3 className="text-sm font-semibold text-muted-foreground">{t('ea_section_revoked_expired')}</h3></div>
                 <div className="divide-y">
-                  {revokedAssignments.slice(0, 20).map(a => (
+                  {(showAllRevoked ? revokedAssignments : revokedAssignments.slice(0, 20)).map(a => (
                     <AssignmentRow key={a.id} assignment={a} />
                   ))}
+                  <ListMoreToggle
+                    shown={showAllRevoked ? revokedAssignments.length : Math.min(20, revokedAssignments.length)}
+                    total={revokedAssignments.length}
+                    expanded={showAllRevoked}
+                    onToggle={() => setShowAllRevoked(v => !v)}
+                  />
                 </div>
               </CardContent>
             </Card>

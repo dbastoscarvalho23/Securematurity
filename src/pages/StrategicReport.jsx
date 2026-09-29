@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isPlatformOwner, can } from '@/lib/rbac';
+import ListMoreToggle from '@/components/shared/ListMoreToggle';
 import { useActiveCustomer } from '@/lib/tenantContext';
 import { exportStrategicReportPdf } from '@/lib/exportAnalyticsPdf';
 
@@ -67,6 +68,7 @@ export default function StrategicReport() {
   // próprio → delegações vivas), não de uma leitura directa de user.customer_id.
   const { customerId, customerName } = useActiveCustomer();
   const [selectedCustomer, setSelectedCustomer] = useState('all');
+  const [showAllAssessments, setShowAllAssessments] = useState(false);
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -349,7 +351,7 @@ export default function StrategicReport() {
             <EmptyState icon={ClipboardCheck} title={t('strategic_no_assessments')} compact />
           ) : (
             <div className="space-y-2">
-              {assessments.slice(0, 8).map(a => (
+              {(showAllAssessments ? assessments : assessments.slice(0, 8)).map(a => (
                 <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{a.title}</p>
@@ -367,6 +369,12 @@ export default function StrategicReport() {
                   </div>
                 </div>
               ))}
+              <ListMoreToggle
+                shown={showAllAssessments ? assessments.length : Math.min(8, assessments.length)}
+                total={assessments.length}
+                expanded={showAllAssessments}
+                onToggle={() => setShowAllAssessments(v => !v)}
+              />
             </div>
           )}
         </CardContent>
