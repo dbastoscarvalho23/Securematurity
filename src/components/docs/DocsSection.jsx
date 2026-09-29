@@ -1,35 +1,24 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { rgba } from '@/lib/docsModel';
 
 /**
- * Secção numerada da documentação técnica: faixa de cor, ícone em chip,
- * número da secção e descrição. Mantém todas as secções com a mesma linguagem.
+ * Capítulo da folha «Papel Dourado» (/documentacao-tecnica).
  *
- * @param {number[]} accent - triplo RGB da paleta de docsModel
+ * O número do capítulo (dois dígitos) abre a secção com o fio dourado; o título
+ * e a descrição vivem ao lado. O conteúdo só aparece embrulhado em
+ * `chapter-content`, que traz a linha de separação — é a mesma moldura para as
+ * onze secções.
  */
-export default function DocsSection({ id, index, icon: Icon, accent, title, description, children }) {
+export default function DocsSection({ id, index, title, description, children }) {
   return (
-    <Card id={id} className="scroll-mt-28 overflow-hidden">
-      <div className="h-1" style={{ backgroundColor: rgba(accent) }} />
-      <CardHeader className="pb-3">
-        <div className="flex items-start gap-3">
-          <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border"
-            style={{ backgroundColor: rgba(accent, 0.1), borderColor: rgba(accent, 0.25) }}
-          >
-            <Icon className="h-5 w-5" style={{ color: rgba(accent) }} />
-          </div>
-          <div className="min-w-0 space-y-0.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Secção {index}
-            </p>
-            <CardTitle className="text-lg leading-tight">{title}</CardTitle>
-            {description && <p className="text-sm text-muted-foreground">{description}</p>}
-          </div>
+    <section id={id} className="chapter">
+      <div className="chapter-head">
+        <div className="chapter-no">{String(index).padStart(2, '0')}</div>
+        <div>
+          <h2>{title}</h2>
+          {description && <p>{description}</p>}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-5">{children}</CardContent>
-    </Card>
+      </div>
+      {children && <div className="chapter-content space-y-5">{children}</div>}
+    </section>
   );
 }

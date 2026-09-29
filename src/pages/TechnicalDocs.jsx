@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  AlertTriangle, Boxes, Braces, Database, Download, FileCode, Layers, Network, Server,
-  ShieldCheck, Users, Workflow,
-} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import PageHeader from '@/components/shared/PageHeader';
 import ApiStructureSection from '@/components/docs/ApiStructureSection';
 import CapabilityMatrix from '@/components/docs/CapabilityMatrix';
 import ControlCascade from '@/components/docs/ControlCascade';
@@ -38,6 +31,7 @@ import {
   visibleResourceCount,
 } from '@/lib/docsModel';
 import { exportTechnicalDocsPdf } from '@/lib/exportTechnicalDocsPdf';
+import '@/components/docs/papelDourado.css';
 
 /**
  * Documentação técnica interna (arquitetura, papéis, módulos e funcionalidades).
@@ -45,20 +39,33 @@ import { exportTechnicalDocsPdf } from '@/lib/exportTechnicalDocsPdf';
  * Página de leitura: conteúdo estático somado a leituras em memória do RBAC e do
  * catálogo de módulos — nenhuma chamada a entidades nem a funções de backend.
  * O mesmo modelo alimenta a exportação PDF (`src/lib/exportTechnicalDocsPdf.js`).
+ *
+ * A apresentação é a folha «Papel Dourado» (`papelDourado.css`): cabeçalho com
+ * imagem, números de topo, índice fixo e onze capítulos. Só a apresentação muda —
+ * todos os dados continuam a vir do modelo acima.
  */
 
+/** Imagens da folha (biblioteca de recursos da app). */
+const PAPER_ASSETS = {
+  logo: 'https://media.base44.com/images/public/6ab5373e7f8f586c80cb9ed8/ef04d314c_a1-logo-light.svg',
+  hero: 'https://media.base44.com/images/public/6ab5373e7f8f586c80cb9ed8/9683fc468_generated_b2502811.jpg',
+  multitenancy: 'https://media.base44.com/images/public/6ab5373e7f8f586c80cb9ed8/5609ea5ed_generated_fc327653.jpg',
+  security: 'https://media.base44.com/images/public/6ab5373e7f8f586c80cb9ed8/0ed2ef793_generated_51cbe253.jpg',
+  dataModel: 'https://media.base44.com/images/public/6ab5373e7f8f586c80cb9ed8/a18594de3_generated_b174c5f0.jpg',
+};
+
 const SECTIONS = [
-  { id: 'visao-geral', label: 'Visão geral', icon: Layers },
-  { id: 'multitenancy', label: 'Multitenancy', icon: Network },
-  { id: 'papeis', label: 'Papéis', icon: Users },
-  { id: 'capacidades', label: 'Capacidades', icon: ShieldCheck },
-  { id: 'modulos', label: 'Módulos', icon: Boxes },
-  { id: 'areas', label: 'Áreas funcionais', icon: Workflow },
-  { id: 'seguranca', label: 'Segurança', icon: ShieldCheck },
-  { id: 'dados', label: 'Modelo de dados', icon: Database },
-  { id: 'servicos', label: 'Arquitetura de serviços', icon: Server },
-  { id: 'api', label: 'Estrutura da API', icon: Braces },
-  { id: 'dev', label: 'Desenvolvimento', icon: FileCode },
+  { id: 'visao-geral', label: 'Visão geral' },
+  { id: 'multitenancy', label: 'Multitenancy' },
+  { id: 'papeis', label: 'Papéis' },
+  { id: 'capacidades', label: 'Capacidades' },
+  { id: 'modulos', label: 'Módulos' },
+  { id: 'areas', label: 'Áreas funcionais' },
+  { id: 'seguranca', label: 'Segurança' },
+  { id: 'dados', label: 'Modelo de dados' },
+  { id: 'servicos', label: 'Arquitetura de serviços' },
+  { id: 'api', label: 'Estrutura da API' },
+  { id: 'dev', label: 'Desenvolvimento' },
 ];
 
 const SCOPE_ACCENTS = {
@@ -70,29 +77,14 @@ const SCOPE_ACCENTS = {
 
 const totals = buildDocsTotals();
 
-const SUMMARY_TILES = [
-  { label: 'Papéis', value: totals.roles, detail: 'conjunto canónico', accent: SCOPE_ACCENTS.Parceiro },
-  { label: 'Módulos', value: totals.modules, detail: `${totals.offeredModules} em oferta`, accent: [8, 145, 178] },
-  { label: 'Tiers comerciais', value: totals.tiers, detail: 'cumulativos', accent: SCOPE_ACCENTS.Externo },
-  { label: 'Áreas funcionais', value: totals.areas, detail: 'com gating próprio', accent: [124, 58, 237] },
-  { label: 'Entidades', value: totals.entities, detail: 'com RLS declarada', accent: [219, 39, 119] },
-  { label: 'Funções backend', value: totals.functions, detail: 'Deno / TypeScript', accent: [234, 88, 12] },
+const TOTALS = [
+  { label: 'Papéis', value: totals.roles, detail: 'conjunto canónico' },
+  { label: 'Módulos', value: totals.modules, detail: `${totals.offeredModules} em oferta` },
+  { label: 'Tiers comerciais', value: totals.tiers, detail: 'cumulativos' },
+  { label: 'Áreas funcionais', value: totals.areas, detail: 'com gating próprio' },
+  { label: 'Entidades', value: totals.entities, detail: 'com RLS declarada' },
+  { label: 'Funções backend', value: totals.functions, detail: 'Deno / TypeScript' },
 ];
-
-function SummaryTile({ tile }) {
-  return (
-    <div
-      className="rounded-xl border p-3"
-      style={{ backgroundColor: rgba(tile.accent, 0.06), borderColor: rgba(tile.accent, 0.25) }}
-    >
-      <p className="text-2xl font-bold leading-none" style={{ color: rgba(tile.accent) }}>
-        {tile.value}
-      </p>
-      <p className="mt-1 text-xs font-medium">{tile.label}</p>
-      <p className="text-[11px] text-muted-foreground">{tile.detail}</p>
-    </div>
-  );
-}
 
 function RoleGrid({ t }) {
   return (
@@ -186,165 +178,201 @@ function AreaList() {
 export default function TechnicalDocs() {
   const { t } = useLanguage();
   const tierLayers = buildTierLayers();
+  const downloadPdf = () => exportTechnicalDocsPdf({ t });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3 rounded-lg border border-chart-4/20 bg-chart-4/10 p-4 text-chart-4">
-        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-chart-4" />
-        <div className="space-y-1">
-          <p className="text-sm font-semibold">Documento interno de engenharia</p>
-          <p className="text-sm">{DOCS_META.scope}</p>
+    <div className="docs-paper">
+      <header className="mast">
+        <div>
+          <img className="logo" src={PAPER_ASSETS.logo} alt="" />
+          <img className="hero" src={PAPER_ASSETS.hero} alt="" />
         </div>
+        <div>
+          <div className="eyebrow">Documento interno de engenharia</div>
+          <p className="notice">{DOCS_META.scope}</p>
+          {/* O título da página é o da barra de contexto (TopBar, h1); aqui é o
+              cabeçalho da folha, com a mesma forma mas sem duplicar o h1 (FC1). */}
+          <h2 className="title">Documentação técnica</h2>
+          <p className="description">
+            Arquitetura da plataforma, papéis, módulos, áreas funcionais e modelo de dados — o mesmo
+            conteúdo do PDF descarregável.
+          </p>
+          <button type="button" className="button" onClick={downloadPdf}>
+            Descarregar PDF
+          </button>
+        </div>
+      </header>
+
+      <div className="totals">
+        {TOTALS.map((item) => (
+          <div key={item.label} className="total">
+            <div className="number">{item.value}</div>
+            <div className="label">{item.label}</div>
+            <div className="detail">{item.detail}</div>
+          </div>
+        ))}
       </div>
 
-      <Card className="overflow-hidden">
-        <div className="h-1.5 w-full" style={{ backgroundColor: rgba(SCOPE_ACCENTS.Parceiro) }} />
-        <CardContent className="space-y-5 pt-6">
-          <PageHeader
-            title="Documentação técnica"
-            description="Arquitetura da plataforma, papéis, módulos, áreas funcionais e modelo de dados — o mesmo conteúdo do PDF descarregável."
-            actions={
-              <Button onClick={() => exportTechnicalDocsPdf({ t })}>
-                <Download className="mr-2 h-4 w-4" />
-                Descarregar PDF
-              </Button>
-            }
-          />
+      <nav className="nav">
+        {SECTIONS.map((section, index) => (
+          <a key={section.id} href={`#${section.id}`} className="chip">
+            {`${String(index + 1).padStart(2, '0')} ${section.label}`}
+          </a>
+        ))}
+        <button type="button" className="button small-button" onClick={downloadPdf}>
+          Descarregar PDF
+        </button>
+      </nav>
 
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {SUMMARY_TILES.map((tile) => (
-              <SummaryTile key={tile.label} tile={tile} />
-            ))}
+      {/* Coluna de leitura. Não é um <main>: a página já vive dentro do <main> do AppLayout. */}
+      <div className="reading">
+        {/* 01 — Visão geral e arquitetura */}
+        <DocsSection
+          id="visao-geral"
+          index={1}
+          title="Visão geral e arquitetura"
+          description="Stack, camadas de controlo de acesso e o papel de cada uma."
+        >
+          <div className="meta">
+            <div className="meta-item">
+              <div className="meta-label">Aplicação</div>
+              <div className="meta-value">{DOCS_META.app}</div>
+            </div>
+            <div className="meta-item">
+              <div className="meta-label">App ID</div>
+              <div className="meta-value code">{DOCS_META.appId}</div>
+            </div>
+            <div className="meta-item">
+              <div className="meta-label">Branch</div>
+              <div className="meta-value code">{DOCS_META.branch}</div>
+            </div>
           </div>
+          <p style={{ marginTop: 14 }}>{DOCS_META.audience}</p>
 
-          <div className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              ['Aplicação', DOCS_META.app],
-              ['App ID', DOCS_META.appId],
-              ['Branch', DOCS_META.branch],
-              ['Público', DOCS_META.audience],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-lg bg-muted/50 p-2.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-                <p className="mt-0.5">{value}</p>
+          <div className="mt-6 grid gap-2 sm:grid-cols-2">
+            {STACK.map((row) => (
+              <div key={row.label} className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{row.label}</p>
+                <p className="mt-1 text-sm">{row.value}</p>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+          <div className="mt-6">
+            <ControlCascade />
+          </div>
+        </DocsSection>
 
-      <nav className="sticky top-2 z-10 flex flex-wrap gap-2 rounded-xl border bg-card/95 p-2 backdrop-blur">
-        {SECTIONS.map((section, index) => (
-          <a
-            key={section.id}
-            href={`#${section.id}`}
-            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <span className="font-mono text-[10px] font-semibold">{index + 1}</span>
-            {section.label}
-          </a>
-        ))}
-      </nav>
+        {/* 02 — Multitenancy e delegação */}
+        <DocsSection
+          id="multitenancy"
+          index={2}
+          title="Multitenancy e delegação"
+          description="Como os dados são isolados e como se concede acesso a quem está fora do tenant."
+        >
+          <img src={PAPER_ASSETS.multitenancy} alt="" />
+          <div className="line-art mb-5">
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
+          <TenancyDiagram />
+        </DocsSection>
 
-      {/* 1 — Visão geral e arquitetura */}
-      <DocsSection
-        id="visao-geral"
-        index={1}
-        icon={Layers}
-        accent={[37, 99, 235]}
-        title="Visão geral e arquitetura"
-        description="Stack, camadas de controlo de acesso e o papel de cada uma."
-      >
-        <div className="grid gap-2 sm:grid-cols-2">
-          {STACK.map((row) => (
-            <div key={row.label} className="rounded-lg border p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{row.label}</p>
-              <p className="mt-1 text-sm">{row.value}</p>
+        {/* 03 — Papéis */}
+        <DocsSection
+          id="papeis"
+          index={3}
+          title="Papéis"
+          description="Conjunto canónico de 9 papéis. As grafias legadas (admin, user, partner_admin) são normalizadas para estes."
+        >
+          <RoleGrid t={t} />
+        </DocsSection>
+
+        {/* 04 — Matriz de capacidades */}
+        <DocsSection
+          id="capacidades"
+          index={4}
+          title="Matriz de capacidades"
+          description="Gerada em runtime a partir de CAPABILITIES (src/lib/rbac.js) — é a mesma matriz que o RouteGuard aplica."
+        >
+          <CapabilityMatrix t={t} />
+        </DocsSection>
+
+        {/* 05 — Módulos e licenciamento */}
+        <DocsSection
+          id="modulos"
+          index={5}
+          title="Módulos e licenciamento"
+          description="Três tiers comerciais cumulativos e nove módulos, mapeados rota a rota. O gating é fail-closed."
+        >
+          <ModuleMap />
+
+          <div className="space-y-2">
+            <p>Rotas sem gating de módulo (só RBAC)</p>
+            <div className="flex flex-wrap gap-1">
+              {RBAC_ONLY_ROUTES.map((route) => (
+                <code key={route} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                  {route}
+                </code>
+              ))}
             </div>
-          ))}
-        </div>
-        <ControlCascade />
-      </DocsSection>
+          </div>
 
-      {/* 2 — Multitenancy e delegação */}
-      <DocsSection
-        id="multitenancy"
-        index={2}
-        icon={Network}
-        accent={[124, 58, 237]}
-        title="Multitenancy e delegação"
-        description="Como os dados são isolados e como se concede acesso a quem está fora do tenant."
-      >
-        <TenancyDiagram />
-      </DocsSection>
-
-      {/* 3 — Papéis */}
-      <DocsSection
-        id="papeis"
-        index={3}
-        icon={Users}
-        accent={[13, 148, 136]}
-        title="Papéis"
-        description="Conjunto canónico de 9 papéis. As grafias legadas (admin, user, partner_admin) são normalizadas para estes."
-      >
-        <RoleGrid t={t} />
-      </DocsSection>
-
-      {/* 4 — Matriz de capacidades */}
-      <DocsSection
-        id="capacidades"
-        index={4}
-        icon={ShieldCheck}
-        accent={[202, 138, 4]}
-        title="Matriz de capacidades"
-        description="Gerada em runtime a partir de CAPABILITIES (src/lib/rbac.js) — é a mesma matriz que o RouteGuard aplica."
-      >
-        <CapabilityMatrix t={t} />
-      </DocsSection>
-
-      {/* 5 — Módulos e licenciamento */}
-      <DocsSection
-        id="modulos"
-        index={5}
-        icon={Boxes}
-        accent={[8, 145, 178]}
-        title="Módulos e licenciamento"
-        description="Três tiers comerciais cumulativos e nove módulos, mapeados rota a rota. O gating é fail-closed."
-      >
-        <ModuleMap />
-
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Rotas sem gating de módulo (só RBAC)</p>
-          <div className="flex flex-wrap gap-1">
-            {RBAC_ONLY_ROUTES.map((route) => (
-              <code key={route} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                {route}
-              </code>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {tierLayers.map((layer) => (
+              <p key={layer.tier} className="text-xs text-muted-foreground">
+                <span className="font-semibold" style={{ color: rgba(layer.accent) }}>
+                  {layer.label}
+                </span>{' '}
+                — {layer.modules.length} módulos
+                {layer.added.length > 0 && ` (acrescenta ${layer.added.length})`}
+                {layer.available ? ' · comercializável' : ' · não vendido'}
+              </p>
             ))}
           </div>
-        </div>
 
-        <div className="grid gap-2 sm:grid-cols-3">
-          {tierLayers.map((layer) => (
-            <p key={layer.tier} className="text-xs text-muted-foreground">
-              <span className="font-semibold" style={{ color: rgba(layer.accent) }}>
-                {layer.label}
-              </span>{' '}
-              — {layer.modules.length} módulos
-              {layer.added.length > 0 && ` (acrescenta ${layer.added.length})`}
-              {layer.available ? ' · comercializável' : ' · não vendido'}
-            </p>
-          ))}
-        </div>
+          {/* FB7 — o catálogo é curado em código; as entidades são o espelho semeado. */}
+          <div className="space-y-2">
+            <p>Catálogo comercial: onde vive e como se altera</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {LICENSE_CATALOG.map((block) => (
+                <div key={block.title} className="rounded-lg border p-3">
+                  <p className="text-sm font-medium">{block.title}</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+                    {block.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DocsSection>
 
-        {/* FB7 — o catálogo é curado em código; as entidades são o espelho semeado. */}
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Catálogo comercial: onde vive e como se altera</p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {LICENSE_CATALOG.map((block) => (
+        {/* 06 — Áreas funcionais */}
+        <DocsSection
+          id="areas"
+          index={6}
+          title="Áreas funcionais"
+          description={`${FEATURE_AREAS.length} áreas alinhadas com os grupos do sidebar, com o módulo que licencia cada rota.`}
+        >
+          <AreaList />
+        </DocsSection>
+
+        {/* 07 — Modelo de segurança */}
+        <DocsSection
+          id="seguranca"
+          index={7}
+          title="Modelo de segurança"
+          description="Regras estruturais que sustentam o isolamento, a delegação e a integridade."
+        >
+          <img src={PAPER_ASSETS.security} alt="" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            {SECURITY_MODEL.map((block) => (
               <div key={block.title} className="rounded-lg border p-3">
                 <p className="text-sm font-medium">{block.title}</p>
-                <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+                <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-muted-foreground">
                   {block.items.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
@@ -352,107 +380,65 @@ export default function TechnicalDocs() {
               </div>
             ))}
           </div>
-        </div>
-      </DocsSection>
+        </DocsSection>
 
-      {/* 6 — Áreas funcionais */}
-      <DocsSection
-        id="areas"
-        index={6}
-        icon={Workflow}
-        accent={[219, 39, 119]}
-        title="Áreas funcionais"
-        description={`${FEATURE_AREAS.length} áreas alinhadas com os grupos do sidebar, com o módulo que licencia cada rota.`}
-      >
-        <AreaList />
-      </DocsSection>
+        {/* 08 — Modelo de dados */}
+        <DocsSection
+          id="dados"
+          index={8}
+          title="Modelo de dados"
+          description={`${totals.entities} entidades e ${totals.entityRelations} relações declaradas — campos-chave lidos do esquema de cada entidade.`}
+        >
+          <img src={PAPER_ASSETS.dataModel} alt="" />
+          <DataModelSection />
+        </DocsSection>
 
-      {/* 7 — Modelo de segurança */}
-      <DocsSection
-        id="seguranca"
-        index={7}
-        icon={ShieldCheck}
-        accent={[20, 30, 60]}
-        title="Modelo de segurança"
-        description="Regras estruturais que sustentam o isolamento, a delegação e a integridade."
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          {SECURITY_MODEL.map((block) => (
-            <div key={block.title} className="rounded-lg border p-3">
-              <p className="text-sm font-medium">{block.title}</p>
-              <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-muted-foreground">
-                {block.items.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </DocsSection>
+        {/* 09 — Arquitetura de serviços */}
+        <DocsSection
+          id="servicos"
+          index={9}
+          title="Tech stack e arquitetura de serviços"
+          description={`${STACK.length} camadas de stack, ${totals.workflows} automações agendadas, ${totals.sharedModules} módulos partilhados, ${totals.connectors} integrações e o agente de IA.`}
+        >
+          <ServiceArchitectureSection />
+        </DocsSection>
 
-      {/* 8 — Modelo de dados */}
-      <DocsSection
-        id="dados"
-        index={8}
-        icon={Database}
-        accent={[148, 163, 184]}
-        title="Modelo de dados"
-        description={`${totals.entities} entidades e ${totals.entityRelations} relações declaradas — campos-chave lidos do esquema de cada entidade.`}
-      >
-        <DataModelSection />
-      </DocsSection>
+        {/* 10 — Estrutura da API */}
+        <DocsSection
+          id="api"
+          index={10}
+          title="Estrutura da API"
+          description={`${totals.gatedRoutes + totals.rbacOnlyRoutes} rotas do frontend e ${totals.functions} funções de backend com entradas e saídas, extraídas do código.`}
+        >
+          <ApiStructureSection />
+        </DocsSection>
 
-      {/* 9 — Arquitetura de serviços */}
-      <DocsSection
-        id="servicos"
-        index={9}
-        icon={Server}
-        accent={[8, 145, 178]}
-        title="Tech stack e arquitetura de serviços"
-        description={`${STACK.length} camadas de stack, ${totals.workflows} automações agendadas, ${totals.sharedModules} módulos partilhados, ${totals.connectors} integrações e o agente de IA.`}
-      >
-        <ServiceArchitectureSection />
-      </DocsSection>
-
-      {/* 10 — Estrutura da API */}
-      <DocsSection
-        id="api"
-        index={10}
-        icon={Braces}
-        accent={[124, 58, 237]}
-        title="Estrutura da API"
-        description={`${totals.gatedRoutes + totals.rbacOnlyRoutes} rotas do frontend e ${totals.functions} funções de backend com entradas e saídas, extraídas do código.`}
-      >
-        <ApiStructureSection />
-      </DocsSection>
-
-      {/* 11 — Guia de desenvolvimento */}
-      <DocsSection
-        id="dev"
-        index={11}
-        icon={FileCode}
-        accent={[234, 88, 12]}
-        title="Guia de desenvolvimento"
-        description="Comandos e particularidades do ambiente local."
-      >
-        <div className="space-y-2">
-          {DEV_GUIDE.commands.map((command) => (
-            <div key={command.label} className="rounded-lg border p-3">
-              <p className="text-sm font-medium">{command.label}</p>
-              <pre className="mt-1 overflow-x-auto rounded bg-muted px-2 py-1 font-mono text-xs">{command.command}</pre>
-            </div>
-          ))}
-        </div>
-
-        <div>
-          <p className="mb-2 text-sm font-medium">Particularidades do ambiente local</p>
-          <ul className="list-disc space-y-1 pl-4 text-sm text-muted-foreground">
-            {DEV_GUIDE.quirks.map((quirk) => (
-              <li key={quirk}>{quirk}</li>
+        {/* 11 — Guia de desenvolvimento */}
+        <DocsSection
+          id="dev"
+          index={11}
+          title="Guia de desenvolvimento"
+          description="Comandos e particularidades do ambiente local."
+        >
+          <div className="space-y-2">
+            {DEV_GUIDE.commands.map((command) => (
+              <div key={command.label} className="rounded-lg border p-3">
+                <p className="text-sm font-medium">{command.label}</p>
+                <pre className="mt-1 overflow-x-auto rounded bg-muted px-2 py-1 font-mono text-xs">{command.command}</pre>
+              </div>
             ))}
-          </ul>
-        </div>
-      </DocsSection>
+          </div>
+
+          <div>
+            <p>Particularidades do ambiente local</p>
+            <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-muted-foreground">
+              {DEV_GUIDE.quirks.map((quirk) => (
+                <li key={quirk}>{quirk}</li>
+              ))}
+            </ul>
+          </div>
+        </DocsSection>
+      </div>
     </div>
   );
 }
