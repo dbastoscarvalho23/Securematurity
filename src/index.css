@@ -46,6 +46,10 @@
     --chart-3: var(--ankora-orange-500);
     --chart-4: var(--ankora-purple-500);
     --chart-5: 340 75% 55%;
+    /* Séries 6 e 7 — os dois frameworks que faltavam no catálogo único
+       (QNRC e ENISA). As cores decidem-se em src/lib/palette.js. */
+    --chart-6: var(--ankora-teal-500);
+    --chart-7: var(--ankora-cyan-500);
 
     /* Typography */
     --font-sans: 'Work Sans', sans-serif;
@@ -382,6 +386,18 @@
   color: var(--kb-text);
   font-family: var(--kb-font-body);
   min-height: 100vh;
+}
+
+/* Os estados partilhados (LoadingState / EmptyState / ErrorState) leem os
+   tokens semânticos globais, que seguem o tema claro/escuro da aplicação; a
+   base de conhecimento é uma superfície escura fixa, pelo que dentro dela os
+   tokens voltam a apontar para a paleta da KB. Os dois triplos são o equivalente
+   HSL de --kb-text (#F1F5F9) e de --kb-muted (#8E9BB0). */
+.kb-scope .kb-state-surface {
+  --foreground: 210 40% 98%;
+  --muted-foreground: 215 17% 62%;
+  --muted: 221 31% 15%;
+  --card: var(--kb-surface);
 }
 
 .kb-bg-canvas { background-color: var(--kb-canvas); }

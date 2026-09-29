@@ -38,6 +38,14 @@
     "document_name": {
       "type": "string",
       "description": "Original file name of the uploaded reference document"
+    },
+    "catalogue_key": {
+      "type": "string",
+      "description": "Chave do catálogo único de frameworks (→ frameworkCatalogue)"
+    },
+    "profile_id": {
+      "type": ["string", "null"],
+      "description": "Ficha «at a glance» do repositório legal (→ FrameworkProfile.id); null até o repositório estar semeado"
     }
   },
   "required": [

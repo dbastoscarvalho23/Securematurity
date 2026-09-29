@@ -1,0 +1,132 @@
+{
+  "name": "LegalDocumentVersion",
+  "type": "object",
+  "properties": {
+    "framework_code": {
+      "type": "string",
+      "description": "Código do framework no catálogo único"
+    },
+    "version_label": {
+      "type": "string",
+      "description": "Rótulo da edição (ex. \"DL 125/2025\", \"2022 (rev. 2024)\", \"v8.1\")"
+    },
+    "version_type": {
+      "type": "string",
+      "enum": ["original", "transposicao", "consolidada", "emenda", "norma_tecnica"],
+      "description": "Natureza da edição: ato original, transposição nacional, versão consolidada, emenda ou norma técnica"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["current", "superseded", "draft", "withdrawn"],
+      "description": "Estado na linha temporal: em vigor, substituída, rascunho ou retirada"
+    },
+    "supersedes_id": {
+      "type": ["string", "null"],
+      "description": "Versão que esta substitui (cadeia de substituição)"
+    },
+    "effective_from": {
+      "type": "string",
+      "description": "Início de vigência (ISO ou apenas o ano, quando a data exata não está estabelecida)"
+    },
+    "effective_to": {
+      "type": ["string", "null"],
+      "description": "Fim de vigência; preenchido quando a versão é substituída"
+    },
+    "document_title": {
+      "type": "string",
+      "description": "Título do documento oficial"
+    },
+    "legal_reference": {
+      "type": "string",
+      "description": "Referência legal completa (ex. \"Decreto-Lei n.º 125/2025\")"
+    },
+    "issuing_authority": {
+      "type": "string",
+      "description": "Entidade emissora (→ CompetentAuthority.code)"
+    },
+    "official_source": {
+      "type": "string",
+      "description": "Onde o texto oficial é publicado (ex. \"Diário da República (ELI)\", \"EUR-Lex (CELEX)\")"
+    },
+    "official_url": {
+      "type": ["string", "null"],
+      "description": "Ligação para o texto oficial na plataforma da entidade competente"
+    },
+    "mirror_url": {
+      "type": ["string", "null"],
+      "description": "Cópia arquivada na plataforma — só quando o regime de direitos de autor o permite"
+    },
+    "attachment_name": {
+      "type": ["string", "null"],
+      "description": "Nome do ficheiro da cópia arquivada"
+    },
+    "language": {
+      "type": "string",
+      "description": "Idioma do texto oficial (ex. pt-PT, en)"
+    },
+    "page_count": {
+      "type": ["number", "null"],
+      "description": "Número de páginas da cópia arquivada, quando existe"
+    },
+    "content_hash": {
+      "type": ["string", "null"],
+      "description": "SHA-256 da cópia arquivada (calculado no browser por src/lib/fileHash.js)"
+    },
+    "copyright_regime": {
+      "type": "string",
+      "enum": ["archiveable", "metadata_only"],
+      "description": "archiveable = reprodução livre com arquivo; metadata_only = só metadados, link oficial e resumo próprio"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Resumo próprio do documento (português); nunca reprodução do texto"
+    },
+    "summary_en": {
+      "type": "string",
+      "description": "Resumo próprio do documento (inglês)"
+    },
+    "change_note": {
+      "type": ["string", "null"],
+      "description": "O que mudou face à versão anterior"
+    },
+    "withdrawn_reason": {
+      "type": ["string", "null"],
+      "description": "Motivo da retirada, quando status = withdrawn"
+    },
+    "verified_at": {
+      "type": ["string", "null"],
+      "description": "Última verificação da ligação oficial e da versão em vigor"
+    },
+    "verified_by": {
+      "type": ["string", "null"],
+      "description": "Quem verificou (email do ator real)"
+    },
+    "verification_method": {
+      "type": ["string", "null"],
+      "description": "Como foi verificado: link_check (automático) ou manual"
+    },
+    "review_due_at": {
+      "type": ["string", "null"],
+      "description": "Data a partir da qual a revisão do link e da versão está vencida"
+    }
+  },
+  "required": ["framework_code", "version_label", "version_type", "status", "document_title"],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    }
+  }
+}

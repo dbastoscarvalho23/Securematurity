@@ -1,16 +1,23 @@
 /**
  * Seed catalogue used by the Frameworks panel ("initialise defaults").
- * Extracted unchanged from the legacy Settings seed routine.
+ *
+ * A identidade dos frameworks vem do catálogo único
+ * (`src/lib/frameworkCatalogue.js`) — antes era uma terceira lista mantida à
+ * mão, divergente das outras duas. As perguntas de amostra ficam aqui: são
+ * conteúdo de avaliação (layer 2), não catálogo.
  */
+import { FRAMEWORK_CATALOGUE } from './frameworkCatalogue';
 
-export const DEFAULT_FRAMEWORKS = [
-      { code: 'NIS2', name: 'NIS2 / Decreto-Lei n.º 125/2025', version: '2025', description: 'Portuguese transposition of EU NIS2 Directive', status: 'active' },
-      { code: 'ISO27001', name: 'ISO/IEC 27001:2022', version: '2022', description: 'Information security management system standard', status: 'active' },
-      { code: 'NIST_CSF', name: 'NIST Cybersecurity Framework', version: '2.0', description: 'NIST framework for managing cybersecurity risk', status: 'active' },
-      { code: 'CIS_V8', name: 'CIS Controls v8', version: '8.0', description: 'Center for Internet Security critical security controls', status: 'active' },
-      { code: 'QNRC', name: 'Quadro Nacional de Referência para a Cibersegurança', version: '1.0', description: 'Framework nacional português para gestão de risco de cibersegurança (CNCS)', status: 'active' },
-      { code: 'ENISA', name: 'ENISA Cybersecurity Framework', version: '2024', description: 'European Union Agency for Cybersecurity (ENISA) framework based on NIS2 Article 21 risk management measures and ENISA cybersecurity guidelines', status: 'active' },
-];
+/** Linhas de `Framework` criadas pelo painel de configuração. */
+export const DEFAULT_FRAMEWORKS = FRAMEWORK_CATALOGUE.map(entry => ({
+  code: entry.code,
+  name: entry.name.pt,
+  version: entry.version,
+  description: entry.description.pt,
+  status: 'active',
+  catalogue_key: entry.key,
+  profile_id: null,
+}));
 
 export const SAMPLE_QUESTIONS = [
       // NIS2

@@ -1,0 +1,160 @@
+{
+  "name": "FrameworkProfile",
+  "type": "object",
+  "properties": {
+    "framework_code": {
+      "type": "string",
+      "description": "Código do framework no catálogo único (NIS2, GDPR, ISO27001, NIST_CSF, CIS_V8, QNRC, ENISA)"
+    },
+    "catalogue_key": {
+      "type": "string",
+      "description": "Chave de catálogo (minúsculas) — vem de frameworkCatalogue"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Nome apresentado na ficha (português)"
+    },
+    "display_name_en": {
+      "type": "string",
+      "description": "Nome apresentado na ficha (inglês)"
+    },
+    "acronym": {
+      "type": "string",
+      "description": "Sigla usada em chips e listas"
+    },
+    "competent_authority_codes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Entidades competentes (→ CompetentAuthority.code)"
+    },
+    "mission": {
+      "type": "string",
+      "description": "Para que existe a norma, numa frase (português)"
+    },
+    "mission_en": {
+      "type": "string",
+      "description": "Para que existe a norma, numa frase (inglês)"
+    },
+    "scope_areas": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Áreas de incidência (português)"
+    },
+    "scope_areas_en": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Áreas de incidência (inglês)"
+    },
+    "objectives": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Objetivos declarados (português)"
+    },
+    "objectives_en": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Objetivos declarados (inglês)"
+    },
+    "applicability": {
+      "type": "string",
+      "description": "Quem está abrangido: setores, limiares de dimensão e exceções (português)"
+    },
+    "applicability_en": {
+      "type": "string",
+      "description": "Quem está abrangido (inglês)"
+    },
+    "obligations": {
+      "type": "array",
+      "description": "Obrigações nucleares, com prazo quando aplicável",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label_pt": { "type": "string" },
+          "label_en": { "type": "string" },
+          "deadline": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "penalties": {
+      "type": "string",
+      "description": "Regime sancionatório, coimas máximas e responsabilidade da direção (português)"
+    },
+    "penalties_en": {
+      "type": "string",
+      "description": "Regime sancionatório (inglês)"
+    },
+    "certifiability": {
+      "type": "string",
+      "description": "Certificável, atestável ou autorregulação — e por quem (português)"
+    },
+    "certifiability_en": {
+      "type": "string",
+      "description": "Certificável, atestável ou autorregulação (inglês)"
+    },
+    "related_frameworks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Mapeamentos para outros frameworks do catálogo"
+    },
+    "references": {
+      "type": "array",
+      "description": "Bibliografia e fontes de apoio",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string" },
+          "url": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "copyright_notice": {
+      "type": ["string", "null"],
+      "description": "Nota de direitos de autor quando a ficha é interpretação própria (norma paga)"
+    },
+    "review_cycle_months": {
+      "type": "number",
+      "default": 12,
+      "description": "Ciclo de revisão da ficha, em meses"
+    },
+    "verified_at": {
+      "type": ["string", "null"],
+      "description": "Última verificação da ficha e das fontes oficiais"
+    },
+    "verified_by": {
+      "type": ["string", "null"],
+      "description": "Quem verificou (email do ator real)"
+    },
+    "verification_method": {
+      "type": ["string", "null"],
+      "description": "Como foi verificado: link_check (automático) ou manual"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Ficha ativa; arquivar põe false e preenche archived_at"
+    },
+    "archived_at": {
+      "type": ["string", "null"],
+      "description": "Quando a ficha foi arquivada; null enquanto ativa"
+    }
+  },
+  "required": ["framework_code", "catalogue_key"],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    }
+  }
+}

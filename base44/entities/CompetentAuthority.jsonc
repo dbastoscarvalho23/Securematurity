@@ -1,0 +1,85 @@
+{
+  "name": "CompetentAuthority",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Código estável da entidade (ex. CNCS, CNPD, ISO_IEC, IPAC, NIST, CIS, ENISA)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Nome oficial em português"
+    },
+    "name_en": {
+      "type": "string",
+      "description": "Nome oficial em inglês"
+    },
+    "country": {
+      "type": "string",
+      "enum": ["PT", "EU", "INT"],
+      "description": "Âmbito territorial: Portugal, União Europeia ou internacional"
+    },
+    "role": {
+      "type": "string",
+      "enum": ["regulador", "supervisor", "auditor", "organismo_normalizador", "acreditacao"],
+      "description": "Papel face ao framework: regulador, supervisor, auditor, organismo de normalização ou acreditação"
+    },
+    "website_url": {
+      "type": "string",
+      "description": "Sítio oficial da entidade"
+    },
+    "legal_basis": {
+      "type": "string",
+      "description": "Base legal das competências da entidade (português)"
+    },
+    "legal_basis_en": {
+      "type": "string",
+      "description": "Base legal das competências da entidade (inglês)"
+    },
+    "contact": {
+      "type": ["string", "null"],
+      "description": "Contacto público da entidade"
+    },
+    "enforcement_register_url": {
+      "type": ["string", "null"],
+      "description": "Registo público de sanções; null quando a entidade não publica um registo"
+    },
+    "frameworks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Códigos dos frameworks de que esta entidade é competente"
+    },
+    "notes": {
+      "type": ["string", "null"],
+      "description": "Nota de enquadramento (português)"
+    },
+    "notes_en": {
+      "type": ["string", "null"],
+      "description": "Nota de enquadramento (inglês)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "A entidade continua competente para os frameworks que lhe estão ligados"
+    }
+  },
+  "required": ["code", "name", "country", "role"],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "master_admin"
+      }
+    }
+  }
+}

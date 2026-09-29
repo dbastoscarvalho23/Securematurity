@@ -21,8 +21,11 @@ import { phase2En, phase2Pt } from './translations-phase2';
 import { phase3En, phase3Pt } from './translations-phase3';
 import { importEn, importPt } from './translations-import';
 import { navEn, navPt } from './translations-nav';
+import { repositoryEn, repositoryPt } from './translations-repository';
 export const translations = {
   en: {
+    // legal repository (Layer 1)
+    ...repositoryEn,
     // assessments
     assessments_subtitle: 'Maturity assessments across frameworks',
     assessments_new: 'New Assessment',
@@ -443,6 +446,8 @@ export const translations = {
     workspace_select: 'Select workspace',
   },
   pt: {
+    // legal repository (Layer 1)
+    ...repositoryPt,
     // assessments
     assessments_subtitle: 'Avaliações de maturidade por framework',
     assessments_new: 'Nova Avaliação',

@@ -67,6 +67,10 @@ export const PAGE_TITLE_KEYS = {
   '/licensing': 'page_licensing',
   '/license-unavailable': 'page_license_unavailable',
   '/strategic-report': 'page_strategic_report',
+  // A ficha de framework vem antes da rota-mãe: o título resolve-se pelo
+  // primeiro prefixo que coincide, e «/knowledge-base/framework/…» também
+  // começa por «/knowledge-base».
+  '/knowledge-base/framework': 'page_framework_profile',
   '/knowledge-base': 'page_knowledge_base',
   '/training': 'nav_training',
   '/policy-attestation': 'nav_policy_attestation',

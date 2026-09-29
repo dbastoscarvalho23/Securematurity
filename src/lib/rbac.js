@@ -146,6 +146,12 @@ export const CAPABILITIES = {
   // Content catalogue — managed by platform & partner admins AND curating tenants.
   question_bank:      { view: CONTENT_MGR, create: CONTENT_MGR, edit: CONTENT_MGR, delete: CONTENT_DELETE },
   knowledge_base:     { view: ALL_VIEW, create: CONTENT_MGR, edit: CONTENT_MGR, delete: CONTENT_DELETE },
+  // Repositório legal (Layer 1 da base de conhecimento). A leitura é de todos;
+  // escrever a ficha e as versões é decisão da administração da plataforma, e a
+  // verificação periódica (links e versão em vigor) é da equipa de conteúdo,
+  // onde o analista de GRC entra como revisor — o mesmo reparte de
+  // base44/shared/legalRepository.ts e de manageLegalRepository.
+  legal_repository:   { view: ALL_VIEW, create: PLATFORM, edit: PLATFORM, verify: [...PLATFORM, 'grc_analyst'] },
 
   // ─── Compliance management (tenant-only — no platform/partner admins) ───
   compliance_journey: { view: T_EDIT, create: T_EDIT, edit: T_EDIT, delete: T_MGR },
@@ -207,6 +213,16 @@ export function can(role, action, resource) {
  */
 export function canView(role, resource) {
   return can(role, 'view', resource);
+}
+
+/** Pode editar a ficha e as versões do repositório legal (master_admin). */
+export function canManageLegalRepository(role) {
+  return can(role, 'edit', 'legal_repository');
+}
+
+/** Pode verificar as fontes oficiais do repositório (master_admin, grc_analyst). */
+export function canVerifyLegalRepository(role) {
+  return can(role, 'verify', 'legal_repository');
 }
 
 /**

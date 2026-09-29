@@ -88,6 +88,18 @@
     "is_active": {
       "type": "boolean",
       "default": true
+    },
+    "legal_refs": {
+      "type": "array",
+      "description": "Versões do repositório legal a que o artigo se refere (layer 1) — nenhum conteúdo editorial cita uma norma sem apontar para a versão concreta",
+      "items": {
+        "type": "object",
+        "properties": {
+          "framework_code": { "type": "string" },
+          "version_id": { "type": ["string", "null"] },
+          "version_label": { "type": ["string", "null"] }
+        }
+      }
     }
   },
   "required": [

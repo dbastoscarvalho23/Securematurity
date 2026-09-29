@@ -1,36 +1,44 @@
 /**
  * Knowledge Base framework metadata and display helpers.
- * Articles themselves are persisted (KnowledgeArticle entity); this file only
- * holds the framework catalogue used for filtering and colours.
+ *
+ * A lista de frameworks **não** vive aqui: lê-se do catálogo único
+ * (`src/lib/frameworkCatalogue.js`, espelho de `base44/shared/frameworkCatalogue.ts`)
+ * e a cor de `src/lib/palette.js`. Este ficheiro só acrescenta o que é
+ * apresentação da base de conhecimento — o chip tingido e os rótulos do
+ * workflow editorial.
  */
+import { FRAMEWORK_CATALOGUE, frameworkName } from './frameworkCatalogue';
+import { frameworkColor, frameworkTintColor } from './palette';
 
-/** Framework colour tokens — the single source of the KB framework palette (FC2). */
-const FRAMEWORK_TOKENS = {
-  NIS2: '--chart-1',
-  ISO27001: '--chart-2',
-  NIST_CSF: '--chart-3',
-  CIS_V8: '--chart-4',
-  GDPR: '--destructive',
-};
-const NEUTRAL_TOKEN = '--muted-foreground';
+/** Catálogo da KB indexado por código: `{ code, name, acronym, color }`. */
+export const KB_FRAMEWORKS = Object.fromEntries(
+  FRAMEWORK_CATALOGUE.map(entry => [
+    entry.code,
+    {
+      code: entry.code,
+      name: entry.name.pt,
+      acronym: entry.acronym,
+      color: frameworkColor(entry.code),
+    },
+  ]),
+);
 
-export const KB_FRAMEWORKS = {
-  NIS2: { code: 'NIS2', name: 'NIS2 / DL 125/2025', color: `hsl(var(${FRAMEWORK_TOKENS.NIS2}))` },
-  ISO27001: { code: 'ISO27001', name: 'ISO/IEC 27001', color: `hsl(var(${FRAMEWORK_TOKENS.ISO27001}))` },
-  NIST_CSF: { code: 'NIST_CSF', name: 'NIST CSF', color: `hsl(var(${FRAMEWORK_TOKENS.NIST_CSF}))` },
-  CIS_V8: { code: 'CIS_V8', name: 'CIS Controls v8', color: `hsl(var(${FRAMEWORK_TOKENS.CIS_V8}))` },
-  GDPR: { code: 'GDPR', name: 'GDPR', color: `hsl(var(${FRAMEWORK_TOKENS.GDPR}))` },
-};
+/** Códigos do catálogo, pela ordem de apresentação. */
+export const KB_FRAMEWORK_CODES = FRAMEWORK_CATALOGUE.map(entry => entry.code);
+
+/** Nome apresentado de um framework (PT por omissão). */
+export function getFrameworkName(code, lang = 'pt') {
+  return frameworkName(code, lang);
+}
 
 /** Get the framework colour for an article (neutral when it has no framework). */
 export function getArticleFrameworkColor(article) {
-  const fw = KB_FRAMEWORKS[article?.framework];
-  return fw?.color || `hsl(var(${NEUTRAL_TOKEN}))`;
+  return KB_FRAMEWORKS[article?.framework]?.color || frameworkColor('__unknown__');
 }
 
 /** Tinted chip background — the framework token at chip opacity. */
 export function getArticleFrameworkTint(article) {
-  return `hsl(var(${FRAMEWORK_TOKENS[article?.framework] || NEUTRAL_TOKEN}) / 0.14)`;
+  return frameworkTintColor(article?.framework);
 }
 
 /** Article statuses and the labels used by the editorial panel. */

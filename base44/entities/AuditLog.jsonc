@@ -104,7 +104,15 @@
         "question_import_published",
         "question_import_discarded",
         "question_import_reverted",
-        "test_conditions_seeded"
+        "test_conditions_seeded",
+        "legal_repository_seeded",
+        "legal_profile_upserted",
+        "legal_profile_archived",
+        "legal_version_added",
+        "legal_version_superseded",
+        "legal_version_verified",
+        "legal_version_withdrawn",
+        "legal_article_linked"
       ],
       "description": "Action type"
     },
