@@ -31,7 +31,27 @@ Deno.serve(async (req) => {
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { type, task, previousTask } = await req.json();
+  const { type, task: payloadTask, previousTask } = await req.json();
+
+  // Do NOT trust the caller-supplied task object: fetch the real record from
+  // the database and verify the caller is authorized to trigger its
+  // notifications, so no user can forge emails to arbitrary recipients.
+  const taskId = payloadTask?.id;
+  if (!taskId) return Response.json({ error: 'task id is required' }, { status: 400 });
+  let task = null;
+  try {
+    task = await base44.asServiceRole.entities.Task.get(taskId);
+  } catch {
+    task = null;
+  }
+  if (!task) return Response.json({ error: 'task not found' }, { status: 404 });
+
+  const userCustomerId = (user.data && user.data.customer_id) || user.customer_id;
+  const isAuthorized = user.role === 'admin' ||
+    task.assigned_to === user.email ||
+    task.customer_id === userCustomerId;
+  if (!isAuthorized) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
   const assignedTo = task.assigned_to;
 
   if (!assignedTo) return Response.json({ skipped: 'no assigned_to email' });

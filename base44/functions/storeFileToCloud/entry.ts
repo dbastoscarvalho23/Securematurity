@@ -117,10 +117,25 @@ export default async function (req) {
     const body = await req.json();
     const fileUrl = body.file_url;
     const fileName = safeFileName(body.file_name);
-    const customerId = body.customer_id || user.customer_id || (user.data && user.data.customer_id);
 
+    // Only an admin may target another customer's storage configuration;
+    // everyone else is pinned to their own customer.
+    const userCustomerId = (user.data && user.data.customer_id) || user.customer_id;
+    const customerId = user.role === 'admin' ? (body.customer_id || userCustomerId) : userCustomerId;
+
+    // SSRF guard: only fetch files hosted in the app's own storage (Base44).
+    // Never fetch arbitrary or internal URLs from the server.
     if (!fileUrl || !/^https:\/\//i.test(fileUrl)) {
       return Response.json({ error: 'A valid file_url is required' }, { status: 400 });
+    }
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(fileUrl);
+    } catch {
+      return Response.json({ error: 'A valid file_url is required' }, { status: 400 });
+    }
+    if (!/(^|\.)base44\.com$/i.test(parsedUrl.hostname)) {
+      return Response.json({ error: 'file_url must point to the app storage' }, { status: 400 });
     }
 
     // Which third-party providers are enabled platform-wide. A disabled provider

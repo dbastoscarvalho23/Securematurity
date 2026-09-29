@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { AUTOMATION_SECRET } from '../../shared/automationSecret.ts';
 
 const ENTITY_MAP = {
   Task: 'Task',
@@ -36,6 +37,28 @@ Deno.serve(async (req) => {
     }
     if (!real) {
       return Response.json({ skipped: true, reason: 'entity not found' });
+    }
+
+    // Authorization: entity automations pass the shared automation secret;
+    // manual calls require an authenticated user authorized over the record.
+    // Anonymous callers are rejected before any service-role write.
+    const hasAutomationSecret =
+      req.headers.get('x-automation-secret') === AUTOMATION_SECRET ||
+      payload?.args?.automation_secret === AUTOMATION_SECRET ||
+      payload?.automation_secret === AUTOMATION_SECRET;
+    if (!hasAutomationSecret) {
+      let user = null;
+      try {
+        user = await base44.auth.me();
+      } catch {
+        user = null;
+      }
+      const userCustomerId = user && ((user.data && user.data.customer_id) || user.customer_id);
+      const isAuthorized = !!user &&
+        (user.role === 'admin' || real.customer_id === userCustomerId);
+      if (!isAuthorized) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     const notifications = [];

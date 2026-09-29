@@ -31,7 +31,27 @@ Deno.serve(async (req) => {
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { type, risk, previousRisk } = await req.json();
+  const { type, risk: payloadRisk, previousRisk } = await req.json();
+
+  // Do NOT trust the caller-supplied risk object: fetch the real record from
+  // the database and verify the caller is authorized to trigger its
+  // notifications, so no user can forge emails to arbitrary recipients.
+  const riskId = payloadRisk?.id;
+  if (!riskId) return Response.json({ error: 'risk id is required' }, { status: 400 });
+  let risk = null;
+  try {
+    risk = await base44.asServiceRole.entities.RiskItem.get(riskId);
+  } catch {
+    risk = null;
+  }
+  if (!risk) return Response.json({ error: 'risk not found' }, { status: 404 });
+
+  const userCustomerId = (user.data && user.data.customer_id) || user.customer_id;
+  const isAuthorized = user.role === 'admin' ||
+    risk.owner_email === user.email ||
+    risk.customer_id === userCustomerId;
+  if (!isAuthorized) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
   const score = (risk.impact || 0) * (risk.likelihood || 0);
   const level = scoreLevel(score);
   const ownerEmail = risk.owner_email;
