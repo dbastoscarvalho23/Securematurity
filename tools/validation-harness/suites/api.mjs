@@ -518,6 +518,22 @@ export async function runApiSuite(report) {
   // e usar o mesmo nome para o filtro deixava o histórico a devolver zero linhas.
   const area7 = "FM1/FM2 oferta e preço";
   const offer = (body) => invoke("manageCommercialOffer", { actor: ids.master_admin, body });
+
+  // ─── Estado que os casos deste grupo assumem (OP-B2) ───────────────
+  // O provisionamento regista a oferta e a tabela vigentes **à data de início da
+  // subscrição** (`commercialContext`, em `provisionTenantLicense`), não à data de
+  // hoje: `started_date` é uma data do seed (um mês antes da data de referência),
+  // pelo que uma oferta publicada hoje não é a vigente nessa data. Sem compor este
+  // estado, o grupo media o que ficou em vigor da execução anterior (a oferta v1 do
+  // seed, a tabela de demonstração) em vez da versão e do preço que ele próprio
+  // publicou — foi assim que FM2.3 e FM1.5 deixaram de medir o comportamento e
+  // passaram a medir a sobra da ronda anterior. A preparação publica a oferta e a
+  // tabela desta ronda com vigência desde a data de início da subscrição do cliente
+  // de verificação, ficando esta versão como a única vigente tanto à data da
+  // subscrição como hoje (publicar retira as versões anteriores).
+  const contextLicences = await invoke("listTenantLicenses", { actor: ids.master_admin });
+  const contextTenant = (contextLicences.data?.tenants || []).find((tenant) => tenant.id === tenants.tenant_alfa) || {};
+  const contextFrom = contextTenant.subscription?.started_date || new Date().toISOString().split("T")[0];
   const priceEntries = [
     { tier_code: "core", amount_cents: 19000, included_seats: 5, extra_seat_amount_cents: 2500, annual_discount_pct: 10, included_ai_calls: 1000 },
     { tier_code: "professional", amount_cents: 39000, included_seats: 15, extra_seat_amount_cents: 2000, annual_discount_pct: 12, included_ai_calls: 5000 },
@@ -598,21 +614,29 @@ export async function runApiSuite(report) {
       : { ok: false, detail: `esperado 422 offer_version_not_published, obtido ${res.status} ${JSON.stringify(res.data).slice(0, 120)}` };
   });
 
+  let offerD1Code = "";
+
   await report.case("FM1.2", area7, "publicar a versão da oferta define a vigência", async () => {
-    const res = await offer({ action: "publish_offer_version", id: offerD1, reason: "Entrada em vigor" });
+    // A vigência é o início da subscrição do cliente de verificação (ver a
+    // preparação do grupo): é essa a data em que o provisionamento lê a oferta
+    // vigente, e publicar aqui é o que garante que a versão medida é a desta ronda.
+    const res = await offer({ action: "publish_offer_version", id: offerD1, reason: "Entrada em vigor", effective_from: contextFrom });
     if (res.status !== 200) return statusOf(res, 200, "");
     const version = res.data.offer_version;
+    offerD1Code = version.code || "";
     return version.status === "published" && !!version.effective_from
-      ? { ok: true, detail: `200 — ${version.code} publicada, vigência desde ${version.effective_from}` }
+      ? { ok: true, detail: `200 — ${version.code} publicada, vigência desde ${version.effective_from} (início da subscrição)` }
       : { ok: false, detail: JSON.stringify({ status: version.status, from: version.effective_from }) };
   });
 
   await report.case("FM2.2", area7, "publicar a tabela de preços contra a oferta publicada", async () => {
-    const res = await offer({ action: "publish_price_table", id: priceA, reason: "Entrada em vigor do preço A" });
+    // Mesma vigência da versão: a tabela tem de estar em vigor na data em que o
+    // provisionamento a lê (o início da subscrição), não só a partir de hoje.
+    const res = await offer({ action: "publish_price_table", id: priceA, reason: "Entrada em vigor do preço A", effective_from: contextFrom });
     if (res.status !== 200) return statusOf(res, 200, "");
     const table = res.data.price_table;
     return table.status === "published" && !!table.effective_from
-      ? { ok: true, detail: `200 — tabela publicada, vigência desde ${table.effective_from}` }
+      ? { ok: true, detail: `200 — tabela publicada, vigência desde ${table.effective_from} (início da subscrição)` }
       : { ok: false, detail: `esperado publicada: ${JSON.stringify(table).slice(0, 140)}` };
   });
 
@@ -690,10 +714,14 @@ export async function runApiSuite(report) {
     });
     if (res.status !== 200) return statusOf(res, 200, "");
     const sub = res.data.subscription || {};
-    const ok = !!sub.offer_version_id && !!sub.offer_version_code && sub.price_table_id === priceA && sub.price_amount_cents === 69000;
+    // A versão e a tabela medidas são as que este grupo publicou com vigência
+    // desde o início da subscrição (ver a preparação do grupo), pelo que o
+    // resultado não depende do que ficou em vigor da execução anterior.
+    const ok = !!sub.offer_version_id && sub.offer_version_code === offerD1Code &&
+      sub.price_table_id === priceA && sub.price_amount_cents === 69000;
     return ok
-      ? { ok: true, detail: `200 — subscrição com ${sub.offer_version_code}, tabela e ${sub.price_amount_cents} cêntimos do tier advanced` }
-      : { ok: false, detail: `registo inesperado: ${JSON.stringify({ v: sub.offer_version_code, t: sub.price_table_id, c: sub.price_amount_cents }).slice(0, 160)}` };
+      ? { ok: true, detail: `200 — subscrição com ${sub.offer_version_code} (desta ronda), tabela e ${sub.price_amount_cents} cêntimos do tier advanced` }
+      : { ok: false, detail: `registo inesperado: ${JSON.stringify({ v: sub.offer_version_code, expected: offerD1Code, t: sub.price_table_id, c: sub.price_amount_cents }).slice(0, 180)}` };
   });
 
   await report.case("FM1.5", area7, "só se contrata o pack que a oferta em vigor põe à venda", async () => {

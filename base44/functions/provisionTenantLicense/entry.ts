@@ -731,18 +731,35 @@ async function setQuotas(base44: any, user: any, customer: any, body: any) {
   if (reason.error) return Response.json({ error: reason.error }, { status: 422 });
 
   const defaults = await quotaDefaults(base44, subscription);
+  const seatsUsed = subscription.seats_used || 0;
 
-  const seatLimit = body.seat_limit === undefined
+  let seatLimit = body.seat_limit === undefined
     ? (defaults.included_seats ?? subscription.seat_limit ?? 0)
     : Number(body.seat_limit);
   if (!Number.isFinite(seatLimit) || seatLimit < 0 || seatLimit > MAX_SEATS) {
     return Response.json({ error: `seat_limit tem de estar entre 0 e ${MAX_SEATS}.` }, { status: 422 });
   }
-  if (seatLimit < (subscription.seats_used || 0)) {
-    return Response.json(
-      { error: "A quota de lugares não pode ser inferior aos assentos já em uso.", seats_used: subscription.seats_used || 0 },
-      { status: 422 },
-    );
+
+  // Quota por omissão inaplicável (OP-M1): o incluído da tabela em vigor pode
+  // ficar abaixo do que o cliente já usa — antes isso recusava a operação e
+  // deixava-a sem caminho. Quando o valor é o **por omissão** (o utilizador não
+  // pediu um número), a quota é elevada ao valor em uso e a operação conclui com
+  // aviso, que a consola mostra; pedir **explicitamente** abaixo do usado mantém
+  // a recusa, agora com o que fazer.
+  let seatQuotaRaised: { from: number; to: number } | null = null;
+  if (seatLimit < seatsUsed) {
+    if (body.seat_limit !== undefined) {
+      return Response.json(
+        {
+          error: `A quota de lugares não pode ser inferior aos assentos já em uso (${seatsUsed}). Retire lugares primeiro — o cliente tem de libertar assentos até ${seatLimit} — ou deixe o valor por omissão, que é elevado ao incluído em uso.`,
+          code: "seat_limit_below_usage",
+          seats_used: seatsUsed,
+        },
+        { status: 422 },
+      );
+    }
+    seatQuotaRaised = { from: seatLimit, to: seatsUsed };
+    seatLimit = seatsUsed;
   }
 
   const aiQuota = body.ai_quota_monthly === undefined
@@ -769,6 +786,19 @@ async function setQuotas(base44: any, user: any, customer: any, body: any) {
     quota_source_price_table_id: defaults.price_table_id || null,
   };
 
+  // O aviso acompanha a operação que o provocou, com o antes/depois numérico —
+  // não é um alerta genérico de página. O histórico de licenciamento regista a
+  // alteração do `seat_limit` a partir dos dois estados (antes/depois).
+  const warning = seatQuotaRaised
+    ? {
+        code: "seat_quota_raised_to_usage",
+        field: "seat_limit",
+        from: seatQuotaRaised.from,
+        to: seatQuotaRaised.to,
+        message: `O incluído da tabela em vigor (${seatQuotaRaised.from} lugares) é inferior aos ${seatQuotaRaised.to} em uso: a quota foi elevada ao valor em uso.`,
+      }
+    : null;
+
   const beforeState = await licenseState(base44, customer.id);
   const updated = await base44.asServiceRole.entities.TenantSubscription.update(subscription.id, patch);
 
@@ -777,18 +807,19 @@ async function setQuotas(base44: any, user: any, customer: any, body: any) {
     ai_quota_monthly: patch.ai_quota_monthly,
     quota_warn_pct: patch.quota_warn_pct,
     source_price_table_id: patch.quota_source_price_table_id,
+    ...(warning ? { adjusted: { from: warning.from, to: warning.to } } : {}),
   });
   await recordChange(base44, user, {
     action: "set_quotas",
     customer,
     entityType: "TenantSubscription",
     entityId: subscription.id,
-    reason: reason.reason,
+    reason: warning ? `${reason.reason} — quota elevada ao valor em uso (${warning.from} → ${warning.to})` : reason.reason,
     beforeState,
     afterState: await licenseState(base44, customer.id),
   });
 
-  return await respond(base44, customer.id, updated, { defaults });
+  return await respond(base44, customer.id, updated, { defaults, warning });
 }
 
 /**
