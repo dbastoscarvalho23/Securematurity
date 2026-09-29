@@ -32,25 +32,16 @@
 .docs-paper .chapter { position: relative; z-index: 1; }
 
 /* ── Cabeçalho ───────────────────────────────────────────────────────────── */
+/* Coluna única: a folha é tipografia, números e dados — sem fotografia de topo. */
 .docs-paper .mast {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
-  align-items: center;
+  grid-template-columns: 1fr;
+  gap: 22px;
   padding: 24px 0 38px;
   border-bottom: 1px solid #d8d0c1;
   animation: arrive .7s cubic-bezier(.2, .8, .2, 1) both;
 }
 .docs-paper .logo { width: 154px; height: 35px; object-fit: contain; }
-.docs-paper .hero {
-  display: block;
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-  border-radius: 2px;
-  box-shadow: 0 15px 36px rgba(28, 35, 43, .12);
-  margin-top: 28px;
-}
 .docs-paper .eyebrow,
 .docs-paper .meta-label {
   font-size: 11px;
@@ -207,15 +198,6 @@
   margin: 0;
 }
 .docs-paper .chapter-content { border-top: 1px solid #e6dfd3; padding-top: 18px; }
-.docs-paper .chapter-content img {
-  display: block;
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-  border: 1px solid #e0d8c9;
-  box-shadow: 0 8px 18px rgba(25, 40, 59, .07);
-  margin: 0 0 17px;
-}
 .docs-paper .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .docs-paper .meta-item { border-left: 1px solid #c8b98f; padding: 6px 12px; }
 .docs-paper .meta-value {
@@ -279,7 +261,7 @@
 /* Ecrãs estreitos: a folha continua legível sem perder a grelha. */
 @media (max-width: 900px) {
   .docs-paper { padding: 24px 20px 60px; }
-  .docs-paper .mast { grid-template-columns: 1fr; gap: 24px; padding: 16px 0 28px; }
+  .docs-paper .mast { gap: 24px; padding: 16px 0 28px; }
   .docs-paper .title { font-size: 34px; }
   .docs-paper .totals { grid-template-columns: repeat(2, 1fr); row-gap: 14px; }
   .docs-paper .total { border-right: 0; padding: 0; }

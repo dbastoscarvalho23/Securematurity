@@ -45,13 +45,9 @@ import '@/components/docs/papelDourado.css';
  * todos os dados continuam a vir do modelo acima.
  */
 
-/** Imagens da folha (biblioteca de recursos da app). */
+/** Logótipo da folha (biblioteca de recursos da app) — a folha não usa imagens. */
 const PAPER_ASSETS = {
   logo: 'https://media.base44.com/images/public/6ab5373e7f8f586c80cb9ed8/ef04d314c_a1-logo-light.svg',
-  hero: 'https://media.base44.com/images/public/6ab5373e7f8f586c80cb9ed8/9683fc468_generated_b2502811.jpg',
-  multitenancy: 'https://media.base44.com/images/public/6ab5373e7f8f586c80cb9ed8/5609ea5ed_generated_fc327653.jpg',
-  security: 'https://media.base44.com/images/public/6ab5373e7f8f586c80cb9ed8/0ed2ef793_generated_51cbe253.jpg',
-  dataModel: 'https://media.base44.com/images/public/6ab5373e7f8f586c80cb9ed8/a18594de3_generated_b174c5f0.jpg',
 };
 
 const SECTIONS = [
@@ -183,10 +179,7 @@ export default function TechnicalDocs() {
   return (
     <div className="docs-paper">
       <header className="mast">
-        <div>
-          <img className="logo" src={PAPER_ASSETS.logo} alt="" />
-          <img className="hero" src={PAPER_ASSETS.hero} alt="" />
-        </div>
+        <img className="logo" src={PAPER_ASSETS.logo} alt="" />
         <div>
           <div className="eyebrow">Documento interno de engenharia</div>
           <p className="notice">{DOCS_META.scope}</p>
@@ -269,7 +262,6 @@ export default function TechnicalDocs() {
           title="Multitenancy e delegação"
           description="Como os dados são isolados e como se concede acesso a quem está fora do tenant."
         >
-          <img src={PAPER_ASSETS.multitenancy} alt="" />
           <div className="line-art mb-5">
             <span />
             <span />
@@ -367,7 +359,6 @@ export default function TechnicalDocs() {
           title="Modelo de segurança"
           description="Regras estruturais que sustentam o isolamento, a delegação e a integridade."
         >
-          <img src={PAPER_ASSETS.security} alt="" />
           <div className="grid gap-3 sm:grid-cols-2">
             {SECURITY_MODEL.map((block) => (
               <div key={block.title} className="rounded-lg border p-3">
@@ -389,7 +380,6 @@ export default function TechnicalDocs() {
           title="Modelo de dados"
           description={`${totals.entities} entidades e ${totals.entityRelations} relações declaradas — campos-chave lidos do esquema de cada entidade.`}
         >
-          <img src={PAPER_ASSETS.dataModel} alt="" />
           <DataModelSection />
         </DocsSection>
 
