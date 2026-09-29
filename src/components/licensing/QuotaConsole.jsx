@@ -49,15 +49,40 @@ export default function QuotaConsole() {
   const signals = data?.signals || [];
   const defaults = data?.quota_source_pricing || null;
 
+  // O incluído do nível na tabela em vigor: é o que permite dizer na consola que a
+  // quota subiu ao valor em uso porque a tabela ficava aquém (OP-M1).
+  const includedSeatsFor = (tenant) => {
+    const entry = (defaults?.entries || []).find((row) => row.tier_code === tenant?.tier_code);
+    return entry?.included_seats ?? null;
+  };
+  const seatsElevatedFrom = (tenant) => {
+    const included = includedSeatsFor(tenant);
+    return included !== null && included !== undefined && (tenant?.seats?.quota ?? 0) > included
+      ? included
+      : null;
+  };
+
   const saveQuotas = useMutation({
     mutationFn: (payload) => base44.functions.invoke('provisionTenantLicense', payload),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      const body = result?.data || result;
       queryClient.invalidateQueries({ queryKey: ['quota-overview'] });
       queryClient.invalidateQueries({ queryKey: ['tenant-licenses'] });
       queryClient.invalidateQueries({ queryKey: ['license-changes'] });
       setDialog(null);
       setError('');
-      toast.success(t('quota_saved'));
+      // O aviso da operação diz o que mudou e porquê, em vez de um «guardado» que
+      // esconde que a quota contratada não é a da tabela.
+      const warning = body?.warning;
+      if (warning) {
+        toast.warning(
+          t('quota_raised_notice')
+            .replace('{from}', String(warning.from))
+            .replace('{to}', String(warning.to)),
+        );
+      } else {
+        toast.success(t('quota_saved'));
+      }
     },
     onError: (err) => {
       const message = err?.response?.data?.error || err?.data?.error || err?.message;
@@ -163,9 +188,18 @@ export default function QuotaConsole() {
                       {t('quota_no_charge')}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {tenant.quota_source_price_table_id
-                        ? t('quota_source_from_price')
-                        : t('quota_source_manual')}
+                      <div className="flex flex-col gap-0.5">
+                        <span>
+                          {tenant.quota_source_price_table_id
+                            ? t('quota_source_from_price')
+                            : t('quota_source_manual')}
+                        </span>
+                        {seatsElevatedFrom(tenant) !== null && (
+                          <span className="text-status-warning">
+                            {t('quota_source_elevated').replace('{n}', String(seatsElevatedFrom(tenant)))}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       {tenant.subscription_id ? (

@@ -1011,7 +1011,15 @@ export async function runApiSuite(report) {
     return statusOf(res, 422, "422 — o motivo é obrigatório nas quotas");
   });
 
-  await report.case("FM4.2", area8, "as quotas por omissão vêm da tabela de preços em vigor", async () => {
+  // Os lugares por omissão são o maior entre o incluído da tabela em vigor e o que
+  // o cliente já usa (OP-M1): o incluído abaixo do uso recusava a operação e
+  // deixava-a sem caminho, pelo que passa a subir ao valor em uso com aviso. O
+  // caso mede as duas coisas — a proveniência na tabela e a elevação — sem
+  // depender de o tenant estar acima ou abaixo do incluído, e guarda o valor
+  // resultante para o caso seguinte.
+  let quotaSeats = null;
+
+  await report.case("FM4.2", area8, "as quotas por omissão vêm da tabela em vigor e sobem ao valor em uso", async () => {
     const res = await provision({
       action: "set_quotas",
       customer_id: tenants.tenant_alfa,
@@ -1019,26 +1027,52 @@ export async function runApiSuite(report) {
     });
     if (res.status !== 200) return statusOf(res, 200, "");
     const sub = res.data.subscription || {};
-    const fromTable = sub.quota_source_price_table_id === priceD &&
-      sub.seat_limit === 5 &&
+    const defaults = res.data.defaults || {};
+    const used = Number(sub.seats_used) || 0;
+    const includedSeats = defaults.included_seats;
+    const expectedSeats = Math.max(includedSeats ?? 0, used);
+    quotaSeats = expectedSeats;
+
+    // A proveniência é a tabela que este grupo publicou (priceD) e o incluído do
+    // nível Core nela: 5 lugares e 1000 chamadas de IA.
+    const provenance = sub.quota_source_price_table_id === priceD &&
+      includedSeats === 5 &&
       sub.ai_quota_monthly === 1000 &&
       (sub.quota_warn_pct || 0) > 0;
-    return fromTable
-      ? { ok: true, detail: `200 — ${sub.seat_limit} lugares e ${sub.ai_quota_monthly} chamadas de IA, limiar ${sub.quota_warn_pct}% (da tabela ${res.data.defaults?.price_table_label || priceD})` }
-      : { ok: false, detail: `quotas inesperadas: ${JSON.stringify({ seats: sub.seat_limit, ai: sub.ai_quota_monthly, warn: sub.quota_warn_pct, src: sub.quota_source_price_table_id, expected: priceD }).slice(0, 180)}` };
+    const seatsOk = sub.seat_limit === expectedSeats;
+    // O aviso acompanha exactamente a operação que o provocou — presente quando o
+    // incluído fica aquém do uso, ausente quando o incluído já chega.
+    const warning = res.data.warning || null;
+    const warningOk = expectedSeats > (includedSeats ?? 0)
+      ? warning?.code === "seat_quota_raised_to_usage" && warning.from === includedSeats && warning.to === expectedSeats
+      : !warning;
+
+    if (!provenance || !seatsOk || !warningOk) {
+      return { ok: false, detail: `quotas inesperadas: ${JSON.stringify({ seats: sub.seat_limit, expected: expectedSeats, included: includedSeats, used, ai: sub.ai_quota_monthly, warn: sub.quota_warn_pct, src: sub.quota_source_price_table_id, expectedSrc: priceD, warning }).slice(0, 220)}` };
+    }
+    return {
+      ok: true,
+      detail: warning
+        ? `200 — incluído da tabela (${includedSeats} de ${defaults.price_table_label || priceD}) elevado aos ${expectedSeats} em uso, com aviso; ${sub.ai_quota_monthly} chamadas de IA, limiar ${sub.quota_warn_pct}%`
+        : `200 — ${sub.seat_limit} lugares e ${sub.ai_quota_monthly} chamadas de IA, limiar ${sub.quota_warn_pct}% (da tabela ${defaults.price_table_label || priceD}), sem elevação`,
+    };
   });
 
   await report.case("FM4.3", area8, "a leitura das quotas resolve o âmbito no servidor e não bloqueia ninguém", async () => {
     const res = await provision({ action: "quota_overview" });
     if (res.status !== 200) return statusOf(res, 200, "");
     const tenant = (res.data.tenants || []).find((row) => row.id === tenants.tenant_alfa) || {};
-    const quota = tenant.seats?.quota === 5 && tenant.ai?.quota === 1000;
+    // A leitura devolve o que FM4.2 gravou — nunca uma quota abaixo do consumo,
+    // que é o invariante da elevação.
+    const quota = tenant.seats?.quota === quotaSeats &&
+      tenant.seats?.quota >= tenant.seats?.consumed &&
+      tenant.ai?.quota === 1000;
     const notBlocking = ["ok", "warning", "excess"].includes(tenant.seats?.level);
     const refused = await provision({ action: "quota_overview" }, ids.grc_analyst_alfa);
     if (!quota || !notBlocking || refused.status !== 403) {
-      return { ok: false, detail: JSON.stringify({ quota, notBlocking, refused: refused.status, tenant: tenant.seats }).slice(0, 200) };
+      return { ok: false, detail: JSON.stringify({ quota, expectedSeats: quotaSeats, notBlocking, refused: refused.status, tenant: tenant.seats }).slice(0, 200) };
     }
-    return { ok: true, detail: "200 — quotas contratadas legíveis no âmbito; 403 ao analista GRC" };
+    return { ok: true, detail: `200 — ${tenant.seats.quota} lugares e ${tenant.ai.quota} chamadas de IA legíveis no âmbito; 403 ao analista GRC` };
   });
 
   await report.case("FM4.4", area8, "o registo das sinalizações do período é idempotente", async () => {

@@ -31,6 +31,14 @@ export default function QuotaDialog({ tenant, defaults, pending, error, onSubmit
   const [reason, setReason] = useState('');
   const [localError, setLocalError] = useState('');
 
+  // O incluído da tabela abaixo do uso é a razão por que o valor por omissão sobe
+  // ao valor em uso (OP-M1) — dito antes de guardar, não depois de a quota mudar.
+  const elevation = defaults?.included_seats !== null &&
+    defaults?.included_seats !== undefined &&
+    (tenant?.seats?.consumed || 0) > defaults.included_seats
+    ? { from: defaults.included_seats, to: tenant.seats.consumed }
+    : null;
+
   const useDefaults = () => {
     setSeats(defaults?.included_seats !== null && defaults?.included_seats !== undefined ? String(defaults.included_seats) : '');
     setAiQuota(
@@ -111,6 +119,15 @@ export default function QuotaDialog({ tenant, defaults, pending, error, onSubmit
               )}
             </p>
           </div>
+
+          {elevation && (
+            <p className="flex items-start gap-2 text-xs text-status-warning">
+              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              {t('quota_defaults_elevated')
+                .replace('{from}', String(elevation.from))
+                .replace('{to}', String(elevation.to))}
+            </p>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="quota-reason">{t('commercial_reason')}</Label>

@@ -291,6 +291,7 @@ export const licenseEn = {
   quota_source_from_table: 'From price table {table}',
   quota_source_from_price: 'From the price table in force',
   quota_source_manual: 'Set by hand',
+  quota_source_elevated: 'Raised to usage (table: {n} seats)',
   quota_level_ok: 'Within quota',
   quota_level_warning: 'Near the quota',
   quota_level_excess: 'Over quota',
@@ -306,8 +307,12 @@ export const licenseEn = {
   quota_field_warn_help: 'From this share of the quota on, the consumption is flagged.',
   quota_use_defaults: 'Use the price table values',
   quota_defaults_note: 'Defaults from price table {table}: {seats} seats and {ai} AI calls.',
+  quota_defaults_elevated:
+    'The seats in the price table ({from}) are below the {to} in use: leaving the default raises the quota to the usage.',
   quota_submit: 'Save quotas',
   quota_saved: 'Contracted quotas updated.',
+  quota_raised_notice:
+    'The seats included in the table ({from}) were below the {to} in use: the quota was raised to the usage.',
   quota_error: 'Could not save the contracted quotas.',
   quota_record_signals: 'Record period flags',
   quota_signals_title: 'Flags recorded in the period',
@@ -653,6 +658,7 @@ export const licensePt = {
   quota_source_from_table: 'Da tabela de preços {table}',
   quota_source_from_price: 'Da tabela de preços em vigor',
   quota_source_manual: 'Definida à mão',
+  quota_source_elevated: 'Elevada ao valor em uso (tabela: {n} lugares)',
   quota_level_ok: 'Dentro da quota',
   quota_level_warning: 'Perto da quota',
   quota_level_excess: 'Acima da quota',
@@ -668,8 +674,12 @@ export const licensePt = {
   quota_field_warn_help: 'A partir desta fatia da quota, o consumo passa a ser sinalizado.',
   quota_use_defaults: 'Usar os valores da tabela de preços',
   quota_defaults_note: 'Valores por omissão da tabela {table}: {seats} lugares e {ai} chamadas de IA.',
+  quota_defaults_elevated:
+    'O incluído da tabela ({from}) é inferior aos {to} lugares em uso: deixar o valor por omissão eleva a quota ao valor em uso.',
   quota_submit: 'Guardar quotas',
   quota_saved: 'Quotas contratadas actualizadas.',
+  quota_raised_notice:
+    'O incluído da tabela ({from}) era inferior aos {to} em uso: a quota foi elevada ao valor em uso.',
   quota_error: 'Não foi possível guardar as quotas contratadas.',
   quota_record_signals: 'Registar sinalizações do período',
   quota_signals_title: 'Sinalizações do período',
