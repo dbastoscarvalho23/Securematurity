@@ -102,7 +102,7 @@ export const OPTIMIZATIONS = [
       'Carregar a documentação técnica só quando a página abre (import dinâmico): o texto das entidades, funções, automações e agente deixa de entrar no bundle de quem nunca visita /documentacao-tecnica.',
     evidence: [
       "src/lib/repoInventory.js:18-34 — import.meta.glob(..., { query: '?raw', eager: true }) sobre base44/entities, base44/functions, base44/workflows e base44/agents",
-      'O inventário conta 58 entidades e 42 funções lidas em texto no build',
+      'O inventário conta as entidades e funções do repositório (61 e 44 à data da ronda 5) lidas em texto no build',
       'Os consumidores são /documentacao-tecnica (master_admin) e o exportador do PDF',
     ],
   },
@@ -151,23 +151,7 @@ export const OPTIMIZATIONS = [
       '/licensing — 12 linhas de assinaturas e nenhum campo de pesquisa na página (grep por Input/placeholder: 0)',
       'listTenantLicenses devolve todos os clientes do âmbito, sem filtros nem cursor',
     ],
-  },
-  {
-    id: 'OP-B2',
-    area: 'administracao',
-    category: 'melhoria',
-    impact: 'alto',
-    effort: 'baixo',
-    title: 'O harness não isola o estado entre execuções',
-    opportunity:
-      'Preparar o estado que os casos assumem (oferta e tabela de preços em vigor conhecidas) ou marcá-los como dependentes do estado inicial: hoje dois casos verdes na primeira execução ficam vermelhos na segunda, e o vermelho não distingue defeito de sobra da ronda anterior.',
-    evidence: [
-      'npm run validate:harness — 87 casos: 82 ok, 4 falhas, 1 não verificável localmente',
-      'FM2.3 falha à segunda execução: espera a tabela publicada nesta ronda (69000) e encontra a que ficou em vigor da anterior (56500)',
-      'FM1.5 responde 422 addon_not_for_sale porque a oferta em vigor é a que ficou da execução anterior',
-    ],
-  },
-  {
+  },  {
     id: 'OP-B3',
     area: 'administracao',
     category: 'melhoria',
@@ -224,7 +208,7 @@ export const OPTIMIZATIONS = [
     opportunity:
       'Fechar a cobertura de aria-label/title em todos os botões só com ícone: a correção da FC6 chegou às ações que o achado nomeava, não a todas.',
     evidence: [
-      '63 ocorrências de size="icon" em src/ contra 32 ocorrências de aria-label em todos os componentes e páginas',
+      '64 ocorrências de size="icon" em src/ contra 39 ocorrências de aria-label em todos os componentes e páginas',
       'src/components/agents/ChatPanel.jsx:52 — botão de enviar, sem nome',
       'src/components/assessments/AssessmentResults.jsx:178 — voltar para a lista, sem nome',
       'src/components/compliance/ChecklistItemRow.jsx:141 — editar o item, sem nome',
@@ -251,11 +235,11 @@ export const OPTIMIZATIONS = [
     category: 'optimizacao',
     impact: 'medio',
     effort: 'medio',
-    title: 'Vinte e quatro famílias de tradução',
+    title: 'Vinte e cinco famílias de tradução',
     opportunity:
       'Consolidar as famílias num módulo por área e por idioma, com um só ponto de junção: cada ecrã novo deixa de acrescentar mais um ficheiro translations-*.',
     evidence: [
-      'src/lib/translations*.js — 24 ficheiros (phase1, phase3, phase7, nav, license, seats, …)',
+      'src/lib/translations*.js — 25 ficheiros (phase1, phase3, phase7, nav, license, seats, …)',
       'O mesmo tipo de texto vive em famílias diferentes conforme a ronda que o introduziu',
     ],
   },
@@ -283,28 +267,12 @@ export const OPTIMIZATIONS = [
     opportunity:
       'Reutilizar o renderizador de markdown que a aplicação já traz, para títulos, listas, ligações e ênfase deixarem de sair como texto cru.',
     evidence: [
-      'src/pages/KnowledgeBase.jsx:38-40 — trata apenas «# », «## » e «- »',
+      'src/pages/KnowledgeBase.jsx:53-54 — trata apenas «# » e «## »',
       'react-markdown já é dependência e já é usado em src/components/agents/MessageBubble.jsx',
     ],
   },
 
   // ─── Gestão comercial ───────────────────────────────────────
-  {
-    id: 'OP-M1',
-    area: 'comercial',
-    category: 'optimizacao',
-    impact: 'alto',
-    effort: 'baixo',
-    title: 'Quota por omissão inaplicável a um cliente acima do incluído',
-    opportunity:
-      'Quando a quota da tabela em vigor fica abaixo dos assentos já em uso, aplicar o incluído elevado ao usado com aviso — ou dizer na consola o que fazer — em vez de recusar com 422 e deixar a operação sem caminho.',
-    evidence: [
-      'Harness FM4.2: set_quotas sem valores responde 422 «A quota de lugares não pode ser inferior aos assentos já em uso» (seats_used 15, incluído da tabela 5)',
-      'FM4.3 falha por consequência: afirma a quota 5/1000 que FM4.2 nunca chegou a gravar',
-      'base44/functions/provisionTenantLicense/entry.ts:743 — a verificação que recusa',
-    ],
-    ref: 'FM4',
-  },
   {
     id: 'OP-M2',
     area: 'comercial',
@@ -350,22 +318,6 @@ export const OPTIMIZATIONS = [
     ],
     ref: 'FM5',
   },
-  {
-    id: 'OP-M5',
-    area: 'comercial',
-    category: 'nova_funcionalidade',
-    impact: 'alto',
-    effort: 'baixo',
-    title: 'Simulador de mudança de nível ou de pack',
-    opportunity:
-      'Um «o que muda se…» na consola: compõe o cálculo que change_tier e set_addon já fazem (retiradas necessárias, preço e quota resultantes) e mostra o antes/depois sem escrever nada — a decisão comercial deixa de ser ensaio e erro.',
-    evidence: [
-      'change_tier devolve as retiradas necessárias em 422 removals_required sem aplicar nada',
-      'set_addon valida a venda do pack na oferta em vigor antes de contratar',
-      'Nenhuma superfície mostra a mudança antes de a aplicar',
-    ],
-  },
-
   // ─── Segurança e RBAC ───────────────────────────────────────
   {
     id: 'OP-S1',

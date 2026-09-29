@@ -104,7 +104,11 @@ export default function ValidationReport() {
             achados abertos são o desenho proposto, não trabalho feito. A ronda 4 acrescenta a cada
             área a subsecção «Optimizações possíveis»: pontos de optimização, melhorias e
             funcionalidades novas identificados nos mesmos percursos, classificados por impacto ×
-            esforço (quick win, projeto ou candidato) segundo uma decisão única do modelo. A página
+            esforço (quick win, projeto ou candidato) segundo uma decisão única do modelo. A ronda 5 audita a fidelidade deste relatório:
+            confrontou cada afirmação com o código e com o harness (88 casos, 87 ok, 0 falhas, 1 não
+            verificável) e corrigiu o que estava desatualizado — o repositório legal (Layer 1), já entregue,
+            as contagens do harness, os metadados de revisão e três optimizações entretanto realizadas —
+            mantendo como residual apenas o que exige backend real. A página
             deve ser retirada quando a validação por identidade real estiver concluída.
           </p>
         </div>
