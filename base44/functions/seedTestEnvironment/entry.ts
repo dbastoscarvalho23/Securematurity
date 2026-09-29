@@ -7,81 +7,54 @@ import {
   computeScores,
   completionType,
 } from "../../shared/assessmentScoring.ts";
+import { resolveActor } from "../../shared/devActor.ts";
+import {
+  ASSESSMENT_MODE,
+  CONFIRMATION,
+  CORE_DELEGATION_MODULES,
+  CUSTOMERS,
+  DOMAINS,
+  MARKER,
+  PARTNERS,
+  dayOffset,
+  instantOffset,
+} from "../../shared/testSeedData.ts";
+import {
+  contractedCents,
+  resetSeededAreas,
+  seedCommercialOffer,
+  seedCustomerAreas,
+  seedPlatformAreas,
+} from "../../shared/testSeedAreas.ts";
 
 /**
- * seedTestEnvironment — creates the test conditions required by the Core NIS2
- * validation (two tenants, two partners, delegation scenarios, a NIS2 assessment
- * with partial coverage).
+ * seedTestEnvironment — repõe o ambiente de demonstração e validação.
  *
- * SAFETY: this function writes records and must only run on an isolated,
- * discardable environment (the local in-memory dev backend), never on real data.
- * It therefore requires an explicit confirmation token and refuses to run
- * without it. It is idempotent: everything is found or created by its marker, so
- * re-running never duplicates records.
+ * Uma só invocação deixa a plataforma inteira povoada: o portefólio de clientes
+ * com contratos em estados distintos, a topologia de parceiros e delegações que
+ * o harness de validação exige e, por cliente, a jornada NIS2 (avaliação,
+ * lacunas, plano de ação, riscos, evidências, documentos, incidentes,
+ * fornecedores, formação) mais quotas, consumo de IA, anúncios e trilha de
+ * auditoria. Serve para demonstrar e validar de ponta a ponta sem trabalho
+ * manual — e para que os ecrãs não apareçam vazios numa sessão nova (os dados
+ * locais são em memória e perdem-se a cada reinício).
+ *
+ * SAFETY: esta função escreve registos e só pode correr num ambiente isolado e
+ * descartável (o backend local em memória), nunca sobre dados reais. Exige por
+ * isso um token de confirmação explícito e o papel de dono da plataforma.
+ *
+ * REPOSIÇÃO DETERMINÍSTICA: antes de criar, remove o que uma execução anterior
+ * semeou (marcador `[TESTE]` e tudo o que pertença a um cliente semeado) e
+ * recria a partir de uma definição fixa — duas execuções produzem o mesmo
+ * estado final. Todas as datas derivam de uma única data de referência
+ * (`reference_date`, por omissão hoje). Nenhum registo que não seja do seed é
+ * tocado; volumes e dados de infraestrutura nunca são apagados.
  *
  * Known limitation of the local backend: `User` create/delete are ignored, so
  * the test identities themselves cannot be created here — the scenarios are
  * attached to the calling user instead (see the returned `test_conditions`).
+ * Algumas entidades que o emulador recusa criar ficam registadas em `skipped`.
  */
-const CONFIRMATION = "create-test-conditions";
-const MARKER = "[TESTE]";
-
-const PARTNERS = [
-  { key: "partner_alfa", name: `${MARKER} Parceiro Alfa` },
-  { key: "partner_beta", name: `${MARKER} Parceiro Beta` },
-];
-
-const CUSTOMERS = [
-  // Alfa: delegação de edição + subscrição Core → jornada completa
-  { key: "tenant_alfa", name: `${MARKER} Cliente Alfa`, nif: "900000001", sector: "technology", partner: "partner_alfa", subscription: true },
-  // Beta: delegação de edição + subscrição Core → conclusão parcial
-  { key: "tenant_beta", name: `${MARKER} Cliente Beta`, nif: "900000002", sector: "energy", partner: "partner_beta", subscription: true },
-  // Gama: delegação apenas de leitura → tentativa de escrita deve falhar
-  { key: "tenant_gama", name: `${MARKER} Cliente Gama`, nif: "900000003", sector: "healthcare", partner: "partner_alfa", subscription: true },
-  // Delta: delegação de edição mas sem subscrição → módulo não licenciado
-  { key: "tenant_delta", name: `${MARKER} Cliente Delta`, nif: "900000004", sector: "manufacturing", partner: "partner_beta", subscription: false },
-  // Epsilon e Zeta existem para os estados negativos da delegação: cada um só é
-  // alcançável pela sua delegação, uma expirada e outra revogada, para que os
-  // três estados obrigatórios (activa / expirada / revogada) sejam distinguíveis.
-  { key: "tenant_epsilon", name: `${MARKER} Cliente Epsilon`, nif: "900000005", sector: "transport", partner: "partner_alfa", subscription: true },
-  { key: "tenant_zeta", name: `${MARKER} Cliente Zeta`, nif: "900000006", sector: "water", partner: "partner_beta", subscription: true },
-  // Eta: a única delegação é de edição mas nomeia apenas um módulo, para que a
-  // recusa venha da delegação (F4) e não da licença — tem, por isso, subscrição.
-  { key: "tenant_eta", name: `${MARKER} Cliente Eta`, nif: "900000007", sector: "digital", partner: "partner_beta", subscription: true },
-];
-
-/**
- * Módulos que as delegações operacionais de teste autorizam.
- *
- * F4: uma delegação só autoriza os módulos que nomeia e uma lista vazia não
- * autoriza nenhum, pelo que as delegações que devem permitir operar têm de
- * nomear o conjunto Core. Sem isto, os cenários de delegação não autorizariam
- * nada e a suíte de validação estaria a testar a recusa, não a permissão.
- */
-const CORE_DELEGATION_MODULES = [
-  "nis2_journey",
-  "assessments_action_plan",
-  "documents_evidence",
-  "reporting_audit_prep",
-];
-
-/** Assessment coverage mode per tenant. */
-const ASSESSMENT_MODE: Record<string, string> = {
-  tenant_alfa: "full",
-  tenant_beta: "partial",
-  tenant_gama: "full",
-  tenant_delta: "full",
-};
-
-const DOMAINS = [
-  { domain: "Governance", domain_pt: "Governação" },
-  { domain: "Risk Management", domain_pt: "Gestão de Risco" },
-  { domain: "Incident Handling", domain_pt: "Gestão de Incidentes" },
-  { domain: "Supply Chain", domain_pt: "Cadeia de Abastecimento" },
-];
-
-import { resolveActor } from "../../shared/devActor.ts";
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -105,9 +78,31 @@ Deno.serve(async (req) => {
       );
     }
 
-    const summary: any = { marker: MARKER, created: {}, reused: {}, removed: {} };
+    // Data de referência única: todas as datas do seed derivam dela, para que
+    // duas execuções produzam exactamente o mesmo estado.
+    const referenceDate = /^\d{4}-\d{2}-\d{2}$/.test(String(body.reference_date || ""))
+      ? String(body.reference_date)
+      : new Date().toISOString().split("T")[0];
 
-    // ─── Workspaces (2 partners) ──────────────────────────────
+    const summary: any = {
+      marker: MARKER,
+      reference_date: referenceDate,
+      created: {},
+      reused: {},
+      removed: {},
+      areas: {},
+      skipped: {},
+    };
+
+    // ─── 0. Reposição: remover o que uma execução anterior semeou ────
+    const known = await base44.asServiceRole.entities.Customer.list("name", 1000);
+    const seededIds = (known || [])
+      .filter((row: any) => `${row.name || ""} ${row.notes || ""}`.includes(MARKER))
+      .map((row: any) => row.id);
+    summary.removed.customers_in_scope = seededIds.length;
+    await resetSeededAreas(base44, summary, seededIds);
+
+    // ─── 1. Workspaces (2 partners) ──────────────────────────────
     const workspaces: Record<string, any> = {};
     for (const partner of PARTNERS) {
       workspaces[partner.key] = await ensureWorkspace(base44, summary, {
@@ -117,7 +112,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ─── Customers + their workspace (one isolation boundary each) ───
+    // ─── 2. Customers + their workspace (one isolation boundary each) ───
     const customers: Record<string, any> = {};
     for (const spec of CUSTOMERS) {
       const parent = workspaces[spec.partner];
@@ -133,55 +128,102 @@ Deno.serve(async (req) => {
       await linkWorkspaceToCustomer(base44, summary, workspace, customer);
     }
 
-    // ─── NIS2 framework, controls and question bank ───────────
+    // ─── 3. NIS2 framework, controls and question bank ───────────
     const framework = await ensureFramework(base44, summary);
     const questions = await ensureQuestions(base44, summary, framework.id);
     await ensureControls(base44, summary, framework.id, questions);
 
-    // ─── Core subscription per tenant (Delta intentionally left unlicensed) ───
-    for (const key of Object.keys(customers)) {
-      if (customers[key].subscription === false) {
-        await ensureNoSubscription(base44, summary, customers[key]);
-        continue;
-      }
-      await ensureSubscription(base44, summary, customers[key]);
-    }
+    // ─── 4. Oferta e preço em vigor (contexto comercial) ─────────
+    // Antes das subscrições: é a tabela publicada que dá valor contratado à
+    // carteira e de onde as quotas por omissão são lidas.
+    const offer = await seedCommercialOffer(base44, summary, {
+      referenceDate,
+      actorEmail: user.email || "",
+      actorRole: normalizeRole(user.role),
+      questions,
+      offer: null,
+    });
 
-    // ─── Assessments (completed: full coverage / partial coverage) ───────
-    const assessments: Record<string, any> = {};
-    for (const key of Object.keys(customers)) {
-      assessments[key] = await ensureAssessment(
+    // ─── 5. Subscriptions: o estado declarado de cada cliente ────
+    for (const spec of CUSTOMERS) {
+      await ensureSubscription(
         base44,
         summary,
-        customers[key],
-        questions,
-        framework,
-        ASSESSMENT_MODE[key] || "full",
-        user,
+        spec,
+        customers[spec.key],
+        { email: user.email || "", role: normalizeRole(user.role) },
+        offer,
+        referenceDate,
       );
     }
 
-    // ─── Delegation scenarios ─────────────────────────────────
-    const assignments = await ensureAssignments(base44, summary, user, customers);
+    // ─── 6. Assessments (completed: full coverage / partial coverage) ───
+    const assessments: Record<string, any> = {};
+    for (const spec of CUSTOMERS) {
+      if (!ASSESSMENT_MODE[spec.key]) continue;
+      assessments[spec.key] = await ensureAssessment(
+        base44,
+        summary,
+        customers[spec.key],
+        questions,
+        framework,
+        ASSESSMENT_MODE[spec.key],
+        user,
+        referenceDate,
+      );
+    }
 
-    // ─── Audit trail of the seeding itself ────────────────────
+    // ─── 7. Delegation scenarios ─────────────────────────────────
+    const assignments = await ensureAssignments(base44, summary, user, customers, referenceDate);
+
+    // ─── 8. Áreas operacionais de cada cliente ───────────────────
+    const ctx = {
+      referenceDate,
+      actorEmail: user.email || "",
+      actorRole: normalizeRole(user.role),
+      questions,
+      offer,
+    };
+    for (const [index, spec] of CUSTOMERS.entries()) {
+      await seedCustomerAreas(base44, summary, ctx, spec, customers[spec.key], assessments[spec.key], index);
+    }
+
+    // ─── 9. Dados de plataforma (anúncios) ───────────────────────
+    await seedPlatformAreas(base44, summary, ctx, Object.values(customers).slice(0, CUSTOMERS.length));
+
+    // ─── 10. Trilha do próprio seed ──────────────────────────────
+    const anchor = customers[CUSTOMERS[0].key];
     await base44.asServiceRole.entities.AuditLog.create({
-      customer_id: customers.tenant_alfa.id,
+      customer_id: anchor.id,
       action: "test_conditions_seeded",
       user_email: user.email || "",
       entity_type: "TestEnvironment",
       entity_id: "",
-      details: JSON.stringify({ marker: MARKER, customers: Object.keys(customers) }),
+      details: JSON.stringify({
+        marker: MARKER,
+        reference_date: referenceDate,
+        customers: CUSTOMERS.length,
+        offer_version: offer?.offerCode || null,
+      }),
     });
+
+    const contracted = CUSTOMERS.filter((spec) => spec.license !== "none").reduce(
+      (total, spec) => total + contractedCents(offer, spec),
+      0,
+    );
 
     return Response.json({
       ...summary,
+      contracted_cents_monthly: contracted,
       test_conditions: {
         partners: Object.fromEntries(Object.entries(workspaces).map(([k, w]) => [k, w.id])),
         tenants: Object.fromEntries(Object.entries(customers).map(([k, c]) => [k, c.id])),
         assessments: Object.fromEntries(Object.entries(assessments).map(([k, a]) => [k, a.id])),
         framework_id: framework.id,
         question_ids: questions.map((q) => q.id),
+        offer_version_id: offer?.offerVersionId || null,
+        price_table_id: offer?.priceTableId || null,
+        portfolio_size: CUSTOMERS.length,
         assignments,
         // Documented limitation: the local backend ignores User create/delete.
         identities_note:
@@ -212,6 +254,9 @@ async function ensureCustomer(base44: any, summary: any, spec: any, workspaceId:
     sector: spec.sector,
     status: "active",
     workspace_id: workspaceId,
+    num_employees: spec.employees,
+    contact_email: `contacto.${spec.nif}@teste.pt`,
+    website: `https://www.${spec.key.replace("tenant_", "")}.teste.pt`,
     notes: `${MARKER} Dados de teste — ambiente isolado.`,
   };
   if (existing.length > 0) {
@@ -317,48 +362,132 @@ async function ensureControls(base44: any, summary: any, frameworkId: string, qu
   else summary.reused["framework_controls:NIS2"] = existing.length;
 }
 
-async function ensureSubscription(base44: any, summary: any, customer: any) {
-  const existing = await base44.asServiceRole.entities.TenantSubscription.filter({ customer_id: customer.id });
-  if (existing.length > 0) {
-    summary.reused[`subscription:${customer.key}`] = existing[0].id;
-    return existing[0];
+/**
+ * Recreate the customer's subscription so the declared state holds.
+ *
+ * The state has to be ENFORCED, not merely written once: the licence catalogue
+ * (`seedLicenseData`) subscribes every customer it finds and a previous run may
+ * have provisioned or suspended the tenant — the declared condition would then
+ * silently not hold and the validation cases would measure leftover data instead
+ * of the behaviour under test. Everything the seed declared (subscription,
+ * module exceptions and standards) is removed first.
+ */
+async function ensureSubscription(
+  base44: any,
+  summary: any,
+  spec: any,
+  customer: any,
+  actor: { email: string; role: string },
+  offer: any,
+  referenceDate: string,
+) {
+  for (const entity of ["TenantSubscription", "TenantModule", "TenantStandard", "TenantEntitlementOverride"]) {
+    const rows = await base44.asServiceRole.entities[entity].filter({ customer_id: customer.id });
+    for (const row of rows || []) {
+      await base44.asServiceRole.entities[entity].delete(row.id);
+      summary.removed[entity] = (summary.removed[entity] || 0) + 1;
+    }
   }
-  const created = await base44.asServiceRole.entities.TenantSubscription.create({
+
+  if (spec.license === "none") return null;
+
+  const started = dayOffset(referenceDate, -30 * (spec.startedMonthsAgo || 1));
+  const expires = spec.expiresInDays ? dayOffset(referenceDate, spec.expiresInDays) : null;
+  const closed = spec.license === "cancelled";
+  const priced = !spec.unpriced;
+
+  const data = {
     customer_id: customer.id,
     customer_name: customer.name,
-    tier_code: "core",
-    status: "active",
-    started_date: new Date().toISOString().split("T")[0],
-    seat_limit: 25,
-    notes: `${MARKER} Subscrição Core do ambiente de teste.`,
+    tier_code: spec.tier,
+    status: closed ? "cancelled" : spec.license,
+    started_date: started,
+    expires_date: expires,
+    seat_limit: spec.seats,
+    seats_used: Math.max(1, Math.round(spec.seats * 0.6)),
+    monthly_usage_count: 0,
+    monthly_usage_reset_date: `${dayOffset(referenceDate, 0).slice(0, 7)}-01`,
+    ai_quota_monthly: spec.aiQuota,
+    quota_warn_pct: 80,
+    grace_until: spec.license === "suspended" ? dayOffset(referenceDate, -10) : null,
+    renewal_count: (spec.startedMonthsAgo || 0) > 12 ? 1 : 0,
+    last_renewed_at: (spec.startedMonthsAgo || 0) > 12 ? dayOffset(referenceDate, -330) : null,
+    closed_at: closed ? instantOffset(referenceDate, -8, 11) : null,
+    closed_reason: closed ? `${MARKER} Contrato encerrado no ambiente de teste.` : null,
+    offer_version_id: priced ? offer?.offerVersionId || null : null,
+    offer_version_code: priced ? offer?.offerCode || null : null,
+    price_table_id: priced ? offer?.priceTableId || null : null,
+    price_amount_cents: priced ? contractedCents(offer, spec) : null,
+    notes: `${MARKER} Subscrição de demonstração (${spec.license}).`,
+  };
+
+  const created = await base44.asServiceRole.entities.TenantSubscription.create(data);
+  summary.created[`subscription:${spec.key}`] = created.id;
+  summary.areas.subscriptions = (summary.areas.subscriptions || 0) + 1;
+
+  const snapshot = (patch: any) => ({
+    subscription: {
+      tier_code: spec.tier,
+      status: data.status,
+      seat_limit: spec.seats,
+      seats_used: data.seats_used,
+      started_date: started,
+      expires_date: expires,
+      notes: data.notes,
+      grace_until: data.grace_until,
+      renewal_count: data.renewal_count,
+      last_renewed_at: data.last_renewed_at,
+      closed_at: data.closed_at,
+      closed_reason: data.closed_reason,
+      ...patch,
+    },
   });
-  summary.created[`subscription:${customer.key}`] = created.id;
+
+  const log = (action: string, before: any, after: any, reason: string, fields: string[]) =>
+    base44.asServiceRole.entities.LicenseChangeLog.create({
+      customer_id: customer.id,
+      customer_name: customer.name,
+      action,
+      actor_email: actor.email,
+      actor_role: actor.role,
+      entity_type: "TenantSubscription",
+      entity_id: created.id,
+      reason,
+      changed_fields: fields,
+      before,
+      after,
+    });
+
+  await log("create", null, snapshot({}), `${MARKER} Subscrição criada pelo seed.`, ["*"]);
+  if (spec.license === "suspended") {
+    await log(
+      "suspend",
+      snapshot({ status: "active" }),
+      snapshot({ status: "suspended" }),
+      `${MARKER} Suspensão declarada no ambiente de teste.`,
+      ["status", "grace_until"],
+    );
+  }
+  if (spec.license === "expired") {
+    await log(
+      "update",
+      snapshot({ status: "active", expires_date: dayOffset(referenceDate, 30) }),
+      snapshot({ status: "expired" }),
+      `${MARKER} Vigência terminada no ambiente de teste.`,
+      ["status", "expires_date"],
+    );
+  }
+  if (closed) {
+    await log(
+      "close",
+      snapshot({ status: "active", closed_at: null, closed_reason: null }),
+      snapshot({ status: "cancelled" }),
+      `${MARKER} Fecho do contrato no ambiente de teste.`,
+      ["status", "closed_at", "closed_reason"],
+    );
+  }
+
   return created;
-}
-
-/**
- * Delta is declared as "no subscription" so the module gating can be validated.
- * That condition has to be ENFORCED, not merely skipped at creation: the licence
- * catalogue (`seedLicenseData`) subscribes every customer it finds, and a
- * previous run may have provisioned Delta — the declared state would then
- * silently not hold and the provisioning cases would measure leftover data
- * instead of the behaviour under test.
- */
-async function ensureNoSubscription(base44: any, summary: any, customer: any) {
-  const subscriptions = await base44.asServiceRole.entities.TenantSubscription.filter({ customer_id: customer.id });
-  for (const subscription of subscriptions) {
-    await base44.asServiceRole.entities.TenantSubscription.delete(subscription.id);
-  }
-
-  // Module exceptions belong to the subscription: clear them too, so a tenant
-  // declared unlicensed has no licence path at all.
-  const overrides = await base44.asServiceRole.entities.TenantModule.filter({ customer_id: customer.id });
-  for (const override of overrides) {
-    await base44.asServiceRole.entities.TenantModule.delete(override.id);
-  }
-
-  const removed = subscriptions.length + overrides.length;
-  if (removed > 0) summary.removed[`subscription:${customer.key}`] = removed;
 }
 
 /**
@@ -378,6 +507,7 @@ async function ensureAssessment(
   framework: any,
   coverageMode: string,
   user: any,
+  referenceDate: string,
 ) {
   const existing = await base44.asServiceRole.entities.Assessment.filter({ customer_id: customer.id });
   let assessment = existing.find((a: any) => (a.title || "").startsWith(MARKER));
@@ -389,7 +519,7 @@ async function ensureAssessment(
       customer_id: customer.id,
       customer_name: customer.name,
       title: `${MARKER} Diagnóstico NIS2 — ${customer.name}`,
-      period: "2025-Q4",
+      period: `${referenceDate.slice(0, 4)}-Q4`,
       frameworks: ["NIS2"],
       question_ids: questions.map((q) => q.id),
       status: "draft",
@@ -399,12 +529,13 @@ async function ensureAssessment(
 
     const total = questions.length;
     const answeredCount = coverageMode === "full" ? total : Math.max(1, Math.round(total * 0.6));
+    const offset = customer.maturityOffset || 0;
 
     for (let index = 0; index < questions.length; index += 1) {
       const q = questions[index];
       let answer: any = null;
       if (index < answeredCount) {
-        answer = { answer_state: "answered", maturity_level: (index % 5) + 1 };
+        answer = { answer_state: "answered", maturity_level: ((index + offset) % 5) + 1 };
       } else if (coverageMode === "partial" && index === answeredCount) {
         // Not applicable: no maturity level at all (the field is a number).
         answer = { answer_state: "not_applicable" };
@@ -439,7 +570,7 @@ async function ensureAssessment(
   const methodology = buildMethodology(assessment, questions, [
     { code: framework.code, version: framework.version || null },
   ]);
-  const completedAt = new Date().toISOString();
+  const completedAt = instantOffset(referenceDate, -45, 17);
 
   const completed = await base44.asServiceRole.entities.Assessment.update(assessment.id, {
     status: "completed",
@@ -466,8 +597,14 @@ async function ensureAssessment(
 }
 
 /** Delegation scenarios: approved / pending / expired / revoked / module-restricted. */
-async function ensureAssignments(base44: any, summary: any, user: any, customers: Record<string, any>) {
-  const inDays = (days: number) => new Date(Date.now() + days * 86400000).toISOString();
+async function ensureAssignments(
+  base44: any,
+  summary: any,
+  user: any,
+  customers: Record<string, any>,
+  referenceDate: string,
+) {
+  const inDays = (days: number) => instantOffset(referenceDate, days, 12);
   const scenarios = [
     {
       key: "approved_edit_tenant_alfa",
