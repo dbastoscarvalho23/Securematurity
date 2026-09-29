@@ -54,7 +54,10 @@ const SECURITY_AREA = {
   description:
     'Validação da ronda anterior: papéis e capacidades, isolamento entre tenants, onboarding, delegações e licenciamento (F1–F15).',
   accent: [220, 38, 38],
-  summary: VERDICT.summary,
+  // O parecer completo — com as contagens do harness — vive uma só vez no cartão
+  // «Parecer de prontidão do Core»; a área aponta-o em vez de o repetir.
+  summary:
+    'As correções de F1–F15 foram implementadas em código (escopo de carteira do parceiro, âmbito de módulos da delegação, guarda de auto-escalada, RLS canónica, licenciamento fail-closed) e as verificações de papel do backend foram uniformizadas; o harness multi-identidade expôs e fechou quatro defeitos. O parecer completo desta área — as contagens do harness e o que continua por confirmar — está no cartão «Parecer de prontidão do Core», acima, e não se repete aqui.',
   solid: VERDICT.positives,
   gaps: VERDICT.blockers,
 };

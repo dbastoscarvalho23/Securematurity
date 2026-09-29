@@ -1,11 +1,12 @@
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as SonnerToaster } from 'sonner'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
-import { ThemeProvider } from '@/lib/ThemeContext';
+import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import MaintenanceGuard from '@/components/layout/MaintenanceGuard';
 import Login from '@/pages/Login';
@@ -155,6 +156,27 @@ const AuthenticatedApp = () => {
 };
 
 
+/**
+ * Contentor dos avisos da aplicação (FC4).
+ *
+ * A app chama `toast` de sonner em 60 ficheiros, mas só o `Toaster` do tema
+ * antigo estava montado: nenhuma mensagem de sucesso ou de erro aparecia — a
+ * recusa de uma escrita durante a simulação de papel era invisível. O contentor
+ * do sonner passa a estar montado ao lado do antigo, que fica para as duas
+ * páginas que usam `useToast` (FrameworkGuide, PlatformOperations).
+ */
+function AppToaster() {
+  const { theme } = useTheme();
+  return (
+    <SonnerToaster
+      position="top-right"
+      richColors
+      closeButton
+      theme={theme === 'dark' || theme === 'light' ? theme : 'system'}
+    />
+  );
+}
+
 function App() {
 
   return (
@@ -166,6 +188,7 @@ function App() {
             <AuthenticatedApp />
           </Router>
           <Toaster />
+          <AppToaster />
         </QueryClientProvider>
       </LanguageProvider>
       </ThemeProvider>
