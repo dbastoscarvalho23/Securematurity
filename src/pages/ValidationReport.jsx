@@ -101,8 +101,11 @@ export default function ValidationReport() {
             executado — a Fase 1 (quick wins de apresentação, FC1/FC2/FC3/FC5/FC6) está aplicada e o
             estado de cada achado, com o que falta, está no próprio cartão. A área «Gestão comercial»
             (FM1–FM6) é a auditoria dos fluxos comerciais e o plano das capacidades em falta: os cinco
-            achados abertos são o desenho proposto, não trabalho feito. A página deve ser retirada
-            quando a validação por identidade real estiver concluída.
+            achados abertos são o desenho proposto, não trabalho feito. A ronda 4 acrescenta a cada
+            área a subsecção «Optimizações possíveis»: pontos de optimização, melhorias e
+            funcionalidades novas identificados nos mesmos percursos, classificados por impacto ×
+            esforço (quick win, projeto ou candidato) segundo uma decisão única do modelo. A página
+            deve ser retirada quando a validação por identidade real estiver concluída.
           </p>
         </div>
       </div>

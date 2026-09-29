@@ -34,6 +34,13 @@ import {
   ROUND_META,
 } from './platformAssessmentData';
 import { TODO_LIST } from './validationTodos';
+import {
+  EFFORT_LEVELS,
+  IMPACT_LEVELS,
+  OPTIMIZATION_BANDS,
+  OPTIMIZATION_CATEGORIES,
+  OPTIMIZATIONS,
+} from './platformOptimizationData';
 
 /**
  * Área dos achados da ronda anterior. Os F1–F15 ficam intactos em
@@ -196,8 +203,56 @@ export function buildReportModel() {
       statusCounts: areaStatusCounts(area.id),
       // Nota 0–5 da área, calculada dos seus achados (nunca escrita à mão).
       maturity: maturityForFindings(findings),
+      // Oportunidades da área — a subsecção «Optimizações possíveis» — com a
+      // faixa impacto × esforço já resolvida aqui.
+      optimizations: optimizationsByArea(area.id),
     };
   });
+}
+
+// ─── Optimizações possíveis ─────────────────────────────────────
+
+/** Metadados de uma entrada de uma lista de níveis, por id. */
+function metaById(list, id) {
+  return list.find((entry) => entry.id === id) || null;
+}
+
+/**
+ * Classificação impacto × esforço de uma oportunidade — a única decisão do
+ * relatório: esforço alto é projeto; impacto alto com esforço baixo é quick win;
+ * o resto é candidato. Não é escrita na entrada nem na página, pelo que mudar um
+ * impacto muda a etiqueta em todo o relatório no mesmo instante.
+ */
+export function optimizationBand(optimization) {
+  if (optimization.effort === 'alto') return metaById(OPTIMIZATION_BANDS, 'projeto');
+  if (optimization.impact === 'alto' && optimization.effort === 'baixo') {
+    return metaById(OPTIMIZATION_BANDS, 'quick_win');
+  }
+  return metaById(OPTIMIZATION_BANDS, 'candidato');
+}
+
+/** Uma oportunidade com os metadados que a página mostra. */
+function normalizeOptimization(item) {
+  return {
+    ...item,
+    impactMeta: metaById(IMPACT_LEVELS, item.impact),
+    effortMeta: metaById(EFFORT_LEVELS, item.effort),
+    categoryMeta: metaById(OPTIMIZATION_CATEGORIES, item.category),
+    band: optimizationBand(item),
+  };
+}
+
+/** Oportunidades de uma área, na ordem do ficheiro de dados. */
+export function optimizationsByArea(areaId) {
+  return OPTIMIZATIONS.filter((item) => item.area === areaId).map(normalizeOptimization);
+}
+
+/** Quantas oportunidades há em cada faixa, em todas as áreas. */
+export function optimizationBandCounts() {
+  return OPTIMIZATION_BANDS.reduce((acc, band) => {
+    acc[band.id] = OPTIMIZATIONS.filter((item) => optimizationBand(item).id === band.id).length;
+    return acc;
+  }, {});
 }
 
 // ─── Escala de maturidade 0–5 ───────────────────────────────────
@@ -334,4 +389,11 @@ export {
   countByStatus,
   severityMeta,
   statusMeta,
+  // Os metadados das oportunidades vêm do ficheiro de dados; as funções que as
+  // classificam e agrupam já saem deste módulo pela sua própria declaração.
+  EFFORT_LEVELS,
+  IMPACT_LEVELS,
+  OPTIMIZATION_BANDS,
+  OPTIMIZATION_CATEGORIES,
+  OPTIMIZATIONS,
 };

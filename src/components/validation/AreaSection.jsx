@@ -3,6 +3,7 @@ import { CheckCircle2, Palette, Settings2, ShieldAlert, TrendingUp, Workflow, XC
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EmptyState from '@/components/shared/EmptyState';
+import AreaOptimizations from './AreaOptimizations';
 import FindingCard from './FindingCard';
 import MaturityBadge from './MaturityBadge';
 import { cn } from '@/lib/utils';
@@ -140,6 +141,11 @@ export default function AreaSection({ area, findings, openIds, onToggle }) {
             ))}
           </div>
         )}
+
+        {/* Subsecção «Optimizações possíveis» da área. Não passa pelo filtro de
+            severidade (uma oportunidade não tem severidade): vem do modelo, já
+            classificada por impacto × esforço. */}
+        <AreaOptimizations optimizations={area.optimizations} />
       </CardContent>
     </Card>
   );
