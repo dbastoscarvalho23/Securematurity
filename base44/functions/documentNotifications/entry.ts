@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
+import { AUTOMATION_SECRET } from '../../shared/automationSecret.ts';
 
 async function getSettings(base44ServiceRole, customerId) {
   const all = await base44ServiceRole.entities.ReminderSettings.list();
@@ -21,7 +22,15 @@ Deno.serve(async (req) => {
   let type, document, previousDocument, user;
 
   if (body.event && body.data) {
-    // Entity automation: triggered by SecurityDocument update
+    // Entity automation branch: only platform automations — which carry the
+    // shared secret — may trigger this service-role email dispatch. Anonymous
+    // callers are rejected before any read/write.
+    const headerSecret = req.headers.get('x-automation-secret');
+    const bodySecret = body?.args?.automation_secret ?? body?.automation_secret ?? null;
+    if (headerSecret !== AUTOMATION_SECRET && bodySecret !== AUTOMATION_SECRET) {
+      return Response.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     // Verify the document exists in the database to prevent spoofed payloads
     const docId = body.data.id;
     if (!docId) return Response.json({ error: 'document id is required' }, { status: 400 });

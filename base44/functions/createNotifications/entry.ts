@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { AUTOMATION_SECRET } from "../../shared/automationSecret.ts";
 
 const ENTITY_MAP = {
   Task: 'Task',
@@ -12,6 +13,15 @@ Deno.serve(async (req) => {
     const payload = await req.json();
 
     const { event, data, old_data } = payload;
+
+    // Authorization: this function writes with service role, so only the
+    // platform's automations — which carry the shared secret — may invoke it.
+    // Anonymous or user-authenticated callers are rejected before any read/write.
+    const headerSecret = req.headers.get('x-automation-secret');
+    const bodySecret = payload?.args?.automation_secret ?? payload?.automation_secret ?? null;
+    if (headerSecret !== AUTOMATION_SECRET && bodySecret !== AUTOMATION_SECRET) {
+      return Response.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     // Only process trusted entity-automation events (create/update/delete).
     // Reject anything missing a valid automation event envelope.

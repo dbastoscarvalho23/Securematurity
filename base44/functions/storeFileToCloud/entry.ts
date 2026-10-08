@@ -3,6 +3,55 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 // Folder created inside the connected Google Drive / OneDrive account.
 const FOLDER_NAME = 'AnkoraOne';
 
+// ── SSRF protection ──────────────────────────────────────────────────────────
+// file_url must point at the application's own storage (the app's own host or a
+// base44.com storage host) and must resolve to a public IP. Internal network
+// targets (loopback / private ranges / cloud metadata) are rejected before any
+// fetch is performed.
+
+function isPrivateIp(ip) {
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
+    const parts = ip.split('.').map(Number);
+    if (parts.some(n => n > 255)) return true;
+    const [a, b] = parts;
+    return (
+      a === 0 || a === 10 || a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) || // CGNAT
+      (a === 169 && b === 254) ||           // link-local + cloud metadata
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      a >= 224                              // multicast / reserved / broadcast
+    );
+  }
+  const h = ip.toLowerCase();
+  if (h.startsWith('::ffff:')) return isPrivateIp(h.slice(7)); // IPv4-mapped IPv6
+  return (
+    h === '::' || h === '::1' ||
+    /^(fe[89ab]|f[cd]|ff)/.test(h) // link-local, unique-local, multicast
+  );
+}
+
+async function resolvesToPublicIp(hostname) {
+  if (typeof Deno.resolveDns !== 'function') return true; // resolver unavailable — allowlist still gates the host
+  let addresses = [];
+  for (const type of ['A', 'AAAA']) {
+    try {
+      const records = await Deno.resolveDns(hostname, type);
+      addresses = addresses.concat(records.map(r => (typeof r === 'string' ? r : r.ip)));
+    } catch {
+      // No records of this type (or resolver unavailable) — not fatal by itself.
+    }
+  }
+  if (addresses.length === 0) return false; // fail closed when unresolvable
+  return addresses.every(addr => !isPrivateIp(addr));
+}
+
+function isAllowedStorageHost(hostname, requestHost) {
+  const h = String(hostname || '').toLowerCase().replace(/\.$/, '');
+  const own = String(requestHost || '').toLowerCase().replace(/\.$/, '').split(':')[0];
+  return h === own || h === 'base44.com' || h.endsWith('.base44.com');
+}
+
 function safeFileName(name) {
   const cleaned = String(name || 'file').replace(/[^\w.\- ]+/g, '_').trim();
   return (cleaned || 'file').slice(0, 180);
@@ -121,6 +170,25 @@ export default async function (req) {
 
     if (!fileUrl || !/^https:\/\//i.test(fileUrl)) {
       return Response.json({ error: 'A valid file_url is required' }, { status: 400 });
+    }
+
+    // SSRF gate: the URL must belong to the application's own storage and must
+    // not resolve into the internal network. This runs before any fetch.
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(fileUrl);
+    } catch {
+      return Response.json({ error: 'A valid file_url is required' }, { status: 400 });
+    }
+    if (parsedUrl.protocol !== 'https:' || parsedUrl.username || parsedUrl.password) {
+      return Response.json({ error: 'A valid file_url is required' }, { status: 400 });
+    }
+    const requestHost = req.headers.get('host') || '';
+    if (!isAllowedStorageHost(parsedUrl.hostname, requestHost)) {
+      return Response.json({ error: 'file_url must point at application storage' }, { status: 400 });
+    }
+    if (!(await resolvesToPublicIp(parsedUrl.hostname))) {
+      return Response.json({ error: 'file_url host is not resolvable to a public address' }, { status: 400 });
     }
 
     // Which third-party providers are enabled platform-wide. A disabled provider

@@ -31,7 +31,33 @@ Deno.serve(async (req) => {
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { type, risk, previousRisk } = await req.json();
+  const body = await req.json();
+  const { type, previousRisk } = body;
+  let risk = body.risk;
+
+  // Never trust the caller-supplied record: only its id is used to fetch the
+  // real record from the database, and the caller must be authorized on it
+  // (admin, same customer, creator or owner) before any email is sent.
+  const riskId = risk?.id;
+  if (!riskId) return Response.json({ error: 'risk.id is required' }, { status: 400 });
+  let real = null;
+  try {
+    real = await base44.asServiceRole.entities.RiskItem.get(riskId);
+  } catch {
+    real = null;
+  }
+  if (!real) return Response.json({ error: 'risk not found' }, { status: 404 });
+
+  const userCustomer = user.data?.customer_id ?? user.customer_id;
+  const isAuthorized =
+    user.role === 'admin' ||
+    real.customer_id === userCustomer ||
+    real.created_by_id === user.id ||
+    real.owner_email === user.email;
+  if (!isAuthorized) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
+  // All email content and recipients are derived from the real record.
+  risk = real;
   const score = (risk.impact || 0) * (risk.likelihood || 0);
   const level = scoreLevel(score);
   const ownerEmail = risk.owner_email;

@@ -31,7 +31,33 @@ Deno.serve(async (req) => {
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { type, task, previousTask } = await req.json();
+  const body = await req.json();
+  const { type, previousTask } = body;
+  let task = body.task;
+
+  // Never trust the caller-supplied record: only its id is used to fetch the
+  // real record from the database, and the caller must be authorized on it
+  // (admin, same customer, creator or assignee) before any email is sent.
+  const taskId = task?.id;
+  if (!taskId) return Response.json({ error: 'task.id is required' }, { status: 400 });
+  let real = null;
+  try {
+    real = await base44.asServiceRole.entities.Task.get(taskId);
+  } catch {
+    real = null;
+  }
+  if (!real) return Response.json({ error: 'task not found' }, { status: 404 });
+
+  const userCustomer = user.data?.customer_id ?? user.customer_id;
+  const isAuthorized =
+    user.role === 'admin' ||
+    real.customer_id === userCustomer ||
+    real.created_by_id === user.id ||
+    real.assigned_to === user.email;
+  if (!isAuthorized) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
+  // All email content and recipients are derived from the real record.
+  task = real;
   const assignedTo = task.assigned_to;
 
   if (!assignedTo) return Response.json({ skipped: 'no assigned_to email' });
