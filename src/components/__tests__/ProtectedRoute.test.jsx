@@ -13,6 +13,14 @@ vi.mock('@/lib/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+// UserNotRegisteredError consumes translations; provide a stub language context.
+vi.mock('@/lib/LanguageContext', () => ({
+  useLanguage: () => ({
+    language: 'en',
+    t: (key) => (key === 'unreg_title' ? 'User not registered' : key),
+  }),
+}));
+
 // Same wiring as App.jsx: unauthenticatedElement is a real <Navigate to="/login">
 const renderAt = (path, unauthEl = <Navigate to="/login" replace />) =>
   render(
@@ -40,6 +48,31 @@ describe('ProtectedRoute', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: false, isLoadingAuth: false, authError: STUB, user: null });
     renderAt('/evidence', <div>UNAUTH_BLOCKED</div>);
     expect(screen.getByText('UNAUTH_BLOCKED')).toBeTruthy();
+    expect(screen.queryByText('PROTECTED_CHILD')).toBeNull();
+  });
+
+  it('redirects to /login when authentication failed (401 auth_required)', () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: false,
+      isLoadingAuth: false,
+      authError: { type: 'auth_required', message: 'Authentication required' },
+      user: null,
+    });
+    renderAt('/admin');
+    expect(screen.getByText('LOGIN_PAGE')).toBeTruthy();
+    expect(screen.queryByText('PROTECTED_CHILD')).toBeNull();
+  });
+
+  it('shows the not-registered screen for user_not_registered errors', () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: false,
+      isLoadingAuth: false,
+      authError: { type: 'user_not_registered', message: 'User not registered for this app' },
+      user: null,
+    });
+    renderAt('/admin');
+    expect(screen.getByText('User not registered')).toBeTruthy();
+    expect(screen.queryByText('LOGIN_PAGE')).toBeNull();
     expect(screen.queryByText('PROTECTED_CHILD')).toBeNull();
   });
 

@@ -21,7 +21,8 @@ docker compose -f docker-compose.base44.yml up -d
 - Dev verification: `curl -s http://localhost:3000/` should return the index HTML with the Vite dev client; `docker compose -f docker-compose.base44.yml logs web` shows the "Proxy enabled: /api -> ..." line once the SDK env vars are present.
 
 ## Verify
-- Tests: `docker compose -f docker-compose.base44.yml exec -T web npm test` (Vitest, config in `vitest.config.js` — no base44 plugin, no injected session; `src/components/__tests__/` mocks AuthContext per test).
+- Tests: `docker compose -f docker-compose.base44.yml exec -T web npm test` (Vitest + jsdom + @testing-library/react; config in `vitest.config.js` — no @base44 vite-plugin, no injected session; tests run offline against mocked backend clients, `src/test/setup.js` polyfills jsdom's matchMedia).
+- Auth flow tests: `src/components/__tests__/ProtectedRoute.test.jsx` (unauthenticated → redirect to /login), `src/lib/__tests__/AuthCycle.test.jsx` (AuthProvider + ProtectedRoute with mocked base44 client), `src/components/layout/__tests__/RouteGuard.test.jsx` (role matrix).
 - Lint: `docker compose -f docker-compose.base44.yml exec -T web npm run lint`
 - Manual: exercise flows via the preview browser (login required for anything behind RouteGuard).
 - Test records created via UI must be deleted in the same session (data persists in the Base44 backend across branches).
@@ -38,6 +39,7 @@ docker compose -f docker-compose.base44.yml up -d
 - Backend conventions: all functions import the SDK pinned at `npm:@base44/sdk@0.8.44`; responses use the `json(data, status)` helper; scheduled/system automations pass the shared secret via workflow `args.automation_secret` (also `x-automation-secret` header) — see the 4 "Notify"/reminders/purge workflows.
 
 ## Notes / quirks
+- Unauthenticated visitors land on `/login`; a 401 "[Base44 SDK Error] Authentication required" console error on that page is expected pre-login behavior.
 - The automation secret value lives ONLY in the platform's Secrets (`AUTOMATION_SECRET`), read per request via `secrets.get()` in `base44/shared/automationSecret.ts` — never hardcode it in functions or workflows (`${ secrets.AUTOMATION_SECRET }` in workflow args, `x-automation-secret` header for manual triggers). Rotating it is a dashboard-only operation.
 - `Landing.jsx` was removed (was orphaned); orphan `landing_*` translation keys were cleaned from `translations-ui.js`.
 - `OAuthConsent.jsx` is a platform-managed MCP consent page, NOT routed in `App.jsx`; it references `base44/mcp/config.json` (a platform-managed file not exported to GitHub).

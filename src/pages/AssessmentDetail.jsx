@@ -51,8 +51,8 @@ export default function AssessmentDetail() {
       // Manual mode: load the specific existing questions by their saved IDs
       const questionIds = assessment?.question_ids;
       if (questionIds?.length > 0) {
-        // Same source as the wizard's question bank (list, unfiltered) — the
-        // idSet below restricts to exactly the questions saved on this assessment
+        // Load by the saved IDs only — the assessment's own question list is
+        // authoritative here (bank questions may lack the is_active flag).
         const allGlobal = await base44.entities.Question.list('order_index', 500);
         const idSet = new Set(questionIds);
         return allGlobal.filter(q => idSet.has(q.id));
