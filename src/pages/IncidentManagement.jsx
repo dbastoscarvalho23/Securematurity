@@ -14,7 +14,7 @@ import { AlertTriangle, Plus, Pencil, Loader2, Search, Clock, CheckCircle2, Aler
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
-import { formatDateTime, hoursRemaining, daysRemaining, incidentDeadlines } from '@/lib/complianceUtils';
+import { formatDateTime, hoursRemaining, incidentDeadlines } from '@/lib/complianceUtils';
 import { toast } from 'sonner';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';

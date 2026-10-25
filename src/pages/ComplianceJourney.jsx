@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, Clock, Circle, Loader2, Plus, RefreshCw, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, Plus, RefreshCw, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChecklistItemRow from '@/components/compliance/ChecklistItemRow';
 import { toast } from 'sonner';

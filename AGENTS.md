@@ -34,6 +34,16 @@ docker compose -f docker-compose.base44.yml up -d
 - `base44/shared/` — shared utils used by all functions: `http.ts` (json/readJson response+parse helpers, auth gates `getAuthenticatedUser`/`isStaffRole`/`isPlatformAdmin`, record-level `canAccessRecord`, automation gate `authorizeAutomationOrAdmin`), `automationSecret.ts` (shared automation secret + `hasAutomationSecret`/`getAutomationSecret`), `audit.ts` (`logAudit`/`logEmailSent`), `reminderSettings.ts` (`getReminderSettings`, `buildRecipients`), `riskLevel.ts` (`riskScore`, `scoreLevel`), `escapeHtml.ts`.
 - Backend conventions: all functions import the SDK pinned at `npm:@base44/sdk@0.8.44`; responses use the `json(data, status)` helper; scheduled/system automations pass the shared secret via workflow `args.automation_secret` (also `x-automation-secret` header) — see the 4 "Notify"/reminders/purge workflows.
 
+## Backoffice (`/backoffice`, admin-only)
+- Shell: `src/pages/backoffice/BackofficeLayout.jsx` (sub-nav: Visão geral, Clientes, Utilizadores, Auditoria).
+- Overview: `src/pages/backoffice/BackofficeOverview.jsx` (moved from `src/pages/Admin.jsx`, which was removed; `/admin` redirects to `/backoffice`).
+- User management: `src/components/backoffice/UserManagementPanel.jsx` (extracted from Settings "Users" tab; Settings reuses it). User lists must go through the `listUsers` backend function — direct `User.list()` is denied by RLS (403).
+- Frameworks tab extracted into `src/components/backoffice/FrameworksPanel.jsx` (reused by Settings "Frameworks" tab and the `/backoffice/frameworks` route).
+- P2 done: `manageUser` backend function consolidates all User entity mutations (`update`/`delete` actions; admin full control, customer_admin restricted to own tenant, profile-only updates and 'user'-only deletes). `adminUpdateUser`/`adminDeleteUser` were removed. Remaining direct mutations (CustomerUsersPanel/CustomerSeatSection unlink + role change, Settings delete) invoke `manageUser`.
+- `listUsers` accepts `{ page, pageSize }` returning `{ users, total }` (admin: `list(sort,limit,skip)`; customer_admin: filtered `filter(query, ...)`); unpaged calls stay backward-compatible.
+- Backoffice drill-downs (Users, Assessments) fetch server-side pages (`DRILL_DOWN_PAGE_SIZE = 25`); Customers/Risks/Tasks drill-downs still read the dashboard's capped lists. Search applies within the loaded page.
+- RouteGuard lists and Sidebar were mirrored for the new paths.
+
 ## Notes / quirks
 - Unauthenticated visitors land on `/login`; a 401 "[Base44 SDK Error] Authentication required" console error on that page is expected pre-login behavior.
 - The automation secret value lives ONLY in the platform's Secrets (`AUTOMATION_SECRET`), read per request via `secrets.get()` in `base44/shared/automationSecret.ts` — never hardcode it in functions or workflows (`${ secrets.AUTOMATION_SECRET }` in workflow args, `x-automation-secret` header for manual triggers). Rotating it is a dashboard-only operation.

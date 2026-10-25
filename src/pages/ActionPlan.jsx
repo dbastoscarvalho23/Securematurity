@@ -14,14 +14,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import {
   Plus, Sparkles, Search, CheckCircle2, Circle, ArrowUpCircle,
   AlertTriangle, CalendarDays, User, ChevronDown, ChevronUp,
-  Filter, ListTodo, ShieldCheck, Loader2, Languages
+  Filter, ShieldCheck, Loader2, Languages
 } from 'lucide-react';
 import TaskFormDialog from '@/components/tasks/TaskFormDialog';
 import AIRecommendationDialog from '@/components/recommendations/AIRecommendationDialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { writeAuditLog } from '@/lib/auditLog';
-import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';

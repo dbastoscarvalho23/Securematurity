@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import SeatAdjustDialog from '@/components/customers/SeatAdjustDialog';
 import {
   UserPlus, Trash2, Loader2, Users, AlertTriangle,
-  Mail, ShieldCheck, User, ChevronRight, Plus, Minus,
+  Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
@@ -140,7 +140,8 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
   const handleRemoveUser = async (userId, userName) => {
     setRemovingId(userId);
     try {
-      await base44.entities.User.update(userId, { customer_id: null });
+      const res = await base44.functions.invoke('manageUser', { action: 'update', userId, data: { customer_id: null } });
+      if (res.data?.error) throw new Error(res.data.error);
       toast.success(t('seat_user_removed').replace('{name}', userName).replace('{customer}', customer.name));
       invalidate();
     } catch {
@@ -166,7 +167,8 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
   const handleRoleChange = async (userId, newRole) => {
     setUpdatingRoleId(userId);
     try {
-      await base44.entities.User.update(userId, { role: newRole });
+      const res = await base44.functions.invoke('manageUser', { action: 'update', userId, data: { role: newRole } });
+      if (res.data?.error) throw new Error(res.data.error);
       toast.success(t('seat_role_updated'));
       invalidate();
     } catch {
