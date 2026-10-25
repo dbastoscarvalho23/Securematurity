@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
   if (!user) return json({ error: 'Unauthorized' }, 401);
 
   const body = await req.json();
-  const { type, previousTask } = body;
+  const { type, previousTask: payloadPreviousTask } = body;
   let task = body.task;
 
   // Never trust the caller-supplied record: only its id is used to fetch the
@@ -44,6 +44,12 @@ Deno.serve(async (req) => {
 
   // All email content and recipients are derived from the real record.
   task = real;
+
+  // The previous state is also client-supplied, so only accept it when it
+  // references the same record; otherwise ignore it (prevents forged
+  // "previous" data from suppressing or injecting content into emails).
+  const previousTask = payloadPreviousTask?.id === taskId ? payloadPreviousTask : null;
+
   const assignedTo = task.assigned_to;
 
   if (!assignedTo) return json({ skipped: 'no assigned_to email' });

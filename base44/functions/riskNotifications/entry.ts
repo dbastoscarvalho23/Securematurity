@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   if (!user) return json({ error: 'Unauthorized' }, 401);
 
   const body = await req.json();
-  const { type, previousRisk } = body;
+  const { type, previousRisk: payloadPreviousRisk } = body;
   let risk = body.risk;
 
   // Never trust the caller-supplied record: only its id is used to fetch the
@@ -31,6 +31,12 @@ Deno.serve(async (req) => {
 
   // All email content and recipients are derived from the real record.
   risk = real;
+
+  // The previous state is also client-supplied, so only accept it when it
+  // references the same record; otherwise ignore it (prevents forged
+  // "previous" data from suppressing or injecting content into emails).
+  const previousRisk = payloadPreviousRisk?.id === riskId ? payloadPreviousRisk : null;
+
   const score = riskScore(risk.impact, risk.likelihood);
   const level = scoreLevel(score);
   const ownerEmail = risk.owner_email;

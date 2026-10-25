@@ -29,13 +29,7 @@ docker compose -f docker-compose.base44.yml up -d
 - Backend conventions: all functions import the SDK pinned at `npm:@base44/sdk@0.8.44`; responses use the `json(data, status)` helper; scheduled/system automations pass the shared secret via workflow `args.automation_secret` (also `x-automation-secret` header) — see the 4 "Notify"/reminders/purge workflows.
 
 ## Notes / quirks
-- This is a frontend-only Vite + React app; all data/auth goes through the Base44
-  cloud backend (`@base44/sdk` client in `src/api/base44Client.js`).
-- Unauthenticated visitors land on `/login`; a 401 "[Base44 SDK Error] Authentication
-  required" console error on that page is expected pre-login behavior.
-- Dev verification: `curl -s http://localhost:3000/` should return the index HTML with
-  the Vite dev client; `docker compose -f docker-compose.base44.yml logs web` shows
-  the "Proxy enabled: /api -> ..." line once the SDK env vars are present.
+- The automation secret value lives ONLY in the platform's Secrets (`AUTOMATION_SECRET`), read per request via `secrets.get()` in `base44/shared/automationSecret.ts` — never hardcode it in functions or workflows (`${ secrets.AUTOMATION_SECRET }` in workflow args, `x-automation-secret` header for manual triggers). Rotating it is a dashboard-only operation.
 - `Landing.jsx` was removed (was orphaned); orphan `landing_*` translation keys were cleaned from `translations-ui.js`.
 - `OAuthConsent.jsx` is a platform-managed MCP consent page, NOT routed in `App.jsx`; it references `base44/mcp/config.json` (a platform-managed file not exported to GitHub).
 - `FrameworkControl` entity is used by the AI agent (framework_guide) but not directly in frontend code.
