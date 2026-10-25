@@ -2,9 +2,9 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { AlertTriangle, Bug, Users, Database, AlertOctagon, Clock, CheckCircle2, Activity, FileText } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, RadialBarChart, RadialBar } from 'recharts';
-import { SEVERITY_STYLES, daysRemaining, hoursRemaining, slaStatus, incidentDeadlines, overdueIncidentPhases } from '@/lib/complianceUtils';
+import { AlertTriangle, Bug, Users, Database, Clock, Activity } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
+import { daysRemaining, hoursRemaining, incidentDeadlines, overdueIncidentPhases } from '@/lib/complianceUtils';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 

@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { base44 } from '@/api/base44Client';
 import { uploadFile } from '@/lib/cloudStorage';
 import { Upload, Loader2, FileText, X } from 'lucide-react';
 import { validators, validateForm, hasErrors } from '@/lib/validation';

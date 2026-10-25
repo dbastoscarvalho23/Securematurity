@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import SeatAdjustDialog from '@/components/customers/SeatAdjustDialog';
 import {
   UserPlus, Trash2, Loader2, Users, AlertTriangle,
-  Mail, ShieldCheck, User, ChevronRight, Plus, Minus,
+  Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';

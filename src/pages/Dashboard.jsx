@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { ShieldAlert, Building2, ClipboardCheck } from 'lucide-react';
+import { Building2, ClipboardCheck } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import MaturityRadar from '@/components/dashboard/MaturityRadar';
 import FrameworkScoreCard from '@/components/dashboard/FrameworkScoreCard';

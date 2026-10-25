@@ -1,5 +1,4 @@
 import React, { useRef, useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { uploadFile } from '@/lib/cloudStorage';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
