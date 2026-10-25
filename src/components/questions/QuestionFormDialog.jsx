@@ -9,16 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
+import { FRAMEWORK_NAMES, SELECTABLE_FRAMEWORKS, FRAMEWORK_DOMAINS } from '@/lib/frameworkConstants';
 
-const FRAMEWORKS = [
-  { code: 'NIS2', name: 'NIS2 / DL 125/2025', domains: ['Governance', 'Risk Management', 'Incident Response', 'Business Continuity', 'Supply Chain', 'Access Control', 'Cryptography', 'Physical Security', 'Vulnerability Management'] },
-  { code: 'ISO27001', name: 'ISO/IEC 27001', domains: ['Information Security Policies', 'Organization of Information Security', 'Human Resource Security', 'Asset Management', 'Access Control', 'Cryptography', 'Physical Security', 'Operations Security', 'Communications Security', 'System Acquisition', 'Supplier Relationships', 'Incident Management', 'Business Continuity', 'Compliance'] },
-  { code: 'NIST_CSF', name: 'NIST CSF', domains: ['Identify', 'Protect', 'Detect', 'Respond', 'Recover'] },
-  { code: 'CIS_V8', name: 'CIS Controls v8', domains: ['Inventory & Control', 'Data Protection', 'Secure Configuration', 'Account Management', 'Access Control', 'Vulnerability Management', 'Audit Log Management', 'Email & Web Browser', 'Malware Defenses', 'Network Infrastructure', 'Data Recovery', 'Network Monitoring', 'Security Awareness', 'Service Provider Management', 'Application Security', 'Incident Response', 'Penetration Testing'] },
-  { code: 'GDPR', name: 'GDPR', domains: ['Lawfulness & Transparency', 'Data Subject Rights', 'Consent Management', 'Data Minimisation', 'Purpose Limitation', 'Storage Limitation', 'Accuracy', 'Security of Processing', 'Data Breach Notification', 'Data Protection by Design', 'Data Protection Officer', 'International Transfers', 'Records of Processing', 'Data Processor Management'] },
-  { code: 'ENISA', name: 'ENISA Cybersecurity Framework', domains: ['Governance & Risk Management', 'Incident Handling', 'Business Continuity & Crisis Management', 'Supply Chain Security', 'Network & System Security', 'Cyber Hygiene & Training', 'Cryptography & Encryption', 'Access Control & HR Security', 'Authentication & Secure Communications', 'Monitoring & Detection'] },
-  { code: 'QNRC', name: 'Quadro Nacional de Referência para a Cibersegurança', domains: ['Identificar — Gestão de Ativos (ID.GA)', 'Identificar — Ambiente de Negócio (ID.AO)', 'Identificar — Governação (ID.GV)', 'Identificar — Avaliação de Risco (ID.AR)', 'Identificar — Estratégia de Gestão de Risco (ID.GR)', 'Identificar — Gestão de Risco na Cadeia de Fornecimento (ID.GL)', 'Proteger — Gestão de Identidades e Acessos (PR.GA)', 'Proteger — Consciencialização e Formação (PR.FC)', 'Proteger — Segurança dos Dados (PR.SD)', 'Proteger — Processos e Procedimentos (PR.PI)', 'Proteger — Manutenção (PR.MA)', 'Proteger — Tecnologia de Proteção (PR.TP)', 'Detetar — Anomalias e Eventos (DE.AE)', 'Detetar — Monitorização Contínua (DE.MC)', 'Detetar — Processos de Deteção (DE.PD)', 'Responder — Planeamento de Resposta (RS.PR)', 'Responder — Comunicações (RS.CO)', 'Responder — Análise (RS.AN)', 'Responder — Mitigação (RS.MI)', 'Responder — Melhorias (RS.ME)', 'Recuperar — Planeamento de Recuperação (RC.PR)', 'Recuperar — Melhorias (RC.ME)', 'Recuperar — Comunicações (RC.CO)'] },
-];
+
+const FRAMEWORKS = SELECTABLE_FRAMEWORKS.map((code) => ({ code, name: FRAMEWORK_NAMES[code], domains: FRAMEWORK_DOMAINS[code] || [] }));
 
 const EMPTY_FORM = {
   framework_code: '',

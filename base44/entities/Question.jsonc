@@ -60,6 +60,10 @@
     "assessment_id": {
       "type": "string",
       "description": "If set, this question belongs exclusively to this assessment (not global)"
+    },
+    "source_ref": {
+      "type": "string",
+      "description": "Referência oficial de origem (ex.: Reg. 756/2026, Anexo I). Preenchido pela sincronização da Biblioteca Legal; vazio em perguntas criadas manualmente."
     }
   },
   "required": [

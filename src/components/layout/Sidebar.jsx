@@ -28,7 +28,8 @@ import {
   Bug,
   Gauge,
   GraduationCap,
-  Bot
+  Bot,
+  Scale
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -51,6 +52,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
     // Customers list only for admin
     ...(isAdmin ? [{ path: '/customers', labelKey: 'nav_customers', icon: Building2 }] : []),
     { path: '/compliance-journey', labelKey: 'nav_compliance_journey', icon: MapPin },
+    { path: '/legal-library', labelKey: 'nav_legal_library', icon: Scale },
     { path: '/assessments', labelKey: 'nav_assessments', icon: ClipboardCheck },
     { path: '/evidence', labelKey: 'nav_evidence', icon: Paperclip },
     { path: '/tasks', labelKey: 'nav_tasks', icon: ListTodo },
