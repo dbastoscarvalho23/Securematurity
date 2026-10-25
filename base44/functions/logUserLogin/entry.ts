@@ -1,20 +1,21 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { json, getAuthenticatedUser } from '../../shared/http.ts';
+import { logAudit } from '../../shared/audit.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const user = await getAuthenticatedUser(base44);
 
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return json({ error: 'Unauthorized' }, 401);
     }
 
-    await base44.entities.AuditLog.create({
-      action: 'user_login',
+    await logAudit(base44, 'user_login', {
       user_email: user.email,
       entity_type: 'User',
       entity_id: user.id,
-      details: `User ${user.full_name || user.email} logged in`
+      details: `User ${user.full_name || user.email} logged in`,
     });
 
     // Auto-assign customer_id/role for previously-invited users on first login.
@@ -37,12 +38,11 @@ Deno.serve(async (req) => {
           }
           await base44.asServiceRole.entities.User.update(user.id, updates);
           await base44.asServiceRole.entities.InvitedUser.update(invite.id, { status: 'active' });
-          await base44.entities.AuditLog.create({
-            action: 'customer_updated',
+          await logAudit(base44, 'customer_updated', {
             user_email: user.email,
             entity_type: 'User',
             entity_id: user.id,
-            details: `Auto-assigned customer ${invite.customer_id} on first login (invite activated)`
+            details: `Auto-assigned customer ${invite.customer_id} on first login (invite activated)`,
           });
         }
       } catch (inviteError) {
@@ -51,8 +51,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ success: true });
+    return json({ success: true });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, 500);
   }
 });

@@ -1,12 +1,13 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { json, getAuthenticatedUser, isStaffRole, userCustomerId } from '../../shared/http.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const currentUser = await base44.auth.me().catch(() => null);
+    const currentUser = await getAuthenticatedUser(base44);
 
-    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'customer_admin')) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    if (!isStaffRole(currentUser)) {
+      return json({ error: 'Forbidden' }, 403);
     }
 
     const allUsers = await base44.asServiceRole.entities.User.list();
@@ -16,11 +17,11 @@ Deno.serve(async (req) => {
       users = allUsers;
     } else {
       // customer_admin: only users in their customer
-      users = allUsers.filter(u => u.customer_id === currentUser.customer_id);
+      users = allUsers.filter(u => u.customer_id === userCustomerId(currentUser));
     }
 
-    return Response.json({ users });
+    return json({ users });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, 500);
   }
 });

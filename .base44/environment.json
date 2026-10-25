@@ -5,12 +5,12 @@
   "secrets": [
     {
       "name": "VITE_BASE44_APP_ID",
-      "description": "Base44 app ID (from the Base44 dashboard)",
+      "description": "Base44 app ID — found in the Base44 builder app settings; used by the @base44 SDK to identify the backend app",
       "requiredAtBoot": true
     },
     {
       "name": "VITE_BASE44_APP_BASE_URL",
-      "description": "Base44 backend URL for the SDK",
+      "description": "Base44 backend URL — found in the Base44 builder app settings (e.g. https://<app>.base44.app); the vite plugin proxies /api there",
       "requiredAtBoot": true
     }
   ]
