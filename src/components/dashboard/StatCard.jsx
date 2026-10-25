@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export default function StatCard({ title, value, subtitle, icon: Icon, trend, trendUp, className, href, onClick, clickable }) {
+export default function StatCard({ title, value, subtitle, icon: Icon, trend, trendUp, className, href, onClick, clickable, loading }) {
   const isInteractive = !!(href || onClick || clickable);
   const Wrapper = href ? Link : 'div';
   return (
@@ -20,8 +20,12 @@ export default function StatCard({ title, value, subtitle, icon: Icon, trend, tr
         <div className="flex items-start justify-between">
           <div className="space-y-1 flex-1 min-w-0">
             <p className="text-sm font-medium text-muted-foreground truncate">{title}</p>
-            <p className="text-3xl font-bold tracking-tight">{value}</p>
-            {subtitle && (
+            {loading ? (
+              <div className="h-9 w-16 rounded bg-muted animate-pulse" aria-label="A carregar" />
+            ) : (
+              <p className="text-3xl font-bold tracking-tight">{value}</p>
+            )}
+            {subtitle && !loading && (
               <p className="text-xs text-muted-foreground">{subtitle}</p>
             )}
           </div>
