@@ -21,6 +21,7 @@ docker compose -f docker-compose.base44.yml up -d
 - Dev verification: `curl -s http://localhost:3000/` should return the index HTML with the Vite dev client; `docker compose -f docker-compose.base44.yml logs web` shows the "Proxy enabled: /api -> ..." line once the SDK env vars are present.
 
 ## Verify
+- Tests: `docker compose -f docker-compose.base44.yml exec -T web npm test` (Vitest, config in `vitest.config.js` — no base44 plugin, no injected session; `src/components/__tests__/` mocks AuthContext per test).
 - Lint: `docker compose -f docker-compose.base44.yml exec -T web npm run lint`
 - Manual: exercise flows via the preview browser (login required for anything behind RouteGuard).
 - Test records created via UI must be deleted in the same session (data persists in the Base44 backend across branches).
