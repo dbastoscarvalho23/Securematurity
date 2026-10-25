@@ -36,12 +36,16 @@ Deno.serve(async (req) => {
     const realDoc = await base44.asServiceRole.entities.SecurityDocument.get(docId);
     if (!realDoc) return Response.json({ error: 'document not found' }, { status: 404 });
 
+    // old_data is caller-supplied, so only accept it when it references the
+    // same record — forged "previous" data can no longer skew the email.
+    const oldData = body.old_data?.id === docId ? body.old_data : null;
+
     const newStatus = realDoc.status;
-    const oldStatus = body.old_data?.status;
+    const oldStatus = oldData?.status;
     if (newStatus === oldStatus) return Response.json({ skipped: 'status unchanged' });
 
     document = realDoc;
-    previousDocument = body.old_data;
+    previousDocument = oldData;
 
     if (newStatus === 'under_review') type = 'sent_for_review';
     else if (newStatus === 'approved') type = 'approved';
@@ -68,6 +72,15 @@ Deno.serve(async (req) => {
       realDoc.owner_email === user.email ||
       realDoc.customer_id === user.data?.customer_id;
     if (!isAuthorized) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
+    // The requested type must match the document's actual stored status, so a
+    // caller cannot fire a false "approved" / "sent for review" email.
+    if (
+      (type === 'sent_for_review' && realDoc.status !== 'under_review') ||
+      (type === 'approved' && realDoc.status !== 'approved')
+    ) {
+      return Response.json({ skipped: `document status ${realDoc.status} does not match type ${type}` });
+    }
 
     document = realDoc;
   }
