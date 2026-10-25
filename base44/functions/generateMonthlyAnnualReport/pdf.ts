@@ -14,12 +14,17 @@ const PRIORITY_COLORS = {
   medium: [234, 179, 8],
   low: [100, 110, 130],
 };
+// Keep in sync with src/lib/frameworkConstants.js (official names — see the Legal Library).
 const FRAMEWORK_NAMES = {
-  NIS2: 'NIS2 / DL 125/2025',
-  ISO27001: 'ISO/IEC 27001',
-  NIST_CSF: 'NIST CSF 2.0',
-  CIS_V8: 'CIS Controls v8',
-  QNRC: 'QNRC',
+  NIS2: 'NIS2 - Directive (EU) 2022/2555 / RJC (DL 125/2025)',
+  QNRC: 'QNRCS (Regulamento n.o 756/2026)',
+  EU_2024_2690: 'Implementing Regulation (EU) 2024/2690',
+  DORA: 'DORA - Regulation (EU) 2022/2554',
+  ISO27001: 'ISO/IEC 27001:2022',
+  NIST_CSF: 'NIST CSF',
+  CIS_V8: 'CIS Controls v8.1.2',
+  TISAX_ISA6: 'TISAX - VDA ISA 6.0.3',
+  TISAX_ISA2027: 'TISAX - VDA ISA 2027',
 };
 
 function sc(doc, rgb, type = 'text') {

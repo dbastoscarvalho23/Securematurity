@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { cn } from '@/lib/utils';
+import { JOURNEY_FRAMEWORK, LEGACY_JOURNEY_FRAMEWORK } from '@/lib/legal/journeyTemplate';
 
 export default function ComplianceJourneyStatusCard() {
   const { user } = useAuth();
@@ -17,9 +18,17 @@ export default function ComplianceJourneyStatusCard() {
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['compliance-checklist-status', isAdmin, customerId],
-    queryFn: () => isAdmin
-      ? base44.entities.ComplianceChecklist.list('section_order', 1000)
-      : base44.entities.ComplianceChecklist.filter({ customer_id: customerId, framework: 'RJCS' }, 'section_order', 1000),
+    queryFn: async () => {
+      // Só a jornada (não a checklist de medidas mínimas), filtrada na própria consulta.
+      // Por cliente: a jornada RJC 2026 se existir, senão a anterior (RJCS).
+      const base = isAdmin ? {} : { customer_id: customerId };
+      const [current, legacy] = await Promise.all([
+        base44.entities.ComplianceChecklist.filter({ ...base, framework: JOURNEY_FRAMEWORK }, 'section_order', 5000),
+        base44.entities.ComplianceChecklist.filter({ ...base, framework: LEGACY_JOURNEY_FRAMEWORK }, 'section_order', 5000),
+      ]);
+      const hasNew = new Set(current.map((i) => i.customer_id));
+      return [...current, ...legacy.filter((i) => !hasNew.has(i.customer_id))];
+    },
     enabled: isAdmin || !!customerId,
   });
 

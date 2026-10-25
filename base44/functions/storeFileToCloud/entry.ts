@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, readJson, getAuthenticatedUser, userCustomerId } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, userCustomerId, isPlatformAdmin } from '../../shared/http.ts';
 
 // Folder created inside the connected Google Drive / OneDrive account.
 const FOLDER_NAME = 'AnkoraOne';
@@ -158,6 +158,61 @@ async function uploadToOneDrive(accessToken, bytes, contentType, fileName) {
   return item.webUrl;
 }
 
+// ── SSRF guard ───────────────────────────────────────────────────────────────
+// file_url must be a public https URL: never localhost, a private/reserved IP
+// literal, or any hostname that resolves into a private network, so the server
+// cannot be used to fetch internal services and republish their content.
+
+function isPrivateIPv4(ip) {
+  const parts = ip.split('.').map(Number);
+  if (parts.length !== 4 || parts.some(p => Number.isNaN(p) || p < 0 || p > 255)) return true;
+  const [a, b] = parts;
+  if (a === 0 || a === 10 || a === 127) return true;                       // this-host, private, loopback
+  if (a === 169 && b === 254) return true;                                 // link-local / cloud metadata
+  if (a === 172 && b >= 16 && b <= 31) return true;                        // private
+  if (a === 192 && b === 168) return true;                                 // private
+  if (a === 192 && b === 0) return true;                                   // protocol assignments
+  if (a === 198 && (b === 18 || b === 19)) return true;                     // benchmarking
+  if (a >= 224) return true;                                               // multicast / reserved
+  return false;
+}
+
+function isPrivateIPv6(addr) {
+  const a = addr.toLowerCase();
+  if (a === '::' || a === '::1') return true;                              // unspecified / loopback
+  if (a.startsWith('fc') || a.startsWith('fd')) return true;              // unique local
+  if (a.startsWith('fe8') || a.startsWith('fe9') || a.startsWith('fea') || a.startsWith('feb')) return true; // link-local
+  if (a.startsWith('::ffff:')) return isPrivateIPv4(a.slice(7));           // IPv4-mapped
+  return false;
+}
+
+async function urlPointsToPrivateNetwork(fileUrl) {
+  let url;
+  try {
+    url = new URL(fileUrl);
+  } catch {
+    return true;
+  }
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')) {
+    return true;
+  }
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return isPrivateIPv4(host);
+  if (typeof Deno !== 'undefined' && typeof Deno.resolveDns === 'function') {
+    try {
+      for (const r of (await Deno.resolveDns(host, 'A')) || []) {
+        if (isPrivateIPv4(r)) return true;
+      }
+      for (const r of (await Deno.resolveDns(host, 'AAAA')) || []) {
+        if (isPrivateIPv6(r)) return true;
+      }
+    } catch {
+      return true; // unresolvable hosts are rejected
+    }
+  }
+  return false;
+}
+
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -167,7 +222,9 @@ export default async function (req) {
     const body = await readJson(req);
     const fileUrl = body.file_url;
     const fileName = safeFileName(body.file_name);
-    const customerId = body.customer_id || userCustomerId(user);
+    // Non-admin callers cannot target another customer's storage account.
+    const ownCustomerId = userCustomerId(user);
+    const customerId = isPlatformAdmin(user) ? (body.customer_id || ownCustomerId) : ownCustomerId;
 
     if (!fileUrl || !/^https:\/\//i.test(fileUrl)) {
       return json({ error: 'A valid file_url is required' }, 400);
@@ -190,6 +247,12 @@ export default async function (req) {
     }
     if (!(await resolvesToPublicIp(parsedUrl.hostname))) {
       return json({ error: 'file_url host is not resolvable to a public address' }, 400);
+    }
+
+    // SSRF guard: only fetch public https URLs, and never follow redirects
+    // (a redirect could bounce the request to an internal host).
+    if (await urlPointsToPrivateNetwork(fileUrl)) {
+      return Response.json({ error: 'file_url is not allowed' }, { status: 400 });
     }
 
     // Which third-party providers are enabled platform-wide. A disabled provider
@@ -230,7 +293,7 @@ export default async function (req) {
       return json({ url: fileUrl, provider: 'base44' });
     }
 
-    const fileRes = await fetch(fileUrl);
+    const fileRes = await fetch(fileUrl, { redirect: 'error' });
     if (!fileRes.ok) {
       return json({ error: 'Could not read the uploaded file' }, 502);
     }
