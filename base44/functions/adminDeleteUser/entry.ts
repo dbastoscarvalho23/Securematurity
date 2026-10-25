@@ -23,7 +23,8 @@ Deno.serve(async (req) => {
     // For customer_admin: verify target user belongs to their customer
     if (user.role === 'customer_admin') {
       const targetUser = await base44.asServiceRole.entities.User.get(userId).catch(() => null);
-      if (!targetUser || targetUser.customer_id !== user.customer_id) {
+      // Both sides must have a customer: two unassigned users must never count as "same customer".
+      if (!user.customer_id || !targetUser || targetUser.customer_id !== user.customer_id) {
         return Response.json({ error: 'Forbidden: You can only delete users in your customer' }, { status: 403 });
       }
     }

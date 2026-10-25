@@ -122,6 +122,12 @@ export default async function (req) {
     if (!fileUrl || !/^https:\/\//i.test(fileUrl)) {
       return Response.json({ error: 'A valid file_url is required' }, { status: 400 });
     }
+    // When the host declares where the app's own uploads live (the self-hosted server does),
+    // only those files may be copied — never arbitrary URLs (SSRF).
+    const ownFilesPrefix = Deno.env.get('APP_FILES_URL_PREFIX');
+    if (ownFilesPrefix && !fileUrl.startsWith(ownFilesPrefix)) {
+      return Response.json({ error: 'file_url must be a file uploaded to this application' }, { status: 400 });
+    }
 
     // Which third-party providers are enabled platform-wide. A disabled provider
     // always falls back to app storage, whatever a customer or the default says.

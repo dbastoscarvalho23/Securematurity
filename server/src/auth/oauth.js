@@ -19,7 +19,22 @@ const PROVIDERS = {
   },
 };
 
-export const oauthProviders = () => Object.keys(PROVIDERS).filter((p) => PROVIDERS[p].creds().clientId && PROVIDERS[p].creds().clientSecret);
+const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Tenants Entra ID autorizados para o LOGIN Microsoft. Com o tenant "common", qualquer pessoa que
+ * controle um tenant pode definir o email/UPN que quiser — por isso é obrigatório indicar os tenants.
+ */
+export function microsoftLoginTenants() {
+  const { tenant, allowedTenants } = config.oauth.microsoft;
+  if (allowedTenants.length) return allowedTenants;
+  return GUID_RE.test(tenant) ? [tenant.toLowerCase()] : [];
+}
+
+const loginEnabled = (p) => PROVIDERS[p].creds().clientId && PROVIDERS[p].creds().clientSecret
+  && (p !== 'microsoft' || microsoftLoginTenants().length > 0);
+
+export const oauthProviders = () => Object.keys(PROVIDERS).filter(loginEnabled);
 
 export function getProvider(name) {
   const p = PROVIDERS[name];
@@ -126,7 +141,7 @@ export async function refreshAccessToken(provider, refreshToken, scopes) {
 }
 
 /** Lê as reivindicações do id_token (obtido diretamente do endpoint de tokens por TLS). */
-export function identityFromIdToken(provider, idToken) {
+export function identityFromIdToken(provider, idToken, { forLogin = true } = {}) {
   if (!idToken) throw new HttpError(400, 'O fornecedor não devolveu id_token');
   const payload = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64url').toString('utf8'));
   const p = getProvider(provider);
@@ -136,7 +151,15 @@ export function identityFromIdToken(provider, idToken) {
   if (payload.exp && payload.exp * 1000 < Date.now()) throw new HttpError(400, 'id_token expirado');
   let email = payload.email;
   if (provider === 'google' && payload.email_verified === false) throw new HttpError(400, 'Email Google não verificado');
-  if (provider === 'microsoft') email = payload.email || payload.preferred_username || payload.upn;
+  if (provider === 'microsoft') {
+    const tid = String(payload.tid || '').toLowerCase();
+    if (forLogin) {
+      if (!microsoftLoginTenants().includes(tid)) throw new HttpError(403, 'Esta organização Microsoft não está autorizada');
+      if (payload.iss !== `https://login.microsoftonline.com/${tid}/v2.0`) throw new HttpError(400, 'id_token com emissor inválido');
+    }
+    // Dentro de um tenant autorizado, o UPN é gerido pelo administrador da organização.
+    email = payload.email || payload.preferred_username || payload.upn;
+  }
   if (!email || !String(email).includes('@')) throw new HttpError(400, 'Não foi possível obter o email da conta');
   return { email: String(email).toLowerCase(), name: payload.name || null };
 }
@@ -148,6 +171,9 @@ export function identityFromIdToken(provider, idToken) {
 export async function startOAuth(ctx) {
   const provider = ctx.params.provider;
   try {
+    if (provider === 'microsoft' && !microsoftLoginTenants().length) {
+      throw new HttpError(501, 'O início de sessão Microsoft exige MICROSOFT_ALLOWED_TENANT_IDS (ou MICROSOFT_TENANT com o ID do tenant).');
+    }
     const url = await buildAuthorizationUrl({
       provider, purpose: 'login', scopes: ['openid', 'email', 'profile'],
       returnUrl: ctx.query.from_url || ctx.query.redirect_url || ctx.query.returnTo,
@@ -167,7 +193,8 @@ export async function finishOAuth(ctx, onIdentity) {
     const identity = identityFromIdToken(state.provider, tokens.id_token);
     const accessToken = await onIdentity(identity);
     const target = new URL(state.returnUrl);
-    target.searchParams.set('access_token', accessToken);
+    // No fragmento (#): não é enviado ao servidor nem fica nos registos de acesso.
+    target.hash = `access_token=${encodeURIComponent(accessToken)}`;
     redirect(ctx.res, target.toString());
   } catch (err) {
     redirect(ctx.res, `${config.publicUrl}/login?error=${encodeURIComponent(err.message)}`);

@@ -16,7 +16,9 @@ Deno.serve(async (req) => {
       users = allUsers;
     } else {
       // customer_admin: only users in their customer
-      users = allUsers.filter(u => u.customer_id === currentUser.customer_id);
+      users = currentUser.customer_id
+        ? allUsers.filter(u => u.customer_id === currentUser.customer_id)
+        : [];
     }
 
     return Response.json({ users });

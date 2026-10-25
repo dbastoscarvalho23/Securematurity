@@ -10,6 +10,20 @@ const storage = {
   remove(key) { try { window.localStorage.removeItem(key); } catch { /* armazenamento indisponível */ } },
 };
 
+function readTokenFromFragment() {
+  try {
+    const hash = new URLSearchParams(String(window.location.hash || '').replace(/^#/, ''));
+    const value = hash.get('access_token');
+    if (!value) return null;
+    hash.delete('access_token');
+    const rest = hash.toString();
+    window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}${rest ? `#${rest}` : ''}`);
+    return value;
+  } catch {
+    return null;
+  }
+}
+
 function apiError(status, data, fallback) {
   const message = (data && (data.message || data.error)) || fallback || `Erro ${status}`;
   const err = new Error(message);
@@ -21,9 +35,12 @@ function apiError(status, data, fallback) {
 
 export function createSelfHostedClient({ serverUrl = '', token: initialToken = null } = {}) {
   const base = `${String(serverUrl).replace(/\/+$/, '')}/api`;
-  let token = initialToken || storage.get(TOKEN_KEY);
-  if (initialToken) storage.set(TOKEN_KEY, initialToken);
+  // O login com Google/Microsoft devolve o token no fragmento (#access_token=…), que não chega aos registos do servidor.
+  const fragmentToken = readTokenFromFragment();
+  let token = fragmentToken || initialToken || storage.get(TOKEN_KEY);
+  if (fragmentToken || initialToken) storage.set(TOKEN_KEY, token);
 
+  const pendingPasswords = new Map();
   const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
 
   async function request(method, path, { body, query, form, raw = false, signal } = {}) {
@@ -149,8 +166,20 @@ export function createSelfHostedClient({ serverUrl = '', token: initialToken = n
       setToken(res.access_token);
       return res;
     },
-    register: (payload) => request('POST', '/auth/register', { body: payload || {} }),
-    verifyOtp: (payload) => request('POST', '/auth/verify-otp', { body: payload || {} }),
+    register: async (payload) => {
+      const res = await request('POST', '/auth/register', { body: payload || {} });
+      // Guardada só em memória até à verificação: o servidor define a palavra-passe quando o código é confirmado.
+      if (payload?.email && payload?.password) pendingPasswords.set(String(payload.email).trim().toLowerCase(), payload.password);
+      return res;
+    },
+    verifyOtp: async (payload = {}) => {
+      const email = String(payload.email || '').trim().toLowerCase();
+      const body = { ...payload };
+      if (!body.password && pendingPasswords.has(email)) body.password = pendingPasswords.get(email);
+      const res = await request('POST', '/auth/verify-otp', { body });
+      pendingPasswords.delete(email);
+      return res;
+    },
     resendOtp: (email) => request('POST', '/auth/resend-otp', { body: { email } }),
     resetPasswordRequest: (email) => request('POST', '/auth/reset-password-request', { body: { email } }),
     resetPassword: (payload) => request('POST', '/auth/reset-password', { body: payload || {} }),

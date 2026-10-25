@@ -31,7 +31,13 @@ Deno.serve(async (req) => {
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { type, risk, previousRisk } = await req.json();
+  const { type, risk: submittedRisk, previousRisk } = await req.json();
+  // Never trust the risk sent by the caller: load the real record with the caller's own
+  // permissions, so notifications only go out for risks they can access, with real data.
+  const risk = submittedRisk?.id
+    ? await base44.entities.RiskItem.get(submittedRisk.id).catch(() => null)
+    : null;
+  if (!risk) return Response.json({ error: 'Risk not found' }, { status: 404 });
   const score = (risk.impact || 0) * (risk.likelihood || 0);
   const level = scoreLevel(score);
   const ownerEmail = risk.owner_email;

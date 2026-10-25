@@ -12,11 +12,17 @@ import { isPlainObject, getPath } from '../util.js';
 const TEMPLATE_RE = /^\{\{\s*([\w.]+)\s*\}\}$/;
 const UNRESOLVED = Symbol('unresolved');
 
-/** Contexto do utilizador para resolver modelos: campos base + `data` com os campos personalizados. */
+/** Campos do utilizador que as regras podem referir (nunca chaves arbitrárias guardadas pelo utilizador). */
+const TRUSTED_USER_FIELDS = ['customer_id', 'customer_name', 'display_name', 'language'];
+
+const isScalar = (v) => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean';
+
+/** Contexto do utilizador para resolver modelos: campos base + `data` com campos personalizados de confiança. */
 export function userTemplateContext(user) {
   if (!user) return null;
-  const { id, email, role, full_name, created_date, ...custom } = user;
-  return { id, email, role, full_name, created_date, data: custom, ...custom };
+  const data = {};
+  for (const key of TRUSTED_USER_FIELDS) if (isScalar(user[key])) data[key] = user[key];
+  return { id: user.id, email: user.email, role: user.role, full_name: user.full_name, data, ...data };
 }
 
 function resolveValue(value, ctx) {
@@ -25,7 +31,8 @@ function resolveValue(value, ctx) {
     if (m) {
       if (!ctx) return UNRESOLVED;
       const resolved = getPath({ user: ctx }, m[1]);
-      return resolved === undefined || resolved === null || resolved === '' ? UNRESOLVED : resolved;
+      // Só valores escalares: um objeto (ex.: {"$ne": null}) nunca pode virar operador de filtro.
+      return isScalar(resolved) && resolved !== '' ? resolved : UNRESOLVED;
     }
     return value;
   }

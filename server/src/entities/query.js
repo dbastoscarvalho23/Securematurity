@@ -35,7 +35,7 @@ function assertField(field) {
 /** Expressão SQL para um campo. Devolve { kind: 'column'|'json', sql }. */
 export function fieldExpr(table, field) {
   assertField(field);
-  if (table.columns[field]) return { kind: 'column', sql: table.columns[field], name: field };
+  if (Object.hasOwn(table.columns, field)) return { kind: 'column', sql: table.columns[field], name: field };
   const parts = field.split('.');
   // Escapar aspas simples (o FIELD_RE já impede, mas por segurança).
   const pathSql = parts.map((p) => `'${p.replace(/'/g, "''")}'`).join('->');

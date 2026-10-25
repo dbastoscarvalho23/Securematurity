@@ -12,6 +12,7 @@ import module from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { config } from '../config.js';
 import { HttpError } from '../util.js';
+import { keyFromUrl, getFileMeta, readFileBuffer } from '../integrations/storage.js';
 
 const shimUrl = new URL('./sdk-shim.js', import.meta.url).href;
 const serverPackageUrl = new URL('../../package.json', import.meta.url).href;
@@ -41,7 +42,30 @@ function installHooks() {
 
 let capturedHandler = null;
 
+/**
+ * Os ficheiros da própria aplicação são lidos diretamente do armazenamento quando uma função os
+ * pede por fetch(file_url) — evita depender do acesso da API ao seu próprio endereço público.
+ */
+function installLocalFileFetch() {
+  if (globalThis.fetch.__ankoraLocalFiles) return;
+  const originalFetch = globalThis.fetch;
+  const wrapped = async (input, init) => {
+    const url = typeof input === 'string' ? input : input?.url;
+    const key = keyFromUrl(url);
+    if (key && (!init?.method || init.method === 'GET')) {
+      const meta = await getFileMeta(key);
+      if (!meta) return new Response('Not found', { status: 404 });
+      const buffer = await readFileBuffer(key);
+      return new Response(buffer, { status: 200, headers: { 'content-type': meta.content_type || 'application/octet-stream', 'content-length': String(buffer.length) } });
+    }
+    return originalFetch(input, init);
+  };
+  wrapped.__ankoraLocalFiles = true;
+  globalThis.fetch = wrapped;
+}
+
 function installDenoShim() {
+  installLocalFileFetch();
   if (globalThis.Deno?.__ankoraShim) return;
   const toU8 = (b) => new Uint8Array(b.buffer, b.byteOffset, b.byteLength);
   globalThis.Deno = {

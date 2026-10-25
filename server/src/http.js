@@ -37,7 +37,11 @@ export class Router {
       pathMatched = true;
       if (r.method !== method && !(method === 'HEAD' && r.method === 'GET')) continue;
       const params = {};
-      r.keys.forEach((k, i) => { params[k] = decodeURIComponent(m[i + 1]); });
+      try {
+        r.keys.forEach((k, i) => { params[k] = decodeURIComponent(m[i + 1]); });
+      } catch {
+        return { badRequest: true };
+      }
       return { route: r, params };
     }
     return pathMatched ? { methodNotAllowed: true } : null;
@@ -70,6 +74,19 @@ export function toWebRequest(req, url, bodyStream = true) {
   });
 }
 
+/**
+ * IP do cliente. Só se confia em X-Forwarded-For quando TRUST_PROXY_HOPS > 0, e lê-se a entrada
+ * acrescentada pelo proxy de confiança mais exterior (a contar da direita), nunca a enviada pelo cliente.
+ */
+function clientIp(req) {
+  const hops = config.trustProxyHops;
+  if (hops > 0) {
+    const chain = String(req.headers['x-forwarded-for'] || '').split(',').map((s) => s.trim()).filter(Boolean);
+    if (chain.length >= hops) return chain[chain.length - hops];
+  }
+  return req.socket.remoteAddress;
+}
+
 function setSecurityHeaders(res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -99,8 +116,10 @@ function serveStatic(req, res, pathname) {
   if (!config.staticDir) return false;
   if (!['GET', 'HEAD'].includes(req.method)) return false;
   const root = config.staticDir;
-  let file = path.normalize(path.join(root, decodeURIComponent(pathname)));
-  if (!file.startsWith(root)) return false;
+  let decoded;
+  try { decoded = decodeURIComponent(pathname); } catch { return false; }
+  let file = path.normalize(path.join(root, decoded));
+  if (file !== root && !file.startsWith(root + path.sep)) return false;
   if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) {
     if (path.extname(pathname)) return false; // ficheiro em falta -> 404
     file = path.join(root, 'index.html'); // SPA: todas as rotas servem index.html
@@ -122,7 +141,18 @@ function serveStatic(req, res, pathname) {
  * Se devolver um valor (≠ undefined), é enviado como JSON 200.
  */
 export function createServer(router, { authenticate }) {
-  return http.createServer(async (req, res) => {
+  const handle = createHandler(router, { authenticate });
+  return http.createServer((req, res) => {
+    handle(req, res).catch((err) => {
+      console.error('[http] erro não tratado:', err);
+      if (!res.headersSent) sendJson(res, 500, { message: 'Erro interno do servidor' });
+      else res.end();
+    });
+  });
+}
+
+function createHandler(router, { authenticate }) {
+  return async (req, res) => {
     setSecurityHeaders(res);
     applyCors(req, res);
     if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
@@ -139,12 +169,13 @@ export function createServer(router, { authenticate }) {
     const found = router.match(req.method, pathname);
     if (!found) return sendJson(res, 404, { message: `Rota não encontrada: ${req.method} ${url.pathname}` });
     if (found.methodNotAllowed) return sendJson(res, 405, { message: 'Método não permitido' });
+    if (found.badRequest) return sendJson(res, 400, { message: 'URL inválido' });
 
     let bodyBuffer = null;
     const ctx = {
       req, res, url, params: found.params,
       query: Object.fromEntries(url.searchParams),
-      ip: (config.trustProxy && String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()) || req.socket.remoteAddress,
+      ip: clientIp(req),
       async buffer(limit = config.maxBodyBytes) {
         if (!bodyBuffer) bodyBuffer = await readBody(req, limit);
         return bodyBuffer;
@@ -174,5 +205,5 @@ export function createServer(router, { authenticate }) {
         res.end();
       }
     }
-  });
+  };
 }

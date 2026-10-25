@@ -31,7 +31,13 @@ Deno.serve(async (req) => {
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { type, task, previousTask } = await req.json();
+  const { type, task: submittedTask, previousTask } = await req.json();
+  // Never trust the task sent by the caller: load the real record with the caller's own
+  // permissions, so notifications only go out for tasks they can access, with real data.
+  const task = submittedTask?.id
+    ? await base44.entities.Task.get(submittedTask.id).catch(() => null)
+    : null;
+  if (!task) return Response.json({ error: 'Task not found' }, { status: 404 });
   const assignedTo = task.assigned_to;
 
   if (!assignedTo) return Response.json({ skipped: 'no assigned_to email' });

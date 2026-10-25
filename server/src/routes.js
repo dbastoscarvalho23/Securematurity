@@ -10,7 +10,16 @@ import { sendEmail, emailConfigured } from './integrations/email.js';
 import { putFile, getFileMeta, readFileStream } from './integrations/storage.js';
 import { invokeFunction, functionNames } from './functions/runtime.js';
 import { pool } from './db.js';
-import { createRateLimiter } from './util.js';
+import { createRateLimiter, safeEqual } from './util.js';
+import { authenticateToken } from './auth/routes.js';
+
+/** Funções que a interface invoca diretamente (base44.functions.invoke). As restantes são de sistema. */
+const HTTP_FUNCTIONS = new Set([
+  'adminDeleteUser', 'adminUpdateUser', 'getStorageProviders', 'listUsers', 'logUserLogin',
+  'riskNotifications', 'searchDocuments', 'storeFileToCloud', 'taskNotifications', 'updateCustomerStorage',
+  // execução manual por administradores (as próprias funções verificam o papel)
+  'generateMonthlyAnnualReport', 'dataRetentionPurge',
+]);
 
 const parseJsonParam = (value, fallback) => {
   if (value === undefined || value === '') return fallback;
@@ -106,10 +115,18 @@ export function registerApiRoutes(router) {
 
   // --- funções --------------------------------------------------------------
   router.post('/functions/:name', async (ctx) => {
+    const name = ctx.params.name;
+    const secretHeader = ctx.req.headers['x-automation-secret'];
+    const hasSecret = Boolean(secretHeader) && safeEqual(String(secretHeader), config.automationSecret);
+    if (!hasSecret) {
+      // Sem segredo de automação: só funções chamadas pela interface, e sempre com sessão iniciada.
+      if (!ctx.user) throw new HttpError(401, 'Autenticação necessária');
+      if (!HTTP_FUNCTIONS.has(name)) throw new HttpError(403, `A função ${name} só pode ser executada pelos automatismos do sistema`);
+    }
     const body = await ctx.json();
     const headers = {};
-    if (ctx.req.headers['x-automation-secret']) headers['x-automation-secret'] = String(ctx.req.headers['x-automation-secret']);
-    const result = await invokeFunction(ctx.params.name, body, { token: ctx.auth?.token || null, headers });
+    if (hasSecret) headers['x-automation-secret'] = String(secretHeader);
+    const result = await invokeFunction(name, body, { token: ctx.auth?.token || null, headers });
     const contentType = result.headers?.['content-type'] || 'application/json';
     ctx.res.writeHead(result.status, { 'Content-Type': contentType, 'Cache-Control': 'no-store' });
     ctx.res.end(result.raw ?? JSON.stringify(result.data ?? null));
@@ -123,7 +140,7 @@ export function registerApiRoutes(router) {
     const conversationId = ctx.query.conversation || null;
     if (conversationId && !user) throw new HttpError(401, 'Autenticação necessária');
     for (const e of entities) getSchema(e);
-    const service = new EntityService({ user });
+    let service = new EntityService({ user });
 
     ctx.res.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8',
@@ -147,7 +164,15 @@ export function registerApiRoutes(router) {
     };
     bus.on('entity', onEntity);
     if (conversationId) bus.on('conversation', onConversation);
-    const ping = setInterval(() => ctx.res.write(': ping\n\n'), 25000);
+    // A cada 25 s: manter a ligação viva e voltar a validar a sessão (utilizador desativado,
+    // papel alterado ou sessão terminada fecham o canal; mudanças de permissões aplicam-se de imediato).
+    const ping = setInterval(async () => {
+      ctx.res.write(': ping\n\n');
+      if (!user) return;
+      const auth = await authenticateToken(ctx.auth?.token).catch(() => null);
+      if (!auth) { ctx.res.end(); return; }
+      service = new EntityService({ user: auth.user });
+    }, 25000);
     ctx.req.on('close', () => {
       clearInterval(ping);
       bus.off('entity', onEntity);

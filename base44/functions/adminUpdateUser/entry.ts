@@ -36,7 +36,8 @@ Deno.serve(async (req) => {
   // For customer_admin: verify target user belongs to their customer
   if (!isPlatformAdmin) {
     const targetUser = await base44.asServiceRole.entities.User.get(userId).catch(() => null);
-    if (!targetUser || targetUser.customer_id !== currentUser.customer_id) {
+    // Both sides must have a customer: two unassigned users must never count as "same customer".
+    if (!currentUser.customer_id || !targetUser || targetUser.customer_id !== currentUser.customer_id) {
       return Response.json({ error: 'Forbidden: You can only edit users in your customer' }, { status: 403 });
     }
   }

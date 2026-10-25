@@ -145,6 +145,56 @@ if (!DB) {
     await assert.rejects(api('POST', '/entities/Task', { title: 'anon', status: 'todo' }), /401/);
   });
 
+  test('regressão: campos do perfil não contornam a RLS', async () => {
+    // Um campo "data" ou um operador gravado no perfil não pode alterar as regras.
+    await api('PUT', '/auth/me', { data: { customer_id: { $ne: null } }, customer_id: { $ne: null }, theme: 'dark' }, tokens.b);
+    const me = await api('GET', '/auth/me', null, tokens.b);
+    assert.equal(me.data, undefined);
+    assert.equal(me.customer_id, ids.c2);
+    assert.equal(me.theme, 'dark');
+    const visible = await api('GET', '/entities/Task', null, tokens.b);
+    assert.ok(visible.every((t) => t.customer_id === ids.c2), 'só tarefas do próprio cliente');
+    // Um utilizador sem cliente não vê registos de clientes.
+    await api('POST', '/auth/register', { email: 'sem.cliente@x.pt', password: 'Palavra-Passe-9' });
+    const code = await waitForLog(/código de verificação para sem\.cliente@x\.pt: (\d{6})/);
+    const v = await api('POST', '/auth/verify-otp', { email: 'sem.cliente@x.pt', otpCode: code, password: 'Palavra-Passe-9' });
+    assert.deepEqual(await api('GET', '/entities/Task', null, v.access_token), []);
+  });
+
+  test('regressão: URLs malformados não derrubam o servidor', async () => {
+    const res = await fetch(`${BASE}/entities/%E0`);
+    assert.equal(res.status, 400);
+    assert.equal((await api('GET', '/health')).status, 'ok');
+  });
+
+  test('regressão: voltar a registar um email não muda a palavra-passe sem o código', async () => {
+    await api('POST', '/auth/register', { email: 'vitima@x.pt', password: 'Senha-Da-Vitima-1' });
+    const victimCode = await waitForLog(/código de verificação para vitima@x\.pt: (\d{6})/);
+    // O atacante volta a registar o mesmo email com outra palavra-passe…
+    await api('POST', '/auth/register', { email: 'vitima@x.pt', password: 'Senha-Do-Atacante-1' });
+    const latest = await waitForLog(/código de verificação para vitima@x\.pt: (\d{6})/);
+    assert.notEqual(latest, victimCode);
+    // …a vítima confirma o código mais recente que recebeu, com a sua própria palavra-passe.
+    await api('POST', '/auth/verify-otp', { email: 'vitima@x.pt', otpCode: latest, password: 'Senha-Da-Vitima-1' });
+    await assert.rejects(api('POST', '/auth/login', { email: 'vitima@x.pt', password: 'Senha-Do-Atacante-1' }), /401/);
+    assert.ok((await api('POST', '/auth/login', { email: 'vitima@x.pt', password: 'Senha-Da-Vitima-1' })).access_token);
+    // Registar de novo uma conta verificada é recusado e não altera nada.
+    await assert.rejects(api('POST', '/auth/register', { email: 'vitima@x.pt', password: 'Senha-Do-Atacante-1' }), /409/);
+  });
+
+  test('regressão: X-Forwarded-For não contorna o limite de tentativas', async () => {
+    let limited = false;
+    for (let i = 0; i < 12 && !limited; i += 1) {
+      const res = await fetch(`${BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': `10.0.0.${i}` },
+        body: JSON.stringify({ email: 'alvo@x.pt', password: 'errada' }),
+      });
+      limited = res.status === 429;
+    }
+    assert.ok(limited);
+  });
+
   test('filtros, ordenação, paginação e operações em lote', async () => {
     const created = await api('POST', '/entities/Task/bulk', [
       { title: 'L1', status: 'done', priority: 'low', due_date: '2026-01-10' },
@@ -188,7 +238,8 @@ if (!DB) {
     assert.equal(list.status, 200);
     assert.deepEqual(list.data.users.map((u) => u.email), ['ana@cliente1.pt']);
     assert.equal((await fn('listUsers', {}, tokens.b)).status, 403);
-    assert.equal((await fn('listUsers', {}, tokens.admin)).data.users.length, 3);
+    const everyone = (await fn('listUsers', {}, tokens.admin)).data.users.map((u) => u.email);
+    assert.ok(['ana@cliente1.pt', 'bruno@cliente2.pt', ADMIN.email].every((e) => everyone.includes(e)));
 
     const login = await fn('logUserLogin', {}, tokens.b);
     assert.equal(login.status, 200);
@@ -196,7 +247,26 @@ if (!DB) {
     assert.equal(audit.length, 1);
     assert.equal(audit[0].customer_id, ids.c2);
 
-    assert.equal((await fn('dataRetentionPurge', {})).status, 403, 'sem segredo de automação');
+    assert.equal((await fn('dataRetentionPurge', {})).status, 401, 'anónimo sem segredo de automação');
+    assert.equal((await fn('dataRetentionPurge', {}, tokens.b)).status, 403, 'utilizador comum sem segredo de automação');
+    assert.equal((await fn('documentReviewReminders', {}, tokens.b)).status, 403, 'função de sistema bloqueada');
+    assert.equal((await fn('createNotifications', { event: { type: 'create', entity_name: 'Task', entity_id: ids.tb } })).status, 401);
+  });
+
+  test('regressão: customer_admin sem cliente não gere utilizadores sem cliente', async () => {
+    const r = await api('POST', '/auth/login', { email: 'sem.cliente@x.pt', password: 'Palavra-Passe-9' });
+    const u = r.user;
+    await api('PUT', `/entities/User/${u.id}`, { role: 'customer_admin' }, tokens.admin);
+    const t = (await api('POST', '/auth/login', { email: 'sem.cliente@x.pt', password: 'Palavra-Passe-9' })).access_token;
+    assert.deepEqual((await fn('listUsers', {}, t)).data.users, []);
+    const adminId = (await api('GET', '/auth/me', null, tokens.admin)).id;
+    assert.equal((await fn('adminDeleteUser', { userId: adminId }, t)).status, 403);
+    assert.equal((await fn('adminUpdateUser', { userId: adminId, data: { full_name: 'x' } }, t)).status, 403);
+  });
+
+  test('regressão: notificações usam o registo real e não o enviado', async () => {
+    const res = await fn('taskNotifications', { type: 'assigned', task: { id: ids.ta, title: 'falso', assigned_to: 'spam@x.pt' } }, tokens.b);
+    assert.equal(res.status, 404, 'tarefa de outro cliente');
   });
 
   test('workflow desencadeado por entidade cria notificações', async () => {
@@ -222,7 +292,7 @@ if (!DB) {
     assert.ok(docs[0].tags.includes('automated'));
     const again = await fn('generateMonthlyAnnualReport', {}, null, { 'x-automation-secret': AUTOMATION_SECRET });
     assert.match(again.data.message, /already exists/);
-    assert.equal((await fn('generateMonthlyAnnualReport', {}, null, { 'x-automation-secret': 'cm-automation-7f3a9b2e1d8c4a6f0b5e2c9d1a7f4e3b' })).status, 403,
+    assert.equal((await fn('generateMonthlyAnnualReport', {}, tokens.b, { 'x-automation-secret': 'cm-automation-7f3a9b2e1d8c4a6f0b5e2c9d1a7f4e3b' })).status, 403,
       'o segredo antigo publicado no repositório deixa de funcionar');
   });
 

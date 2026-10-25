@@ -83,7 +83,7 @@ export function registerConnectorRoutes(router) {
       const def = definition(name);
       const tokens = await exchangeCode(state, ctx.query.code);
       let account = null;
-      try { account = identityFromIdToken(def.provider, tokens.id_token).email; } catch { account = null; }
+      try { account = identityFromIdToken(def.provider, tokens.id_token, { forLogin: false }).email; } catch { account = null; }
       await query(
         `INSERT INTO connector_connections (name, access_token, refresh_token, expires_at, scopes, account_email, connected_by, updated_date)
          VALUES ($1, $2, $3, now() + ($4 || ' seconds')::interval, $5, $6, $7, now())

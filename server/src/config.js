@@ -32,7 +32,8 @@ export const config = {
   // URL pública da API (por omissão, a mesma origem do frontend com o prefixo /api).
   apiPublicUrl: (env.API_PUBLIC_URL || `${publicUrl}/api`).replace(/\/+$/, ''),
   corsOrigins: (env.CORS_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean),
-  trustProxy: bool(env.TRUST_PROXY, true),
+  // Número de proxies de confiança à frente da API (Nginx do compose = 1; Caddy + Nginx = 2).
+  trustProxyHops: int(env.TRUST_PROXY_HOPS, 0),
   staticDir: env.STATIC_DIR ? path.resolve(env.STATIC_DIR) : null,
   base44Dir: path.resolve(env.BASE44_DIR || path.join(here, '..', '..', 'base44')),
 
@@ -103,5 +104,6 @@ export const config = {
   },
 };
 
-// As funções Base44 leem o segredo de automação através de Deno.env.
+// As funções Base44 leem estes valores através de Deno.env.
 process.env.AUTOMATION_SECRET = config.automationSecret;
+process.env.APP_FILES_URL_PREFIX = `${config.apiPublicUrl}/files/`;

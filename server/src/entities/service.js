@@ -25,6 +25,9 @@ export function rowToRecord(row) {
 }
 
 /** Campos do utilizador que só um administrador (ou o sistema) pode alterar. */
+/** Preferências guardadas pela interface que não constam do esquema User. */
+const USER_UI_FIELDS = new Set(['theme']);
+
 const USER_PROTECTED = new Set(['role', 'customer_id', 'customer_name', 'email', 'is_verified', 'disabled', 'password', 'password_hash', 'token_version']);
 
 export function rowToUser(row) {
@@ -319,13 +322,16 @@ export class EntityService {
     const patch = stripMeta(changes);
     const columns = {};
     const dataPatch = {};
+    // Lista de campos permitidos: os do esquema User + preferências da interface.
+    const schemaFields = new Set(Object.keys(getSchema('User').properties || {}));
     for (const [k, v] of Object.entries(patch)) {
-      if (['password', 'password_hash', 'token_version'].includes(k)) continue;
+      if (k === 'role' || k === 'disabled' || k === 'is_verified') { if (admin) columns[k] = v; continue; }
+      if (k === 'full_name') { columns.full_name = v === null ? null : String(v).slice(0, 200); continue; }
+      if (k === 'email') { if (admin) columns.email = String(v).trim().toLowerCase(); continue; }
+      if (!schemaFields.has(k) && !USER_UI_FIELDS.has(k)) continue;
       if (!admin && USER_PROTECTED.has(k)) continue; // utilizadores comuns não alteram papel nem cliente
-      if (k.startsWith('_')) continue; // campos internos
-      if (k === 'role' || k === 'full_name' || k === 'disabled' || k === 'is_verified') columns[k] = v;
-      else if (k === 'email') { if (admin) columns.email = String(v).trim().toLowerCase(); }
-      else dataPatch[k] = v;
+      if (v !== null && typeof v === 'object') continue; // só valores simples
+      dataPatch[k] = v;
     }
     if (columns.role !== undefined && !['admin', 'customer_admin', 'user'].includes(columns.role)) {
       throw new HttpError(422, `Papel inválido: ${columns.role}`);

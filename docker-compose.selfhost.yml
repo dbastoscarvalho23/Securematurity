@@ -68,6 +68,8 @@ services:
       S3_ENDPOINT: http://minio:9000
       S3_BUCKET: ${S3_BUCKET:-ankoraone}
       S3_FORCE_PATH_STYLE: "true"
+      # Proxies de confiança à frente da API: Nginx (web) = 1. Com Caddy/Traefik à frente, use 2.
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
     depends_on:
       postgres:
         condition: service_healthy

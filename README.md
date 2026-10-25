@@ -132,7 +132,8 @@ Todas as variáveis estão documentadas em [`.env.selfhost.example`](.env.selfho
 | `SMTP_*`, `MAIL_FROM` | recomendada | Envio de notificações, códigos de verificação e convites. Sem SMTP, os emails não são enviados |
 | `LLM_PROVIDER` + chave | recomendada | `anthropic` ou `openai` (inclui Azure OpenAI, Ollama e vLLM via `OPENAI_BASE_URL`). Sem IA, as funcionalidades de IA devolvem um aviso |
 | `ALLOW_PUBLIC_SIGNUP` | não | `false` (recomendado) limita o registo a convidados |
-| `GOOGLE_*`, `MICROSOFT_*` | não | Login com Google/Microsoft e conectores Google Drive/OneDrive |
+| `GOOGLE_*`, `MICROSOFT_*` | não | Login com Google/Microsoft e conectores Google Drive/OneDrive. O login Microsoft exige `MICROSOFT_ALLOWED_TENANT_IDS` |
+| `TRUST_PROXY_HOPS` | não | Proxies à frente da API (1 no compose; 2 com Caddy/Traefik à frente) |
 
 **Conectores Google Drive / OneDrive:** depois de configurar as credenciais OAuth, um administrador abre **Definições → Armazenamento** e clica em **Ligar conta**. Os tokens ficam guardados e são renovados automaticamente.
 
@@ -194,7 +195,10 @@ Os testes ponta a ponta arrancam o servidor real e cobrem: registo com código, 
 - **Perfil do utilizador:** um utilizador comum não pode alterar o próprio `role` nem `customer_id` (via `updateMe` ou `User.update`). Só um administrador o pode fazer, e a alteração de papel termina as sessões abertas.
 - **Carimbo de cliente:** quando um utilizador cria um registo sem `customer_id` numa entidade que o tenha, o servidor preenche-o com o cliente do utilizador (`AUTO_STAMP_CUSTOMER_ID`).
 - **Segredo de automação:** o valor que estava fixo no repositório (`base44/shared/automationSecret.ts`) **não é aceite** pelo servidor próprio, que usa `AUTOMATION_SECRET`. Esse valor é público no GitHub; trate-o como comprometido.
-- **Proteções adicionais:** limite de tentativas em login, códigos e emails; códigos de verificação de uso único com expiração; tokens de recuperação guardados apenas como hash; OAuth com PKCE e validação do destino de retorno; bloqueio de URLs internos em `file_urls` (SSRF); cabeçalhos de segurança no Nginx e na API.
+- **Funções de backend:** por HTTP, só são executáveis as funções que a interface usa, e sempre com sessão iniciada. As funções de sistema (lembretes, notificações automáticas, purga de dados) exigem o segredo de automação. As notificações de tarefas e riscos usam o registo real da base de dados, e não os dados enviados pelo navegador.
+- **Registo:** voltar a registar um email existente nunca altera a conta. A palavra-passe só é definida por quem introduz o código recebido nesse email.
+- **Login Microsoft:** só são aceites contas dos tenants indicados em `MICROSOFT_ALLOWED_TENANT_IDS`. Com o tenant `common`, qualquer pessoa poderia criar um tenant com o email de outra.
+- **Proteções adicionais:** limite de tentativas em login, códigos e emails (por IP e por email); códigos de verificação de uso único com expiração; tokens de recuperação guardados apenas como hash; OAuth com PKCE e validação do destino de retorno; bloqueio de URLs internos em `file_urls` (SSRF); cabeçalhos de segurança no Nginx e na API.
 - **Ficheiros:** tal como na Base44, os URLs de ficheiros são públicos, mas contêm 128 bits aleatórios. Não partilhe os links de documentos sensíveis.
 
 ---
@@ -222,6 +226,8 @@ As migrações da base de dados são aplicadas automaticamente no arranque.
 - As funções de backend correm no mesmo processo da API. O tempo limite (`FUNCTION_TIMEOUT_MS`) devolve erro, mas não interrompe uma função bloqueada.
 - A página `OAuthConsent` (consentimento MCP gerido pela Base44) não se aplica ao servidor próprio.
 - O editor visual e as estatísticas do Base44 Builder só funcionam no modo Base44.
+- Proteção SSRF de `file_urls`: o endereço é validado por DNS antes do pedido, mas não fica fixo, pelo que um ataque de *DNS rebinding* continua teoricamente possível.
+- Regra herdada da aplicação: qualquer utilizador autenticado pode criar uma `Notification` dirigida a outro email (a regra RLS de criação só verifica o autor).
 - Os eventos de tempo real e os gatilhos de workflows são processados na instância que fez a alteração. Com várias instâncias da API, use `ENABLE_SCHEDULER=true` apenas numa.
 
 ---

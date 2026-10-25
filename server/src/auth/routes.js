@@ -9,6 +9,7 @@ import { signJwt, verifyJwt, hashPassword, verifyPassword, randomToken, randomOt
 import { oauthProviders, startOAuth, finishOAuth } from './oauth.js';
 
 const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
+const loginEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 30 });
 const otpLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
 const mailLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5 });
 
@@ -165,7 +166,9 @@ export function registerAuthRoutes(router) {
 
   router.post('/auth/login', async (ctx) => {
     const { email, password } = await ctx.json();
-    if (!loginLimiter(`${ctx.ip}:${normEmail(email)}`)) throw new HttpError(429, 'Demasiadas tentativas. Tente novamente mais tarde.');
+    if (!loginLimiter(`${ctx.ip}:${normEmail(email)}`) || !loginEmailLimiter(normEmail(email))) {
+      throw new HttpError(429, 'Demasiadas tentativas. Tente novamente mais tarde.');
+    }
     const row = await findUserByEmail(email);
     const ok = row && row.password_hash && !row.disabled && await verifyPassword(password, row.password_hash);
     if (!ok) throw new HttpError(401, 'Email ou palavra-passe inválidos');
@@ -191,19 +194,15 @@ export function registerAuthRoutes(router) {
     const password_hash = await hashPassword(password);
     const verified = !config.requireEmailVerification;
 
-    if (row && !row.password_hash) {
-      // Conta importada/convidada sem palavra-passe: só fica definida depois de provar a posse do email.
-      if (verified) {
-        await query('UPDATE users SET password_hash = $2, is_verified = true, updated_date = now() WHERE id = $1', [row.id, password_hash]);
-      } else {
-        await query(`UPDATE users SET data = data || jsonb_build_object('_pending_password_hash', $2::text) WHERE id = $1`, [row.id, password_hash]);
-      }
-    } else if (row) {
-      await query('UPDATE users SET password_hash = $2, full_name = COALESCE($3, full_name), updated_date = now() WHERE id = $1', [row.id, password_hash, full_name || null]);
-    } else {
-      row = await createUserRow({ email: e, password_hash, full_name: full_name || null, is_verified: verified, data: full_name ? { display_name: full_name } : {} });
-      row = await applyInvite(row);
+    if (row) {
+      // Conta já existente (importada, convidada ou ainda por verificar): nada é alterado aqui.
+      // A palavra-passe só é definida em /auth/verify-otp, enviada por quem introduz o código
+      // recebido no email — assim, voltar a registar o email de outra pessoa não dá acesso à conta.
+      await sendOtp(e);
+      return { success: true, requires_verification: true };
     }
+    row = await createUserRow({ email: e, password_hash, full_name: full_name || null, is_verified: verified, data: full_name ? { display_name: full_name } : {} });
+    row = await applyInvite(row);
     if (!verified) await sendOtp(e);
     return { success: true, requires_verification: !verified };
   });
@@ -212,15 +211,21 @@ export function registerAuthRoutes(router) {
     const body = await ctx.json();
     const e = normEmail(body.email);
     const code = body.otpCode ?? body.otp_code ?? body.code;
-    if (!otpLimiter(`${ctx.ip}:${e}`)) throw new HttpError(429, 'Demasiadas tentativas. Tente novamente mais tarde.');
+    const password = body.password;
+    if (password !== undefined && (typeof password !== 'string' || password.length < 8)) {
+      throw new HttpError(422, 'A palavra-passe deve ter pelo menos 8 caracteres');
+    }
+    if (!otpLimiter(`${ctx.ip}:${e}`) || !otpLimiter(`email:${e}`)) throw new HttpError(429, 'Demasiadas tentativas. Tente novamente mais tarde.');
     if (!code || !(await verifyOtpCode(e, code))) throw new HttpError(400, 'Código de verificação inválido ou expirado');
     const row = await findUserByEmail(e);
     if (!row) throw new HttpError(400, 'Código de verificação inválido ou expirado');
-    const pending = row.data?._pending_password_hash;
+    // O código prova a posse do email; a palavra-passe vem de quem o introduziu.
+    const newHash = password ? await hashPassword(password) : null;
     const { rows } = await query(
-      `UPDATE users SET is_verified = true, password_hash = COALESCE($2, password_hash), data = data - '_pending_password_hash', updated_date = now()
+      `UPDATE users SET is_verified = true, password_hash = COALESCE($2, password_hash), data = data - '_pending_password_hash',
+         token_version = token_version + CASE WHEN $2::text IS NULL THEN 0 ELSE 1 END, updated_date = now()
        WHERE id = $1 RETURNING *`,
-      [row.id, pending || null],
+      [row.id, newHash],
     );
     const updated = await applyInvite(rows[0]);
     return { success: true, access_token: issueToken(updated), user: rowToUser(updated) };
@@ -231,7 +236,7 @@ export function registerAuthRoutes(router) {
     const e = normEmail(email);
     if (!mailLimiter(`otp:${ctx.ip}:${e}`)) throw new HttpError(429, 'Demasiados pedidos. Tente novamente mais tarde.');
     const row = await findUserByEmail(e);
-    if (row && (!row.is_verified || row.data?._pending_password_hash)) await sendOtp(e);
+    if (row) await sendOtp(e);
     return { success: true };
   });
 
