@@ -14,8 +14,7 @@ import {
 } from 'recharts';
 import {
   ShieldCheck, Building2, BarChart3, Users, AlertTriangle, ClipboardList,
-  ChevronRight, X, Search, TrendingUp, TrendingDown, CheckCircle2, Clock,
-  FileText,
+  ChevronRight, Search,
 } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import SeatManagementPanel from '@/components/customers/SeatManagementPanel';
