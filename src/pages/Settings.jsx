@@ -44,7 +44,7 @@ export default function Settings() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId) => {
-      const res = await base44.functions.invoke('adminDeleteUser', { userId });
+      const res = await base44.functions.invoke('manageUser', { action: 'delete', userId });
       if (res.data?.error) throw new Error(res.data.error);
       return res.data;
     },

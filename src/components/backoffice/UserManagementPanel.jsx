@@ -34,7 +34,7 @@ export default function UserManagementPanel() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId) => {
-      const res = await base44.functions.invoke('adminDeleteUser', { userId });
+      const res = await base44.functions.invoke('manageUser', { action: 'delete', userId });
       if (res.data?.error) throw new Error(res.data.error);
       return res.data;
     },
@@ -67,7 +67,7 @@ export default function UserManagementPanel() {
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ userId, data }) => {
-      const res = await base44.functions.invoke('adminUpdateUser', { userId, data });
+      const res = await base44.functions.invoke('manageUser', { action: 'update', userId, data });
       if (res.data?.error) throw new Error(res.data.error);
       return res.data;
     },

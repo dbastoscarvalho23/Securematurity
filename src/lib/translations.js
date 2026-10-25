@@ -54,6 +54,9 @@ export const translations = {
     // common
     common_loading: 'Loading...',
     common_save: 'Save',
+    common_prev: 'Previous',
+    common_next: 'Next',
+    common_page_of: 'Page {current} of {total}',
     common_cancel: 'Cancel',
     common_delete: 'Delete',
     common_edit: 'Edit',
@@ -268,6 +271,9 @@ export const translations = {
     // common
     common_loading: 'A carregar...',
     common_save: 'Guardar',
+    common_prev: 'Anterior',
+    common_next: 'Seguinte',
+    common_page_of: 'Página {current} de {total}',
     common_cancel: 'Cancelar',
     common_delete: 'Eliminar',
     common_edit: 'Editar',

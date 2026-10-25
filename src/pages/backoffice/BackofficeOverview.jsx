@@ -88,8 +88,41 @@ function CustomerDrillDown({ customers, t }) {
   );
 }
 
-function UserDrillDown({ users, customers, t }) {
+const DRILL_DOWN_PAGE_SIZE = 25;
+
+function PageControls({ page, totalPages, setPage, t, isLoading }) {
+  return (
+    <div className="flex items-center justify-between gap-2 pt-2">
+      <p className="text-xs text-muted-foreground">{t('common_page_of', { current: page + 1, total: totalPages })}</p>
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page === 0 || isLoading} onClick={() => setPage(p => p - 1)}>
+          {t('common_prev')}
+        </Button>
+        <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page >= totalPages - 1 || isLoading} onClick={() => setPage(p => p + 1)}>
+          {t('common_next')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function UserDrillDown({ customers, t }) {
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
+
+  // Server-side pagination via listUsers (RLS-safe)
+  const { data: pageData, isLoading } = useQuery({
+    queryKey: ['backoffice-users-page', page],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listUsers', { page, pageSize: DRILL_DOWN_PAGE_SIZE });
+      return res.data || {};
+    },
+  });
+  const users = pageData?.users || [];
+  const total = pageData?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(total / DRILL_DOWN_PAGE_SIZE));
+
+  // Search applies within the loaded page
   const filtered = users.filter(u =>
     u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
     u.email?.toLowerCase().includes(search.toLowerCase())
@@ -102,6 +135,7 @@ function UserDrillDown({ users, customers, t }) {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input className="pl-9" placeholder={t('common_search')} value={search} onChange={e => setSearch(e.target.value)} />
       </div>
+      <p className="text-xs text-muted-foreground">{total} {t('admin_total_users').toLowerCase()}</p>
       <Table>
         <TableHeader>
           <TableRow>
@@ -124,21 +158,42 @@ function UserDrillDown({ users, customers, t }) {
           ))}
         </TableBody>
       </Table>
+      <PageControls page={page} totalPages={totalPages} setPage={setPage} t={t} isLoading={isLoading} />
     </div>
   );
 }
 
-function AssessmentsDrillDown({ assessments, customers, t }) {
+function AssessmentsDrillDown({ customers, t }) {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('completed');
+  const [page, setPage] = useState(0);
   const customerMap = Object.fromEntries(customers.map(c => [c.id, c.name]));
 
-  const filtered = assessments
-    .filter(a => filterStatus === 'all' || a.status === filterStatus)
-    .filter(a =>
-      (a.title?.toLowerCase().includes(search.toLowerCase())) ||
-      (customerMap[a.customer_id]?.toLowerCase().includes(search.toLowerCase()))
-    );
+  // Server-side pagination + status filter (search applies within the loaded page)
+  const { data: pageData, isLoading } = useQuery({
+    queryKey: ['backoffice-assessments-page', filterStatus, page],
+    queryFn: async () => {
+      const query = filterStatus === 'all' ? undefined : { status: filterStatus };
+      const [rows, total] = await Promise.all([
+        base44.entities.Assessment.filter(query, '-created_date', DRILL_DOWN_PAGE_SIZE, page * DRILL_DOWN_PAGE_SIZE),
+        base44.entities.Assessment.count(query),
+      ]);
+      return { rows, total };
+    },
+  });
+  const assessments = pageData?.rows || [];
+  const total = pageData?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(total / DRILL_DOWN_PAGE_SIZE));
+
+  const filtered = assessments.filter(a =>
+    (a.title?.toLowerCase().includes(search.toLowerCase())) ||
+    (customerMap[a.customer_id]?.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  const handleStatusChange = (value) => {
+    setFilterStatus(value);
+    setPage(0);
+  };
 
   return (
     <div className="space-y-4">
@@ -147,7 +202,7 @@ function AssessmentsDrillDown({ assessments, customers, t }) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input className="pl-9" placeholder={t('assessments_search_placeholder')} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
+        <Select value={filterStatus} onValueChange={handleStatusChange}>
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('common_all')}</SelectItem>
@@ -157,7 +212,7 @@ function AssessmentsDrillDown({ assessments, customers, t }) {
           </SelectContent>
         </Select>
       </div>
-      <p className="text-xs text-muted-foreground">{filtered.length} {t('admin_col_assessments').toLowerCase()}</p>
+      <p className="text-xs text-muted-foreground">{total} {t('admin_col_assessments').toLowerCase()}</p>
       <Table>
         <TableHeader>
           <TableRow>
@@ -184,6 +239,7 @@ function AssessmentsDrillDown({ assessments, customers, t }) {
           ))}
         </TableBody>
       </Table>
+      <PageControls page={page} totalPages={totalPages} setPage={setPage} t={t} isLoading={isLoading} />
     </div>
   );
 }
@@ -671,8 +727,8 @@ export default function BackofficeOverview() {
       {/* Drill-down dialogs */}
       <DrillDownDialog title={drillDownTitles[drillDown] || ''} open={!!drillDown} onClose={() => setDrillDown(null)}>
         {drillDown === 'customers' && <CustomerDrillDown customers={customers} t={t} />}
-        {drillDown === 'users' && <UserDrillDown users={users} customers={customers} t={t} />}
-        {drillDown === 'assessments' && <AssessmentsDrillDown assessments={assessments} customers={customers} t={t} />}
+        {drillDown === 'users' && <UserDrillDown customers={customers} t={t} />}
+        {drillDown === 'assessments' && <AssessmentsDrillDown customers={customers} t={t} />}
         {drillDown === 'risks' && <RisksDrillDown risks={risks} customers={customers} t={t} />}
         {drillDown === 'tasks' && <TasksDrillDown tasks={tasks} customers={customers} t={t} />}
       </DrillDownDialog>
