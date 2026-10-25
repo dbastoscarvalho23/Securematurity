@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { translateDomain } from '@/lib/domainTranslations';
 import LoadingState from '@/components/shared/LoadingState';
+import { LEGAL_AI_CONTEXT } from '@/lib/legal/aiContext';
 
 export default function AssessmentDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -137,7 +138,9 @@ Assessment data: ${JSON.stringify(responseSummary)}
 
 For each significant gap (current level < target level), provide a recommendation. Focus on the most impactful improvements.
 Return 5-8 prioritized recommendations.
-IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 Annex A structure (Organizational Controls, People Controls, Physical Controls, Technological Controls). Do NOT use the 2013 version's domain structure.`,
+IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 Annex A structure (Organizational Controls, People Controls, Physical Controls, Technological Controls). Do NOT use the 2013 version's domain structure.
+
+${LEGAL_AI_CONTEXT}`,
         response_json_schema: {
           type: "object",
           properties: {

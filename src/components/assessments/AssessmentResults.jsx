@@ -11,14 +11,8 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { exportReportPdf } from '@/lib/exportReportPdf';
 import { useLanguage } from '@/lib/LanguageContext';
+import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
 
-const FRAMEWORK_NAMES = {
-  NIS2: 'NIS2 / DL 125/2025',
-  ISO27001: 'ISO/IEC 27001',
-  NIST_CSF: 'NIST CSF',
-  CIS_V8: 'CIS Controls v8',
-  GDPR: 'GDPR',
-};
 
 const PRIORITY_KEYS = {
   critical: 'tasks_priority_critical',

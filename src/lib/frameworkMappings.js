@@ -1,250 +1,89 @@
 /**
- * Cross-framework control mappings.
- * Each entry maps a source control_id to equivalent controls in other frameworks.
- * Relationships are bidirectional — both sides reference each other.
+ * Correspondências entre referenciais — APENAS fontes oficiais.
+ *
+ * Fonte das ligações (src/data/legal/mappings.json):
+ *  - Regulamento n.º 756/2026, Anexo I: campo «Referências» de cada controlo do QNRCS
+ *    (ISO/IEC 27001:2022, ISO/IEC 27002:2022, NIST CSF 2.0, NIST SP 800-53 Rev. 5, CIS CSC v8.1, CyFun 2025);
+ *  - ENX Association, «Fulfilment of NIS2 through VDA ISA 6» (julho de 2025): NIS2 ↔ VDA ISA 6;
+ *  - Regulamento de Execução (UE) 2024/2690, Anexo: cada secção indica a alínea do art. 21.º, n.º 2, da NIS2.
+ *
+ * O QNRCS funciona como eixo: duas normas ficam relacionadas quando o mesmo controlo do QNRCS as cita
+ * (relação indireta, sempre identificada com o controlo do QNRCS que a sustenta).
+ *
+ * Substitui a tabela manual anterior, que usava identificadores inventados (ex.: "NIS2-GOV-01").
  */
-export const CONTROL_MAPPINGS = [
-  // ── Access Control / IAM ─────────────────────────────────────────────────
-  {
-    group: 'Access Control & Identity Management',
-    controls: [
-      { framework: 'ISO27001', id: 'A.5.15' },
-      { framework: 'ISO27001', id: 'A.5.16' },
-      { framework: 'ISO27001', id: 'A.5.18' },
-      { framework: 'ISO27001', id: 'A.8.2' },
-      { framework: 'NIS2',     id: 'NIS2-GOV-01' },
-      { framework: 'NIST_CSF', id: 'PR.AC-1' },
-      { framework: 'CIS_V8',   id: 'CIS-5' },
-      { framework: 'CIS_V8',   id: 'CIS-6' },
-      { framework: 'QNRC',     id: 'PR.GA-1' },
-      { framework: 'QNRC',     id: 'PR.GA-4' },
-      { framework: 'ENISA',    id: 'ENISA-AC-01' },
-      { framework: 'ENISA',    id: 'ENISA-MFA-01' },
-    ],
-  },
-  // ── Risk Management ───────────────────────────────────────────────────────
-  {
-    group: 'Risk Assessment & Management',
-    controls: [
-      { framework: 'ISO27001', id: 'A.5.1' },
-      { framework: 'NIS2',     id: 'NIS2-RM-01' },
-      { framework: 'NIS2',     id: 'NIS2-RM-02' },
-      { framework: 'NIST_CSF', id: 'ID.RA-1' },
-      { framework: 'NIST_CSF', id: 'GV.OC-1' },
-      { framework: 'QNRC',     id: 'ID.AR-1' },
-      { framework: 'QNRC',     id: 'ID.AR-4' },
-      { framework: 'QNRC',     id: 'ID.GR-1' },
-      { framework: 'ENISA',    id: 'ENISA-GV-02' },
-    ],
-  },
-  // ── Governance & Policy ───────────────────────────────────────────────────
-  {
-    group: 'Governance & Security Policy',
-    controls: [
-      { framework: 'ISO27001', id: 'A.5.2' },
-      { framework: 'NIS2',     id: 'NIS2-GOV-02' },
-      { framework: 'NIST_CSF', id: 'GV.OC-1' },
-      { framework: 'QNRC',     id: 'ID.GV-1' },
-      { framework: 'QNRC',     id: 'ID.GV-2' },
-      { framework: 'ENISA',    id: 'ENISA-GV-01' },
-      { framework: 'ENISA',    id: 'ENISA-GV-03' },
-    ],
-  },
-  // ── Incident Response ────────────────────────────────────────────────────
-  {
-    group: 'Incident Detection & Response',
-    controls: [
-      { framework: 'ISO27001', id: 'A.5.24' },
-      { framework: 'ISO27001', id: 'A.5.25' },
-      { framework: 'ISO27001', id: 'A.5.26' },
-      { framework: 'NIS2',     id: 'NIS2-IR-01' },
-      { framework: 'NIS2',     id: 'NIS2-IR-02' },
-      { framework: 'NIST_CSF', id: 'RS.RP-1' },
-      { framework: 'QNRC',     id: 'RS.PR-1' },
-      { framework: 'QNRC',     id: 'RS.CO-2' },
-      { framework: 'QNRC',     id: 'RS.AN-1' },
-      { framework: 'QNRC',     id: 'RS.MI-1' },
-      { framework: 'ENISA',    id: 'ENISA-IH-01' },
-      { framework: 'ENISA',    id: 'ENISA-IH-02' },
-      { framework: 'ENISA',    id: 'ENISA-IH-03' },
-    ],
-  },
-  // ── Asset Management ─────────────────────────────────────────────────────
-  {
-    group: 'Asset Inventory & Management',
-    controls: [
-      { framework: 'ISO27001', id: 'A.5.9' },
-      { framework: 'ISO27001', id: 'A.5.10' },
-      { framework: 'NIST_CSF', id: 'ID.AM-1' },
-      { framework: 'CIS_V8',   id: 'CIS-1' },
-      { framework: 'CIS_V8',   id: 'CIS-2' },
-      { framework: 'QNRC',     id: 'ID.GA-1' },
-      { framework: 'QNRC',     id: 'ID.GA-2' },
-      { framework: 'QNRC',     id: 'ID.GA-5' },
-      { framework: 'ENISA',    id: 'ENISA-AC-02' },
-    ],
-  },
-  // ── Cryptography ─────────────────────────────────────────────────────────
-  {
-    group: 'Cryptography & Encryption',
-    controls: [
-      { framework: 'ISO27001', id: 'A.8.24' },
-      { framework: 'QNRC',     id: 'PR.SD-1' },
-      { framework: 'QNRC',     id: 'PR.SD-2' },
-      { framework: 'ENISA',    id: 'ENISA-CR-01' },
-      { framework: 'ENISA',    id: 'ENISA-CR-02' },
-      { framework: 'ENISA',    id: 'ENISA-CR-03' },
-    ],
-  },
-  // ── Vulnerability Management ──────────────────────────────────────────────
-  {
-    group: 'Vulnerability & Patch Management',
-    controls: [
-      { framework: 'ISO27001', id: 'A.8.8' },
-      { framework: 'NIST_CSF', id: 'ID.RA-1' },
-      { framework: 'CIS_V8',   id: 'CIS-7' },
-      { framework: 'QNRC',     id: 'PR.PI-12' },
-      { framework: 'ENISA',    id: 'ENISA-NS-02' },
-      { framework: 'ENISA',    id: 'ENISA-HT-02' },
-    ],
-  },
-  // ── Business Continuity ───────────────────────────────────────────────────
-  {
-    group: 'Business Continuity & Recovery',
-    controls: [
-      { framework: 'NIS2',     id: 'NIS2-BC-01' },
-      { framework: 'NIST_CSF', id: 'RC.RP-1' },
-      { framework: 'QNRC',     id: 'RC.PR-1' },
-      { framework: 'QNRC',     id: 'RC.ME-1' },
-      { framework: 'QNRC',     id: 'RC.CO-3' },
-      { framework: 'ENISA',    id: 'ENISA-BC-01' },
-      { framework: 'ENISA',    id: 'ENISA-BC-02' },
-      { framework: 'ENISA',    id: 'ENISA-BC-03' },
-      { framework: 'ENISA',    id: 'ENISA-BC-04' },
-    ],
-  },
-  // ── Supply Chain Security ─────────────────────────────────────────────────
-  {
-    group: 'Supply Chain Security',
-    controls: [
-      { framework: 'NIS2',     id: 'NIS2-SC-01' },
-      { framework: 'QNRC',     id: 'ID.GL-2' },
-      { framework: 'ENISA',    id: 'ENISA-SC-01' },
-      { framework: 'ENISA',    id: 'ENISA-SC-02' },
-      { framework: 'ENISA',    id: 'ENISA-SC-03' },
-    ],
-  },
-  // ── Awareness & Training ──────────────────────────────────────────────────
-  {
-    group: 'Security Awareness & Training',
-    controls: [
-      { framework: 'NIST_CSF', id: 'PR.AT-1' },
-      { framework: 'CIS_V8',   id: 'CIS-14' },
-      { framework: 'QNRC',     id: 'PR.FC-1' },
-      { framework: 'ENISA',    id: 'ENISA-HT-01' },
-      { framework: 'ENISA',    id: 'ENISA-HT-03' },
-    ],
-  },
-  // ── Monitoring & Logging ──────────────────────────────────────────────────
-  {
-    group: 'Security Monitoring & Logging',
-    controls: [
-      { framework: 'ISO27001', id: 'A.8.15' },
-      { framework: 'ISO27001', id: 'A.8.16' },
-      { framework: 'NIST_CSF', id: 'DE.CM-1' },
-      { framework: 'CIS_V8',   id: 'CIS-8' },
-      { framework: 'QNRC',     id: 'DE.AE-1' },
-      { framework: 'QNRC',     id: 'DE.AE-3' },
-      { framework: 'QNRC',     id: 'DE.MC-1' },
-      { framework: 'QNRC',     id: 'PR.TP-1' },
-      { framework: 'ENISA',    id: 'ENISA-MD-01' },
-      { framework: 'ENISA',    id: 'ENISA-MD-02' },
-      { framework: 'ENISA',    id: 'ENISA-MD-03' },
-    ],
-  },
-  // ── Network Security ─────────────────────────────────────────────────────
-  {
-    group: 'Network & System Security',
-    controls: [
-      { framework: 'ISO27001', id: 'A.8.20' },
-      { framework: 'ISO27001', id: 'A.8.22' },
-      { framework: 'NIST_CSF', id: 'PR.AC-1' },
-      { framework: 'QNRC',     id: 'PR.TP-4' },
-      { framework: 'ENISA',    id: 'ENISA-NS-01' },
-      { framework: 'ENISA',    id: 'ENISA-NS-04' },
-    ],
-  },
-  // ── Data Protection ──────────────────────────────────────────────────────
-  {
-    group: 'Data Protection & Classification',
-    controls: [
-      { framework: 'ISO27001', id: 'A.5.12' },
-      { framework: 'ISO27001', id: 'A.5.13' },
-      { framework: 'CIS_V8',   id: 'CIS-3' },
-      { framework: 'QNRC',     id: 'PR.SD-1' },
-      { framework: 'ENISA',    id: 'ENISA-AC-02' },
-    ],
-  },
-  // ── Secure Configuration ─────────────────────────────────────────────────
-  {
-    group: 'Secure Configuration & Hardening',
-    controls: [
-      { framework: 'ISO27001', id: 'A.8.9' },
-      { framework: 'CIS_V8',   id: 'CIS-4' },
-      { framework: 'ENISA',    id: 'ENISA-NS-01' },
-      { framework: 'ENISA',    id: 'ENISA-NS-03' },
-    ],
-  },
-  // ── Backup ───────────────────────────────────────────────────────────────
-  {
-    group: 'Backup & Data Integrity',
-    controls: [
-      { framework: 'ISO27001', id: 'A.8.13' },
-      { framework: 'QNRC',     id: 'PR.PI-4' },
-      { framework: 'ENISA',    id: 'ENISA-BC-02' },
-    ],
-  },
-  // ── Physical Security ────────────────────────────────────────────────────
-  {
-    group: 'Physical Security',
-    controls: [
-      { framework: 'ISO27001', id: 'A.7.1' },
-      { framework: 'ISO27001', id: 'A.7.2' },
-      { framework: 'QNRC',     id: 'PR.MA-1' },
-    ],
-  },
-  // ── HR Security ──────────────────────────────────────────────────────────
-  {
-    group: 'Human Resources Security',
-    controls: [
-      { framework: 'ISO27001', id: 'A.6.1' },
-      { framework: 'ISO27001', id: 'A.6.5' },
-      { framework: 'ENISA',    id: 'ENISA-AC-03' },
-    ],
-  },
-];
+import mappings from '@/data/legal/mappings.json';
 
-/**
- * Build a lookup: controlId -> { group, peers: [{framework, id}] }
- */
-const _lookup = new Map();
-for (const mapping of CONTROL_MAPPINGS) {
-  for (const ctrl of mapping.controls) {
-    const key = `${ctrl.framework}::${ctrl.id}`;
-    _lookup.set(key, {
-      group: mapping.group,
-      peers: mapping.controls.filter(c => !(c.framework === ctrl.framework && c.id === ctrl.id)),
-    });
-  }
+// Código do referencial na aplicação  ↔  código usado no grafo oficial
+const APP_TO_GRAPH = {
+  QNRC: 'QNRC',
+  ISO27001: 'ISO27002',      // perguntas ISO 27001 da aplicação usam os controlos do Anexo A (A.n.m)
+  NIST_CSF: 'NIST_CSF2',
+  CIS_V8: 'CIS',
+  NIS2: 'NIS2',
+  TISAX_ISA6: 'ISA6',
+  EU_2024_2690: 'EU_2024_2690',
+};
+const GRAPH_TO_APP = Object.fromEntries(Object.entries(APP_TO_GRAPH).map(([a, g]) => [g, a]));
+
+const toGraphId = (appFw, id) => {
+  if (appFw === 'ISO27001') return String(id).replace(/^A\./, '');
+  if (appFw === 'CIS_V8') return String(id).replace(/^CIS-(\d+)(\..*)?$/, 'CIS-$1');
+  return id;
+};
+const toAppId = (graphFw, id) => (graphFw === 'ISO27002' ? `A.${id}` : id);
+
+const SOURCE_LABEL = {
+  reg756: 'QNRCS (Reg. 756/2026, Anexo I)',
+  enx_nis2_isa6: 'ENX — NIS2 através do VDA ISA 6',
+  regexec2690: 'Reg. Exec. (UE) 2024/2690, Anexo',
+};
+
+// Índice de adjacência
+const adj = new Map();
+const add = (from, to, edge) => {
+  const k = `${from[0]}::${from[1]}`;
+  if (!adj.has(k)) adj.set(k, []);
+  adj.get(k).push({ node: to, edge });
+};
+for (const e of mappings.edges) {
+  add(e.a, e.b, e);
+  add(e.b, e.a, e);
+}
+
+/** Vizinhos diretos de um nó do grafo oficial. */
+export function officialNeighbours(graphFw, id) {
+  return adj.get(`${graphFw}::${id}`) || [];
 }
 
 /**
- * Given a control_id and its framework, return peer controls from other frameworks.
- * @param {string} framework
- * @param {string} controlId
- * @returns {{ group: string, peers: Array<{framework: string, id: string}> } | null}
+ * Correspondências para uma pergunta de avaliação (interface usada por CrossMappingSuggestions).
+ * Devolve { group, peers: [{ framework, id, via?, source }] } ou null.
  */
 export function getCrossMappings(framework, controlId) {
   if (!framework || !controlId) return null;
-  return _lookup.get(`${framework}::${controlId}`) || null;
+  const gfw = APP_TO_GRAPH[framework];
+  if (!gfw) return null;
+  const gid = toGraphId(framework, controlId);
+  const peers = new Map();
+  const push = (node, source, via) => {
+    const appFw = GRAPH_TO_APP[node[0]];
+    if (!appFw) return;
+    const appId = toAppId(node[0], node[1]);
+    if (appFw === framework && appId === controlId) return;
+    const key = `${appFw}::${appId}`;
+    if (!peers.has(key)) peers.set(key, { framework: appFw, id: appId, via, source: SOURCE_LABEL[source] || source });
+  };
+  for (const { node, edge } of officialNeighbours(gfw, gid)) {
+    push(node, edge.s);
+    // segundo salto através do QNRCS (ou de uma referência NIS2), sempre identificado
+    if (node[0] === 'QNRC' || node[0] === 'NIS2') {
+      for (const n2 of officialNeighbours(node[0], node[1])) push(n2.node, n2.edge.s, `${node[0] === 'QNRC' ? 'QNRCS' : 'NIS2'} ${node[1]}`);
+    }
+  }
+  if (peers.size === 0) return null;
+  const list = [...peers.values()];
+  return { group: [...new Set(list.map((p) => p.source))].join(' · '), peers: list };
 }
+
+export { mappings as officialMappings };

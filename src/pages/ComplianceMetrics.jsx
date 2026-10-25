@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AlertTriangle, Bug, Users, Database, AlertOctagon, Clock, CheckCircle2, Activity, FileText } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, RadialBarChart, RadialBar } from 'recharts';
-import { SEVERITY_STYLES, daysRemaining, hoursRemaining, slaStatus } from '@/lib/complianceUtils';
+import { SEVERITY_STYLES, daysRemaining, hoursRemaining, slaStatus, incidentDeadlines, overdueIncidentPhases } from '@/lib/complianceUtils';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 
@@ -42,11 +42,13 @@ export default function ComplianceMetrics() {
   // ── Incident KPIs ──────────────────────────────────────────────────────
   const openIncidents = incidents.filter(i => i.status !== 'closed' && i.status !== 'resolved');
   const criticalIncidents = incidents.filter(i => i.severity === 'critical' && i.status !== 'closed');
-  const nis2Overdue = incidents.filter(i => {
-    if (i.status === 'closed') return false;
-    const ew = !i.early_warning_sent && hoursRemaining(i.detected_at, 24) < 0;
-    const ns = !i.notification_sent && hoursRemaining(i.detected_at, 72) < 0;
-    return ew || ns;
+  // Prazos do RJC (DL 125/2025, arts. 41.º a 44.º) ou do DORA, conforme o regime do incidente
+  const nis2Overdue = incidents.filter(i => overdueIncidentPhases(i).length > 0);
+  const initialOverdue = incidents.filter(i => overdueIncidentPhases(i).some(p => p.id === 'rjc_initial' || p.id === 'dora_initial'));
+  const laterOverdue = incidents.filter(i => overdueIncidentPhases(i).some(p => p.id !== 'rjc_initial' && p.id !== 'dora_initial'));
+  const fullyNotified = incidents.filter(i => {
+    const phases = incidentDeadlines(i).filter(p => !p.optional);
+    return phases.length > 0 && phases.every(p => p.sent);
   });
 
   // ── Vulnerability KPIs ─────────────────────────────────────────────────
@@ -102,11 +104,11 @@ export default function ComplianceMetrics() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="rounded-lg border p-4 text-center">
-              <p className="text-2xl font-bold text-orange-500">{incidents.filter(i => !i.early_warning_sent && hoursRemaining(i.detected_at, 24) < 0 && i.status !== 'closed').length}</p>
+              <p className="text-2xl font-bold text-orange-500">{initialOverdue.length}</p>
               <p className="text-xs text-muted-foreground mt-1">{t('cm_early_warning_overdue')}</p>
             </div>
             <div className="rounded-lg border p-4 text-center">
-              <p className="text-2xl font-bold text-destructive">{incidents.filter(i => !i.notification_sent && hoursRemaining(i.detected_at, 72) < 0 && i.status !== 'closed').length}</p>
+              <p className="text-2xl font-bold text-destructive">{laterOverdue.length}</p>
               <p className="text-xs text-muted-foreground mt-1">{t('cm_notification_overdue')}</p>
             </div>
             <div className="rounded-lg border p-4 text-center">
@@ -114,7 +116,7 @@ export default function ComplianceMetrics() {
               <p className="text-xs text-muted-foreground mt-1">{t('cm_gdpr33_overdue')}</p>
             </div>
             <div className="rounded-lg border p-4 text-center">
-              <p className="text-2xl font-bold text-chart-2">{incidents.filter(i => i.early_warning_sent && i.notification_sent).length}</p>
+              <p className="text-2xl font-bold text-chart-2">{fullyNotified.length}</p>
               <p className="text-xs text-muted-foreground mt-1">{t('cm_fully_notified')}</p>
             </div>
           </div>

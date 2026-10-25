@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { json, readJson, getAuthenticatedUser, isStaffRole, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 
 const ALLOWED_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
 
@@ -8,35 +9,31 @@ const ALLOWED_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getAuthenticatedUser(base44);
+    if (!user) return json({ error: 'Unauthorized' }, 401);
+    if (!isStaffRole(user)) return json({ error: 'Forbidden' }, 403);
 
-    const isAdmin = user.role === 'admin';
-    const isCustomerAdmin = user.role === 'customer_admin';
-    if (!isAdmin && !isCustomerAdmin) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const body = await req.json();
+    const isAdmin = isPlatformAdmin(user);
+    const body = await readJson(req);
     const provider = body.provider;
     if (!ALLOWED_PROVIDERS.includes(provider)) {
-      return Response.json({ error: 'Invalid storage provider' }, { status: 400 });
+      return json({ error: 'Invalid storage provider' }, 400);
     }
 
-    const ownCustomerId = user.customer_id || (user.data && user.data.customer_id);
+    const ownCustomerId = userCustomerId(user);
     const customerId = isAdmin ? (body.customer_id || ownCustomerId) : ownCustomerId;
 
     if (!customerId) {
-      return Response.json({ error: 'No customer linked to this account' }, { status: 400 });
+      return json({ error: 'No customer linked to this account' }, 400);
     }
     if (!isAdmin && body.customer_id && body.customer_id !== ownCustomerId) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+      return json({ error: 'Forbidden' }, 403);
     }
 
     await base44.asServiceRole.entities.Customer.update(customerId, { storage_provider: provider });
 
-    return Response.json({ success: true, provider });
+    return json({ success: true, provider });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, 500);
   }
 }
