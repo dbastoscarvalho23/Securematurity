@@ -1,0 +1,9 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    { "name": "VITE_BASE44_APP_ID", "description": "Base44 app id used by the frontend SDK (platform/app settings)", "requiredAtBoot": true, "generatedForDevelopment": true },
+    { "name": "VITE_BASE44_APP_BASE_URL", "description": "Base44 backend base URL used by the frontend SDK (platform/app settings)", "requiredAtBoot": true, "generatedForDevelopment": true }
+  ]
+}
