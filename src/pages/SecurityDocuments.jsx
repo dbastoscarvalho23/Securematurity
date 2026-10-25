@@ -18,6 +18,7 @@ import ApprovalDialog from '@/components/documents/ApprovalDialog';
 import NominationsPanel from '@/components/documents/NominationsPanel';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 
 const LEVEL_CONFIGS = [
   { id: 'policy',    labelKey: 'docs_level1_label', sublabelKey: 'docs_level1_sublabel', statLabelKey: 'docs_stat_policies',  exampleKeys: ['docs_level1_ex1','docs_level1_ex2','docs_level1_ex3'], icon: Shield,   color: 'text-chart-1', bg: 'bg-chart-1/10', border: 'border-chart-1/20' },
@@ -63,7 +64,7 @@ export default function SecurityDocuments() {
   const [approvalDoc, setApprovalDoc] = useState(null);
   const [approvalOpen, setApprovalOpen] = useState(false);
 
-  const { data: allDocs = [] } = useQuery({
+  const { data: allDocs = [], isLoading: docsLoading } = useQuery({
     queryKey: ['securityDocuments'],
     queryFn: () => base44.entities.SecurityDocument.list('-created_date', 500),
   });
@@ -343,6 +344,10 @@ export default function SecurityDocuments() {
         </div>
       )}
 
+      {docsLoading ? (
+        <Card><CardContent className="p-0"><LoadingState label={t('common_loading')} className="py-16" /></CardContent></Card>
+      ) : (
+        <>
       {/* Pending Reviews Panel */}
       <PendingReviewsPanel docs={docs} onEdit={canApprove || isUser ? handleEdit : null} />
 
@@ -482,6 +487,9 @@ export default function SecurityDocuments() {
           </div>
         );
       })}
+
+        </>
+      )}
 
       <ApprovalDialog
         open={approvalOpen}
