@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { json, readJson, getAuthenticatedUser, userCustomerId } from '../../shared/http.ts';
 
 // Folder created inside the connected Google Drive / OneDrive account.
 const FOLDER_NAME = 'AnkoraOne';
@@ -160,16 +161,16 @@ async function uploadToOneDrive(accessToken, bytes, contentType, fileName) {
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getAuthenticatedUser(base44);
+    if (!user) return json({ error: 'Unauthorized' }, 401);
 
-    const body = await req.json();
+    const body = await readJson(req);
     const fileUrl = body.file_url;
     const fileName = safeFileName(body.file_name);
-    const customerId = body.customer_id || user.customer_id || (user.data && user.data.customer_id);
+    const customerId = body.customer_id || userCustomerId(user);
 
     if (!fileUrl || !/^https:\/\//i.test(fileUrl)) {
-      return Response.json({ error: 'A valid file_url is required' }, { status: 400 });
+      return json({ error: 'A valid file_url is required' }, 400);
     }
 
     // SSRF gate: the URL must belong to the application's own storage and must
@@ -178,17 +179,17 @@ export default async function (req) {
     try {
       parsedUrl = new URL(fileUrl);
     } catch {
-      return Response.json({ error: 'A valid file_url is required' }, { status: 400 });
+      return json({ error: 'A valid file_url is required' }, 400);
     }
     if (parsedUrl.protocol !== 'https:' || parsedUrl.username || parsedUrl.password) {
-      return Response.json({ error: 'A valid file_url is required' }, { status: 400 });
+      return json({ error: 'A valid file_url is required' }, 400);
     }
     const requestHost = req.headers.get('host') || '';
     if (!isAllowedStorageHost(parsedUrl.hostname, requestHost)) {
-      return Response.json({ error: 'file_url must point at application storage' }, { status: 400 });
+      return json({ error: 'file_url must point at application storage' }, 400);
     }
     if (!(await resolvesToPublicIp(parsedUrl.hostname))) {
-      return Response.json({ error: 'file_url host is not resolvable to a public address' }, { status: 400 });
+      return json({ error: 'file_url host is not resolvable to a public address' }, 400);
     }
 
     // Which third-party providers are enabled platform-wide. A disabled provider
@@ -226,12 +227,12 @@ export default async function (req) {
     if (!provider) provider = 'base44';
 
     if (provider === 'base44') {
-      return Response.json({ url: fileUrl, provider: 'base44' });
+      return json({ url: fileUrl, provider: 'base44' });
     }
 
     const fileRes = await fetch(fileUrl);
     if (!fileRes.ok) {
-      return Response.json({ error: 'Could not read the uploaded file' }, { status: 502 });
+      return json({ error: 'Could not read the uploaded file' }, 502);
     }
     const bytes = await fileRes.arrayBuffer();
     const contentType = fileRes.headers.get('content-type') || 'application/octet-stream';
@@ -239,17 +240,17 @@ export default async function (req) {
     if (provider === 'google_drive') {
       const { accessToken } = await base44.asServiceRole.connectors.getConnection('googledrive');
       const url = await uploadToDrive(accessToken, bytes, contentType, fileName);
-      return Response.json({ url, provider: 'google_drive' });
+      return json({ url, provider: 'google_drive' });
     }
 
     if (provider === 'one_drive') {
       const { accessToken } = await base44.asServiceRole.connectors.getConnection('one_drive');
       const url = await uploadToOneDrive(accessToken, bytes, contentType, fileName);
-      return Response.json({ url, provider: 'one_drive' });
+      return json({ url, provider: 'one_drive' });
     }
 
-    return Response.json({ url: fileUrl, provider: 'base44' });
+    return json({ url: fileUrl, provider: 'base44' });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, 500);
   }
 }

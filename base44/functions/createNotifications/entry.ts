@@ -1,5 +1,5 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-import { AUTOMATION_SECRET } from "../../shared/automationSecret.ts";
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { json, hasAutomationSecret } from "../../shared/http.ts";
 
 const ENTITY_MAP = {
   Task: 'Task',
@@ -17,19 +17,17 @@ Deno.serve(async (req) => {
     // Authorization: this function writes with service role, so only the
     // platform's automations — which carry the shared secret — may invoke it.
     // Anonymous or user-authenticated callers are rejected before any read/write.
-    const headerSecret = req.headers.get('x-automation-secret');
-    const bodySecret = payload?.args?.automation_secret ?? payload?.automation_secret ?? null;
-    if (headerSecret !== AUTOMATION_SECRET && bodySecret !== AUTOMATION_SECRET) {
-      return Response.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!hasAutomationSecret(req, payload)) {
+      return json({ error: 'Unauthorized' }, 403);
     }
 
     // Only process trusted entity-automation events (create/update/delete).
     // Reject anything missing a valid automation event envelope.
     if (!event || !ENTITY_MAP[event.entity_name] || !['create', 'update', 'delete'].includes(event.type)) {
-      return Response.json({ skipped: true, reason: 'invalid automation event' });
+      return json({ skipped: true, reason: 'invalid automation event' });
     }
     if (!data) {
-      return Response.json({ skipped: true, reason: 'no data' });
+      return json({ skipped: true, reason: 'no data' });
     }
 
     // Do NOT trust caller-supplied data fields (target email, title, customer).
@@ -45,7 +43,7 @@ Deno.serve(async (req) => {
       }
     }
     if (!real) {
-      return Response.json({ skipped: true, reason: 'entity not found' });
+      return json({ skipped: true, reason: 'entity not found' });
     }
 
     const notifications = [];
@@ -186,8 +184,8 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.Notification.bulkCreate(notifications);
     }
 
-    return Response.json({ created: notifications.length });
+    return json({ created: notifications.length });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, 500);
   }
 });

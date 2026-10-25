@@ -22,7 +22,8 @@ docker compose -f docker-compose.base44.yml up -d
 - `base44/workflows/` — 8 workflow definitions (JSONC).
 - `base44/connectors/` — 2 connectors (googledrive, one_drive).
 - `base44/agents/` — 1 AI agent (framework_guide).
-- `base44/shared/` — shared utils (automationSecret, escapeHtml).
+- `base44/shared/` — shared utils used by all functions: `http.ts` (json/readJson response+parse helpers, auth gates `getAuthenticatedUser`/`isStaffRole`/`isPlatformAdmin`, record-level `canAccessRecord`, automation gate `authorizeAutomationOrAdmin`), `automationSecret.ts` (shared automation secret + `hasAutomationSecret`/`getAutomationSecret`), `audit.ts` (`logAudit`/`logEmailSent`), `reminderSettings.ts` (`getReminderSettings`, `buildRecipients`), `riskLevel.ts` (`riskScore`, `scoreLevel`), `escapeHtml.ts`.
+- Backend conventions: all functions import the SDK pinned at `npm:@base44/sdk@0.8.44`; responses use the `json(data, status)` helper; scheduled/system automations pass the shared secret via workflow `args.automation_secret` (also `x-automation-secret` header) — see the 4 "Notify"/reminders/purge workflows.
 
 ## Notes / quirks
 - `Landing.jsx` was removed (was orphaned); orphan `landing_*` translation keys were cleaned from `translations-ui.js`.
