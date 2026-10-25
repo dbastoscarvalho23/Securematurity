@@ -49,16 +49,21 @@ export default function CrossMappingSuggestions({
   if (!mapping) return null;
 
   // Find peer questions that have already been answered
+  // As referências oficiais ao CIS indicam o controlo (CIS-n); as perguntas existem por salvaguarda (CIS-n.m),
+  // por isso um controlo CIS corresponde a todas as suas salvaguardas.
+  const matchesPeer = (q, peer) => {
+    if (q.framework_code !== peer.framework || !q.control_id) return false;
+    if (q.control_id === peer.id) return true;
+    return peer.framework === 'CIS_V8' && /^CIS-\d+$/.test(peer.id) && q.control_id.startsWith(`${peer.id}.`);
+  };
   const answeredPeers = mapping.peers
-    .map(peer => {
-      const peerQ = allQuestions.find(
-        q => q.framework_code === peer.framework && q.control_id === peer.id
-      );
-      if (!peerQ) return null;
-      const peerResp = responseMap[peerQ.id];
-      if (!peerResp || peerResp.maturity_level == null) return null;
-      return { peer, question: peerQ, response: peerResp };
-    })
+    .flatMap(peer => allQuestions
+      .filter(q => matchesPeer(q, peer))
+      .map(peerQ => {
+        const peerResp = responseMap[peerQ.id];
+        if (!peerResp || peerResp.maturity_level == null) return null;
+        return { peer: { ...peer, id: peerQ.control_id }, question: peerQ, response: peerResp };
+      }))
     .filter(Boolean);
 
   if (answeredPeers.length === 0) return null;

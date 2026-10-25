@@ -1,89 +1,58 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
-
-const STATUS_LABELS = {
-  open: 'Open',
-  in_treatment: 'In Treatment',
-  accepted: 'Accepted',
-  closed: 'Closed',
-};
-
-function scoreLevel(score) {
-  if (score >= 16) return 'Critical';
-  if (score >= 9)  return 'High';
-  if (score >= 4)  return 'Medium';
-  return 'Low';
-}
-
-async function getSettings(base44, customerId) {
-  const all = await base44.asServiceRole.entities.ReminderSettings.list();
-  const customerSpecific = customerId ? all.find(s => s.customer_id === customerId) : null;
-  const global = all.find(s => !s.customer_id);
-  return customerSpecific || global || {
-    notify_on_assignment: true,
-    notify_on_status_change: true,
-    additional_recipients: '',
-  };
-}
+import { json, getAuthenticatedUser, canAccessRecord } from '../../shared/http.ts';
+import { logEmailSent } from '../../shared/audit.ts';
+import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
+import { riskScore, scoreLevel, RISK_STATUS_LABELS as STATUS_LABELS } from '../../shared/riskLevel.ts';
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const user = await base44.auth.me();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const user = await getAuthenticatedUser(base44);
+  if (!user) return json({ error: 'Unauthorized' }, 401);
 
-  const { type, risk: payloadRisk, previousRisk: payloadPreviousRisk } = await req.json();
+  const body = await req.json();
+  const { type, previousRisk: payloadPreviousRisk } = body;
+  let risk = body.risk;
 
-  // Do NOT trust the caller-supplied risk object: fetch the real record from
-  // the database and verify the caller is authorized to trigger its
-  // notifications, so no user can forge emails to arbitrary recipients.
-  const riskId = payloadRisk?.id;
-  if (!riskId) return Response.json({ error: 'risk id is required' }, { status: 400 });
-  let risk = null;
+  // Never trust the caller-supplied record: only its id is used to fetch the
+  // real record from the database, and the caller must be authorized on it
+  // (admin, same customer, creator or owner) before any email is sent.
+  const riskId = risk?.id;
+  if (!riskId) return json({ error: 'risk.id is required' }, 400);
+  let real = null;
   try {
-    risk = await base44.asServiceRole.entities.RiskItem.get(riskId);
+    real = await base44.asServiceRole.entities.RiskItem.get(riskId);
   } catch {
-    risk = null;
+    real = null;
   }
-  if (!risk) return Response.json({ error: 'risk not found' }, { status: 404 });
+  if (!real) return json({ error: 'risk not found' }, 404);
+
+  if (!canAccessRecord(user, real)) return json({ error: 'Forbidden' }, 403);
+
+  // All email content and recipients are derived from the real record.
+  risk = real;
 
   // The previous state is also client-supplied, so only accept it when it
   // references the same record; otherwise ignore it (prevents forged
   // "previous" data from suppressing or injecting content into emails).
   const previousRisk = payloadPreviousRisk?.id === riskId ? payloadPreviousRisk : null;
 
-  const userCustomerId = (user.data && user.data.customer_id) || user.customer_id;
-  const isAuthorized = user.role === 'admin' ||
-    risk.owner_email === user.email ||
-    risk.customer_id === userCustomerId;
-  if (!isAuthorized) return Response.json({ error: 'Forbidden' }, { status: 403 });
-
-  const score = (risk.impact || 0) * (risk.likelihood || 0);
+  const score = riskScore(risk.impact, risk.likelihood);
   const level = scoreLevel(score);
   const ownerEmail = risk.owner_email;
 
-  if (!ownerEmail) return Response.json({ skipped: 'no owner email' });
+  if (!ownerEmail) return json({ skipped: 'no owner email' });
 
-  const settings = await getSettings(base44, risk.customer_id);
-
-  // Build recipient list
-  const buildRecipients = (primary) => {
-    const list = [primary];
-    if (settings.additional_recipients) {
-      settings.additional_recipients.split(',').map(e => e.trim()).filter(Boolean).forEach(e => {
-        if (!list.includes(e)) list.push(e);
-      });
-    }
-    return list;
-  };
+  const settings = await getReminderSettings(base44.asServiceRole, risk.customer_id);
 
   // ── 1. New assignment ──────────────────────────────────────────────────────
   if (type === 'assigned') {
-    if (!settings.notify_on_assignment) return Response.json({ skipped: 'assignment notifications disabled' });
+    if (!settings.notify_on_assignment) return json({ skipped: 'assignment notifications disabled' });
 
     const wasOwner = previousRisk?.owner_email;
-    if (wasOwner === ownerEmail) return Response.json({ skipped: 'owner unchanged' });
+    if (wasOwner === ownerEmail) return json({ skipped: 'owner unchanged' });
 
-    const recipients = buildRecipients(ownerEmail);
+    const recipients = buildRecipients(ownerEmail, settings);
     const body = `
 <p>Hello,</p>
 <p>You have been assigned as the owner of the following risk:</p>
@@ -102,25 +71,24 @@ Deno.serve(async (req) => {
     for (const to of recipients) {
       await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Risk Assigned] ${esc(risk.title)}`, body });
     }
-    await base44.asServiceRole.entities.AuditLog.create({
-      action: 'email_sent',
+    await logEmailSent(base44, {
       user_email: user.email,
       entity_type: 'RiskItem',
       entity_id: risk.id,
       details: `Risk assignment email sent to ${recipients.join(', ')} for risk: ${risk.title}`,
     });
-    return Response.json({ sent: 'assigned', to: recipients });
+    return json({ sent: 'assigned', to: recipients });
   }
 
   // ── 2. Status change ───────────────────────────────────────────────────────
   if (type === 'status_changed') {
-    if (!settings.notify_on_status_change) return Response.json({ skipped: 'status change notifications disabled' });
+    if (!settings.notify_on_status_change) return json({ skipped: 'status change notifications disabled' });
 
     const oldStatus = previousRisk?.status;
     const newStatus = risk.status;
-    if (!oldStatus || oldStatus === newStatus) return Response.json({ skipped: 'status unchanged' });
+    if (!oldStatus || oldStatus === newStatus) return json({ skipped: 'status unchanged' });
 
-    const recipients = buildRecipients(ownerEmail);
+    const recipients = buildRecipients(ownerEmail, settings);
     const body = `
 <p>Hello,</p>
 <p>The status of a risk you own has been updated:</p>
@@ -138,15 +106,14 @@ Deno.serve(async (req) => {
     for (const to of recipients) {
       await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Risk Update] Status changed — ${esc(risk.title)}`, body });
     }
-    await base44.asServiceRole.entities.AuditLog.create({
-      action: 'email_sent',
+    await logEmailSent(base44, {
       user_email: user.email,
       entity_type: 'RiskItem',
       entity_id: risk.id,
       details: `Risk status change email sent to ${recipients.join(', ')} for risk: ${risk.title} (${STATUS_LABELS[oldStatus] || oldStatus} → ${STATUS_LABELS[newStatus] || newStatus})`,
     });
-    return Response.json({ sent: 'status_changed', to: recipients });
+    return json({ sent: 'status_changed', to: recipients });
   }
 
-  return Response.json({ skipped: 'unknown type' });
+  return json({ skipped: 'unknown type' });
 });

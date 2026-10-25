@@ -50,12 +50,33 @@ async function readJsonBody(req) {
 }
 
 /**
- * Extracts and validates the shared automation secret from a request.
+ * Checks the shared secret against a request (and, when given, an
+ * already-parsed body). Synchronous: safe to call in functions that parsed the
+ * body themselves and must not re-read the request.
  *
  * Checks, in order:
  *   1. The `x-automation-secret` header (manual admin triggers).
  *   2. The `automation_secret` field of the JSON body — under `args.automation_secret`
  *      for scheduled automations, or top-level `automation_secret` for manual invokes.
+ *
+ * @param {Request} req - The incoming request (header check).
+ * @param {object|null} [body] - The already-parsed JSON body, when the caller read it.
+ * @returns {boolean} True when the request carries the valid secret.
+ */
+export function hasAutomationSecret(req, body = null) {
+  const expected = expectedSecret();
+  if (!expected) return false;
+  if (req.headers.get("x-automation-secret") === expected) return true;
+  if (body) {
+    const provided = body?.args?.automation_secret ?? body?.automation_secret ?? null;
+    return provided === expected;
+  }
+  return false;
+}
+
+/**
+ * Extracts and validates the shared automation secret from a request,
+ * re-reading the body when the caller did not parse it.
  *
  * Callers that already parsed the body (because they need other fields from it)
  * pass it in `body` instead of leaving the helper to read the request again.

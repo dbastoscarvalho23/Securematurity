@@ -1,33 +1,17 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml } from '../../shared/escapeHtml.ts';
-import { getAutomationSecret } from '../../shared/automationSecret.ts';
-
-function scoreLevel(score) {
-  if (score >= 16) return 'Critical';
-  if (score >= 9)  return 'High';
-  if (score >= 4)  return 'Medium';
-  return 'Low';
-}
+import { json, authorizeAutomationOrAdmin } from '../../shared/http.ts';
+import { logEmailSent } from '../../shared/audit.ts';
+import { riskScore, scoreLevel } from '../../shared/riskLevel.ts';
+import { buildRecipients } from '../../shared/reminderSettings.ts';
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
-  // Authorization: scheduled automation passes the shared secret (body.args.automation_secret
-  // or x-automation-secret header); manual admin triggers authenticate via base44.auth.me().
+  // Authorization: scheduled automation (shared secret) or manual platform admin.
   // Anonymous external callers are rejected before any service-role query / email dispatch.
-  const automationSecret = await getAutomationSecret(req);
-  let authorized = !!automationSecret;
-  if (!authorized) {
-    try {
-      const user = await base44.auth.me();
-      authorized = user?.role === 'admin';
-    } catch {
-      authorized = false;
-    }
-  }
-  if (!authorized) {
-    return Response.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const forbidden = await authorizeAutomationOrAdmin(req, base44);
+  if (forbidden) return forbidden;
 
   const [risks, allSettings] = await Promise.all([
     base44.asServiceRole.entities.RiskItem.list(),
@@ -69,17 +53,11 @@ Deno.serve(async (req) => {
     const thresholds = settings.reminder_days_before?.length ? settings.reminder_days_before : [7, 3, 1];
     if (!thresholds.includes(daysLeft)) { skipped++; continue; }
 
-    const score = (risk.impact || 0) * (risk.likelihood || 0);
+    const score = riskScore(risk.impact, risk.likelihood);
     const level = scoreLevel(score);
     const urgencyLabel = daysLeft === 1 ? 'tomorrow' : `in ${daysLeft} days`;
 
-    // Build recipient list
-    const recipients = [risk.owner_email];
-    if (settings.additional_recipients) {
-      settings.additional_recipients.split(',').map(e => e.trim()).filter(Boolean).forEach(e => {
-        if (!recipients.includes(e)) recipients.push(e);
-      });
-    }
+    const recipients = buildRecipients(risk.owner_email, settings);
 
     const body = `
 <p>Hello,</p>
@@ -102,8 +80,7 @@ Deno.serve(async (req) => {
         body,
       });
     }
-    await base44.asServiceRole.entities.AuditLog.create({
-      action: 'email_sent',
+    await logEmailSent(base44, {
       user_email: 'system',
       entity_type: 'RiskItem',
       entity_id: risk.id,
@@ -112,5 +89,5 @@ Deno.serve(async (req) => {
     sent++;
   }
 
-  return Response.json({ sent, skipped });
+  return json({ sent, skipped });
 });

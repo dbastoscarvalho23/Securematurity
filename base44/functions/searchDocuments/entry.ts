@@ -1,18 +1,23 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { json, readJson, getAuthenticatedUser, userCustomerId } from '../../shared/http.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getAuthenticatedUser(base44);
+    if (!user) return json({ error: 'Unauthorized' }, 401);
 
-    const { query, customer_id } = await req.json();
-    if (!query?.trim()) return Response.json({ results: [] });
+    const { query, customer_id } = await readJson(req);
+    if (!query?.trim()) return json({ results: [] });
 
-    // Fetch all documents (filtered by customer if provided)
+    // Fetch all documents (filtered by customer if provided). A non-admin can
+    // only search within their own customer; admins may pass any customer_id.
+    const effectiveCustomerId = user.role === 'admin'
+      ? (customer_id || null)
+      : userCustomerId(user);
     let docs;
-    if (customer_id) {
-      docs = await base44.entities.SecurityDocument.filter({ customer_id });
+    if (effectiveCustomerId) {
+      docs = await base44.entities.SecurityDocument.filter({ customer_id: effectiveCustomerId });
     } else {
       docs = await base44.entities.SecurityDocument.list('-created_date', 500);
     }
@@ -66,8 +71,8 @@ ${JSON.stringify(docsContext, null, 2)}`,
       return doc ? { ...doc, relevance_score: m.relevance_score, match_reason: m.reason } : null;
     }).filter(Boolean);
 
-    return Response.json({ results: enriched });
+    return json({ results: enriched });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, 500);
   }
 });

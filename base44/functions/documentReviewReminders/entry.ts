@@ -1,28 +1,16 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml } from "../../shared/escapeHtml.ts";
-import { getAutomationSecret } from "../../shared/automationSecret.ts";
+import { json, authorizeAutomationOrAdmin } from "../../shared/http.ts";
+import { logEmailSent } from "../../shared/audit.ts";
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Authorization: the scheduled automation passes the shared secret
-    // (body.args.automation_secret or x-automation-secret header); manual
-    // admin triggers authenticate via base44.auth.me(). Anonymous external
-    // callers are rejected before any service-role query / email dispatch.
-    const automationSecret = await getAutomationSecret(req);
-    let authorized = !!automationSecret;
-    if (!authorized) {
-      try {
-        const user = await base44.auth.me();
-        authorized = user?.role === 'admin';
-      } catch {
-        authorized = false;
-      }
-    }
-    if (!authorized) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    // Authorization: scheduled automation (shared secret) or manual platform admin.
+    // Anonymous external callers are rejected before any service-role query / email dispatch.
+    const forbidden = await authorizeAutomationOrAdmin(req, base44);
+    if (forbidden) return forbidden;
 
     // This is a scheduled/system function — use service role
     const today = new Date();
@@ -42,7 +30,7 @@ Deno.serve(async (req) => {
     });
 
     if (dueSoon.length === 0) {
-      return Response.json({ sent: 0, message: 'No documents due for review in the next 30 days.' });
+      return json({ sent: 0, message: 'No documents due for review in the next 30 days.' });
     }
 
     // Group by owner_email to send one email per owner
@@ -85,8 +73,7 @@ Deno.serve(async (req) => {
           subject: `[Action Required] ${docs.length} security document${docs.length > 1 ? 's' : ''} due for review`,
           body,
         });
-        await base44.asServiceRole.entities.AuditLog.create({
-          action: 'email_sent',
+        await logEmailSent(base44, {
           user_email: 'system',
           entity_type: 'SecurityDocument',
           details: `Review reminder sent to ${ownerEmail} for ${docs.length} document${docs.length > 1 ? 's' : ''}: ${docs.map(d => d.title).join(', ')}`,
@@ -97,12 +84,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({
+    return json({
       sent,
       total_docs: dueSoon.length,
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, 500);
   }
 });

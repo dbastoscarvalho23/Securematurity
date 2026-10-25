@@ -107,6 +107,94 @@
       ],
       "default": "base44",
       "description": "External cloud storage provider where this customer's uploaded and generated files are stored"
+    },
+    "rjc_qualification": {
+      "type": "string",
+      "enum": [
+        "por_determinar",
+        "essencial",
+        "importante",
+        "publica_relevante",
+        "nao_abrangida"
+      ],
+      "default": "por_determinar",
+      "description": "Qualificação no Regime Jurídico da Cibersegurança (DL 125/2025, arts. 6.º a 8.º)"
+    },
+    "epr_group": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B"
+      ],
+      "description": "Grupo da entidade pública relevante (RJC, art. 7.º; Reg. 756/2026, Anexo IV)"
+    },
+    "conformity_level": {
+      "type": "string",
+      "enum": [
+        "basico",
+        "substancial",
+        "elevado"
+      ],
+      "description": "Nível de conformidade (Reg. 756/2026, art. 30.º e Anexos II e III)"
+    },
+    "rjc_annex": {
+      "type": "string",
+      "enum": [
+        "I",
+        "II"
+      ],
+      "description": "Anexo do RJC em que se enquadra o setor (I — setores de importância crítica; II — outros setores críticos)"
+    },
+    "rjc_sector": {
+      "type": "string",
+      "description": "Setor, tal como consta do anexo do RJC"
+    },
+    "rjc_subsector": {
+      "type": "string",
+      "description": "Subsetor, tal como consta do anexo do RJC"
+    },
+    "rjc_entity_type": {
+      "type": "string",
+      "description": "Tipo de entidade, tal como consta do anexo do RJC"
+    },
+    "entity_size": {
+      "type": "string",
+      "enum": [
+        "grande",
+        "media",
+        "pequena"
+      ],
+      "description": "Dimensão da entidade (Grande, Média, Pequena — Reg. 756/2026, Anexo II)"
+    },
+    "cncs_self_identification_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de autoidentificação na plataforma do CNCS (RJC, art. 8.º)"
+    },
+    "cncs_qualification_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data da notificação da qualificação pelo CNCS (RJC, art. 8.º, n.º 5)"
+    },
+    "permanent_contact_name": {
+      "type": "string",
+      "description": "Ponto de contacto permanente (RJC, art. 32.º; Reg. 756/2026, art. 15.º)"
+    },
+    "permanent_contact_email": {
+      "type": "string"
+    },
+    "permanent_contact_phone": {
+      "type": "string"
+    },
+    "dora_applicable": {
+      "type": "boolean",
+      "default": false,
+      "description": "Entidade financeira abrangida pelo Regulamento (UE) 2022/2554 (DORA)"
+    },
+    "tisax_applicable": {
+      "type": "boolean",
+      "default": false,
+      "description": "Organização sujeita a avaliação TISAX (VDA ISA)"
     }
   },
   "required": [
