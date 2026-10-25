@@ -28,7 +28,8 @@ docker compose -f docker-compose.base44.yml up -d
 - Shell: `src/pages/backoffice/BackofficeLayout.jsx` (sub-nav: Visão geral, Clientes, Utilizadores, Auditoria).
 - Overview: `src/pages/backoffice/BackofficeOverview.jsx` (moved from `src/pages/Admin.jsx`, which was removed; `/admin` redirects to `/backoffice`).
 - User management: `src/components/backoffice/UserManagementPanel.jsx` (extracted from Settings "Users" tab; Settings reuses it). User lists must go through the `listUsers` backend function — direct `User.list()` is denied by RLS (403).
-- Still pending (P1/P2): extract Settings "Frameworks" tab into the backoffice, consolidate user mutations in `manageUser`, server-side pagination for drill-downs.
+- Frameworks tab extracted into `src/components/backoffice/FrameworksPanel.jsx` (reused by Settings "Frameworks" tab and the `/backoffice/frameworks` route).
+- Still pending (P2): consolidate user mutations in `manageUser`, server-side pagination for drill-downs.
 - RouteGuard lists and Sidebar were mirrored for the new paths.
 
 ## Notes / quirks

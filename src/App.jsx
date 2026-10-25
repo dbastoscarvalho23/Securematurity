@@ -22,6 +22,7 @@ import Reports from '@/pages/Reports';
 import BackofficeLayout from '@/pages/backoffice/BackofficeLayout';
 import BackofficeOverview from '@/pages/backoffice/BackofficeOverview';
 import UserManagementPanel from '@/components/backoffice/UserManagementPanel';
+import FrameworksPanel from '@/components/backoffice/FrameworksPanel';
 import AuditLog from '@/pages/AuditLog';
 import Settings from '@/pages/Settings';
 import QuestionBank from '@/pages/QuestionBank';
@@ -80,6 +81,7 @@ const AuthenticatedApp = () => {
             <Route index element={<BackofficeOverview />} />
             <Route path="customers" element={<Customers />} />
             <Route path="users" element={<UserManagementPanel />} />
+            <Route path="frameworks" element={<FrameworksPanel />} />
             <Route path="audit" element={<AuditLog />} />
           </Route>
           <Route path="/admin" element={<RouteGuard path="/admin"><Navigate to="/backoffice" replace /></RouteGuard>} />

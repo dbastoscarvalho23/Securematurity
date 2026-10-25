@@ -14,6 +14,7 @@ const TABS = [
   { to: '/backoffice', labelKey: 'backoffice_tab_overview', end: true },
   { to: '/backoffice/customers', labelKey: 'backoffice_tab_customers' },
   { to: '/backoffice/users', labelKey: 'backoffice_tab_users' },
+  { to: '/backoffice/frameworks', labelKey: 'backoffice_tab_frameworks' },
   { to: '/backoffice/audit', labelKey: 'backoffice_tab_audit' },
 ];
 
