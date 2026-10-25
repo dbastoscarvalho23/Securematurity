@@ -12,6 +12,11 @@
       "name": "VITE_BASE44_APP_BASE_URL",
       "description": "Base44 backend URL — found in the Base44 builder app settings",
       "requiredAtBoot": true
+    },
+    {
+      "name": "AUTOMATION_SECRET",
+      "description": "Shared secret authorizing scheduled/system backend function and workflow invocations — set in the Base44 dashboard Secrets; consumed at runtime via base44/shared/automationSecret.ts (getAutomationSecret). Rotate it only in the dashboard: no code change needed.",
+      "requiredAtBoot": false
     }
   ]
 }
