@@ -51,7 +51,7 @@ export default function SecurityDocuments() {
   const customerId = user?.customer_id;
 
   const [search, setSearch] = useState('');
-  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState(null);
   const [collapsed, setCollapsed] = useState({});
@@ -74,8 +74,10 @@ export default function SecurityDocuments() {
     enabled: isAdmin,
   });
 
-  // Determine the effective customer filter
-  const effectiveCustomerId = isAdmin ? selectedCustomerId : customerId;
+  // Determine the effective customer filter ("all" = no filter for platform admin)
+  const effectiveCustomerId = isAdmin
+    ? (selectedCustomerId && selectedCustomerId !== 'all' ? selectedCustomerId : '')
+    : customerId;
 
   // Filter docs by customer + search
   const docs = useMemo(() => {
@@ -253,7 +255,7 @@ export default function SecurityDocuments() {
                 <SelectValue placeholder={t('docs_all_customers')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={null}>{t('docs_all_customers')}</SelectItem>
+                <SelectItem value="all">{t('docs_all_customers')}</SelectItem>
                 {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -368,7 +370,7 @@ export default function SecurityDocuments() {
       </div>
 
       {/* Nominations & Governance */}
-      <NominationsPanel customers={customers} selectedCustomerId={selectedCustomerId} />
+      <NominationsPanel customers={customers} selectedCustomerId={effectiveCustomerId} />
 
       {/* Level sections */}
       {LEVELS.map(level => {
