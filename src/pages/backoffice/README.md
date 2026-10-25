@@ -100,7 +100,8 @@ Pontos-chave:
    ```jsx
    <Route path="reports" element={<ReportsPanel />} />
    ```
-   Importações de páginas podem ser lazy (`React.lazy`) desde que envolvidas em `ErrorBoundary`.
+   Os módulos do backoffice são lazy (`React.lazy`) em `App.jsx`, envolvidos em
+   `LazySection` (`ErrorBoundary` + `Suspense`); novos painéis devem seguir o mesmo padrão.
 
 4. **Espelhar o acesso**: adicionar o caminho a `RouteGuard` e à configuração da `Sidebar`
    — as duas listas devem manter-se sincronizadas.

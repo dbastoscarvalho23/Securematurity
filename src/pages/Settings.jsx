@@ -1,20 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PageHeader from '@/components/shared/PageHeader';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
-import UserManagementPanel from '@/components/backoffice/UserManagementPanel';
-import FrameworksPanel from '@/components/backoffice/FrameworksPanel';
+const UserManagementPanel = lazy(() => import('@/components/backoffice/UserManagementPanel'));
+const FrameworksPanel = lazy(() => import('@/components/backoffice/FrameworksPanel'));
 import { Settings as SettingsIcon, Trash2, User, Bell, FileBarChart, GraduationCap, HardDrive, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { writeAuditLog } from '@/lib/auditLog';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import MaintenanceWindowPanel from '@/components/settings/MaintenanceWindowPanel';
@@ -218,14 +216,18 @@ export default function Settings() {
           </Card>
 
           {(isAdmin || isCustomerAdmin) && (
-            <UserManagementPanel />
+            <Suspense fallback={<Loader2 className="h-6 w-6 animate-spin mx-auto my-8" />}>
+              <UserManagementPanel />
+            </Suspense>
           )}
         </TabsContent>
 
 
         {/* Frameworks Tab */}
         <TabsContent value="frameworks" className="space-y-4 mt-4">
-          <FrameworksPanel />
+          <Suspense fallback={<Loader2 className="h-6 w-6 animate-spin mx-auto my-8" />}>
+            <FrameworksPanel />
+          </Suspense>
         </TabsContent>
 
         {/* Reminders Tab */}
