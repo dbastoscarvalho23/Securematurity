@@ -1,17 +1,8 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
-import { extractAutomationSecret } from '../../shared/automationSecret.ts';
-
-async function getSettings(base44ServiceRole, customerId) {
-  const all = await base44ServiceRole.entities.ReminderSettings.list();
-  const customerSpecific = customerId ? all.find(s => s.customer_id === customerId) : null;
-  const global = all.find(s => !s.customer_id);
-  return customerSpecific || global || {
-    notify_on_document_review: true,
-    notify_on_document_approval: true,
-    additional_recipients: '',
-  };
-}
+import { json, getAuthenticatedUser, hasAutomationSecret, canAccessRecord } from '../../shared/http.ts';
+import { logEmailSent } from '../../shared/audit.ts';
+import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
@@ -22,68 +13,59 @@ Deno.serve(async (req) => {
   let type, document, previousDocument, user;
 
   if (body.event && body.data) {
-    // Entity automation: triggered by SecurityDocument update.
-    // The automation engine passes the shared secret; anonymous external
-    // callers cannot reach this branch without it.
-    if (!extractAutomationSecret(req, body)) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    // Entity automation branch: only platform automations — which carry the
+    // shared secret — may trigger this service-role email dispatch. Anonymous
+    // callers are rejected before any read/write.
+    if (!hasAutomationSecret(req, body)) {
+      return json({ error: 'Unauthorized' }, 403);
     }
 
     // Verify the document exists in the database to prevent spoofed payloads
     const docId = body.data.id;
-    if (!docId) return Response.json({ error: 'document id is required' }, { status: 400 });
+    if (!docId) return json({ error: 'document id is required' }, 400);
     const realDoc = await base44.asServiceRole.entities.SecurityDocument.get(docId);
-    if (!realDoc) return Response.json({ error: 'document not found' }, { status: 404 });
+    if (!realDoc) return json({ error: 'document not found' }, 404);
 
     const newStatus = realDoc.status;
     const oldStatus = body.old_data?.status;
-    if (newStatus === oldStatus) return Response.json({ skipped: 'status unchanged' });
+    if (newStatus === oldStatus) return json({ skipped: 'status unchanged' });
 
     document = realDoc;
     previousDocument = body.old_data;
 
     if (newStatus === 'under_review') type = 'sent_for_review';
     else if (newStatus === 'approved') type = 'approved';
-    else return Response.json({ skipped: `status ${newStatus} not actionable` });
+    else return json({ skipped: `status ${newStatus} not actionable` });
 
     // Use service role for automated calls (no user context)
     user = { full_name: 'System', email: 'system' };
   } else {
     // Direct API call from frontend
-    user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    user = await getAuthenticatedUser(base44);
+    if (!user) return json({ error: 'Unauthorized' }, 401);
     type = body.type;
     previousDocument = body.previousDocument;
 
     // Do NOT trust body.document — fetch the real record from the database
-    // and verify the caller owns it / is authorized to trigger its notifications.
+    // and verify the caller is authorized to trigger its notifications.
     const docId = body.document_id || body.document?.id;
-    if (!docId) return Response.json({ error: 'document_id is required' }, { status: 400 });
-    const realDoc = await base44.asServiceRole.entities.SecurityDocument.get(docId);
-    if (!realDoc) return Response.json({ error: 'document not found' }, { status: 404 });
+    if (!docId) return json({ error: 'document_id is required' }, 400);
+    let realDoc = null;
+    try {
+      realDoc = await base44.asServiceRole.entities.SecurityDocument.get(docId);
+    } catch {
+      realDoc = null;
+    }
+    if (!realDoc) return json({ error: 'document not found' }, 404);
 
-    const isAuthorized = user.role === 'admin' ||
-      realDoc.created_by_id === user.id ||
-      realDoc.owner_email === user.email ||
-      realDoc.customer_id === user.data?.customer_id;
-    if (!isAuthorized) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    if (!canAccessRecord(user, realDoc)) return json({ error: 'Forbidden' }, 403);
 
     document = realDoc;
   }
 
-  if (!document) return Response.json({ error: 'document is required' }, { status: 400 });
+  if (!document) return json({ error: 'document is required' }, 400);
 
-  const settings = await getSettings(base44.asServiceRole, document.customer_id);
-
-  const buildRecipients = (primary) => {
-    const list = primary ? [primary] : [];
-    if (settings.additional_recipients) {
-      settings.additional_recipients.split(',').map(e => e.trim()).filter(Boolean).forEach(e => {
-        if (!list.includes(e)) list.push(e);
-      });
-    }
-    return list;
-  };
+  const settings = await getReminderSettings(base44.asServiceRole, document.customer_id);
 
   const LEVEL_LABELS = { policy: 'Policy', standard: 'Standard', procedure: 'Procedure', playbook: 'Playbook' };
   const STATUS_LABELS = { draft: 'Draft', under_review: 'Under Review', approved: 'Approved', deprecated: 'Deprecated' };
@@ -100,11 +82,11 @@ Deno.serve(async (req) => {
   // ── 1. Document sent for review ──────────────────────────────────────────────
   if (type === 'sent_for_review') {
     if (settings.notify_on_document_review === false) {
-      return Response.json({ skipped: 'document review notifications disabled' });
+      return json({ skipped: 'document review notifications disabled' });
     }
 
-    const recipients = buildRecipients(document.owner_email);
-    if (recipients.length === 0) return Response.json({ skipped: 'no recipients' });
+    const recipients = buildRecipients(document.owner_email, settings);
+    if (recipients.length === 0) return json({ skipped: 'no recipients' });
 
     const body = `
       <div style="font-family:sans-serif;max-width:580px;margin:0 auto;color:#1e293b;">
@@ -132,24 +114,23 @@ Deno.serve(async (req) => {
         body,
       });
     }
-    await base44.asServiceRole.entities.AuditLog.create({
-      action: 'email_sent',
+    await logEmailSent(base44, {
       user_email: user.email,
       entity_type: 'SecurityDocument',
       entity_id: document.id,
       details: `Document review notification sent to ${recipients.join(', ')} for: ${document.title}`,
     });
-    return Response.json({ sent: 'sent_for_review', to: recipients });
+    return json({ sent: 'sent_for_review', to: recipients });
   }
 
   // ── 2. Document approved ────────────────────────────────────────────────────
   if (type === 'approved') {
     if (settings.notify_on_document_approval === false) {
-      return Response.json({ skipped: 'document approval notifications disabled' });
+      return json({ skipped: 'document approval notifications disabled' });
     }
 
-    const recipients = buildRecipients(document.owner_email);
-    if (recipients.length === 0) return Response.json({ skipped: 'no recipients' });
+    const recipients = buildRecipients(document.owner_email, settings);
+    if (recipients.length === 0) return json({ skipped: 'no recipients' });
 
     const body = `
       <div style="font-family:sans-serif;max-width:580px;margin:0 auto;color:#1e293b;">
@@ -176,15 +157,14 @@ Deno.serve(async (req) => {
         body,
       });
     }
-    await base44.asServiceRole.entities.AuditLog.create({
-      action: 'email_sent',
+    await logEmailSent(base44, {
       user_email: user.email,
       entity_type: 'SecurityDocument',
       entity_id: document.id,
       details: `Document approval notification sent to ${recipients.join(', ')} for: ${document.title}`,
     });
-    return Response.json({ sent: 'approved', to: recipients });
+    return json({ sent: 'approved', to: recipients });
   }
 
-  return Response.json({ skipped: 'unknown type' });
+  return json({ skipped: 'unknown type' });
 });
