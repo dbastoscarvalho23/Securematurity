@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
 
 const BRAND_DARK = [20, 30, 60];       // navy
 const BRAND_BLUE = [59, 130, 246];     // primary blue
@@ -14,13 +15,6 @@ const PRIORITY_COLORS = {
   low: [100, 110, 130],
 };
 
-const FRAMEWORK_NAMES = {
-  NIS2: 'NIS2 / DL 125/2025',
-  ISO27001: 'ISO/IEC 27001',
-  NIST_CSF: 'NIST CSF 2.0',
-  CIS_V8: 'CIS Controls v8',
-  QNRC: 'QNRC',
-};
 
 function setColor(doc, rgb, type = 'text') {
   if (type === 'fill') doc.setFillColor(...rgb);

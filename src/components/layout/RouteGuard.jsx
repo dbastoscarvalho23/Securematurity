@@ -12,7 +12,7 @@ import { useAuth } from '@/lib/AuthContext';
 
 // Routes accessible by 'user' role (with a customer assigned)
 const USER_ALLOWED = [
-  '/', '/compliance-journey', '/assessments', '/evidence',
+  '/', '/compliance-journey', '/legal-library', '/assessments', '/evidence',
   '/tasks', '/task-analytics', '/risk-assessment', '/security-documents',
   '/document-audit-trail', '/supply-chain', '/suppliers', '/reports', '/settings',
 ];

@@ -21,6 +21,22 @@ export const AUTOMATION_SECRET = "cm-automation-7f3a9b2e1d8c4a6f0b5e2c9d1a7f4e3b
  * @param {Request} req - The incoming request.
  * @returns {Promise<string|null>} The validated secret value, or null if absent/invalid.
  */
+/**
+ * Same validation as getAutomationSecret, but for handlers that have already
+ * parsed the JSON body (a Request body can only be consumed once).
+ *
+ * @param {Request} req - the incoming request (for the header check).
+ * @param {object|null} body - the already-parsed JSON body, if any.
+ * @returns {string|null} The validated secret value, or null if absent/invalid.
+ */
+export function extractAutomationSecret(req, body) {
+  const headerSecret = req.headers.get("x-automation-secret");
+  if (headerSecret === AUTOMATION_SECRET) return headerSecret;
+  const bodySecret = body?.args?.automation_secret ?? body?.automation_secret ?? null;
+  if (bodySecret === AUTOMATION_SECRET) return bodySecret;
+  return null;
+}
+
 export async function getAutomationSecret(req) {
   const headerSecret = req.headers.get("x-automation-secret");
   if (headerSecret === AUTOMATION_SECRET) return headerSecret;
