@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { extractAutomationSecret } from '../../shared/automationSecret.ts';
 
 const ENTITY_MAP = {
   Task: 'Task',
@@ -6,10 +7,27 @@ const ENTITY_MAP = {
   SecurityDocument: 'SecurityDocument',
 };
 
+async function isAdmin(base44) {
+  try {
+    const user = await base44.auth.me();
+    return user?.role === 'admin';
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const payload = await req.json();
+
+    // Authorization: this function writes Notification records with the service
+    // role. Only the platform automation engine (shared secret) or an admin
+    // user may invoke it — anonymous callers are rejected up front.
+    const authorized = !!extractAutomationSecret(req, payload) || await isAdmin(base44);
+    if (!authorized) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const { event, data, old_data } = payload;
 

@@ -31,7 +31,28 @@ Deno.serve(async (req) => {
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { type, task, previousTask } = await req.json();
+  const { type, task: taskPayload, previousTask } = await req.json();
+
+  // Do NOT trust the client-supplied task object: recipient, title and
+  // description could all be forged by the caller. Fetch the real record by id
+  // from the database and authorize the caller before sending anything.
+  const taskId = taskPayload?.id;
+  if (!taskId) return Response.json({ error: 'task id is required' }, { status: 400 });
+  let task;
+  try {
+    task = await base44.asServiceRole.entities.Task.get(taskId);
+  } catch {
+    task = null;
+  }
+  if (!task) return Response.json({ error: 'task not found' }, { status: 404 });
+
+  const callerCustomerId = user.customer_id || (user.data && user.data.customer_id);
+  const isAuthorized = user.role === 'admin' ||
+    (task.customer_id && task.customer_id === callerCustomerId) ||
+    task.created_by_id === user.id ||
+    task.assigned_to === user.email;
+  if (!isAuthorized) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
   const assignedTo = task.assigned_to;
 
   if (!assignedTo) return Response.json({ skipped: 'no assigned_to email' });

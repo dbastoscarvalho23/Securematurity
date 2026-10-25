@@ -74,8 +74,7 @@ export default function SecurityDocuments() {
     enabled: isAdmin,
   });
 
-  // Determine the effective customer filter
-  // "all" = no filter for platform admin
+  // Determine the effective customer filter ("all" = no filter for platform admin)
   const effectiveCustomerId = isAdmin
     ? (selectedCustomerId && selectedCustomerId !== 'all' ? selectedCustomerId : '')
     : customerId;
