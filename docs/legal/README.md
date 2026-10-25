@@ -22,7 +22,7 @@ A Biblioteca Legal da AnkoraOne (`/legal-library`) e os dados em `src/data/legal
 | ENX — Fulfilment of NIS2 through ISA 6 (2025-07) | ENX | `ENX_Fulfilment_NIS2_through_ISA6_EN_2025-07.pdf` | `db0b78da1e05cfbc1b725f554cedcdd39d299958cc5cc3121fabfaa724a164fc` | Só correspondências NIS2↔ISA (identificadores) |
 | TISAX Participant Handbook | ENX | `TISAX_Participant_Handbook.pdf` | `d187ed07b42570d2d4cac34d3390395ae90f74c000e59081fe9a000d19785981` | Só factos (níveis, etiquetas, validade) |
 | TISAX Simplified Group Assessment 1.1 | ENX | `TISAX_Simplified_Group_Assessment_Version_1.1.pdf` | `1f4c1a550ccba9fd309462f94ba90be6b0fa4861d6d19876aa7ecad52650f1e8` | Só factos |
-| CIS Critical Security Controls v8.1.2 (Guide e folha de cálculo) | [CIS](https://www.cisecurity.org/controls/v8-1) | `CIS_Controls_Guide_v8.1.2_0325_v2.pdf`, `CIS_Controls_Version_8.1.2___March_2025.xlsx` | `e21b6d20…f758f50b3`, `56ee1b73…a7ef5d` | Só identificadores e grupos IG |
+| CIS Critical Security Controls v8.1.2 (Guide e folha de cálculo) | [CIS](https://www.cisecurity.org/controls/v8-1) | `CIS_Controls_Guide_v8.1.2_0325_v2.pdf`, `CIS_Controls_Version_8.1.2___March_2025.xlsx` | `e21b6d20…6ac878e4`, `56ee1b73…a7ef5d` | Só identificadores e grupos IG |
 
 A lista de preços TISAX fornecida (`02_TISAX_Participant_Price_List.pdf`) não foi usada.
 
@@ -36,7 +36,7 @@ A lista de preços TISAX fornecida (`02_TISAX_Participant_Price_List.pdf`) não 
 ## Datas relevantes (calculadas a partir dos textos)
 
 - DL 125/2025: entrada em vigor a **2026-04-03** (120 dias após a publicação).
-- RJC, arts. 27.º, n.os 1 e 2, 28.º a 30.º e 33.º: produzem efeitos 24 meses após a regulamentação (DL 125/2025, art. 10.º, n.º 2). O Regulamento n.º 756/2026, publicado a 22-06-2026, é essa regulamentação → **22-06-2028**.
+- RJC, arts. 27.º, n.os 1 e 2, 28.º a 30.º e 33.º, e alíneas b), c) e f) do n.º 1 do art. 61.º: produzem efeitos 24 meses após a regulamentação (DL 125/2025, art. 10.º, n.º 2). O Regulamento n.º 756/2026, publicado a 22-06-2026, é essa regulamentação → **22-06-2028**.
 - ISA 2027.1: sem data de aplicação obrigatória nos documentos fornecidos.
 
 ## Correções a gralhas do texto oficial

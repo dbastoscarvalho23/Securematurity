@@ -203,6 +203,13 @@ for o in objectives:
             k['statement'] = dehyphen(k['statement'])
             if 'description' in k:
                 k['description'] = dehyphen(k['description'])
+                # Enunciado que continua noutra linha (após quebra): a descrição começa em minúscula
+                # (ex.: GR.CA-8 «…são testados / com o acompanhamento dos fornecedores.»).
+                d0 = k['description']
+                if d0[:1].islower() and '.' in d0:
+                    cut = d0.index('.') + 1
+                    k['statement'] = (k['statement'] + ' ' + d0[:cut]).strip()
+                    k['description'] = d0[cut:].strip()
             if 'description' not in k:
                 issues.append(f"{k['id']}: sem descrição")
 

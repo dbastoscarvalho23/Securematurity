@@ -49,24 +49,45 @@ const DEFAULT_FORM = {
 };
 
 // Campos de data/hora do incidente (formulário em hora local ↔ ISO na base de dados)
-const DATETIME_FIELDS = ['detected_at', 'significant_verified_at', 'impact_ended_at', 'dora_classified_major_at'];
+const DATETIME_FIELDS = ['detected_at', 'significant_verified_at', 'impact_ended_at', 'dora_classified_major_at',
+  'early_warning_sent_at', 'notification_sent_at', 'final_report_sent_at', 'end_of_impact_notification_sent_at'];
 const toLocalInput = (iso) => {
   if (!iso) return '';
   const d = new Date(iso);
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
-// Ao marcar uma notificação como enviada, regista-se o momento (inicia a contagem da fase seguinte)
+// Momento de envio de cada notificação (inicia a contagem da fase seguinte). Ao marcar como enviada propõe-se
+// a hora atual, que o utilizador pode corrigir para a hora real de envio.
 const SENT_AT = {
   early_warning_sent: 'early_warning_sent_at', notification_sent: 'notification_sent_at',
   final_report_sent: 'final_report_sent_at', end_of_impact_notification_sent: 'end_of_impact_notification_sent_at',
 };
 
+function SentCheck({ form, set, flag, label, t }) {
+  const at = SENT_AT[flag];
+  return (
+    <div className="space-y-1">
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={!!form[flag]} onChange={e => {
+          set(flag, e.target.checked);
+          if (e.target.checked && !form[at]) set(at, toLocalInput(new Date().toISOString()));
+        }} /> {label}
+      </label>
+      {form[flag] && (
+        <Input type="datetime-local" aria-label={`${label} — ${t('inc_sent_at')}`} title={t('inc_sent_at')} className="h-8 text-xs"
+          value={form[at] || ''} onChange={e => set(at, e.target.value)} />
+      )}
+    </div>
+  );
+}
+
 function DeadlineBadge({ phase, t }) {
   const label = t(phase.labelKey);
   if (phase.sent) return <Badge variant="outline" className="text-xs bg-chart-2/10 text-chart-2 border-chart-2/20"><CheckCircle2 className="w-3 h-3 mr-1" />{label}</Badge>;
   if (!phase.due) return <Badge variant="outline" className="text-xs text-muted-foreground" title={phase.ref}>{label}</Badge>;
-  const hours = Math.round((phase.due.getTime() - Date.now()) / 3600000);
-  if (hours < 0) return <Badge variant="outline" title={phase.ref} className={`text-xs ${phase.optional ? 'text-muted-foreground' : 'bg-destructive/10 text-destructive border-destructive/20'}`}><AlertOctagon className="w-3 h-3 mr-1" />{label} {t('inc_overdue')}</Badge>;
+  const ms = phase.due.getTime() - Date.now();
+  const hours = Math.floor(ms / 3600000);
+  if (ms < 0) return <Badge variant="outline" title={phase.ref} className={`text-xs ${phase.optional ? 'text-muted-foreground' : 'bg-destructive/10 text-destructive border-destructive/20'}`}><AlertOctagon className="w-3 h-3 mr-1" />{label} {t('inc_overdue')}</Badge>;
   const left = hours >= 48 ? `${Math.floor(hours / 24)}d` : `${hours}h`;
   return <Badge variant="outline" title={phase.ref} className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20"><Clock className="w-3 h-3 mr-1" />{label}: {left} {t('common_left')}</Badge>;
 }
@@ -112,7 +133,7 @@ export default function IncidentManagement() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ ...DEFAULT_FORM, detected_at: new Date().toISOString().slice(0, 16), customer_id: customerId });
+    setForm({ ...DEFAULT_FORM, detected_at: toLocalInput(new Date().toISOString()), customer_id: customerId });
     setDialogOpen(true);
   };
 
@@ -129,7 +150,7 @@ export default function IncidentManagement() {
     const payload = { ...form };
     for (const f of DATETIME_FIELDS) payload[f] = form[f] ? new Date(form[f]).toISOString() : null;
     for (const [flag, at] of Object.entries(SENT_AT)) {
-      if (payload[flag] && !payload[at]) payload[at] = new Date().toISOString();
+      // Sem hora indicada (ex.: registos antigos) não se inventa uma: fica vazia até o utilizador a preencher.
       if (!payload[flag]) payload[at] = null;
     }
     if (isAdmin && !editing) {
@@ -306,10 +327,10 @@ export default function IncidentManagement() {
                   </div>
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!form.resolved_within_2h} onChange={e => set('resolved_within_2h', e.target.checked)} /> {t('inc_resolved_within_2h')}</label>
                   <div className="grid grid-cols-2 gap-2">
-                    {!form.resolved_within_2h && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.early_warning_sent} onChange={e => set('early_warning_sent', e.target.checked)} /> {t('inc_early_warning')}</label>}
-                    {!form.resolved_within_2h && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notification_sent} onChange={e => set('notification_sent', e.target.checked)} /> {t('inc_notification')}</label>}
-                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!form.end_of_impact_notification_sent} onChange={e => set('end_of_impact_notification_sent', e.target.checked)} /> {t('inc_end_of_impact')}</label>
-                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.final_report_sent} onChange={e => set('final_report_sent', e.target.checked)} /> {t('inc_final_report')}</label>
+                    {!form.resolved_within_2h && <SentCheck form={form} set={set} flag="early_warning_sent" label={t('inc_early_warning')} t={t} />}
+                    {!form.resolved_within_2h && <SentCheck form={form} set={set} flag="notification_sent" label={t('inc_notification')} t={t} />}
+                    <SentCheck form={form} set={set} flag="end_of_impact_notification_sent" label={t('inc_end_of_impact')} t={t} />
+                    <SentCheck form={form} set={set} flag="final_report_sent" label={t('inc_final_report')} t={t} />
                   </div>
                   <p className="text-[11px] text-muted-foreground">{t('inc_rjc_help')}</p>
                 </>
@@ -321,9 +342,9 @@ export default function IncidentManagement() {
                     <Input type="datetime-local" value={form.dora_classified_major_at || ''} onChange={e => set('dora_classified_major_at', e.target.value)} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.early_warning_sent} onChange={e => set('early_warning_sent', e.target.checked)} /> {t('inc_dora_initial')}</label>
-                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notification_sent} onChange={e => set('notification_sent', e.target.checked)} /> {t('inc_dora_intermediate')}</label>
-                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.final_report_sent} onChange={e => set('final_report_sent', e.target.checked)} /> {t('inc_dora_final')}</label>
+                    <SentCheck form={form} set={set} flag="early_warning_sent" label={t('inc_dora_initial')} t={t} />
+                    <SentCheck form={form} set={set} flag="notification_sent" label={t('inc_dora_intermediate')} t={t} />
+                    <SentCheck form={form} set={set} flag="final_report_sent" label={t('inc_dora_final')} t={t} />
                   </div>
                   <p className="text-[11px] text-muted-foreground">{t('inc_dora_help')}</p>
                 </>

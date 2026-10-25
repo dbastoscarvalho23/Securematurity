@@ -76,7 +76,16 @@ export function applicableMeasures(qnrcs, level) {
 export function applicableEprMeasures(epr, group) {
   if (!epr) return [];
   const groups = group === 'A' ? ['B', 'A'] : group === 'B' ? ['B'] : [];
-  return groups.flatMap((g) => (epr[`group_${g}`] || []).map((m, i) => ({ key: `EPR-${g}:${m.code}:${i}`, group: g, ...m })));
+  // Chave estável: grupo + código da área; um sufixo só quando o mesmo código se repete no texto oficial
+  // (ex.: T.PPT surge duas vezes no Grupo A), numerado pela ordem de ocorrência.
+  return groups.flatMap((g) => {
+    const seen = {};
+    return (epr[`group_${g}`] || []).map((m) => {
+      seen[m.code] = (seen[m.code] || 0) + 1;
+      const key = seen[m.code] === 1 ? `EPR-${g}:${m.code}` : `EPR-${g}:${m.code}#${seen[m.code]}`;
+      return { key, group: g, ...m };
+    });
+  });
 }
 
 /** Instrumento do catálogo pelo id. */

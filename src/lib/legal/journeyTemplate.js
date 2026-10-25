@@ -1,7 +1,7 @@
 /**
  * Jornada de conformidade — Regime Jurídico da Cibersegurança (DL 125/2025) e Regulamento n.º 756/2026.
  * Cada tarefa indica a disposição oficial em que se baseia (texto integral na Biblioteca Legal).
- * Nota: os arts. 27.º, n.os 1 e 2, 28.º a 30.º e 33.º do RJC produzem efeitos 24 meses após a regulamentação
+ * Nota: os arts. 27.º, n.os 1 e 2, 28.º a 30.º e 33.º e as alíneas b), c) e f) do n.º 1 do art. 61.º do RJC produzem efeitos 24 meses após a regulamentação
  * (DL 125/2025, art. 10.º, n.º 2) — o Reg. 756/2026 (publicado a 22-06-2026) é essa regulamentação (art. 1.º).
  */
 export const JOURNEY_FRAMEWORK = 'RJC_2026';
@@ -44,7 +44,7 @@ export const JOURNEY_TEMPLATE_PT = [
   {
     section: 'D. Medidas de cibersegurança', section_order: 4,
     tasks: [
-      '1. Aplicar as medidas mínimas do nível de conformidade (Reg. 756/2026, Anexo III) ou do grupo da entidade pública relevante (Anexo IV), incluindo as dos níveis inferiores (art. 30.º) — acompanhar em Biblioteca Legal › Conformidade.',
+      '1. Aplicar as medidas mínimas do nível de conformidade (Reg. 756/2026, Anexo III) ou do grupo da entidade pública relevante (Anexo IV), incluindo as dos níveis inferiores (art. 30.º) — acompanhar em Biblioteca Legal › Conformidade. Para as entidades públicas relevantes, a obrigação consta do art. 33.º do RJC' + EFF + '.',
       '2. Cobrir as medidas do art. 27.º, n.º 1, do RJC: tratamento de incidentes; continuidade (cópias de segurança, recuperação de desastres, gestão de crises); cadeia de abastecimento; aquisição, desenvolvimento e manutenção, incluindo vulnerabilidades; avaliação da eficácia; ciber-higiene e formação; criptografia; recursos humanos, controlo de acessos e gestão de ativos; autenticação multifator e comunicações seguras' + EFF + '.',
       '3. Adotar sem demora injustificada as medidas corretivas necessárias (RJC, art. 27.º, n.º 2)' + EFF + '.',
       '4. Elaborar e comunicar a lista de ativos diretamente acessíveis através da Internet: versão inicial até 31 de janeiro do ano seguinte à notificação da qualificação ou em 6 meses, o que ocorrer primeiro; depois, anualmente (Reg. 756/2026, art. 32.º).',
@@ -122,7 +122,7 @@ export const JOURNEY_TEMPLATE_EN = [
   {
     section: 'D. Cybersecurity measures', section_order: 4,
     tasks: [
-      '1. Apply the minimum measures for the conformity level (Reg. 756/2026, Annex III) or the relevant public entity group (Annex IV), including those of lower levels (art. 30) — track them in Legal Library › Compliance.',
+      '1. Apply the minimum measures for the conformity level (Reg. 756/2026, Annex III) or the relevant public entity group (Annex IV), including those of lower levels (art. 30) — track them in Legal Library › Compliance. For relevant public entities the obligation is in RJC art. 33' + EFF_EN + '.',
       '2. Cover the measures in RJC art. 27(1): incident handling; continuity (backups, disaster recovery, crisis management); supply chain; acquisition, development and maintenance, including vulnerabilities; effectiveness assessment; cyber hygiene and training; cryptography; human resources, access control and asset management; multi-factor authentication and secure communications' + EFF_EN + '.',
       '3. Take the necessary corrective measures without undue delay (RJC art. 27(2))' + EFF_EN + '.',
       '4. Prepare and submit the list of assets directly accessible from the Internet: initial version by 31 January of the year after the qualification notice or within 6 months, whichever comes first; then yearly (Reg. 756/2026, art. 32).',

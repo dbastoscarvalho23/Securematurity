@@ -218,7 +218,7 @@ EURLEX = lambda celex: f'https://eur-lex.europa.eu/legal-content/PT/TXT/?uri=CEL
 instruments = [
     inst(dl125, group='national', status='em_vigor', valid_from='2026-04-03',
          entry_into_force_short='120 dias após a publicação (art. 11.º) — 3 de abril de 2026 (data calculada)',
-         effects_short='Arts. 27.º, n.os 1 e 2, 28.º a 30.º e 33.º do RJC: 24 meses após a regulamentação dos arts. 8.º, 14.º, 26.º, 31.º, 32.º e 83.º (art. 10.º, n.º 2) — essa regulamentação é o Reg. 756/2026 (art. 1.º), pelo que a data calculada é 22 de junho de 2028',
+         effects_short='Arts. 27.º, n.os 1 e 2, 28.º a 30.º e 33.º e alíneas b), c) e f) do n.º 1 do art. 61.º do RJC: 24 meses após a regulamentação dos arts. 8.º, 14.º, 26.º, 31.º, 32.º e 83.º (art. 10.º, n.º 2) — essa regulamentação é o Reg. 756/2026 (art. 1.º), pelo que a data calculada é 22 de junho de 2028',
          relations=[{'type': 'transposes', 'target': 'Diretiva (UE) 2022/2555 (NIS2)', 'ref': 'art. 1.º'},
                     {'type': 'revokes', 'target': 'Lei n.º 46/2018, de 13 de agosto (regime jurídico da segurança do ciberespaço)', 'ref': 'art. 9.º'},
                     {'type': 'revokes', 'target': 'Decreto-Lei n.º 65/2021, de 30 de julho', 'ref': 'art. 9.º'}]),

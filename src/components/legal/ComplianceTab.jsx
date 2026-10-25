@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +29,10 @@ function MeasureRow({ m, record, onSave, canEdit }) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({ owner: record?.owner || '', due_date: record?.due_date || '', notes: record?.notes || '' });
+  // O registo pode chegar depois da primeira renderização (consultas separadas) ou mudar após gravar.
+  useEffect(() => {
+    setDraft({ owner: record?.owner || '', due_date: record?.due_date || '', notes: record?.notes || '' });
+  }, [record?.id, record?.owner, record?.due_date, record?.notes]);
   const status = record?.status || 'pending';
   const code = m.control ? m.control.id : m.code;
   const label = m.control ? m.control.statement : m.area;

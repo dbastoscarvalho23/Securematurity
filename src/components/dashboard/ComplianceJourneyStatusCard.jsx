@@ -19,13 +19,15 @@ export default function ComplianceJourneyStatusCard() {
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['compliance-checklist-status', isAdmin, customerId],
     queryFn: async () => {
-      const all = isAdmin
-        ? await base44.entities.ComplianceChecklist.list('section_order', 2000)
-        : await base44.entities.ComplianceChecklist.filter({ customer_id: customerId }, 'section_order', 2000);
-      // Só a jornada (não a checklist de medidas mínimas): por cliente, a jornada RJC 2026 se existir, senão a anterior.
-      const journey = all.filter((i) => i.framework === JOURNEY_FRAMEWORK || i.framework === LEGACY_JOURNEY_FRAMEWORK || !i.framework);
-      const hasNew = new Set(journey.filter((i) => i.framework === JOURNEY_FRAMEWORK).map((i) => i.customer_id));
-      return journey.filter((i) => (hasNew.has(i.customer_id) ? i.framework === JOURNEY_FRAMEWORK : i.framework !== JOURNEY_FRAMEWORK));
+      // Só a jornada (não a checklist de medidas mínimas), filtrada na própria consulta.
+      // Por cliente: a jornada RJC 2026 se existir, senão a anterior (RJCS).
+      const base = isAdmin ? {} : { customer_id: customerId };
+      const [current, legacy] = await Promise.all([
+        base44.entities.ComplianceChecklist.filter({ ...base, framework: JOURNEY_FRAMEWORK }, 'section_order', 5000),
+        base44.entities.ComplianceChecklist.filter({ ...base, framework: LEGACY_JOURNEY_FRAMEWORK }, 'section_order', 5000),
+      ]);
+      const hasNew = new Set(current.map((i) => i.customer_id));
+      return [...current, ...legacy.filter((i) => !hasNew.has(i.customer_id))];
     },
     enabled: isAdmin || !!customerId,
   });

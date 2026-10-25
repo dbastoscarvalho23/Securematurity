@@ -115,6 +115,7 @@ export const complianceEn = {
   inc_badge_notification: 'Notification',
   inc_badge_sa: 'SA Notified',
   inc_overdue: 'overdue',
+  inc_sent_at: 'Sent on (actual date and time)',
   inc_updated: 'Incident updated',
   inc_created: 'Incident created',
 
@@ -221,7 +222,7 @@ export const complianceEn = {
   cm_nis2_notif_title: 'Incident notification compliance (RJC / DORA)',
   cm_nis2_notif_desc: 'RJC: initial notification (24h) · end of impact (24h) · final report (30 working days) — DORA: 4h / 72h / 1 month',
   cm_early_warning_overdue: 'Initial notification overdue',
-  cm_notification_overdue: 'End-of-impact or final report overdue',
+  cm_notification_overdue: 'Later notifications overdue (update, intermediate, end of impact or final report)',
   cm_gdpr33_overdue: 'GDPR Art. 33 Overdue',
   cm_fully_notified: 'Fully Notified',
   cm_incidents_by_status: 'Incidents by Status',
@@ -361,6 +362,7 @@ export const compliancePt = {
   inc_badge_notification: 'Notificação',
   inc_badge_sa: 'AS Notificado',
   inc_overdue: 'em atraso',
+  inc_sent_at: 'Enviada em (data e hora reais)',
   inc_updated: 'Incidente atualizado',
   inc_created: 'Incidente criado',
 
@@ -467,7 +469,7 @@ export const compliancePt = {
   cm_nis2_notif_title: 'Conformidade da notificação de incidentes (RJC / DORA)',
   cm_nis2_notif_desc: 'RJC: notificação inicial (24 h) · fim de impacto (24 h) · relatório final (30 dias úteis) — DORA: 4 h / 72 h / 1 mês',
   cm_early_warning_overdue: 'Notificação inicial em atraso',
-  cm_notification_overdue: 'Fim de impacto ou relatório final em atraso',
+  cm_notification_overdue: 'Notificações seguintes em atraso (atualização, intercalar, fim de impacto ou relatório final)',
   cm_gdpr33_overdue: 'RGPD Art. 33 em Atraso',
   cm_fully_notified: 'Totalmente Notificados',
   cm_incidents_by_status: 'Incidentes por Estado',
