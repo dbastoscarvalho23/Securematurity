@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { json, getAuthenticatedUser, isStaffRole } from '../../shared/http.ts';
 
 // Storage provider id -> connector integration type (they are not the same string).
 const THIRD_PARTY_PROVIDERS = { google_drive: 'googledrive', one_drive: 'one_drive' };
@@ -8,11 +9,9 @@ const THIRD_PARTY_PROVIDERS = { google_drive: 'googledrive', one_drive: 'one_dri
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && user.role !== 'customer_admin') {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const user = await getAuthenticatedUser(base44);
+    if (!user) return json({ error: 'Unauthorized' }, 401);
+    if (!isStaffRole(user)) return json({ error: 'Forbidden' }, 403);
 
     const status = {};
     for (const provider of Object.keys(THIRD_PARTY_PROVIDERS)) {
@@ -24,8 +23,8 @@ export default async function (req) {
       }
     }
 
-    return Response.json({ status });
+    return json({ status });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, 500);
   }
 }
