@@ -40,6 +40,18 @@
           }
         }
       }
+    },
+    "source_ref": {
+      "type": "string",
+      "description": "Referência oficial de origem (ex.: Reg. 756/2026, Anexo I). Preenchido pela sincronização da Biblioteca Legal."
+    },
+    "source_url": {
+      "type": "string",
+      "description": "URL do documento oficial"
+    },
+    "min_level": {
+      "type": "string",
+      "description": "Nível de conformidade a partir do qual o controlo é medida mínima (QNRCS)"
     }
   },
   "required": [

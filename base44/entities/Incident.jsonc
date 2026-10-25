@@ -129,32 +129,72 @@
     "early_warning_sent": {
       "type": "boolean",
       "default": false,
-      "description": "NIS2 early warning to CSIRT sent (within 24h of detection)"
+      "description": "Notificação inicial enviada (RJC, art. 42.º, n.º 1 — até 24 h após a verificação do incidente significativo) ou, no regime DORA, notificação inicial (RTS 2025/301, art. 5.º)"
     },
     "early_warning_sent_at": {
       "type": "string",
       "format": "date-time",
-      "description": "When the early warning was sent"
+      "description": "Data/hora de envio da notificação inicial"
     },
     "notification_sent": {
       "type": "boolean",
       "default": false,
-      "description": "NIS2 full notification to CSIRT sent (within 72h of detection)"
+      "description": "Atualização da notificação inicial enviada (RJC, art. 42.º, n.º 3 — até 72 h, quando necessário) ou, no regime DORA, relatório intercalar (até 72 h após a notificação inicial)"
     },
     "notification_sent_at": {
       "type": "string",
       "format": "date-time",
-      "description": "When the full notification was sent"
+      "description": "Data/hora de envio da atualização (RJC) ou do relatório intercalar (DORA)"
     },
     "final_report_sent": {
       "type": "boolean",
       "default": false,
-      "description": "NIS2 final report to CSIRT sent (within 1 month of detection)"
+      "description": "Relatório final enviado (RJC, art. 44.º, n.º 1 — 30 dias úteis após a notificação de fim de impacto; DORA — 1 mês após o último relatório intercalar)"
     },
     "final_report_sent_at": {
       "type": "string",
       "format": "date-time",
-      "description": "When the final report was sent"
+      "description": "Data/hora de envio do relatório final"
+    },
+    "reporting_regime": {
+      "type": "string",
+      "enum": [
+        "rjc",
+        "dora",
+        "nenhum"
+      ],
+      "default": "rjc",
+      "description": "Regime de notificação aplicável: RJC (DL 125/2025), DORA (Regulamento (UE) 2022/2554) ou nenhum (incidente não significativo)"
+    },
+    "significant_verified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Momento em que a entidade concluiu que existe, ou pode vir a existir, um incidente significativo (início da contagem — RJC, art. 42.º, n.º 1)"
+    },
+    "impact_ended_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fim do impacto significativo (RJC, art. 43.º, n.º 1)"
+    },
+    "end_of_impact_notification_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Notificação do fim de impacto significativo enviada (RJC, art. 43.º — até 24 h após o fim do impacto)"
+    },
+    "end_of_impact_notification_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora de envio da notificação de fim de impacto (inicia a contagem do relatório final)"
+    },
+    "resolved_within_2h": {
+      "type": "boolean",
+      "default": false,
+      "description": "Incidente resolvido nas duas horas após a deteção — apenas notificação de fim de impacto (RJC, art. 41.º, n.º 2)"
+    },
+    "dora_classified_major_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "DORA: classificação como incidente de caráter severo relacionado com as TIC (RTS 2024/1772; RTS 2025/301, art. 5.º)"
     },
     "individuals_notified": {
       "type": "boolean",

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, Clock, Circle, Loader2, Plus, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle2, Clock, Circle, Loader2, Plus, RefreshCw, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChecklistItemRow from '@/components/compliance/ChecklistItemRow';
 import { toast } from 'sonner';
@@ -17,8 +17,12 @@ import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import { JOURNEY_FRAMEWORK, LEGACY_JOURNEY_FRAMEWORK, JOURNEY_TEMPLATE_PT, JOURNEY_TEMPLATE_EN } from '@/lib/legal/journeyTemplate';
 
-const RJCS_TEMPLATE_EN = [
+// Modelos anteriores (framework 'RJCS'): mantidos apenas para apresentar jornadas já criadas antes da
+// atualização para o RJC (DL 125/2025) e o Regulamento n.º 756/2026.
+
+const LEGACY_TEMPLATE_EN = [
   {
     section: 'A. Framework and CNCS Registration',
     section_order: 1,
@@ -108,7 +112,7 @@ const RJCS_TEMPLATE_EN = [
   },
 ];
 
-const RJCS_TEMPLATE_PT = [
+const LEGACY_TEMPLATE_PT = [
   {
     section: 'A. Enquadramento e registo no CNCS',
     section_order: 1,
@@ -258,7 +262,8 @@ export default function ComplianceJourney() {
   const [initializing, setInitializing] = useState(false);
   const [reinitConfirm, setReinitConfirm] = useState(false);
 
-  const RJCS_TEMPLATE = language === 'pt' ? RJCS_TEMPLATE_PT : RJCS_TEMPLATE_EN;
+  const NEW_TEMPLATE = language === 'pt' ? JOURNEY_TEMPLATE_PT : JOURNEY_TEMPLATE_EN;
+  const LEGACY_TEMPLATE = language === 'pt' ? LEGACY_TEMPLATE_PT : LEGACY_TEMPLATE_EN;
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -271,22 +276,31 @@ export default function ComplianceJourney() {
 
   const customerUsers = useCustomerUsers(activeCustomerId);
 
-  const { data: items = [], isLoading } = useQuery({
+  // Jornada atual (RJC 2026); se ainda não existir, apresenta-se a jornada anterior (RJCS), se houver.
+  const { data: journey = { framework: JOURNEY_FRAMEWORK, items: [] }, isLoading } = useQuery({
     queryKey,
-    queryFn: () => base44.entities.ComplianceChecklist.filter({ customer_id: activeCustomerId, framework: 'RJCS' }, 'section_order', 500),
+    queryFn: async () => {
+      const current = await base44.entities.ComplianceChecklist.filter({ customer_id: activeCustomerId, framework: JOURNEY_FRAMEWORK }, 'section_order', 500);
+      if (current.length > 0) return { framework: JOURNEY_FRAMEWORK, items: current };
+      const legacy = await base44.entities.ComplianceChecklist.filter({ customer_id: activeCustomerId, framework: LEGACY_JOURNEY_FRAMEWORK }, 'section_order', 500);
+      return { framework: legacy.length > 0 ? LEGACY_JOURNEY_FRAMEWORK : JOURNEY_FRAMEWORK, items: legacy };
+    },
     enabled: !!activeCustomerId,
   });
+  const items = journey.items;
+  const isLegacy = journey.framework === LEGACY_JOURNEY_FRAMEWORK;
+  const shownTemplate = isLegacy ? LEGACY_TEMPLATE : NEW_TEMPLATE;
 
   const initMutation = useMutation({
     mutationFn: async () => {
       setInitializing(true);
       const records = [];
-      RJCS_TEMPLATE.forEach(sec => {
+      NEW_TEMPLATE.forEach(sec => {
         sec.tasks.forEach((task, idx) => {
           records.push({
             customer_id: activeCustomerId,
             customer_name: customers.find(c => c.id === activeCustomerId)?.name || '',
-            framework: 'RJCS',
+            framework: JOURNEY_FRAMEWORK,
             section: sec.section,
             section_order: sec.section_order,
             task_text: task,
@@ -302,7 +316,7 @@ export default function ComplianceJourney() {
       setInitializing(false);
       toast.success(t('compliance_init_success'));
     },
-    onError: () => setInitializing(false),
+    onError: (e) => { setInitializing(false); toast.error(e?.message || 'Erro'); },
   });
 
   const grouped = items.reduce((acc, item) => {
@@ -361,6 +375,25 @@ export default function ComplianceJourney() {
         </CardContent></Card>
       ) : (
         <>
+          {isLegacy && (
+            <Card className="border-amber-500/40 bg-amber-500/5">
+              <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">{t('compliance_legacy_title')}</p>
+                    <p className="text-xs text-muted-foreground">{t('compliance_legacy_desc')}</p>
+                  </div>
+                </div>
+                {isAdmin && (
+                  <Button size="sm" className="gap-2 shrink-0" onClick={() => initMutation.mutate()} disabled={initializing}>
+                    {initializing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    {t('compliance_create_new_journey')}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">{t('compliance_total_tasks')}</p><p className="text-2xl font-bold mt-1">{total}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">{t('compliance_completed')}</p><p className="text-2xl font-bold mt-1 text-accent">{done}</p></CardContent></Card>
@@ -371,14 +404,14 @@ export default function ComplianceJourney() {
           <div className="space-y-4">
             {sections.map(sec => {
               const secOrder = grouped[sec][0]?.section_order;
-              const templateSection = RJCS_TEMPLATE.find(t => t.section_order === secOrder);
+              const templateSection = shownTemplate.find(tpl => tpl.section_order === secOrder);
               return (
                 <SectionCard key={sec} section={templateSection?.section || sec} items={grouped[sec]} queryKey={queryKey} template={templateSection} customerUsers={customerUsers} />
               );
             })}
           </div>
 
-          {isAdmin && (
+          {isAdmin && !isLegacy && (
             <div className="flex justify-end">
               <Button
                 variant="outline"

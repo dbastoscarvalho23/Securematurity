@@ -60,7 +60,7 @@ ${JSON.stringify(frameworkContext, null, 2)}
 
 Generate 6-10 new, high-quality assessment questions that fill coverage gaps.
 CRITICAL RULES:
-- Set "framework_code" to EXACTLY one of the codes listed above (e.g. "QNRC", "NIS2", "ISO27001", "NIST_CSF", "CIS_V8", "ENISA").
+- Set "framework_code" to EXACTLY one of the codes listed above (e.g. "QNRC", "NIS2", "ISO27001", "NIST_CSF", "CIS_V8", "DORA").
 - Set "domain" to EXACTLY one of the valid_domains listed for that framework_code. Do NOT invent new domain names.
 - For QNRC questions, use control_id format like "ID.GA-3", "PR.SD-3", "DE.MC-2", etc. matching the domain prefix.
 - For QNRC questions, provide both English (question_text) and European Portuguese (question_text_pt) translations.
@@ -107,6 +107,12 @@ Return only valid JSON with the translations.
 **Response schema fields:** `translations` array with `id`, `question_text_pt`, `guidance_pt`
 
 ---
+
+## Common legal context
+
+Prompts 1, 3 and 4 append `LEGAL_AI_CONTEXT` from `src/lib/legal/aiContext.js`: the official references (DL 125/2025 — RJC, Regulamento do CNCS n.º 756/2026 — QNRCS and Annexes III/IV, the 22-06-2028 effects date, RJC incident deadlines, DORA, Implementing Regulation 2024/2690, ISO/IEC 27001:2022 Annex A themes), the ENISA code deprecation and the European Portuguese rule. Prompt 4 also adds the customer's RJC profile (qualification, conformity level, public-entity group, DORA).
+
+The `framework_guide` agent (`base44/agents/framework_guide.jsonc`) carries the same references in its instructions and assesses QNRCS controls against the Annex III minimum measure and verification criterion of the customer's conformity level.
 
 ## Notes
 
