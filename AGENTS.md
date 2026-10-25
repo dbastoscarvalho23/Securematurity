@@ -12,10 +12,15 @@ docker compose -f docker-compose.base44.yml up -d
 ```
 - Node 22 image, repo bind-mounted at `/app`, `npm install && npm run dev` (Vite dev server on port 5173, mapped to host 3000). Edits hot-reload without rebuilds.
 - Secrets (`VITE_BASE44_APP_ID`, `VITE_BASE44_APP_BASE_URL`) are delivered via `/run/base44/app.env`; `./.env.base44-defaults` (committed, empty placeholders) is listed first in `env_file:` so compose boots even on checkouts without the platform file, and real values (listed last) override it.
-- Vite `server.host: true` + `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS` env var handle the preview proxy hostname.
+- Vite `server.host: true` + `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS` env var handle the preview proxy hostname. The env var is passed bare so the sandbox preview host is accepted by the dev server (Vite >= 6.1).
 - This is a frontend-only app: all data/auth goes through the Base44 cloud backend (`@base44/sdk` client in `src/api/base44Client.js`).
 - Unauthenticated visitors land on `/login`; a 401 "[Base44 SDK Error] Authentication required" console error on that page is expected pre-login behavior.
 - Dev verification: `curl -s http://localhost:3000/` should return the index HTML with the Vite dev client; `docker compose -f docker-compose.base44.yml logs web` shows the "Proxy enabled: /api -> ..." line once the SDK env vars are present.
+
+## Tests
+- Vitest + jsdom + @testing-library/react; config in `vitest.config.js` (no @base44 vite-plugin — tests run offline against mocked backend clients).
+- Run inside the web container: `docker compose -f docker-compose.base44.yml exec web npm test` (or `npm run test:watch`).
+- Auth flow tests: `src/components/__tests__/ProtectedRoute.test.jsx` (unauthenticated → redirect to /login), `src/lib/__tests__/AuthCycle.test.jsx` (AuthProvider + ProtectedRoute with mocked base44 client), `src/components/layout/__tests__/RouteGuard.test.jsx` (role matrix).
 
 ## Structure
 - `src/pages/` — 34 page components; 32 are routed in `App.jsx`.
@@ -29,6 +34,7 @@ docker compose -f docker-compose.base44.yml up -d
 - Backend conventions: all functions import the SDK pinned at `npm:@base44/sdk@0.8.44`; responses use the `json(data, status)` helper; scheduled/system automations pass the shared secret via workflow `args.automation_secret` (also `x-automation-secret` header) — see the 4 "Notify"/reminders/purge workflows.
 
 ## Notes / quirks
+- Unauthenticated visitors land on `/login`; a 401 "[Base44 SDK Error] Authentication required" console error on that page is expected pre-login behavior.
 - The automation secret value lives ONLY in the platform's Secrets (`AUTOMATION_SECRET`), read per request via `secrets.get()` in `base44/shared/automationSecret.ts` — never hardcode it in functions or workflows (`${ secrets.AUTOMATION_SECRET }` in workflow args, `x-automation-secret` header for manual triggers). Rotating it is a dashboard-only operation.
 - `Landing.jsx` was removed (was orphaned); orphan `landing_*` translation keys were cleaned from `translations-ui.js`.
 - `OAuthConsent.jsx` is a platform-managed MCP consent page, NOT routed in `App.jsx`; it references `base44/mcp/config.json` (a platform-managed file not exported to GitHub).
