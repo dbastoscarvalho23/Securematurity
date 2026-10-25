@@ -1,6 +1,6 @@
 services:
   web:
-    image: node:22-slim
+    image: node:22
     working_dir: /app
     volumes:
       - ./:/app

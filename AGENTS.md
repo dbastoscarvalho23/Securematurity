@@ -10,7 +10,7 @@ Base44 app (Vite + React 18 frontend) that connects to the Base44 cloud backend.
 ```
 docker compose -f docker-compose.base44.yml up -d
 ```
-- Node 22 slim image, repo bind-mounted at `/app`, `npm install && npm run dev` (Vite dev server on port 5173, mapped to host 3000).
+- Node 22 image, repo bind-mounted at `/app`, `npm install && npm run dev` (Vite dev server on port 5173, mapped to host 3000). Edits hot-reload without rebuilds.
 - Secrets (`VITE_BASE44_APP_ID`, `VITE_BASE44_APP_BASE_URL`) are delivered via `/run/base44/app.env`; `./.env.base44-defaults` (committed, empty placeholders) is listed first in `env_file:` so compose boots even on checkouts without the platform file, and real values (listed last) override it.
 - Vite `server.host: true` + `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS` env var handle the preview proxy hostname.
 - This is a frontend-only app: all data/auth goes through the Base44 cloud backend (`@base44/sdk` client in `src/api/base44Client.js`).
@@ -29,6 +29,13 @@ docker compose -f docker-compose.base44.yml up -d
 - Backend conventions: all functions import the SDK pinned at `npm:@base44/sdk@0.8.44`; responses use the `json(data, status)` helper; scheduled/system automations pass the shared secret via workflow `args.automation_secret` (also `x-automation-secret` header) — see the 4 "Notify"/reminders/purge workflows.
 
 ## Notes / quirks
+- This is a frontend-only Vite + React app; all data/auth goes through the Base44
+  cloud backend (`@base44/sdk` client in `src/api/base44Client.js`).
+- Unauthenticated visitors land on `/login`; a 401 "[Base44 SDK Error] Authentication
+  required" console error on that page is expected pre-login behavior.
+- Dev verification: `curl -s http://localhost:3000/` should return the index HTML with
+  the Vite dev client; `docker compose -f docker-compose.base44.yml logs web` shows
+  the "Proxy enabled: /api -> ..." line once the SDK env vars are present.
 - `Landing.jsx` was removed (was orphaned); orphan `landing_*` translation keys were cleaned from `translations-ui.js`.
 - `OAuthConsent.jsx` is a platform-managed MCP consent page, NOT routed in `App.jsx`; it references `base44/mcp/config.json` (a platform-managed file not exported to GitHub).
 - `FrameworkControl` entity is used by the AI agent (framework_guide) but not directly in frontend code.
