@@ -285,7 +285,7 @@ function TasksDrillDown({ tasks, customers, t }) {
   );
 }
 
-export default function Admin() {
+export default function BackofficeOverview() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [filterSector, setFilterSector] = useState('all');
@@ -303,7 +303,10 @@ export default function Admin() {
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listUsers', {});
+      return res.data?.users || [];
+    },
   });
 
   const { data: risks = [] } = useQuery({

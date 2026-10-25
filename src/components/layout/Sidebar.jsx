@@ -75,7 +75,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
 
   const systemItems = [
     ...(isAdmin ? [
-      { path: '/admin', labelKey: 'nav_admin', icon: ShieldCheck },
+      { path: '/backoffice', labelKey: 'nav_backoffice', icon: ShieldCheck },
       { path: '/audit-log', labelKey: 'nav_audit_log', icon: ScrollText },
       { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
     ] : []),

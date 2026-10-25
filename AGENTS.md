@@ -24,6 +24,13 @@ docker compose -f docker-compose.base44.yml up -d
 - `base44/agents/` — 1 AI agent (framework_guide).
 - `base44/shared/` — shared utils (automationSecret, escapeHtml).
 
+## Backoffice (`/backoffice`, admin-only)
+- Shell: `src/pages/backoffice/BackofficeLayout.jsx` (sub-nav: Visão geral, Clientes, Utilizadores, Auditoria).
+- Overview: `src/pages/backoffice/BackofficeOverview.jsx` (moved from `src/pages/Admin.jsx`, which was removed; `/admin` redirects to `/backoffice`).
+- User management: `src/components/backoffice/UserManagementPanel.jsx` (extracted from Settings "Users" tab; Settings reuses it). User lists must go through the `listUsers` backend function — direct `User.list()` is denied by RLS (403).
+- Still pending (P1/P2): extract Settings "Frameworks" tab into the backoffice, consolidate user mutations in `manageUser`, server-side pagination for drill-downs.
+- RouteGuard lists and Sidebar were mirrored for the new paths.
+
 ## Notes / quirks
 - `Landing.jsx` was removed (was orphaned); orphan `landing_*` translation keys were cleaned from `translations-ui.js`.
 - `OAuthConsent.jsx` is a platform-managed MCP consent page, NOT routed in `App.jsx`; it references `base44/mcp/config.json` (a platform-managed file not exported to GitHub).

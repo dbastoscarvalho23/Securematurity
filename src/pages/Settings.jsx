@@ -8,7 +8,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PageHeader from '@/components/shared/PageHeader';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
-import { Settings as SettingsIcon, Shield, Loader2, UserPlus, Mail, Trash2, Pencil, User, Plus, ToggleLeft, ToggleRight, Bell, Link, Upload, FileText, ExternalLink, FileBarChart, GraduationCap, Clock, HardDrive } from 'lucide-react';
+import UserManagementPanel from '@/components/backoffice/UserManagementPanel';
+import { Settings as SettingsIcon, Shield, Loader2, Trash2, User, Plus, ToggleLeft, ToggleRight, Bell, Link, Upload, FileText, ExternalLink, FileBarChart, GraduationCap, HardDrive } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
@@ -20,7 +21,6 @@ import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import EditUserDialog from '@/components/settings/EditUserDialog';
 import MaintenanceWindowPanel from '@/components/settings/MaintenanceWindowPanel';
 import StorageSettingsPanel from '@/components/settings/StorageSettingsPanel';
 import CustomerStoragePanel from '@/components/settings/CustomerStoragePanel';
@@ -38,12 +38,7 @@ export default function Settings() {
   const isCustomerAdmin = currentUser?.role === 'customer_admin';
   const isReadOnly = currentUser?.role === 'user';
 
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('user');
-  const [isInviting, setIsInviting] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
-  const [invitedToDelete, setInvitedToDelete] = useState(null);
-  const [userToEdit, setUserToEdit] = useState(null);
   const [newFwDialog, setNewFwDialog] = useState(false);
   const [newFwForm, setNewFwForm] = useState({ code: '', name: '', version: '', description: '', reference_url: '' });
   const [isSavingFw, setIsSavingFw] = useState(false);
@@ -95,40 +90,6 @@ export default function Settings() {
       },
       onError: (err) => {
       toast.error(err?.message || t('settings_user_delete_error'));
-    }
-  });
-
-  const deleteInvitedUserMutation = useMutation({
-    mutationFn: async (invitedUserId) => {
-      await base44.entities.InvitedUser.delete(invitedUserId);
-    },
-    onSuccess: () => {
-      refetchInvited();
-      toast.success(t('settings_invitation_deleted'));
-      setInvitedToDelete(null);
-      },
-      onError: (err) => {
-      toast.error(err?.message || t('settings_invitation_delete_error'));
-    }
-  });
-
-  const updateUserMutation = useMutation({
-    mutationFn: async ({ userId, data }) => {
-      const res = await base44.functions.invoke('adminUpdateUser', { userId, data });
-      if (res.data?.error) throw new Error(res.data.error);
-      return res.data;
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      if (result?.roleError) {
-        toast.warning(`Profile updated, but role could not be changed: ${result.roleError}`);
-      } else {
-        toast.success(t('settings_user_updated'));
-      }
-      setUserToEdit(null);
-    },
-    onError: (err) => {
-      toast.error(err?.message || t('settings_user_update_error'));
     }
   });
 
@@ -212,11 +173,6 @@ export default function Settings() {
     }
   }, [currentUser?.email, currentUser?.display_name, currentUser?.full_name, currentUser?.customer_id]);
 
-  const { data: invitedUsers = [], refetch: refetchInvited } = useQuery({
-    queryKey: ['invited-users'],
-    queryFn: () => base44.entities.InvitedUser.list(),
-  });
-
   const { data: responses = [] } = useQuery({
     queryKey: ['all-responses'],
     queryFn: () => base44.entities.AssessmentResponse.list('-created_date', 2000),
@@ -272,39 +228,6 @@ export default function Settings() {
     }
   };
 
-  const handleInvite = async (e) => {
-    e.preventDefault();
-    if (!inviteEmail) return;
-    setIsInviting(true);
-    try {
-      const me = await base44.auth.me();
-      // base44.users.inviteUser only accepts 'user' or 'admin'.
-      // We map customer_admin -> 'user' (upgraded later via EditUserDialog)
-      // and keep the desired role tracked in InvitedUser.
-      const platformRole = inviteRole === 'admin' ? 'admin' : 'user';
-      const trackedRole = isCustomerAdmin ? 'user' : inviteRole;
-      await base44.users.inviteUser(inviteEmail, platformRole);
-      const alreadyTracked = invitedUsers.find(u => u.email === inviteEmail);
-      if (!alreadyTracked) {
-        await base44.entities.InvitedUser.create({
-          email: inviteEmail,
-          role: trackedRole,
-          status: 'inactive',
-          invited_by: me?.email || '',
-        });
-      }
-      toast.success(`${t('settings_invitation_sent')} ${inviteEmail}`);
-      setInviteEmail('');
-      setInviteRole('user');
-      refetchInvited();
-    } catch (err) {
-      toast.error(err?.message || `${t('settings_invitation_error')} ${inviteEmail}`);
-    } finally {
-      setIsInviting(false);
-    }
-  };
-
-
   return (
     <div className="space-y-6">
       {/* Delete User Confirmation */}
@@ -319,28 +242,6 @@ export default function Settings() {
         loading={deleteUserMutation.isPending}
       />
 
-      {/* Delete Invitation Confirmation */}
-      <ConfirmDialog
-        open={!!invitedToDelete}
-        onOpenChange={() => setInvitedToDelete(null)}
-        title={t('settings_delete_invite_title')}
-        description={<>{t('settings_delete_invite_desc')} <strong>{invitedToDelete?.email}</strong>? {t('settings_delete_user_undone')}</>}
-        confirmLabel={deleteInvitedUserMutation.isPending ? t('common_deleting') : t('common_delete')}
-        cancelLabel={t('common_cancel')}
-        onConfirm={() => deleteInvitedUserMutation.mutate(invitedToDelete?.id)}
-        loading={deleteInvitedUserMutation.isPending}
-      />
-
-      {/* Edit User Dialog */}
-      <EditUserDialog
-        open={!!userToEdit}
-        onOpenChange={(open) => !open && setUserToEdit(null)}
-        user={userToEdit}
-        customers={customers}
-        currentUserRole={currentUser?.role}
-        isSaving={updateUserMutation.isPending}
-        onSave={(userId, data) => updateUserMutation.mutate({ userId, data })}
-      />
       <PageHeader description={t('settings_subtitle')} />
 
       <Tabs defaultValue="users">
@@ -441,173 +342,8 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* Invite User — available to admin and customer_admin */}
           {(isAdmin || isCustomerAdmin) && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <UserPlus className="w-4 h-4" />
-                    {t('settings_invite_user')}
-                  </CardTitle>
-                  <CardDescription>
-                    {isCustomerAdmin ? t('settings_invite_user_desc_customer') : t('settings_invite_user_desc_admin')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleInvite} className="flex gap-3 items-end flex-wrap">
-                    <div className="flex-1 min-w-48 space-y-1.5">
-                      <label className="text-sm font-medium">{t('settings_email')}</label>
-                      <Input
-                        type="email"
-                        placeholder="user@example.com"
-                        value={inviteEmail}
-                        onChange={e => setInviteEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-                    {isAdmin && (
-                      <div className="w-36 space-y-1.5">
-                        <label className="text-sm font-medium">{t('settings_role')}</label>
-                        <Select value={inviteRole} onValueChange={setInviteRole}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="user">{t('settings_role_user')}</SelectItem>
-                            <SelectItem value="customer_admin">{t('settings_role_customer_admin')}</SelectItem>
-                            <SelectItem value="admin">{t('settings_role_admin')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                    <Button type="submit" disabled={isInviting} className="gap-2">
-                      {isInviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                      {isInviting ? t('common_sending') : t('settings_send_invite')}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-
-            </>
-          )}
-
-          {/* All Users table — admin and customer_admin */}
-          {(isAdmin || isCustomerAdmin) && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">{t('settings_all_users')}</CardTitle>
-                  <CardDescription>
-                    {users.length} {t('settings_registered')} · {invitedUsers.filter(i => !users.find(u => u.email === i.email)).length} {t('settings_pending_invitation')}
-                    {(() => {
-                      const pending = users.filter(u => u.role !== 'admin' && !u.customer_id);
-                      return pending.length > 0
-                        ? ` · ${pending.length} ${t('settings_pending_activation_count')}`
-                        : '';
-                    })()}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('settings_col_name')}</TableHead>
-                        <TableHead>{t('settings_col_email')}</TableHead>
-                        <TableHead>{t('settings_col_customer')}</TableHead>
-                        <TableHead>{t('settings_col_role')}</TableHead>
-                        <TableHead>{t('settings_col_status')}</TableHead>
-                        <TableHead>{t('settings_col_joined')}</TableHead>
-                        <TableHead className="w-20"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.map(u => (
-                        <TableRow key={u.id}>
-                          <TableCell className="font-medium">{u.display_name || u.full_name || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground text-sm">{u.email}</TableCell>
-                          <TableCell className="text-sm">
-                            {u.role === 'admin'
-                              ? <span className="text-muted-foreground italic text-xs">{t('settings_na_admin')}</span>
-                              : u.customer_name
-                                ? <Badge variant="outline" className="text-xs">{u.customer_name}</Badge>
-                                : <span className="text-destructive text-xs font-medium">{t('common_not_assigned')}</span>
-                            }
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                              {u.role === 'customer_admin' ? t('settings_role_customer_admin') : u.role === 'admin' ? t('settings_role_admin') : t('settings_role_user')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {u.role !== 'admin' && !u.customer_id ? (
-                              <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
-                                <Clock className="w-3 h-3 mr-1" />
-                                {t('settings_pending_activation')}
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-accent/10 text-accent border-accent/20">{t('settings_user_active')}</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-xs">
-                            {u.created_date ? new Date(u.created_date).toLocaleDateString() : '—'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1 justify-end">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setUserToEdit(u)}
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => setUserToDelete(u)}
-                                disabled={deleteUserMutation.isPending}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {invitedUsers
-                        .filter(i => !users.find(u => u.email === i.email))
-                        .map(i => (
-                          <TableRow key={i.id} className="opacity-60">
-                            <TableCell className="font-medium text-muted-foreground">—</TableCell>
-                            <TableCell className="text-muted-foreground text-sm">{i.email}</TableCell>
-                            <TableCell className="text-muted-foreground text-xs">—</TableCell>
-                            <TableCell>
-                              <Badge variant={i.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                                {i.role === 'customer_admin' ? t('settings_role_customer_admin') : i.role === 'admin' ? t('settings_role_admin') : t('settings_role_user')}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="text-muted-foreground">{t('settings_user_inactive')}</Badge>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-xs">
-                              {t('settings_invited')} {i.created_date ? new Date(i.created_date).toLocaleDateString() : ''}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => setInvitedToDelete(i)}
-                                disabled={deleteInvitedUserMutation.isPending}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </>
+            <UserManagementPanel />
           )}
         </TabsContent>
 

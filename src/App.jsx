@@ -19,7 +19,9 @@ import Assessments from '@/pages/Assessments';
 import AssessmentDetail from '@/pages/AssessmentDetail';
 import Recommendations from '@/pages/Recommendations';
 import Reports from '@/pages/Reports';
-import Admin from '@/pages/Admin';
+import BackofficeLayout from '@/pages/backoffice/BackofficeLayout';
+import BackofficeOverview from '@/pages/backoffice/BackofficeOverview';
+import UserManagementPanel from '@/components/backoffice/UserManagementPanel';
 import AuditLog from '@/pages/AuditLog';
 import Settings from '@/pages/Settings';
 import QuestionBank from '@/pages/QuestionBank';
@@ -74,7 +76,13 @@ const AuthenticatedApp = () => {
           <Route path="/assessments/:id" element={<RouteGuard path="/assessments"><AssessmentDetail /></RouteGuard>} />
           <Route path="/recommendations" element={<RouteGuard path="/recommendations"><Recommendations /></RouteGuard>} />
           <Route path="/reports" element={<RouteGuard path="/reports"><Reports /></RouteGuard>} />
-          <Route path="/admin" element={<RouteGuard path="/admin"><Admin /></RouteGuard>} />
+          <Route path="/backoffice" element={<RouteGuard path="/backoffice"><BackofficeLayout /></RouteGuard>}>
+            <Route index element={<BackofficeOverview />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="users" element={<UserManagementPanel />} />
+            <Route path="audit" element={<AuditLog />} />
+          </Route>
+          <Route path="/admin" element={<RouteGuard path="/admin"><Navigate to="/backoffice" replace /></RouteGuard>} />
           <Route path="/audit-log" element={<RouteGuard path="/audit-log"><AuditLog /></RouteGuard>} />
           <Route path="/settings" element={<RouteGuard path="/settings"><Settings /></RouteGuard>} />
           <Route path="/question-bank" element={<RouteGuard path="/question-bank"><QuestionBank /></RouteGuard>} />
