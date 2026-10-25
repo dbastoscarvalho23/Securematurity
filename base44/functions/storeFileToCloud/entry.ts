@@ -226,6 +226,8 @@ export default async function (req) {
     const ownCustomerId = userCustomerId(user);
     const customerId = isPlatformAdmin(user) ? (body.customer_id || ownCustomerId) : ownCustomerId;
 
+    // SSRF guard: only fetch files hosted in the app's own storage (Base44).
+    // Never fetch arbitrary or internal URLs from the server.
     if (!fileUrl || !/^https:\/\//i.test(fileUrl)) {
       return json({ error: 'A valid file_url is required' }, 400);
     }
@@ -252,7 +254,7 @@ export default async function (req) {
     // SSRF guard: only fetch public https URLs, and never follow redirects
     // (a redirect could bounce the request to an internal host).
     if (await urlPointsToPrivateNetwork(fileUrl)) {
-      return Response.json({ error: 'file_url is not allowed' }, { status: 400 });
+      return json({ error: 'file_url is not allowed' }, 400);
     }
 
     // Which third-party providers are enabled platform-wide. A disabled provider
