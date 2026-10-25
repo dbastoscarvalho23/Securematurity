@@ -1,5 +1,5 @@
 /**
- * Shared compliance utilities for SLA calculations, NIS2 notification timers,
+ * Shared compliance utilities for SLA calculations, incident notification deadlines (RJC / DORA),
  * and GDPR data subject request tracking.
  */
 
@@ -31,10 +31,91 @@ export function calculateDsrDueDate(receivedDate, extended = false) {
   return d.toISOString().split('T')[0];
 }
 
-// ── NIS2 Incident notification timers ────────────────────────────────────
-export const NIS2_EARLY_WARNING_HOURS = 24;
-export const NIS2_NOTIFICATION_HOURS = 72;
-export const NIS2_FINAL_REPORT_DAYS = 30;
+// ── Prazos de notificação de incidentes ─────────────────────────────────────
+// Regime Jurídico da Cibersegurança (DL 125/2025), arts. 41.º a 44.º — ver Biblioteca Legal › Obrigações e prazos.
+// (Substituem os prazos da Diretiva NIS2, art. 23.º, usados anteriormente: em Portugal aplica-se o RJC.)
+export const RJC_INITIAL_NOTIFICATION_HOURS = 24;   // art. 42.º, n.º 1 — após verificação do incidente significativo
+export const RJC_UPDATE_NOTIFICATION_HOURS = 72;    // art. 42.º, n.º 3 — atualização, quando necessária
+export const RJC_END_OF_IMPACT_HOURS = 24;          // art. 43.º, n.º 1 — após o fim do impacto
+export const RJC_FINAL_REPORT_BUSINESS_DAYS = 30;   // art. 44.º, n.º 1 — após a notificação de fim de impacto
+export const RJC_RESOLVED_WITHIN_HOURS = 2;         // art. 41.º, n.º 2 — só notificação de fim de impacto
+// DORA — Regulamento Delegado (UE) 2025/301, art. 5.º
+export const DORA_INITIAL_HOURS = 4;                // desde a classificação como incidente de caráter severo
+export const DORA_INITIAL_MAX_HOURS = 24;           // máximo desde o conhecimento do incidente
+export const DORA_INTERMEDIATE_HOURS = 72;          // desde a notificação inicial
+export const DORA_FINAL_MONTHS = 1;                 // desde o (último) relatório intercalar
+
+// Compatibilidade com código anterior
+export const NIS2_EARLY_WARNING_HOURS = RJC_INITIAL_NOTIFICATION_HOURS;
+export const NIS2_NOTIFICATION_HOURS = RJC_UPDATE_NOTIFICATION_HOURS;
+
+const addHours = (d, h) => (d ? new Date(new Date(d).getTime() + h * 3600 * 1000) : null);
+
+/**
+ * Soma dias úteis (segunda a sexta). Os feriados não são descontados: o prazo calculado
+ * fica igual ou anterior ao prazo legal (nunca posterior).
+ */
+export function addBusinessDays(date, days) {
+  if (!date) return null;
+  const d = new Date(date);
+  let left = days;
+  while (left > 0) {
+    d.setDate(d.getDate() + 1);
+    const wd = d.getDay();
+    if (wd !== 0 && wd !== 6) left -= 1;
+  }
+  return d;
+}
+
+const addMonths = (date, n) => {
+  if (!date) return null;
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + n);
+  return d;
+};
+
+/**
+ * Fases de notificação aplicáveis a um incidente, com o respetivo prazo.
+ * Devolve [{ id, labelKey, due: Date|null, sent: boolean, ref, optional? }].
+ * `due` é null enquanto o facto que inicia a contagem não estiver registado.
+ */
+export function incidentDeadlines(inc) {
+  if (!inc) return [];
+  const regime = inc.reporting_regime || 'rjc';
+  if (regime === 'nenhum') return [];
+  if (regime === 'dora') {
+    const aware = inc.detected_at;
+    const classified = inc.dora_classified_major_at;
+    let initialDue = null;
+    if (classified) {
+      const fromClass = addHours(classified, DORA_INITIAL_HOURS);
+      const cap = addHours(aware, DORA_INITIAL_MAX_HOURS);
+      // Classificado dentro das 24 h: o que ocorrer primeiro. Depois das 24 h: 4 h após a classificação (art. 5.º, n.º 2).
+      initialDue = cap && new Date(classified) <= cap ? new Date(Math.min(fromClass, cap)) : fromClass;
+    }
+    return [
+      { id: 'dora_initial', labelKey: 'inc_dora_initial', due: initialDue, sent: !!inc.early_warning_sent, ref: 'RTS 2025/301, art. 5.º, n.º 1, a)' },
+      { id: 'dora_intermediate', labelKey: 'inc_dora_intermediate', due: addHours(inc.early_warning_sent_at, DORA_INTERMEDIATE_HOURS), sent: !!inc.notification_sent, ref: 'RTS 2025/301, art. 5.º, n.º 1, b)' },
+      { id: 'dora_final', labelKey: 'inc_dora_final', due: addMonths(inc.notification_sent_at, DORA_FINAL_MONTHS), sent: !!inc.final_report_sent, ref: 'RTS 2025/301, art. 5.º, n.º 1, c)' },
+    ];
+  }
+  const start = inc.significant_verified_at || inc.detected_at;
+  const endOfImpact = { id: 'rjc_end_of_impact', labelKey: 'inc_rjc_end_of_impact', due: addHours(inc.impact_ended_at, RJC_END_OF_IMPACT_HOURS), sent: !!inc.end_of_impact_notification_sent, ref: 'RJC, art. 43.º, n.º 1' };
+  const final = { id: 'rjc_final', labelKey: 'inc_rjc_final', due: addBusinessDays(inc.end_of_impact_notification_sent_at, RJC_FINAL_REPORT_BUSINESS_DAYS), sent: !!inc.final_report_sent, ref: 'RJC, art. 44.º, n.º 1' };
+  if (inc.resolved_within_2h) return [endOfImpact, final];
+  return [
+    { id: 'rjc_initial', labelKey: 'inc_rjc_initial', due: addHours(start, RJC_INITIAL_NOTIFICATION_HOURS), sent: !!inc.early_warning_sent, ref: 'RJC, art. 42.º, n.º 1' },
+    { id: 'rjc_update', labelKey: 'inc_rjc_update', due: addHours(start, RJC_UPDATE_NOTIFICATION_HOURS), sent: !!inc.notification_sent, ref: 'RJC, art. 42.º, n.º 3', optional: true },
+    endOfImpact,
+    final,
+  ];
+}
+
+/** Fases em atraso (prazo ultrapassado e notificação por enviar; as opcionais não contam). */
+export function overdueIncidentPhases(inc, now = Date.now()) {
+  if (!inc || inc.status === 'closed') return [];
+  return incidentDeadlines(inc).filter((p) => !p.sent && !p.optional && p.due && p.due.getTime() < now);
+}
 
 // GDPR Art. 33 — supervisory authority notification within 72h
 export const GDPR_SA_NOTIFICATION_HOURS = 72;

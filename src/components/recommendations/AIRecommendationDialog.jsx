@@ -10,16 +10,11 @@ import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
+import { FRAMEWORK_NAMES, SELECTABLE_FRAMEWORKS } from '@/lib/frameworkConstants';
+import { LEGAL_AI_CONTEXT } from '@/lib/legal/aiContext';
 
-const FRAMEWORKS = [
-  { code: 'NIS2', name: 'NIS2 / DL 125/2025' },
-  { code: 'ISO27001', name: 'ISO/IEC 27001:2022' },
-  { code: 'NIST_CSF', name: 'NIST CSF' },
-  { code: 'CIS_V8', name: 'CIS Controls v8' },
-  { code: 'ENISA', name: 'ENISA Cybersecurity Framework' },
-  { code: 'QNRC', name: 'QNRC' },
-  { code: 'GDPR', name: 'GDPR' },
-];
+
+const FRAMEWORKS = SELECTABLE_FRAMEWORKS.map((code) => ({ code, name: FRAMEWORK_NAMES[code] }));
 
 const PRIORITY_COLORS = {
   critical: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -52,7 +47,10 @@ ${customer ? `Organization context: ${customer.name}, sector: ${customer.sector?
 Generate 6-8 high-quality, specific, and actionable recommendations covering different domains of the ${fw?.name || framework} framework.${framework === 'ISO27001' ? ' Use exclusively the ISO/IEC 27001:2022 Annex A control structure (Organizational, People, Physical, Technological Controls) — do NOT reference the 2013 version.' : ''}
 Each recommendation should be practical and address common compliance gaps.
 Vary the priorities (include critical, high, medium, and low).
-Include clear titles, detailed descriptions, effort estimates, and suggested timelines.`,
+Include clear titles, detailed descriptions, effort estimates, and suggested timelines.
+${customer?.rjc_qualification ? `RJC profile: qualification ${customer.rjc_qualification}${customer.conformity_level ? `, conformity level ${customer.conformity_level}` : ''}${customer.epr_group ? `, public entity group ${customer.epr_group}` : ''}${customer.dora_applicable ? ', DORA applies' : ''}.` : ''}
+
+${LEGAL_AI_CONTEXT}`,
       response_json_schema: {
         type: 'object',
         properties: {

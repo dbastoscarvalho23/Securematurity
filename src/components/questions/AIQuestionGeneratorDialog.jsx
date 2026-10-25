@@ -10,6 +10,8 @@ import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
+import { FRAMEWORK_NAMES, SELECTABLE_FRAMEWORKS, FRAMEWORK_DOMAINS as OFFICIAL_FRAMEWORK_DOMAINS } from '@/lib/frameworkConstants';
+import { LEGAL_AI_CONTEXT } from '@/lib/legal/aiContext';
 
 // Normalize text for comparison
 const normalize = (str) => str?.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim() || '';
@@ -41,15 +43,8 @@ const checkDuplicate = (generated, existingQuestions) => {
   return { isDuplicate: false, isSimilar: false };
 };
 
-const FRAMEWORKS = [
-  { code: 'NIS2', name: 'NIS2' },
-  { code: 'ISO27001', name: 'ISO/IEC 27001:2022' },
-  { code: 'NIST_CSF', name: 'NIST CSF' },
-  { code: 'CIS_V8', name: 'CIS v8' },
-  { code: 'QNRC', name: 'QNRC' },
-  { code: 'GDPR', name: 'GDPR' },
-  { code: 'ENISA', name: 'ENISA' },
-];
+
+const FRAMEWORKS = SELECTABLE_FRAMEWORKS.map((code) => ({ code, name: FRAMEWORK_NAMES[code] }));
 
 const FRAMEWORK_COLORS = {
   NIS2: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
@@ -86,15 +81,7 @@ export default function AIQuestionGeneratorDialog({ open, onOpenChange, existing
       question: q.question_text,
     }));
 
-    const FRAMEWORK_DOMAINS = {
-      NIS2: ['Governance', 'Risk Management', 'Incident Response', 'Business Continuity', 'Supply Chain', 'Access Control', 'Cryptography', 'Physical Security', 'Vulnerability Management'],
-      ISO27001: ['Organizational Controls', 'People Controls', 'Physical Controls', 'Technological Controls'],
-      NIST_CSF: ['Identify (ID)', 'Protect (PR)', 'Detect (DE)', 'Respond (RS)', 'Recover (RC)', 'Govern (GV)'],
-      CIS_V8: ['Inventory & Control', 'Data Protection', 'Secure Configuration', 'Account Management', 'Access Control', 'Vulnerability Management', 'Audit Log Management', 'Email & Web Browser', 'Malware Defenses', 'Network Infrastructure', 'Data Recovery', 'Network Monitoring', 'Security Awareness', 'Application Security', 'Incident Response'],
-      GDPR: ['Lawfulness & Transparency', 'Data Subject Rights', 'Consent Management', 'Data Minimisation', 'Purpose Limitation', 'Storage Limitation', 'Accuracy', 'Security of Processing', 'Data Breach Notification', 'Data Protection by Design', 'Data Protection Officer', 'International Transfers', 'Records of Processing', 'Data Processor Management'],
-      ENISA: ['Governance & Risk Management', 'Incident Handling', 'Business Continuity & Crisis Management', 'Supply Chain Security', 'Network & System Security', 'Cyber Hygiene & Training', 'Cryptography & Encryption', 'Access Control & HR Security', 'Authentication & Secure Communications', 'Monitoring & Detection'],
-      QNRC: ['Identificar — Gestão de Ativos (ID.GA)', 'Identificar — Ambiente de Negócio (ID.AO)', 'Identificar — Governação (ID.GV)', 'Identificar — Avaliação de Risco (ID.AR)', 'Identificar — Estratégia de Gestão de Risco (ID.GR)', 'Identificar — Gestão de Risco na Cadeia de Fornecimento (ID.GL)', 'Proteger — Gestão de Identidades e Acessos (PR.GA)', 'Proteger — Consciencialização e Formação (PR.FC)', 'Proteger — Segurança dos Dados (PR.SD)', 'Proteger — Processos e Procedimentos (PR.PI)', 'Proteger — Manutenção (PR.MA)', 'Proteger — Tecnologia de Proteção (PR.TP)', 'Detetar — Anomalias e Eventos (DE.AE)', 'Detetar — Monitorização Contínua (DE.MC)', 'Detetar — Processos de Deteção (DE.PD)', 'Responder — Planeamento de Resposta (RS.PR)', 'Responder — Comunicações (RS.CO)', 'Responder — Análise (RS.AN)', 'Responder — Mitigação (RS.MI)', 'Responder — Melhorias (RS.ME)', 'Recuperar — Planeamento de Recuperação (RC.PR)', 'Recuperar — Melhorias (RC.ME)', 'Recuperar — Comunicações (RC.CO)'],
-    };
+    const FRAMEWORK_DOMAINS = OFFICIAL_FRAMEWORK_DOMAINS;
 
     const frameworksInScope = filterFramework === 'all'
       ? FRAMEWORKS
@@ -117,12 +104,14 @@ ${JSON.stringify(frameworkContext, null, 2)}
 
 Generate 6-10 new, high-quality assessment questions that fill coverage gaps.
 CRITICAL RULES:
-- Set "framework_code" to EXACTLY one of the codes listed above (e.g. "QNRC", "NIS2", "ISO27001", "NIST_CSF", "CIS_V8", "ENISA").
+- Set "framework_code" to EXACTLY one of the codes listed above (e.g. "QNRC", "NIS2", "ISO27001", "NIST_CSF", "CIS_V8", "DORA").
 - Set "domain" to EXACTLY one of the valid_domains listed for that framework_code. Do NOT invent new domain names.
-- For ISO27001 questions, strictly follow the ISO/IEC 27001:2022 structure (Annex A: Clause 5 Organizational Controls, Clause 6 People Controls, Clause 7 Physical Controls, Clause 8 Technological Controls). Do NOT use the old 2013 domain structure.
-- For QNRC questions, use control_id format like "ID.GA-3", "PR.SD-3", "DE.MC-2", etc. matching the domain prefix.
+- For ISO27001 questions, strictly follow the ISO/IEC 27001:2022 Annex A structure (A.5 Organizational, A.6 People, A.7 Physical, A.8 Technological controls). Do NOT use the old 2013 domain structure.
+- For QNRC questions, use an existing QNRCS control_id (Reg. 756/2026, Annex I), e.g. "ID.GA-3", "PR.SD-3", "DE.MC-2", matching the domain prefix; put the official reference in "guidance".
 - For QNRC questions, provide both English (question_text) and European Portuguese (question_text_pt) translations.
-- Use maturity_scale answer type.`,
+- Use maturity_scale answer type.
+
+${LEGAL_AI_CONTEXT}`,
       response_json_schema: {
         type: 'object',
         properties: {
