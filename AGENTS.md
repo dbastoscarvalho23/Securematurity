@@ -13,12 +13,13 @@ Base44 app (Vite + React 18 frontend) that connects to the Base44 cloud backend.
 ```
 docker compose -f docker-compose.base44.yml up -d
 ```
-- Single `web` service: Node 22 image, repo bind-mounted at `/app`, `npm ci && npm run dev` (Vite dev server on port 5173, mapped to host 3000). Edits hot-reload without rebuilds; no image build step. Change a lockfile → restart the service (`docker compose -f docker-compose.base44.yml up -d web`).
+- Single `web` service: Node 22 image, repo bind-mounted at `/app`, `npm ci && npm run dev` (Vite dev server on port 5173, mapped to host 3000). Edits hot-reload without rebuilds; no image build step. `node_modules` lives in a named Docker volume, not on the host; change a lockfile → restart the service (`docker compose -f docker-compose.base44.yml up -d web`).
 - Secrets (`VITE_BASE44_APP_ID`, `VITE_BASE44_APP_BASE_URL`) are delivered via `/run/base44/app.env`; `./.env.base44-defaults` (committed, empty placeholders) is listed first in `env_file:` so compose boots even on checkouts without the platform file, and real values (listed last) override it.
-- Vite `server.host: true` + `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS` env var handle the preview proxy hostname. `BASE44_PREVIEW_MODE` is passed through bare (platform-managed sandbox flag).
+- Vite `server.host: true` + `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS` env var handle the preview proxy hostname (passed bare; Vite >= 6.1 appends it to allowedHosts). `BASE44_PREVIEW_MODE` is passed through bare (platform-managed sandbox flag); `CHOKIDAR_USEPOLLING=true` makes file watch reliable on bind mounts.
 - This is a frontend-only app: all data/auth goes through the Base44 cloud backend (`@base44/sdk` client in `src/api/base44Client.js`). There is NO local database — all data lives in the Base44 backend entities.
 - Unauthenticated visitors land on `/login`; a 401 "[Base44 SDK Error] Authentication required" console error on that page is expected pre-login behavior.
 - Dev verification: `curl -s http://localhost:3000/` should return the index HTML with the Vite dev client; `docker compose -f docker-compose.base44.yml logs web` shows the "Proxy enabled: /api -> ..." line once the SDK env vars are present.
+- Preview autenticada: a sessão vive no iframe; validar fluxos com preview_execute_code.
 
 ## Verify
 - Tests: `docker compose -f docker-compose.base44.yml exec -T web npm test` (Vitest + jsdom + @testing-library/react; config in `vitest.config.js` — no @base44 vite-plugin, no injected session; tests run offline against mocked backend clients, `src/test/setup.js` polyfills jsdom's matchMedia).
@@ -44,6 +45,11 @@ docker compose -f docker-compose.base44.yml up -d
 - `Landing.jsx` was removed (was orphaned); orphan `landing_*` translation keys were cleaned from `translations-ui.js`.
 - `OAuthConsent.jsx` is a platform-managed MCP consent page, NOT routed in `App.jsx`; it references `base44/mcp/config.json` (a platform-managed file not exported to GitHub).
 - `FrameworkControl` entity is used by the AI agent (framework_guide) but not directly in frontend code.
+
+## Convenções
+- UI em PT-PT. Seletor "Todos os clientes" usa a string `'all'` como sentinel (Radix Select não aceita valores nulos).
+- Dados de teste: clientes Sabugal, TechNova, Neora Consulting Lda.
+- Não configurar SSO Google/Microsoft — o redirect falha no host de preview (dead end conhecido).
 
 ## Legal Library (`/legal-library`)
 - Official data only, in `src/data/legal/*.json` (DL 125/2025 + RJC, Reg. CNCS 756/2026 with QNRCS and Annexes III/IV,
