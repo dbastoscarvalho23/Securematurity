@@ -17,6 +17,11 @@ docker compose -f docker-compose.base44.yml up -d
 - Unauthenticated visitors land on `/login`; a 401 "[Base44 SDK Error] Authentication required" console error on that page is expected pre-login behavior.
 - Dev verification: `curl -s http://localhost:3000/` should return the index HTML with the Vite dev client; `docker compose -f docker-compose.base44.yml logs web` shows the "Proxy enabled: /api -> ..." line once the SDK env vars are present.
 
+## Tests
+- Vitest + jsdom + @testing-library/react; config in `vitest.config.js` (no @base44 vite-plugin — tests run offline against mocked backend clients).
+- Run inside the web container: `docker compose -f docker-compose.base44.yml exec web npm test` (or `npm run test:watch`).
+- Auth flow tests: `src/components/__tests__/ProtectedRoute.test.jsx` (unauthenticated → redirect to /login), `src/lib/__tests__/AuthCycle.test.jsx` (AuthProvider + ProtectedRoute with mocked base44 client), `src/components/layout/__tests__/RouteGuard.test.jsx` (role matrix).
+
 ## Structure
 - `src/pages/` — 34 page components; 32 are routed in `App.jsx`.
 - `src/components/` — 112 app components + 49 shadcn/ui primitives.
