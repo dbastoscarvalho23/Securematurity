@@ -46,12 +46,17 @@ Deno.serve(async (req) => {
       return json({ skipped: true, reason: 'entity not found' });
     }
 
+    // old_data is caller-supplied, so only accept it when it references the
+    // same record — forged "previous" data can no longer suppress or skew
+    // notifications.
+    const previous = old_data?.id === event.entity_id ? old_data : null;
+
     const notifications = [];
 
     // ── Task changes ────────────────────────────────────────────────
     if (event.entity_name === 'Task') {
       const task = real;
-      const prevStatus = old_data?.status;
+      const prevStatus = previous?.status;
 
       // Task completed
       if (task.status === 'done' && prevStatus && prevStatus !== 'done') {
@@ -72,7 +77,7 @@ Deno.serve(async (req) => {
       }
 
       // Task assigned (new assignment or changed assignment)
-      if (task.assigned_to && task.assigned_to !== old_data?.assigned_to) {
+      if (task.assigned_to && task.assigned_to !== previous?.assigned_to) {
         notifications.push({
           user_email: task.assigned_to,
           type: 'task_assigned',
@@ -89,8 +94,8 @@ Deno.serve(async (req) => {
       // Task status changed (notify assigned user)
       if (
         task.assigned_to &&
-        old_data?.status &&
-        task.status !== old_data.status &&
+        previous?.status &&
+        task.status !== previous?.status &&
         task.status !== 'done'
       ) {
         const statusLabels = { todo: 'To Do', in_progress: 'In Progress', blocked: 'Blocked' };
@@ -111,7 +116,7 @@ Deno.serve(async (req) => {
     // ── RiskItem changes ─────────────────────────────────────────────
     if (event.entity_name === 'RiskItem') {
       const risk = real;
-      const prevStatus = old_data?.status;
+      const prevStatus = previous?.status;
 
       // Risk status changed
       if (prevStatus && risk.status !== prevStatus && risk.owner_email) {
@@ -130,7 +135,7 @@ Deno.serve(async (req) => {
       }
 
       // Risk owner assigned
-      if (risk.owner_email && risk.owner_email !== old_data?.owner_email) {
+      if (risk.owner_email && risk.owner_email !== previous?.owner_email) {
         notifications.push({
           user_email: risk.owner_email,
           type: 'risk_status',
@@ -148,7 +153,7 @@ Deno.serve(async (req) => {
     // ── SecurityDocument changes ─────────────────────────────────────
     if (event.entity_name === 'SecurityDocument') {
       const doc = real;
-      const prevStatus = old_data?.status;
+      const prevStatus = previous?.status;
 
       if (doc.status === 'approved' && prevStatus !== 'approved' && doc.owner_email) {
         notifications.push({

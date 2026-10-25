@@ -51,7 +51,9 @@ export default function AssessmentDetail() {
       // Manual mode: load the specific existing questions by their saved IDs
       const questionIds = assessment?.question_ids;
       if (questionIds?.length > 0) {
-        const allGlobal = await base44.entities.Question.filter({ is_active: true }, 'order_index', 500);
+        // Load by the saved IDs only — the assessment's own question list is
+      // authoritative here (bank questions may lack the is_active flag).
+        const allGlobal = await base44.entities.Question.list('order_index', 500);
         const idSet = new Set(questionIds);
         return allGlobal.filter(q => idSet.has(q.id));
       }
