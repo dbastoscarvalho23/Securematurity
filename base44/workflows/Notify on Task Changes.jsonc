@@ -25,7 +25,9 @@
           "call": "invoke_backend_function",
           "with": {
             "function_name": "createNotifications",
-            "args": {}
+            "args": {
+              "automation_secret": "cm-automation-7f3a9b2e1d8c4a6f0b5e2c9d1a7f4e3b"
+            }
           },
           "then": "end"
         }
