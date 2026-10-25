@@ -1,7 +1,57 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { json, readJson, getAuthenticatedUser, userCustomerId, isPlatformAdmin } from '../../shared/http.ts';
 
 // Folder created inside the connected Google Drive / OneDrive account.
 const FOLDER_NAME = 'AnkoraOne';
+
+// ── SSRF protection ──────────────────────────────────────────────────────────
+// file_url must point at the application's own storage (the app's own host or a
+// base44.com storage host) and must resolve to a public IP. Internal network
+// targets (loopback / private ranges / cloud metadata) are rejected before any
+// fetch is performed.
+
+function isPrivateIp(ip) {
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
+    const parts = ip.split('.').map(Number);
+    if (parts.some(n => n > 255)) return true;
+    const [a, b] = parts;
+    return (
+      a === 0 || a === 10 || a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) || // CGNAT
+      (a === 169 && b === 254) ||           // link-local + cloud metadata
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      a >= 224                              // multicast / reserved / broadcast
+    );
+  }
+  const h = ip.toLowerCase();
+  if (h.startsWith('::ffff:')) return isPrivateIp(h.slice(7)); // IPv4-mapped IPv6
+  return (
+    h === '::' || h === '::1' ||
+    /^(fe[89ab]|f[cd]|ff)/.test(h) // link-local, unique-local, multicast
+  );
+}
+
+async function resolvesToPublicIp(hostname) {
+  if (typeof Deno.resolveDns !== 'function') return true; // resolver unavailable — allowlist still gates the host
+  let addresses = [];
+  for (const type of ['A', 'AAAA']) {
+    try {
+      const records = await Deno.resolveDns(hostname, type);
+      addresses = addresses.concat(records.map(r => (typeof r === 'string' ? r : r.ip)));
+    } catch {
+      // No records of this type (or resolver unavailable) — not fatal by itself.
+    }
+  }
+  if (addresses.length === 0) return false; // fail closed when unresolvable
+  return addresses.every(addr => !isPrivateIp(addr));
+}
+
+function isAllowedStorageHost(hostname, requestHost) {
+  const h = String(hostname || '').toLowerCase().replace(/\.$/, '');
+  const own = String(requestHost || '').toLowerCase().replace(/\.$/, '').split(':')[0];
+  return h === own || h === 'base44.com' || h.endsWith('.base44.com');
+}
 
 function safeFileName(name) {
   const cleaned = String(name || 'file').replace(/[^\w.\- ]+/g, '_').trim();
@@ -166,19 +216,37 @@ async function urlPointsToPrivateNetwork(fileUrl) {
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getAuthenticatedUser(base44);
+    if (!user) return json({ error: 'Unauthorized' }, 401);
 
-    const body = await req.json();
+    const body = await readJson(req);
     const fileUrl = body.file_url;
     const fileName = safeFileName(body.file_name);
-
-    // Non-admin callers cannot pick another customer's storage account as target.
-    const ownCustomerId = user.customer_id || (user.data && user.data.customer_id);
-    const customerId = user.role === 'admin' ? (body.customer_id || ownCustomerId) : ownCustomerId;
+    // Non-admin callers cannot target another customer's storage account.
+    const ownCustomerId = userCustomerId(user);
+    const customerId = isPlatformAdmin(user) ? (body.customer_id || ownCustomerId) : ownCustomerId;
 
     if (!fileUrl || !/^https:\/\//i.test(fileUrl)) {
-      return Response.json({ error: 'A valid file_url is required' }, { status: 400 });
+      return json({ error: 'A valid file_url is required' }, 400);
+    }
+
+    // SSRF gate: the URL must belong to the application's own storage and must
+    // not resolve into the internal network. This runs before any fetch.
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(fileUrl);
+    } catch {
+      return json({ error: 'A valid file_url is required' }, 400);
+    }
+    if (parsedUrl.protocol !== 'https:' || parsedUrl.username || parsedUrl.password) {
+      return json({ error: 'A valid file_url is required' }, 400);
+    }
+    const requestHost = req.headers.get('host') || '';
+    if (!isAllowedStorageHost(parsedUrl.hostname, requestHost)) {
+      return json({ error: 'file_url must point at application storage' }, 400);
+    }
+    if (!(await resolvesToPublicIp(parsedUrl.hostname))) {
+      return json({ error: 'file_url host is not resolvable to a public address' }, 400);
     }
 
     // SSRF guard: only fetch public https URLs, and never follow redirects
@@ -222,12 +290,12 @@ export default async function (req) {
     if (!provider) provider = 'base44';
 
     if (provider === 'base44') {
-      return Response.json({ url: fileUrl, provider: 'base44' });
+      return json({ url: fileUrl, provider: 'base44' });
     }
 
     const fileRes = await fetch(fileUrl, { redirect: 'error' });
     if (!fileRes.ok) {
-      return Response.json({ error: 'Could not read the uploaded file' }, { status: 502 });
+      return json({ error: 'Could not read the uploaded file' }, 502);
     }
     const bytes = await fileRes.arrayBuffer();
     const contentType = fileRes.headers.get('content-type') || 'application/octet-stream';
@@ -235,17 +303,17 @@ export default async function (req) {
     if (provider === 'google_drive') {
       const { accessToken } = await base44.asServiceRole.connectors.getConnection('googledrive');
       const url = await uploadToDrive(accessToken, bytes, contentType, fileName);
-      return Response.json({ url, provider: 'google_drive' });
+      return json({ url, provider: 'google_drive' });
     }
 
     if (provider === 'one_drive') {
       const { accessToken } = await base44.asServiceRole.connectors.getConnection('one_drive');
       const url = await uploadToOneDrive(accessToken, bytes, contentType, fileName);
-      return Response.json({ url, provider: 'one_drive' });
+      return json({ url, provider: 'one_drive' });
     }
 
-    return Response.json({ url: fileUrl, provider: 'base44' });
+    return json({ url: fileUrl, provider: 'base44' });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, 500);
   }
 }
