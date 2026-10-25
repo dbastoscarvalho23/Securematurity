@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { type, task: payloadTask, previousTask } = await req.json();
+  const { type, task: payloadTask, previousTask: payloadPreviousTask } = await req.json();
 
   // Do NOT trust the caller-supplied task object: fetch the real record from
   // the database and verify the caller is authorized to trigger its
@@ -45,6 +45,11 @@ Deno.serve(async (req) => {
     task = null;
   }
   if (!task) return Response.json({ error: 'task not found' }, { status: 404 });
+
+  // The previous state is also client-supplied, so only accept it when it
+  // references the same record; otherwise ignore it (prevents forged
+  // "previous" data from suppressing or injecting content into emails).
+  const previousTask = payloadPreviousTask?.id === taskId ? payloadPreviousTask : null;
 
   const userCustomerId = (user.data && user.data.customer_id) || user.customer_id;
   const isAuthorized = user.role === 'admin' ||
