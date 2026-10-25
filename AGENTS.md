@@ -24,6 +24,21 @@ docker compose -f docker-compose.base44.yml up -d
 - `base44/agents/` — 1 AI agent (framework_guide).
 - `base44/shared/` — shared utils (automationSecret, escapeHtml).
 
+## Self-hosted mode (server/)
+- `VITE_BACKEND_MODE=selfhosted` switches `src/api/base44Client.js` to `src/api/selfHostedClient.js`, which mirrors the
+  `@base44/sdk` surface the app uses (entities, auth, users, functions, integrations.Core, agents) against `server/`.
+  Without the variable the app talks to Base44 exactly as before.
+- `server/` is a Node.js ≥ 22.18 + PostgreSQL backend that reads `base44/` at startup: entity schemas + RLS,
+  functions (run unmodified via a Deno/SDK shim in `server/src/functions/`), workflows (cron + entity triggers,
+  jq conditions), the agent and connectors. Keep `base44/` as the source of truth; both modes use it.
+- Function code must stay *erasable* TypeScript (no enums/namespaces/parameter properties) so Node's type stripping
+  can run it, and may import only `npm:@base44/sdk`, other `npm:` packages listed in `server/package.json`, and
+  relative files.
+- Tests: `cd server && TEST_DATABASE_URL=postgres://…/scratch_db npm test` (drops that DB's public schema).
+- Deploy: `docker-compose.selfhost.yml` (postgres, minio, api, web/nginx). Docs in README.md (European Portuguese).
+- `base44/shared/automationSecret.ts` reads `AUTOMATION_SECRET` from the environment; the literal fallback is public
+  and is rejected by the self-hosted server.
+
 ## Notes / quirks
 - `Landing.jsx` was removed (was orphaned); orphan `landing_*` translation keys were cleaned from `translations-ui.js`.
 - `OAuthConsent.jsx` is a platform-managed MCP consent page, NOT routed in `App.jsx`; it references `base44/mcp/config.json` (a platform-managed file not exported to GitHub).

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { base44, isSelfHosted } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -13,6 +13,8 @@ import { writeAuditLog } from '@/lib/auditLog';
 
 const ALL_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
 const THIRD_PARTY_PROVIDERS = ['google_drive', 'one_drive'];
+// Nome do conector no servidor próprio (base44/connectors/*.jsonc).
+const CONNECTOR_NAMES = { google_drive: 'googledrive', one_drive: 'one_drive' };
 
 export default function StorageProvidersPanel() {
   const { user } = useAuth();
@@ -43,6 +45,34 @@ export default function StorageProvidersPanel() {
   useEffect(() => {
     setEnabled(config?.enabled_providers?.length ? config.enabled_providers : ALL_PROVIDERS);
   }, [config?.id, config?.enabled_providers]);
+
+  // Servidor próprio: o administrador liga/desliga as contas de armazenamento aqui.
+  const canManageConnections = isSelfHosted && user?.role === 'admin';
+
+  useEffect(() => {
+    if (!isSelfHosted) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('connector_status') === 'connected') toast.success(t('storage_providers_connected_toast'));
+    if (params.get('connector_error')) toast.error(params.get('connector_error'));
+  }, [t]);
+
+  const handleConnect = async (id) => {
+    try {
+      await base44.connectors.authorize(CONNECTOR_NAMES[id], window.location.pathname);
+    } catch (err) {
+      toast.error(err?.message || t('storage_providers_error'));
+    }
+  };
+
+  const handleDisconnect = async (id) => {
+    try {
+      await base44.connectors.disconnect(CONNECTOR_NAMES[id]);
+      queryClient.invalidateQueries({ queryKey: ['storage-provider-connections'] });
+      toast.success(t('storage_providers_disconnected_toast'));
+    } catch (err) {
+      toast.error(err?.message || t('storage_providers_error'));
+    }
+  };
 
   const toggleProvider = (id, isOn) => {
     if (id === 'base44') return;
@@ -128,6 +158,17 @@ export default function StorageProvidersPanel() {
                           <p className="text-xs text-muted-foreground mt-1">
                             {t('storage_providers_not_connected_hint')}
                           </p>
+                        )}
+                        {isThirdParty && canManageConnections && !isLoadingConnections && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 h-7 text-xs"
+                            onClick={() => (isConnected ? handleDisconnect(id) : handleConnect(id))}
+                          >
+                            {isConnected ? t('storage_providers_disconnect') : t('storage_providers_connect')}
+                          </Button>
                         )}
                       </div>
                     </div>

@@ -8,7 +8,13 @@
  *
  * Anonymous external HTTP callers do not know this value and are rejected at the gate.
  */
-export const AUTOMATION_SECRET = "cm-automation-7f3a9b2e1d8c4a6f0b5e2c9d1a7f4e3b";
+// The value comes from the AUTOMATION_SECRET environment variable when set — always the case on the
+// self-hosted server, which also injects it into scheduled workflow calls. The literal below is the
+// fallback used by the Base44-hosted deployment, whose workflow files pass this same literal.
+// NOTE: it is public in the repository, so the self-hosted server never accepts it.
+const LEGACY_AUTOMATION_SECRET = "cm-automation-7f3a9b2e1d8c4a6f0b5e2c9d1a7f4e3b";
+export const AUTOMATION_SECRET: string =
+  (globalThis as any).Deno?.env?.get?.("AUTOMATION_SECRET") || LEGACY_AUTOMATION_SECRET;
 
 /**
  * Extracts and validates the shared automation secret from a request.
