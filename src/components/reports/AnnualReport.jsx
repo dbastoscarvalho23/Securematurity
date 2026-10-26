@@ -3,30 +3,84 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import {
-  ShieldAlert, CheckCircle2, AlertTriangle, TrendingUp,
-  ClipboardList, Calendar, Target, ArrowRight
-} from 'lucide-react';
+import { Calendar, CheckCircle2, Target, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { riskScore } from '@/lib/riskEngine';
 import RecordDetailDialog from '@/components/reports/RecordDetailDialog';
 
+// Cores como no Figma (Relatórios - 2): borda colorida + fundo a 10%.
 const RISK_STATUS_COLORS = {
-  open: 'bg-destructive/10 text-destructive border-destructive/20',
-  in_treatment: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
-  accepted: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
-  closed: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
+  open: 'bg-destructive/10 text-destructive border-destructive/60',
+  in_treatment: 'bg-risk-high/10 text-risk-high border-risk-high/60',
+  accepted: 'bg-accent/10 text-accent border-accent/60',
+  closed: 'bg-primary/10 text-primary border-primary/60',
 };
 
 const PRIORITY_COLORS = {
-  critical: 'bg-destructive/10 text-destructive',
-  high: 'bg-chart-4/10 text-chart-4',
-  medium: 'bg-chart-3/10 text-chart-3',
-  low: 'bg-chart-2/10 text-chart-2',
+  critical: 'bg-destructive/10 text-destructive border-destructive/60',
+  high: 'bg-risk-high/10 text-risk-high border-risk-high/60',
+  medium: 'bg-risk-medium/10 text-risk-medium border-risk-medium/60',
+  low: 'bg-accent/10 text-accent border-accent/60',
 };
+
+const SEVERITY_SWATCH = {
+  critical: 'bg-destructive',
+  high: 'bg-risk-high',
+  medium: 'bg-risk-medium',
+  low: 'bg-accent',
+};
+
+function Pill({ className, children }) {
+  return (
+    <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold leading-none whitespace-nowrap', className)}>
+      {children}
+    </span>
+  );
+}
+
+function KpiTile({ value, active, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex min-h-[70px] w-full flex-col items-center justify-center gap-2 rounded-lg bg-background p-3 text-center transition-colors hover:bg-muted/60',
+        active && 'ring-1 ring-primary'
+      )}>
+      <span className="font-display text-[20px] leading-none text-foreground">{value}</span>
+      {children}
+    </button>
+  );
+}
+
+function SectionTitle({ children }) {
+  return <h3 className="text-[13px] font-semibold text-foreground">{children}</h3>;
+}
+
+function SubTitle({ icon: Icon, children }) {
+  return (
+    <h4 className="flex items-center gap-2 text-[11px] font-semibold text-foreground">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      {children}
+    </h4>
+  );
+}
+
+function ListRow({ onClick, className, children }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } }}
+      className={cn('flex items-center gap-3 rounded-md bg-background p-2.5 cursor-pointer transition-colors hover:bg-muted/60', className)}>
+      {children}
+    </div>
+  );
+}
+
+const linkBtn = 'text-[10px] font-medium text-primary hover:underline';
 
 export default function AnnualReport({ selectedCustomer = 'all' }) {
   const { user } = useAuth();
@@ -156,32 +210,31 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
   }, [drillDown, t]);
 
   // Drill-down renderer
+  const drillHeader = () => (
+    <div className="flex items-center justify-between mb-2">
+      <p className="text-[11px] font-semibold text-foreground">{drillLabel}</p>
+      <button onClick={clearDrillDown} className={linkBtn}>{t('annual_report_close')}</button>
+    </div>
+  );
+
   const renderDrillRisks = () => (
-    <div className="mt-3 border-t pt-3">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-semibold">{drillLabel}</p>
-        <button onClick={clearDrillDown} className="text-xs text-primary hover:underline">{t('annual_report_close')}</button>
-      </div>
+    <div className="border-t border-border pt-3">
+      {drillHeader()}
       {filteredRisks.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-4">{t('annual_report_no_results')}</p>
+        <p className="text-[11px] text-muted-foreground text-center py-4">{t('annual_report_no_results')}</p>
       ) : (
         <div className="space-y-1.5 max-h-64 overflow-y-auto">
           {filteredRisks.map(r => {
             const score = riskScore(r.impact, r.likelihood);
             const level = score >= 16 ? 'critical' : score >= 9 ? 'high' : score >= 4 ? 'medium' : 'low';
             return (
-              <div key={r.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/30 text-sm cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setDetail({ type: 'risk', record: r })}>
-                <span className={cn('w-8 h-6 rounded text-[10px] font-bold flex items-center justify-center flex-shrink-0',
-                  level === 'critical' ? 'bg-destructive/15 text-destructive' :
-                  level === 'high' ? 'bg-chart-4/15 text-chart-4' :
-                  level === 'medium' ? 'bg-chart-3/15 text-chart-3' : 'bg-chart-2/15 text-chart-2')}>
+              <ListRow key={r.id} onClick={() => setDetail({ type: 'risk', record: r })}>
+                <span className={cn('font-display w-8 h-6 rounded-md border text-[10px] flex items-center justify-center flex-shrink-0', PRIORITY_COLORS[level])}>
                   {score}
                 </span>
-                <span className="font-medium text-xs flex-1 truncate">{r.title}</span>
-                <Badge variant="outline" className={cn('text-[10px] py-0', RISK_STATUS_COLORS[r.status])}>
-                  {statusLabel(r.status)}
-                </Badge>
-              </div>
+                <span className="font-medium text-[10px] text-foreground flex-1 truncate">{r.title}</span>
+                <Pill className={RISK_STATUS_COLORS[r.status]}>{statusLabel(r.status)}</Pill>
+              </ListRow>
             );
           })}
         </div>
@@ -190,27 +243,22 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
   );
 
   const renderDrillItems = (items, type) => (
-    <div className="mt-3 border-t pt-3">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-semibold">{drillLabel}</p>
-        <button onClick={clearDrillDown} className="text-xs text-primary hover:underline">{t('annual_report_close')}</button>
-      </div>
+    <div className="border-t border-border pt-3">
+      {drillHeader()}
       {items.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-4">{t('annual_report_no_results')}</p>
+        <p className="text-[11px] text-muted-foreground text-center py-4">{t('annual_report_no_results')}</p>
       ) : (
         <div className="space-y-1.5 max-h-64 overflow-y-auto">
           {items.map(item => (
-            <div key={item.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/30 text-sm cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setDetail({ type: type === 'tasks' ? 'task' : 'recommendation', record: item })}>
-              <span className="font-medium text-xs flex-1 truncate">{item.title}</span>
+            <ListRow key={item.id} onClick={() => setDetail({ type: type === 'tasks' ? 'task' : 'recommendation', record: item })}>
+              <span className="font-medium text-[10px] text-foreground flex-1 truncate">{item.title}</span>
               {item.priority && (
-                <Badge className={cn('text-[10px] py-0', PRIORITY_COLORS[item.priority] || '')}>
-                  {priorityLabel(item.priority)}
-                </Badge>
+                <Pill className={PRIORITY_COLORS[item.priority]}>{priorityLabel(item.priority)}</Pill>
               )}
               {type === 'recommendations' && item.framework_code && (
-                <span className="text-[10px] text-muted-foreground">{item.framework_code}</span>
+                <span className="text-[9px] text-muted-foreground">{item.framework_code}</span>
               )}
-            </div>
+            </ListRow>
           ))}
         </div>
       )}
@@ -268,288 +316,232 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
 
   const yearLabel = new Date().getFullYear();
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Target className="w-5 h-5 text-primary" />
-            {t('annual_report_title')} {yearLabel}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">{t('annual_report_subtitle')}</p>
+  const renderIncidentRow = (r) => {
+    const score = riskScore(r.impact, r.likelihood);
+    const level = score >= 16 ? 'critical' : 'high';
+    return (
+      <ListRow key={r.id} onClick={() => setDetail({ type: 'risk', record: r })}>
+        <span className={cn('font-display w-8 h-8 rounded-md border flex items-center justify-center text-[11px] flex-shrink-0', PRIORITY_COLORS[level])}>
+          {score}
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-[10px] text-foreground truncate">{r.title}</p>
+          <div className="flex items-center gap-1.5 mt-1">
+            <Pill className={PRIORITY_COLORS[level]}>{t(level === 'critical' ? 'risk_level_critical' : 'risk_level_high')}</Pill>
+            <span className="text-[9px] text-muted-foreground">{statusLabel(r.status)}</span>
+          </div>
         </div>
+      </ListRow>
+    );
+  };
+
+  const severityItems = [
+    { key: 'critical', count: riskStats.criticalCount },
+    { key: 'high', count: riskStats.highCount },
+    { key: 'medium', count: riskStats.mediumCount },
+    { key: 'low', count: riskStats.lowCount },
+  ];
+
+  return (
+    <section className="bg-card border border-border rounded-[12px] p-5 sm:p-6 space-y-5">
+      {/* Cabeçalho */}
+      <div className="space-y-1">
+        <h2 className="text-[18px] font-bold leading-tight text-foreground">
+          {t('annual_report_title')} {yearLabel}
+        </h2>
+        <p className="text-[11px] text-muted-foreground">{t('annual_report_subtitle')}</p>
       </div>
 
-      {/* Section 1: Risks */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-destructive" />
-            {t('annual_report_section_risks')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Risk KPI row */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div
-              className="bg-muted/40 rounded-lg p-3 text-center cursor-pointer hover:bg-muted/60 transition-colors"
-              onClick={() => setDrillDown({ section: 'risks', filter: {} })}>
-              <p className="text-2xl font-bold">{riskStats.total}</p>
-              <p className="text-xs text-muted-foreground">{t('annual_report_total_risks')}</p>
+      {/* 1. Riscos */}
+      <div className="space-y-3">
+        <SectionTitle>{t('annual_report_section_risks')}</SectionTitle>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <KpiTile
+            value={riskStats.total}
+            onClick={() => setDrillDown({ section: 'risks', filter: {} })}>
+            <span className="text-[9px] font-medium text-muted-foreground">{t('annual_report_total_risks')}</span>
+          </KpiTile>
+          {Object.entries(riskStats.byStatus).map(([status, count]) => (
+            <KpiTile key={status}
+              value={count}
+              active={isDrillActive('risks', { status })}
+              onClick={() => setDrillDown(
+                isDrillActive('risks', { status }) ? null : { section: 'risks', filter: { status } }
+              )}>
+              <Pill className={RISK_STATUS_COLORS[status]}>{statusLabel(status)}</Pill>
+            </KpiTile>
+          ))}
+        </div>
+
+        {/* Distribuição por gravidade */}
+        {riskStats.total > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[9px] text-muted-foreground">{t('annual_report_risk_severity')}</p>
+            <div className="flex h-1.5 rounded-[3px] overflow-hidden w-full gap-px bg-border">
+              {severityItems.map(({ key, count }) => count > 0 && (
+                <div key={key} className={cn(SEVERITY_SWATCH[key], 'transition-all')} style={{ width: `${Math.round((count / riskStats.total) * 100)}%` }} />
+              ))}
             </div>
-            {Object.entries(riskStats.byStatus).map(([status, count]) => (
-              <div key={status}
-                className={cn('bg-muted/40 rounded-lg p-3 text-center cursor-pointer hover:bg-muted/60 transition-colors',
-                  isDrillActive('risks', { status }) && 'ring-2 ring-primary')}
-                onClick={() => setDrillDown(
-                  isDrillActive('risks', { status }) ? null : { section: 'risks', filter: { status } }
-                )}>
-                <p className="text-2xl font-bold">{count}</p>
-                <Badge variant="outline" className={cn('text-[10px] mt-0.5', RISK_STATUS_COLORS[status])}>
-                  {statusLabel(status)}
-                </Badge>
-              </div>
-            ))}
+            <div className="flex items-center gap-3 text-[9px] text-muted-foreground flex-wrap">
+              {severityItems.map(({ key, count }) => (
+                <button key={key} type="button"
+                  className={cn('flex items-center gap-1 hover:text-foreground transition-colors', isDrillActive('risks', { severity: key }) && 'text-foreground font-semibold')}
+                  onClick={() => setDrillDown(isDrillActive('risks', { severity: key }) ? null : { section: 'risks', filter: { severity: key } })}>
+                  <span className={cn('w-2 h-2 rounded-sm inline-block', SEVERITY_SWATCH[key])} /> {t('risk_level_' + key)}: {count}
+                </button>
+              ))}
+            </div>
           </div>
+        )}
 
-          {/* Severity distribution */}
-          {riskStats.total > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">{t('annual_report_risk_severity')}</p>
-              <div className="flex h-2.5 rounded-full overflow-hidden w-full gap-px">
-                {riskStats.criticalCount > 0 && <div className="bg-destructive transition-all" style={{ width: `${Math.round((riskStats.criticalCount / riskStats.total) * 100)}%` }} />}
-                {riskStats.highCount > 0 && <div className="bg-chart-4 transition-all" style={{ width: `${Math.round((riskStats.highCount / riskStats.total) * 100)}%` }} />}
-                {riskStats.mediumCount > 0 && <div className="bg-chart-3 transition-all" style={{ width: `${Math.round((riskStats.mediumCount / riskStats.total) * 100)}%` }} />}
-                {riskStats.lowCount > 0 && <div className="bg-chart-2 transition-all" style={{ width: `${Math.round((riskStats.lowCount / riskStats.total) * 100)}%` }} />}
-              </div>
-              <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap">
-                <span className={cn('flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors', isDrillActive('risks', { severity: 'critical' }) && 'text-foreground font-medium')}
-                  onClick={() => setDrillDown(isDrillActive('risks', { severity: 'critical' }) ? null : { section: 'risks', filter: { severity: 'critical' } })}>
-                  <span className="w-2 h-2 rounded bg-destructive inline-block" /> {t('risk_level_critical')}: {riskStats.criticalCount}
-                </span>
-                <span className={cn('flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors', isDrillActive('risks', { severity: 'high' }) && 'text-foreground font-medium')}
-                  onClick={() => setDrillDown(isDrillActive('risks', { severity: 'high' }) ? null : { section: 'risks', filter: { severity: 'high' } })}>
-                  <span className="w-2 h-2 rounded bg-chart-4 inline-block" /> {t('risk_level_high')}: {riskStats.highCount}
-                </span>
-                <span className={cn('flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors', isDrillActive('risks', { severity: 'medium' }) && 'text-foreground font-medium')}
-                  onClick={() => setDrillDown(isDrillActive('risks', { severity: 'medium' }) ? null : { section: 'risks', filter: { severity: 'medium' } })}>
-                  <span className="w-2 h-2 rounded bg-chart-3 inline-block" /> {t('risk_level_medium')}: {riskStats.mediumCount}
-                </span>
-                <span className={cn('flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors', isDrillActive('risks', { severity: 'low' }) && 'text-foreground font-medium')}
-                  onClick={() => setDrillDown(isDrillActive('risks', { severity: 'low' }) ? null : { section: 'risks', filter: { severity: 'low' } })}>
-                  <span className="w-2 h-2 rounded bg-chart-2 inline-block" /> {t('risk_level_low')}: {riskStats.lowCount}
-                </span>
-              </div>
+        {/* Categorias principais */}
+        {Object.keys(riskStats.byCategory).length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[9px] text-muted-foreground">{t('annual_report_risk_by_category')}</p>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(riskStats.byCategory)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6)
+                .map(([cat, count]) => (
+                  <button key={cat} type="button"
+                    className={cn('rounded-md border border-border bg-background px-2 py-[3px] text-[9px] font-semibold text-muted-foreground hover:text-foreground transition-colors',
+                      isDrillActive('risks', { category: cat }) && 'border-primary text-foreground')}
+                    onClick={() => setDrillDown(isDrillActive('risks', { category: cat }) ? null : { section: 'risks', filter: { category: cat } })}>
+                    {catLabel(cat)}: <span className="text-foreground">{count}</span>
+                  </button>
+                ))}
             </div>
-          )}
-
-          {/* Top categories */}
-          {Object.keys(riskStats.byCategory).length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">{t('annual_report_risk_by_category')}</p>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(riskStats.byCategory)
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 6)
-                  .map(([cat, count]) => (
-                    <Badge key={cat} variant="outline"
-                      className={cn('text-xs cursor-pointer hover:bg-muted transition-colors', isDrillActive('risks', { category: cat }) && 'ring-2 ring-primary')}
-                      onClick={() => setDrillDown(isDrillActive('risks', { category: cat }) ? null : { section: 'risks', filter: { category: cat } })}>
-                      {catLabel(cat)}: {count}
-                    </Badge>
-                  ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
+          </div>
+        )}
         {drillDown?.section === 'risks' && renderDrillRisks()}
-      </Card>
+      </div>
 
-      {/* Section 2: Measures */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <ClipboardList className="w-4 h-4 text-primary" />
-            {t('annual_report_section_measures')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Tasks */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-semibold">{t('annual_report_tasks')}</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { status: 'done', count: measureStats.taskDone, label: t('tasks_status_done') },
-                  { status: 'in_progress', count: measureStats.taskInProgress, label: t('tasks_status_in_progress') },
-                  { status: 'todo', count: measureStats.taskTodo, label: t('tasks_status_todo') },
-                  { status: 'blocked', count: measureStats.taskBlocked, label: t('tasks_status_blocked') },
-                ].map(({ status, count, label }) => (
-                  <div key={status}
-                    className={cn('bg-muted/40 rounded-lg p-3 text-center cursor-pointer hover:bg-muted/60 transition-colors',
-                      isDrillActive('measures', { type: 'tasks', status }) && 'ring-2 ring-primary')}
-                    onClick={() => setDrillDown(
-                      isDrillActive('measures', { type: 'tasks', status }) ? null : { section: 'measures', filter: { type: 'tasks', status } }
-                    )}>
-                    <p className="text-xl font-bold">{count}</p>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">{t('annual_report_completion')}</span>
-                  <span className="font-medium">{measureStats.taskCompletionRate}%</span>
-                </div>
-                <Progress value={measureStats.taskCompletionRate} className="h-2" />
-              </div>
+      {/* 2. Medidas */}
+      <div className="space-y-3">
+        <SectionTitle>{t('annual_report_section_measures')}</SectionTitle>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+          {/* Tarefas */}
+          <div className="rounded-lg border border-border p-4 space-y-4">
+            <h4 className="text-[11px] font-semibold text-foreground">{t('annual_report_tasks')}</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { status: 'done', count: measureStats.taskDone, label: t('tasks_status_done') },
+                { status: 'in_progress', count: measureStats.taskInProgress, label: t('tasks_status_in_progress') },
+                { status: 'todo', count: measureStats.taskTodo, label: t('tasks_status_todo') },
+                { status: 'blocked', count: measureStats.taskBlocked, label: t('tasks_status_blocked') },
+              ].map(({ status, count, label }) => (
+                <KpiTile key={status}
+                  value={count}
+                  active={isDrillActive('measures', { type: 'tasks', status })}
+                  onClick={() => setDrillDown(
+                    isDrillActive('measures', { type: 'tasks', status }) ? null : { section: 'measures', filter: { type: 'tasks', status } }
+                  )}>
+                  <span className="text-[9px] font-medium text-muted-foreground">{label}</span>
+                </KpiTile>
+              ))}
             </div>
-
-            {/* Recommendations */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-semibold">{t('annual_report_recommendations')}</h4>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { status: 'completed', count: measureStats.recCompleted, label: t('annual_report_completed') },
-                  { status: 'in_progress', count: measureStats.recInProgress, label: t('annual_report_in_progress') },
-                  { status: 'pending', count: measureStats.recPending, label: t('annual_report_pending') },
-                ].map(({ status, count, label }) => (
-                  <div key={status}
-                    className={cn('bg-muted/40 rounded-lg p-3 text-center cursor-pointer hover:bg-muted/60 transition-colors',
-                      isDrillActive('measures', { type: 'recommendations', status }) && 'ring-2 ring-primary')}
-                    onClick={() => setDrillDown(
-                      isDrillActive('measures', { type: 'recommendations', status }) ? null : { section: 'measures', filter: { type: 'recommendations', status } }
-                    )}>
-                    <p className="text-xl font-bold">{count}</p>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                  </div>
-                ))}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[9px]">
+                <span className="text-muted-foreground">{t('annual_report_completion')}</span>
+                <span className="font-semibold text-foreground">{measureStats.taskCompletionRate}%</span>
               </div>
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">{t('annual_report_progress')}</span>
-                  <span className="font-medium">{measureStats.recCompletionRate}%</span>
-                </div>
-                <Progress value={measureStats.recCompletionRate} className="h-2" />
-              </div>
+              <Progress value={measureStats.taskCompletionRate} className="h-1.5 rounded-[3px]" indicatorClassName="rounded-none" />
             </div>
           </div>
-        </CardContent>
+
+          {/* Recomendações */}
+          <div className="rounded-lg border border-border p-4 space-y-4">
+            <h4 className="text-[11px] font-semibold text-foreground">{t('annual_report_recommendations')}</h4>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { status: 'completed', count: measureStats.recCompleted, label: t('annual_report_completed') },
+                { status: 'in_progress', count: measureStats.recInProgress, label: t('annual_report_in_progress') },
+                { status: 'pending', count: measureStats.recPending, label: t('annual_report_pending') },
+              ].map(({ status, count, label }) => (
+                <KpiTile key={status}
+                  value={count}
+                  active={isDrillActive('measures', { type: 'recommendations', status })}
+                  onClick={() => setDrillDown(
+                    isDrillActive('measures', { type: 'recommendations', status }) ? null : { section: 'measures', filter: { type: 'recommendations', status } }
+                  )}>
+                  <span className="text-[9px] font-medium text-muted-foreground">{label}</span>
+                </KpiTile>
+              ))}
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[9px]">
+                <span className="text-muted-foreground">{t('annual_report_progress')}</span>
+                <span className="font-semibold text-foreground">{measureStats.recCompletionRate}%</span>
+              </div>
+              <Progress value={measureStats.recCompletionRate} className="h-1.5 rounded-[3px]" indicatorClassName="rounded-none" />
+            </div>
+          </div>
+        </div>
         {drillDown?.section === 'measures' && (
           drillDown.filter?.type === 'tasks'
             ? renderDrillItems(filteredTasks, 'tasks')
             : renderDrillItems(filteredRecs, 'recommendations')
         )}
-      </Card>
+      </div>
 
-      {/* Section 3: Incidents */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-chart-4" />
-            {t('annual_report_section_incidents')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {incidentRisks.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">{t('annual_report_no_incidents')}</p>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground mb-2">
-                {t('annual_report_incidents_desc')} <strong>{incidentRisks.length}</strong> {t('annual_report_active_high_risks')}
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {incidentRisks.slice(0, 8).map(r => {
-                  const score = riskScore(r.impact, r.likelihood);
-                  const level = score >= 16 ? 'critical' : 'high';
-                  return (
-                    <div key={r.id} className="flex items-center gap-3 p-2.5 rounded-lg border bg-muted/20 text-sm cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => setDetail({ type: 'risk', record: r })}>
-                      <div className={cn('w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs flex-shrink-0',
-                        level === 'critical' ? 'bg-destructive/15 text-destructive' : 'bg-chart-4/15 text-chart-4')}>
-                        {score}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-xs truncate">{r.title}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Badge variant="outline" className={cn('text-[10px] py-0', PRIORITY_COLORS[level])}>{t(level === 'critical' ? 'risk_level_critical' : 'risk_level_high')}</Badge>
-                          <span className="text-[10px] text-muted-foreground">{statusLabel(r.status)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              {incidentRisks.length > 8 && !isDrillActive('incidents', {}) && (
-                <button
-                  className="text-xs text-primary hover:underline text-center pt-1 w-full"
-                  onClick={() => setDrillDown({ section: 'incidents', filter: {} })}>
-                  +{incidentRisks.length - 8} {t('annual_report_more')}
-                </button>
-              )}
-              {drillDown?.section === 'incidents' && (
-                <div className="mt-3 border-t pt-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-semibold">{t('annual_report_all_incidents')} ({incidentRisks.length})</p>
-                    <button onClick={clearDrillDown} className="text-xs text-primary hover:underline">{t('annual_report_close')}</button>
-                  </div>
-                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                    {incidentRisks.map(r => {
-                      const score = riskScore(r.impact, r.likelihood);
-                      const level = score >= 16 ? 'critical' : 'high';
-                      return (
-                        <div key={r.id} className="flex items-center gap-3 p-2.5 rounded-lg border bg-muted/20 text-sm cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => setDetail({ type: 'risk', record: r })}>
-                          <div className={cn('w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs flex-shrink-0',
-                            level === 'critical' ? 'bg-destructive/15 text-destructive' : 'bg-chart-4/15 text-chart-4')}>
-                            {score}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-xs truncate">{r.title}</p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <Badge variant="outline" className={cn('text-[10px] py-0', PRIORITY_COLORS[level])}>{t(level === 'critical' ? 'risk_level_critical' : 'risk_level_high')}</Badge>
-                              <span className="text-[10px] text-muted-foreground">{statusLabel(r.status)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+      {/* 3. Incidentes */}
+      <div className="space-y-3">
+        <SectionTitle>{t('annual_report_section_incidents')}</SectionTitle>
+        {incidentRisks.length === 0 ? (
+          <div className="rounded-lg border border-accent/60 bg-accent/5 p-4">
+            <p className="text-[11px] text-foreground">{t('annual_report_no_incidents')}</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-[11px] text-muted-foreground">
+              {t('annual_report_incidents_desc')} <strong className="text-foreground">{incidentRisks.length}</strong> {t('annual_report_active_high_risks')}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+              {incidentRisks.slice(0, 8).map(renderIncidentRow)}
             </div>
-          )}
-        </CardContent>
-      </Card>
+            {incidentRisks.length > 8 && !isDrillActive('incidents', {}) && (
+              <button
+                className={cn(linkBtn, 'block w-full text-center pt-1')}
+                onClick={() => setDrillDown({ section: 'incidents', filter: {} })}>
+                +{incidentRisks.length - 8} {t('annual_report_more')}
+              </button>
+            )}
+            {drillDown?.section === 'incidents' && (
+              <div className="border-t border-border pt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[11px] font-semibold text-foreground">{t('annual_report_all_incidents')} ({incidentRisks.length})</p>
+                  <button onClick={clearDrillDown} className={linkBtn}>{t('annual_report_close')}</button>
+                </div>
+                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                  {incidentRisks.map(renderIncidentRow)}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-      {/* Section 4: Future Plans */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-accent" />
-            {t('annual_report_section_future')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {/* Upcoming assessments */}
-          <div>
-            <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
-              <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-              {t('annual_report_upcoming_assessments')}
-            </h4>
+      {/* 4. Planos futuros */}
+      <div className="space-y-4">
+        <SectionTitle>{t('annual_report_section_future')}</SectionTitle>
+        <div className="space-y-3">
+          {/* Próximas avaliações */}
+          <div className="space-y-2">
+            <SubTitle icon={Calendar}>{t('annual_report_upcoming_assessments')}</SubTitle>
             {futurePlans.upcomingAssessments.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t('annual_report_no_upcoming_assessments')}</p>
+              <p className="text-[10px] text-muted-foreground">{t('annual_report_no_upcoming_assessments')}</p>
             ) : (
               <div className="space-y-1.5">
                 {futurePlans.upcomingAssessments.slice(0, isDrillActive('future', { type: 'assessments' }) ? undefined : 4).map(a => (
-                  <div key={a.id} className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setDetail({ type: 'assessment', record: a })}>
-                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                    <span className="font-medium flex-1">{a.title}</span>
-                    <span className="text-xs text-muted-foreground">{a.customer_name} · {a.period}</span>
-                    <Badge variant="outline" className="text-[10px]">{t(`assessments_status_${a.status}`)}</Badge>
-                  </div>
+                  <ListRow key={a.id} className="flex-wrap p-3 sm:flex-nowrap" onClick={() => setDetail({ type: 'assessment', record: a })}>
+                    <ArrowRight className="w-3 h-3 text-foreground flex-shrink-0" />
+                    <span className="text-[10px] font-semibold text-foreground flex-1 min-w-0 truncate">{a.title}</span>
+                    <span className="text-[9px] text-muted-foreground">{a.customer_name} · {a.period}</span>
+                    <span className="rounded-md px-2 py-[3px] text-[9px] font-semibold text-foreground">{t(`assessments_status_${a.status}`)}</span>
+                  </ListRow>
                 ))}
                 {futurePlans.upcomingAssessments.length > 4 && !isDrillActive('future', { type: 'assessments' }) && (
-                  <button className="text-xs text-primary hover:underline w-full text-center pt-1"
+                  <button className={cn(linkBtn, 'block w-full text-center pt-1')}
                     onClick={() => setDrillDown({ section: 'future', filter: { type: 'assessments' } })}>
                     +{futurePlans.upcomingAssessments.length - 4} {t('annual_report_more')}
                   </button>
@@ -557,31 +549,26 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
               </div>
             )}
             {drillDown?.section === 'future' && drillDown.filter?.type === 'assessments' && (
-              <button onClick={clearDrillDown} className="text-xs text-primary hover:underline mt-1">{t('annual_report_show_less')}</button>
+              <button onClick={clearDrillDown} className={linkBtn}>{t('annual_report_show_less')}</button>
             )}
           </div>
 
-          {/* Priority recommendations */}
-          <div>
-            <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
-              <Target className="w-3.5 h-3.5 text-muted-foreground" />
-              {t('annual_report_priority_actions')}
-            </h4>
+          {/* Recomendações prioritárias */}
+          <div className="space-y-2">
+            <SubTitle icon={Target}>{t('annual_report_priority_actions')}</SubTitle>
             {futurePlans.pendingHighRecs.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t('annual_report_no_priority_recs')}</p>
+              <p className="text-[10px] text-muted-foreground">{t('annual_report_no_priority_recs')}</p>
             ) : (
               <div className="space-y-1.5">
                 {futurePlans.pendingHighRecs.slice(0, isDrillActive('future', { type: 'recommendations' }) ? undefined : 4).map(rec => (
-                  <div key={rec.id} className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setDetail({ type: 'recommendation', record: rec })}>
-                    <Badge className={cn('text-[10px] py-0', PRIORITY_COLORS[rec.priority] || '')}>
-                      {priorityLabel(rec.priority)}
-                    </Badge>
-                    <span className="font-medium text-xs flex-1 truncate">{rec.title}</span>
-                    <span className="text-[10px] text-muted-foreground">{rec.framework_code}</span>
-                  </div>
+                  <ListRow key={rec.id} onClick={() => setDetail({ type: 'recommendation', record: rec })}>
+                    <Pill className={PRIORITY_COLORS[rec.priority]}>{priorityLabel(rec.priority)}</Pill>
+                    <span className="font-medium text-[9px] text-foreground flex-1 truncate">{rec.title}</span>
+                    <span className="text-[9px] text-muted-foreground">{rec.framework_code}</span>
+                  </ListRow>
                 ))}
                 {futurePlans.pendingHighRecs.length > 4 && !isDrillActive('future', { type: 'recommendations' }) && (
-                  <button className="text-xs text-primary hover:underline w-full text-center pt-1"
+                  <button className={cn(linkBtn, 'block w-full text-center pt-1')}
                     onClick={() => setDrillDown({ section: 'future', filter: { type: 'recommendations' } })}>
                     +{futurePlans.pendingHighRecs.length - 4} {t('annual_report_more')}
                   </button>
@@ -589,32 +576,27 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
               </div>
             )}
             {drillDown?.section === 'future' && drillDown.filter?.type === 'recommendations' && (
-              <button onClick={clearDrillDown} className="text-xs text-primary hover:underline mt-1">{t('annual_report_show_less')}</button>
+              <button onClick={clearDrillDown} className={linkBtn}>{t('annual_report_show_less')}</button>
             )}
           </div>
 
-          {/* Upcoming tasks */}
-          <div>
-            <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground" />
-              {t('annual_report_upcoming_tasks')}
-            </h4>
+          {/* Próximas tarefas */}
+          <div className="space-y-2">
+            <SubTitle icon={CheckCircle2}>{t('annual_report_upcoming_tasks')}</SubTitle>
             {futurePlans.upcomingTasks.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t('annual_report_no_upcoming_tasks')}</p>
+              <p className="text-[10px] text-muted-foreground">{t('annual_report_no_upcoming_tasks')}</p>
             ) : (
               <div className="space-y-1.5">
                 {futurePlans.upcomingTasks.slice(0, isDrillActive('future', { type: 'tasks' }) ? undefined : 4).map(task => (
-                  <div key={task.id} className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setDetail({ type: 'task', record: task })}>
-                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                    <span className="font-medium text-xs flex-1 truncate">{task.title}</span>
-                    {task.due_date && <span className="text-[10px] text-muted-foreground">{task.due_date}</span>}
-                    <Badge className={cn('text-[10px] py-0', PRIORITY_COLORS[task.priority] || '')}>
-                      {priorityLabel(task.priority)}
-                    </Badge>
-                  </div>
+                  <ListRow key={task.id} onClick={() => setDetail({ type: 'task', record: task })}>
+                    <ArrowRight className="w-3 h-3 text-foreground flex-shrink-0" />
+                    <span className="font-semibold text-[9px] text-foreground flex-1 truncate">{task.title}</span>
+                    {task.due_date && <span className="text-[9px] text-muted-foreground whitespace-nowrap">{task.due_date}</span>}
+                    {task.priority && <Pill className={PRIORITY_COLORS[task.priority]}>{priorityLabel(task.priority)}</Pill>}
+                  </ListRow>
                 ))}
                 {futurePlans.upcomingTasks.length > 4 && !isDrillActive('future', { type: 'tasks' }) && (
-                  <button className="text-xs text-primary hover:underline w-full text-center pt-1"
+                  <button className={cn(linkBtn, 'block w-full text-center pt-1')}
                     onClick={() => setDrillDown({ section: 'future', filter: { type: 'tasks' } })}>
                     +{futurePlans.upcomingTasks.length - 4} {t('annual_report_more')}
                   </button>
@@ -622,11 +604,11 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
               </div>
             )}
             {drillDown?.section === 'future' && drillDown.filter?.type === 'tasks' && (
-              <button onClick={clearDrillDown} className="text-xs text-primary hover:underline mt-1">{t('annual_report_show_less')}</button>
+              <button onClick={clearDrillDown} className={linkBtn}>{t('annual_report_show_less')}</button>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <RecordDetailDialog
         record={detail?.record}
@@ -634,6 +616,6 @@ export default function AnnualReport({ selectedCustomer = 'all' }) {
         open={!!detail}
         onOpenChange={(o) => !o && setDetail(null)}
       />
-    </div>
+    </section>
   );
 }

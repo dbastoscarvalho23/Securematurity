@@ -24,6 +24,7 @@ import ReminderSettingsPanel from '@/components/settings/ReminderSettingsPanel';
 import LicenseSettingsPanel from '@/components/licensing/LicenseSettingsPanel';
 import GeneratedReportsPanel from '@/components/genreports/GeneratedReportsPanel';
 import TrainingReportsPanel from '@/components/genreports/TrainingReportsPanel';
+import EmailSettingsPanel from '@/components/settings/EmailSettingsPanel';
 
 export default function Settings() {
   const { user: currentUser, checkAppState, refreshUser } = useAuth();
@@ -261,6 +262,7 @@ export default function Settings() {
         {isAdmin && (
           <TabsContent value="app" className="space-y-4 mt-4">
             <MaintenanceWindowPanel isAdmin={isAdmin} />
+            <EmailSettingsPanel />
           </TabsContent>
         )}
 

@@ -3,6 +3,16 @@
 // Os parâmetros usam a sintaxe {nome} do t() de LanguageContext.
 
 export const extraPt = {
+  x_mail_title: 'Envio de email',
+  x_mail_desc: 'Remetente usado nos alertas, notificações e convites enviados pela plataforma.',
+  x_mail_provider: 'Fornecedor',
+  x_mail_from: 'Remetente',
+  x_mail_reply_to: 'Respostas para',
+  x_mail_base44_note: 'Com o fornecedor Base44 só o nome do remetente é personalizado. Para enviar a partir de ankoraone.com, configure a Resend ou o SMTP do domínio nos segredos da aplicação.',
+  x_mail_test: 'Enviar email de teste',
+  x_mail_test_ok: 'Email de teste enviado.',
+  x_mail_test_fallback: 'Enviado pelo Base44: o fornecedor próprio falhou. Veja os segredos de email.',
+  x_mail_test_failed: 'O email de teste não foi enviado.',
   nav_grp_overview: 'Visão geral',
   nav_grp_assess: 'Avaliar e comprovar',
   nav_grp_improve: 'Melhorar e gerir',
@@ -180,6 +190,16 @@ export const extraPt = {
 };
 
 export const extraEn = {
+  x_mail_title: 'Email delivery',
+  x_mail_desc: 'Sender used for alerts, notifications and invitations sent by the platform.',
+  x_mail_provider: 'Provider',
+  x_mail_from: 'Sender',
+  x_mail_reply_to: 'Replies to',
+  x_mail_base44_note: 'With the Base44 provider only the sender name is customised. To send from ankoraone.com, configure Resend or the domain SMTP in the app secrets.',
+  x_mail_test: 'Send test email',
+  x_mail_test_ok: 'Test email sent.',
+  x_mail_test_fallback: 'Sent through Base44: the own provider failed. Check the email secrets.',
+  x_mail_test_failed: 'The test email was not sent.',
   nav_grp_overview: 'Overview',
   nav_grp_assess: 'Assess and evidence',
   nav_grp_improve: 'Improve and manage',

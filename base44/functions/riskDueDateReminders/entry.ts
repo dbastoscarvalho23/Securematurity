@@ -4,6 +4,7 @@ import { json, authorizeAutomationOrAdmin } from '../../shared/http.ts';
 import { logEmailSent } from '../../shared/audit.ts';
 import { riskScore, scoreLevel } from '../../shared/riskLevel.ts';
 import { buildRecipients } from '../../shared/reminderSettings.ts';
+import { sendMail } from '../../shared/mail.ts';
 
 const LEVEL_PT = { Critical: 'Crítico', High: 'Alto', Medium: 'Médio', Low: 'Baixo' };
 const RISK_STATUS_PT = { open: 'Aberto', in_treatment: 'Em tratamento', accepted: 'Aceite', closed: 'Fechado' };
@@ -77,7 +78,7 @@ Deno.serve(async (req) => {
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({
+      await sendMail(base44, {
         to,
         subject: `[Prazo do risco: ${daysLeft === 1 ? 'amanhã' : `${daysLeft} dias`}] ${risk.title}`,
         body,

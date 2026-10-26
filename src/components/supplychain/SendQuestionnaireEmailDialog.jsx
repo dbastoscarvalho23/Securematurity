@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { base44 } from '@/api/base44Client';
+import { sendEmail } from '@/lib/mail';
 import { toast } from 'sonner';
 import { Send } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
-import { writeAuditLog } from '@/lib/auditLog';
 import { escapeHtml } from '@/lib/escapeHtml';
 
 function buildHtmlEmail({ questionnaire, questions, isPt }) {
@@ -157,12 +157,13 @@ export default function SendQuestionnaireEmailDialog({ open, onClose, questionna
     if (!to.trim()) { toast.error(t('sc_send_no_recipient')); return; }
     setSending(true);
     try {
-      await base44.integrations.Core.SendEmail({ to: to.trim(), subject, body: htmlBody });
-      await writeAuditLog({
-        action: 'email_sent',
-        entity_type: 'SupplierQuestionnaire',
-        entity_id: questionnaire?.id,
-        details: `Questionnaire "${questionnaire?.title}" sent to ${to.trim()} (supplier: ${questionnaire?.supplier_name || '—'})`,
+      await sendEmail({
+        to: to.trim(),
+        subject,
+        html: htmlBody,
+        customerId: questionnaire?.customer_id,
+        entityType: 'SupplierQuestionnaire',
+        entityId: questionnaire?.id,
       });
       toast.success(t('sc_sent_success'));
       onClose();
