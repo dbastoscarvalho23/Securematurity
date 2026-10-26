@@ -1,9 +1,10 @@
 # Publica o frontend da app Securematurity no Base44 sempre que o main recebe alterações.
 #
-# Usa o serviço "Deploy a prebuilt site" do Base44 (POST /api/apps/{app_id}/deploy-dist), que publica
-# a pasta dist já compilada. Só cobre o frontend: alterações a entidades (base44/entities), funções
-# (base44/functions) ou ao agente têm de ser aplicadas no Base44 por fusão de um ramo da app ou com
-# `npx base44 deploy` (ver docs/deploy-base44.md).
+# 1) Frontend: serviço "Deploy a prebuilt site" do Base44 (POST /api/apps/{app_id}/deploy-dist).
+# 2) Funções: `base44 functions deploy` (CLI oficial). Nas apps importadas do GitHub o botão Publish não
+#    existe e a fusão de ramos não publica as funções em produção; sem este passo as chamadas a
+#    base44.functions.invoke() respondem «Function not found».
+# As entidades continuam a ser aplicadas por fusão de um ramo da app (ver docs/deploy-base44.md).
 #
 # Requer o segredo BASE44_API_KEY (token pessoal com acesso total, ou chave de workspace com a
 # permissão apps:deploy), em Settings → Secrets and variables → Actions.
@@ -78,6 +79,15 @@ jobs:
           if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
             echo "::error::Publicação recusada pelo Base44 (HTTP ${status})"; exit 1
           fi
+
           url=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('response.json','utf8')).app_url||'')}catch{console.log('')}")
           echo "### Publicado no Base44" >> "$GITHUB_STEP_SUMMARY"
           echo "${url:-(sem URL na resposta)} — commit ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar as funções no Base44
+        env:
+          BASE44_API_KEY: ${{ secrets.BASE44_API_KEY }}
+          BASE44_APP_ID: ${{ env.BASE44_APP_ID }}
+          CI: 'true'
+        run: |
+          npx --yes base44@0.1.32 functions deploy --app-id "${BASE44_APP_ID}"
