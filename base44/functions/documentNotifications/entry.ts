@@ -3,6 +3,7 @@ import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
 import { json, getAuthenticatedUser, hasAutomationSecret, canAccessRecord } from '../../shared/http.ts';
 import { logEmailSent } from '../../shared/audit.ts';
 import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
+import { sendMail } from '../../shared/mail.ts';
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
@@ -121,7 +122,7 @@ Deno.serve(async (req) => {
       </div>`.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({
+      await sendMail(base44, {
         to,
         subject: `[Revisão pendente] ${esc(document.title)}`,
         body,
@@ -164,7 +165,7 @@ Deno.serve(async (req) => {
       </div>`.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({
+      await sendMail(base44, {
         to,
         subject: `[Documento aprovado] ${esc(document.title)}`,
         body,

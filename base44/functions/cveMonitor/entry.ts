@@ -4,6 +4,7 @@ import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId }
 import { hasAutomationSecret } from '../../shared/automationSecret.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, getEntitlements, LicenseError } from '../../shared/license.ts';
+import { sendMail } from '../../shared/mail.ts';
 
 /**
  * Monitorização de CVE por fabricante do inventário de ativos (fonte: NVD do NIST, API 2.0).
@@ -152,7 +153,7 @@ async function runWatches(base44, allWatches) {
     for (const u of recipients) {
       await db.Notification.create({ user_email: u.email, customer_id: customerId, title, message, link: '/assets?tab=cve', entity_type: 'CveAlert', type: 'general', is_read: false }).catch(() => null);
       if (items.some((x) => x.watch.notify_email !== false)) {
-        await base44.asServiceRole.integrations.Core.SendEmail({
+        await sendMail(base44, {
           to: u.email,
           subject: `[AnkoraOne] ${title}${customer?.name ? ` — ${customer.name}` : ''}`,
           body: `${message}\n\nVeja os alertas em Ativos e ferramentas → Alertas CVE. Fonte: NVD (NIST).`,

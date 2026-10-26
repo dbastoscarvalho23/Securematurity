@@ -4,6 +4,7 @@ import { json, getAuthenticatedUser, canAccessRecord } from '../../shared/http.t
 import { logEmailSent } from '../../shared/audit.ts';
 import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
 import { riskScore, scoreLevel, RISK_STATUS_LABELS as STATUS_LABELS } from '../../shared/riskLevel.ts';
+import { sendMail } from '../../shared/mail.ts';
 
 const LEVEL_PT = { Critical: 'Crítico', High: 'Alto', Medium: 'Médio', Low: 'Baixo' };
 const STATUS_PT = { open: 'Aberto', in_treatment: 'Em tratamento', accepted: 'Aceite', closed: 'Fechado' };
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Risco atribuído] ${esc(risk.title)}`, body });
+      await sendMail(base44, { to, subject: `[Risco atribuído] ${esc(risk.title)}`, body });
     }
     await logEmailSent(base44, {
       user_email: user.email,
@@ -107,7 +108,7 @@ Deno.serve(async (req) => {
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Risco] Estado alterado: ${esc(risk.title)}`, body });
+      await sendMail(base44, { to, subject: `[Risco] Estado alterado: ${esc(risk.title)}`, body });
     }
     await logEmailSent(base44, {
       user_email: user.email,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { requestMoreSeats } from '@/lib/mail';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -102,18 +103,8 @@ export default function CustomerUsersPanel({ customer }) {
   const handleRequestMoreSeats = async () => {
     setRequestingSeat(true);
     try {
-      // Find platform admins to notify
-      const admins = await base44.entities.User.filter({ role: 'admin' });
-      const adminEmails = admins.map(a => a.email).filter(Boolean);
-
-      // Send email to each admin
-      await Promise.all(adminEmails.map(adminEmail =>
-        base44.integrations.Core.SendEmail({
-          to: adminEmail,
-          subject: `[Pedido de licenças] ${customer.name} precisa de mais licenças de utilizador`,
-          body: `Olá,\n\nO cliente "${customer.name}" (ID: ${customer.id}) atingiu o limite de licenças de utilizador.\n\nUtilização atual: ${usedSeats} de ${seatLimit} licenças.\n\nO cliente pede licenças adicionais para registar mais utilizadores.\n\nReveja e ajuste o limite em Administração > Gestão de Licenças.\n\nPedido feito por: ${currentUser?.email || 'desconhecido'}\n\nCom os melhores cumprimentos,\nAnkoraOne`,
-        })
-      ));
+      // Os administradores a notificar são escolhidos no servidor (o RLS não deixa o cliente ler utilizadores).
+      await requestMoreSeats({ customerId: customer.id, used: usedSeats, limit: seatLimit });
 
       toast.success(t('cup_seat_request_sent'));
     } catch (err) {
