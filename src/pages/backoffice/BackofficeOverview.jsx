@@ -25,7 +25,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 
-const COLORS = ['hsl(217,91%,60%)', 'hsl(173,58%,39%)', 'hsl(43,74%,66%)', 'hsl(27,87%,67%)', 'hsl(262,52%,56%)', 'hsl(0,84%,60%)'];
+const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--destructive))'];
 
 function DrillDownDialog({ title, children, open, onClose }) {
   return (

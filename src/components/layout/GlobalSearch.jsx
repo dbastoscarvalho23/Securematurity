@@ -155,10 +155,11 @@ export default function GlobalSearch() {
       {/* Trigger button */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 h-8 pl-3 pr-4 rounded-lg border border-border bg-muted/50 hover:bg-muted text-muted-foreground text-sm transition-colors min-w-[180px]"
+        className="flex items-center gap-2 h-9 px-3 rounded-lg border border-input bg-transparent shadow-sm hover:bg-muted/60 text-muted-foreground text-sm transition-colors w-9 sm:w-[220px] lg:w-[280px] justify-center sm:justify-start"
+        aria-label={t('gs_search_placeholder')}
       >
-        <Search className="w-3.5 h-3.5 flex-shrink-0" />
-        <span className="flex-1 text-left text-xs">{t('gs_search_placeholder')}</span>
+        <Search className="w-4 h-4 flex-shrink-0" />
+        <span className="hidden sm:block flex-1 text-left text-sm">{t('gs_search_placeholder')}</span>
         <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 rounded border border-border bg-background px-1 text-[10px] font-mono text-muted-foreground">
           <span>⌘K</span>
         </kbd>

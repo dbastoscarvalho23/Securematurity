@@ -5,8 +5,8 @@ const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(() => {
-    try { return localStorage.getItem('app_theme') || 'system'; }
-    catch { return 'system'; }
+    try { return localStorage.getItem('app_theme') || 'dark'; }
+    catch { return 'dark'; }
   });
 
   // Sync from user profile on load
