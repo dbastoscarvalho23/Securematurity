@@ -93,5 +93,13 @@ jobs:
         run: |
           # O CLI autentica-se com BASE44_API_KEY (chave de workspace b44k_ com apps:deploy, ou token pessoal).
           # Sem TTY e com limite de tempo: se a chave não servir, falha em vez de ficar à espera de login.
-          timeout 90 npx --yes base44@0.2.3 whoami --app-id "${BASE44_APP_ID}" < /dev/null || { echo "::error::A chave BASE44_API_KEY não serve ao CLI: use uma chave de workspace (b44k_) com a permissão apps:deploy"; exit 1; }
-          timeout 900 npx --yes base44@0.2.3 functions deploy --app-id "${BASE44_APP_ID}" < /dev/null
+          echo "::notice::Chave do CLI: prefixo ${BASE44_API_KEY:0:5}…, ${#BASE44_API_KEY} caracteres"
+          npm i -g base44@0.2.3 >/dev/null 2>&1 || true
+          set +e
+          timeout 60 base44 whoami --app-id "${BASE44_APP_ID}" < /dev/null > whoami.txt 2>&1
+          rc=$?
+          set -e
+          # As primeiras linhas aparecem como anotação (o GitHub oculta o valor dos segredos).
+          head -c 600 whoami.txt | tr '\n' ' ' | sed 's/^/::notice::CLI whoami: /'; echo
+          if [ $rc -ne 0 ]; then echo "::error::A chave não serve ao CLI do Base44 (whoami saiu com ${rc}): use uma chave de workspace (b44k_) com a permissão apps:deploy"; exit 1; fi
+          timeout 900 base44 functions deploy --app-id "${BASE44_APP_ID}" < /dev/null
