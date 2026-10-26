@@ -1,7 +1,7 @@
 // Teste de qualify() — empacotar com esbuild e correr com node.
 import assert from 'node:assert/strict';
-import rjc from '/home/claude/securematurity/src/data/legal/rjc.json';
-import { qualify, annexRows, rjcSizeCategory, reg756SizeClass, sizeThresholds, journeyUpdates } from '/home/claude/securematurity/src/lib/legal/qualification.js';
+import rjc from '../../../data/legal/rjc.json';
+import { qualify, annexRows, rjcSizeCategory, reg756SizeClass, sizeThresholds, journeyUpdates } from '../qualification.js';
 
 const legal = { rjc };
 const rows = annexRows(rjc);
