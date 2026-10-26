@@ -267,3 +267,4 @@ export async function getFile(base44, customerId, provider, ref, mimeType) {
   if (bytes.byteLength > MAX_EXTERNAL_BYTES) throw new Error("Ficheiro demasiado grande para descarregar por esta via");
   return { bytes, mimeType: mimeType || r.headers.get("content-type") || "application/octet-stream" };
 }
+

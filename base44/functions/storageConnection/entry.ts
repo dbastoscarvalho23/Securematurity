@@ -53,3 +53,4 @@ export default async function (req) {
     return json({ error: error?.message || 'Erro' }, 400);
   }
 }
+
