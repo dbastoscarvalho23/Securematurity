@@ -26,7 +26,9 @@ Depois de mudar `src/data/legal/` ou `src/lib/legal/journeyTemplate.js`, voltar 
 
 - `python3 tools/legal/build_ai_pack.py` → `base44/shared/legalPack.ts` (textos oficiais citáveis pela IA)
 - `node tools/legal/build_classify_catalog.mjs` → `base44/shared/classifyCatalog.ts` (nível mínimo dos controlos,
-  guia ISO/IEC 27001 e tarefas da jornada, para a classificação de documentos)
+  guias ISO/IEC 27001 e 42001 e tarefas da jornada, para a classificação de documentos)
+- `python3 tools/legal/build_iso27001.py` e `python3 tools/legal/build_iso42001.py` → guias ISO; `python3 tools/legal/build_iso_refs_doc.py` →
+  `docs/legal/referencias-iso.md` (registo das fontes, a partir de `src/data/legal/iso-references.json`)
 
 ## Depois de publicar
 

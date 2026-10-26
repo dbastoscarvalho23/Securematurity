@@ -10,6 +10,7 @@ export const FRAMEWORK_NAMES = {
   EU_2024_2690: 'Regulamento de Execução (UE) 2024/2690',
   DORA: 'DORA — Regulamento (UE) 2022/2554',
   ISO27001: 'ISO/IEC 27001:2022',
+  ISO42001: 'ISO/IEC 42001:2023 — Sistema de gestão da inteligência artificial',
   NIST_CSF: 'NIST CSF',
   CIS_V8: 'CIS Controls v8.1.2',
   TISAX_ISA6: 'TISAX — VDA ISA 6.0.3',
@@ -21,7 +22,7 @@ export const FRAMEWORK_NAMES = {
 };
 
 /** Referenciais que podem ser atribuídos a clientes (o ENISA fica fora por estar descontinuado). */
-export const SELECTABLE_FRAMEWORKS = ['NIS2', 'QNRC', 'EU_2024_2690', 'DORA', 'ISO27001', 'NIST_CSF', 'CIS_V8', 'TISAX_ISA6', 'TISAX_ISA2027', 'GDPR'];
+export const SELECTABLE_FRAMEWORKS = ['NIS2', 'QNRC', 'EU_2024_2690', 'DORA', 'ISO27001', 'ISO42001', 'NIST_CSF', 'CIS_V8', 'TISAX_ISA6', 'TISAX_ISA2027', 'GDPR'];
 
 export const DEFAULT_CUSTOMER_FRAMEWORKS = ['NIS2', 'QNRC', 'ISO27001', 'NIST_CSF', 'CIS_V8', 'GDPR'];
 
@@ -30,6 +31,8 @@ export const DEFAULT_CUSTOMER_FRAMEWORKS = ['NIS2', 'QNRC', 'ISO27001', 'NIST_CS
 const LEGACY_DOMAINS = {
   // ISO/IEC 27001:2022 — os quatro temas do Anexo A (iguais a group_name em src/data/legal/iso27001.json).
   ISO27001: ['Controlos organizacionais', 'Controlos de pessoas', 'Controlos físicos', 'Controlos tecnológicos'],
+  // ISO/IEC 42001:2023 — os nove domínios do Anexo A (iguais a group_name em src/data/legal/iso42001.json).
+  ISO42001: ['Políticas relativas à IA', 'Organização interna', 'Recursos dos sistemas de IA', 'Avaliação de impactos dos sistemas de IA', 'Ciclo de vida dos sistemas de IA', 'Dados para sistemas de IA', 'Informação para partes interessadas', 'Utilização de sistemas de IA', 'Relações com terceiros e clientes'],
   NIST_CSF: ['Identify', 'Protect', 'Detect', 'Respond', 'Recover'],
   CIS_V8: ['Inventory & Control', 'Data Protection', 'Secure Configuration', 'Account Management', 'Access Control', 'Vulnerability Management', 'Audit Log Management', 'Email & Web Browser', 'Malware Defenses', 'Network Infrastructure', 'Data Recovery', 'Network Monitoring', 'Security Awareness', 'Service Provider Management', 'Application Security', 'Incident Response', 'Penetration Testing'],
   GDPR: ['Lawfulness & Transparency', 'Data Subject Rights', 'Consent Management', 'Data Minimisation', 'Purpose Limitation', 'Storage Limitation', 'Accuracy', 'Security of Processing', 'Data Breach Notification', 'Data Protection by Design', 'Data Protection Officer', 'International Transfers', 'Records of Processing', 'Data Processor Management'],

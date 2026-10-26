@@ -3,7 +3,8 @@ Gera src/data/legal/iso27001.json — guia ISO/IEC 27001:2022 da AnkoraOne.
 
 Os títulos, descrições e evidências sugeridas são texto próprio da AnkoraOne (paráfrase), não o texto da norma,
 que é protegida por direitos de autor. As ligações ao QNRCS vêm das referências oficiais do Regulamento do CNCS
-n.º 756/2026, Anexo I (src/data/legal/qnrcs.json). Estado: «por validar com a norma».
+n.º 756/2026, Anexo I (src/data/legal/qnrcs.json). Estado: estrutura e numeração verificadas com o texto oficial (EN ISO/IEC 27001:2023) a 26/10/2026; os textos
+continuam a ser paráfrase própria. Ver docs/legal/referencias-iso.md.
 """
 import json, os, re
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -11,7 +12,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 CLAUSES = [
  ("4", "Contexto da organização", [
   ("4.1", "Compreender a organização e o seu contexto", "Identificar as questões internas e externas que afetam a segurança da informação, incluindo os efeitos das alterações climáticas (emenda de 2024).", "Análise de contexto (por exemplo SWOT ou PESTEL) aprovada e revista."),
-  ("4.2", "Partes interessadas e os seus requisitos", "Identificar as partes interessadas, os requisitos relevantes de cada uma e quais serão tratados pelo sistema de gestão.", "Lista de partes interessadas com os respetivos requisitos legais, contratuais e de negócio."),
+  ("4.2", "Partes interessadas e os seus requisitos", "Identificar as partes interessadas, os requisitos relevantes de cada uma (podem incluir requisitos ligados às alterações climáticas, emenda de 2024) e quais serão tratados pelo sistema de gestão.", "Lista de partes interessadas com os respetivos requisitos legais, contratuais e de negócio."),
   ("4.3", "Âmbito do sistema de gestão", "Definir e documentar os limites do sistema de gestão: atividades, locais, sistemas e interfaces com terceiros.", "Documento de âmbito do SGSI aprovado."),
   ("4.4", "Sistema de gestão da segurança da informação", "Estabelecer, implementar, manter e melhorar o sistema de gestão e os processos de que precisa.", "Mapa de processos do SGSI e respetivas interligações."),
  ]),
@@ -150,7 +151,7 @@ ANNEX = [
   ("8.31", "Separação de ambientes", "Ambientes de desenvolvimento, teste e produção separados.", "Arquitetura de ambientes e controlos de acesso."),
   ("8.32", "Gestão de alterações", "Alterações aos meios de tratamento de informação controladas.", "Procedimento e registos de alterações aprovadas."),
   ("8.33", "Informação de teste", "Informação de teste escolhida, protegida e gerida.", "Regras para dados de teste (sem dados reais ou anonimizados)."),
-  ("8.34", "Testes de auditoria", "Testes de auditoria planeados para não afetar a operação.", "Plano de auditoria técnica acordado."),
+  ("8.34", "Proteção dos sistemas durante testes de auditoria", "Testes de auditoria e outras verificações aos sistemas em produção planeados e acordados para não afetar a operação.", "Plano de auditoria técnica acordado com o responsável dos sistemas."),
  ]),
 ]
 
@@ -170,10 +171,13 @@ def qlinks(idx, ident):
         if key.startswith(ident + '.'): out += v
     return sorted(set(out))
 
+# Cláusulas que exigem informação documentada (texto da norma: «documented information shall be available/retained»).
+DOCUMENTED = {"4.3", "5.2", "6.1.2", "6.1.3", "6.2", "7.2", "7.5", "8.1", "8.2", "8.3", "9.1", "9.2", "9.3", "10.2"}
+
 items = []
 for num, name, rows in CLAUSES:
     for i, (cid, title, desc, ev) in enumerate(rows):
-        items.append({"id": f"C.{cid}", "kind": "clause", "group": num, "group_name": name, "ref": cid, "title": title, "description": desc, "evidence": ev, "qnrcs": qlinks(by27001, cid), "order": len(items) + 1})
+        items.append({"id": f"C.{cid}", "kind": "clause", "group": num, "group_name": name, "ref": cid, "title": title, "description": desc, "evidence": ev, "qnrcs": qlinks(by27001, cid), "documented": cid in DOCUMENTED, "order": len(items) + 1})
 for num, name, rows in ANNEX:
     for cid, title, desc, ev in rows:
         items.append({"id": f"A.{cid}", "kind": "control", "group": num, "group_name": name, "ref": cid, "title": title, "description": desc, "evidence": ev, "qnrcs": sorted(set(by27002.get(cid, []))), "order": len(items) + 1})
@@ -182,11 +186,13 @@ assert sum(1 for i in items if i['kind'] == 'control') == 93
 out = {
   "source": {
     "title": "ISO/IEC 27001:2022 — guia AnkoraOne",
-    "edition": "ISO/IEC 27001:2022 com a emenda 1:2024 (EN ISO/IEC 27001:2023)",
+    "edition": "ISO/IEC 27001:2022 (EN ISO/IEC 27001:2023) e emenda 1:2024 (alterações climáticas)",
     "ref": "Estrutura das cláusulas 4 a 10 e do Anexo A. Títulos, descrições e evidências sugeridas escritos pela AnkoraOne; não reproduzem a norma.",
     "links_ref": "Ligações ao QNRCS: Regulamento do CNCS n.º 756/2026, Anexo I (referências oficiais à ISO/IEC 27001 e 27002)",
     "url": "https://www.iso.org/standard/27001",
-    "validation": "por_validar",
+    "validation": "estrutura_validada",
+    "validated_on": "2026-10-26",
+    "validation_note": "Cláusulas 4 a 10 e os 93 controlos do Anexo A conferidos com o texto oficial (EN ISO/IEC 27001:2023): numeração completa, sem falhas nem excedentes. Títulos e descrições são paráfrase da AnkoraOne.",
     "note": "A norma é protegida por direitos de autor e não está incluída. Para certificação, a entidade deve usar o texto oficial e uma entidade certificadora acreditada."
   },
   "groups": [{"kind": "clause", "code": n, "name": nm} for n, nm, _ in CLAUSES] + [{"kind": "control", "code": n, "name": nm} for n, nm, _ in ANNEX],

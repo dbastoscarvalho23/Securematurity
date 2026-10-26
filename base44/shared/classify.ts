@@ -6,7 +6,7 @@ import { CLASSIFY_CATALOG } from './classifyCatalog.ts';
  * testada no Vitest (src/lib/__tests__/classify.test.js importa este ficheiro diretamente).
  *
  *  1. buildCandidates: tudo aquilo a que o documento do cliente pode ficar ligado — medidas aplicáveis do QNRCS
- *     (Anexo III) ou do Anexo IV, tarefas da jornada RJC_2026, itens ISO/IEC 27001 (se o cliente os usa) e os
+ *     (Anexo III) ou do Anexo IV, tarefas da jornada RJC_2026, itens ISO/IEC 27001 e ISO/IEC 42001 (se o cliente os usa) e os
  *     quatro níveis de documento de segurança (L1–L4).
  *  2. scoreCandidates/shortlist: pontuação lexical em PT-PT (minúsculas, sem acentos, sem palavras vazias,
  *     sobreposição de termos ponderada por campo e pela raridade do termo) → os 20 mais próximos.
@@ -25,7 +25,7 @@ export const ASSESSMENTS = ['covers', 'partial', 'does_not_cover'];
 // Pastas que a classificação pode propor (as restritas e as geradas pela plataforma ficam de fora).
 export const CLASSIFY_FOLDERS = ['framing', 'security_docs', 'evidence', 'assessments', 'risks', 'incidents', 'suppliers', 'other'];
 // Tipos de candidato que dão origem a uma ligação da evidência.
-export const LINKABLE_KINDS = ['measure', 'iso27001', 'journey'];
+export const LINKABLE_KINDS = ['measure', 'iso27001', 'iso42001', 'journey'];
 
 const LEVELS = ['basico', 'substancial', 'elevado'];
 
@@ -120,9 +120,14 @@ export function usesIso27001(customer: any, checklist: any[] = []): boolean {
   return (customer?.allowed_frameworks || []).includes('ISO27001') || checklist.some((r) => r?.framework === 'ISO27001_2022');
 }
 
-export function isoCandidates(): Candidate[] {
-  return CLASSIFY_CATALOG.iso27001.map((i: any) => ({
-    id: `iso27001:${i.id}`, kind: 'iso27001', code: i.id, title: i.title, text: i.description, check: i.evidence,
+/** O cliente usa a ISO/IEC 42001? (referencial permitido ou guia já iniciado) */
+export function usesIso42001(customer: any, checklist: any[] = []): boolean {
+  return (customer?.allowed_frameworks || []).includes('ISO42001') || checklist.some((r) => r?.framework === 'ISO42001_2023');
+}
+
+export function isoCandidates(kind: 'iso27001' | 'iso42001' = 'iso27001'): Candidate[] {
+  return (CLASSIFY_CATALOG as any)[kind].map((i: any) => ({
+    id: `${kind}:${i.id}`, kind, code: i.id, title: i.title, text: i.description, check: i.evidence,
   }));
 }
 
@@ -148,7 +153,8 @@ export function buildCandidates(customer: any, checklist: any[] = []): Candidate
   return [
     ...measureCandidates(customer),
     ...journeyCandidates(checklist),
-    ...(usesIso27001(customer, checklist) ? isoCandidates() : []),
+    ...(usesIso27001(customer, checklist) ? isoCandidates('iso27001') : []),
+    ...(usesIso42001(customer, checklist) ? isoCandidates('iso42001') : []),
     ...docLevelCandidates(),
   ];
 }
@@ -169,7 +175,7 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /** O código do candidato aparece no documento? (ex.: «PR.FC-1», «A.5.15»; não confunde A.5.1 com A.5.15) */
 export function mentionsCode(c: Candidate, lowerText: string): boolean {
   if (c.kind === 'journey' || c.kind === 'doc_level') return false;
-  if (c.kind === 'iso27001' && !/^A\./.test(c.code)) return false; // cláusulas («C.4.1») não aparecem assim nos documentos
+  if ((c.kind === 'iso27001' || c.kind === 'iso42001') && !/^A\./.test(c.code)) return false; // cláusulas («C.4.1») não aparecem assim nos documentos
   const code = c.code.toLowerCase();
   return new RegExp(`(^|[^a-z0-9.])${escapeRe(code)}(?![0-9a-z])`).test(lowerText);
 }
@@ -213,7 +219,8 @@ export function shortlist(candidates: Candidate[], text: string, fileName = '', 
 /** Texto curto de um candidato para o pedido ao modelo. */
 export function candidatePromptLine(c: Candidate): string {
   const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
-  const head = c.kind === 'measure' ? `${c.code}${c.level ? ` (${c.level})` : c.group ? ` (Anexo IV, grupo ${c.group})` : ''}` : c.code;
+  const head = c.kind === 'measure' ? `${c.code}${c.level ? ` (${c.level})` : c.group ? ` (Anexo IV, grupo ${c.group})` : ''}`
+    : c.kind === 'iso27001' ? `ISO/IEC 27001 ${c.code}` : c.kind === 'iso42001' ? `ISO/IEC 42001 ${c.code}` : c.code;
   const check = c.check ? ` Verificação: ${cut(c.check, 220)}` : '';
   return `[${c.id}] ${head} — ${cut(c.title, 200)}.${check}`;
 }
@@ -303,6 +310,7 @@ export function candidateToLink(c: Candidate) {
   const cut = (s: string, n: number) => String(s || '').slice(0, n);
   if (c.kind === 'measure') return { type: 'measure', id: c.key, ref: c.code, label: cut(`${c.code}${c.level ? ` · ${c.level}` : ''} — ${c.title}`, 160) };
   if (c.kind === 'iso27001') return { type: 'iso27001', id: c.code, ref: c.code, label: cut(`${c.code} — ${c.title}`, 160) };
+  if (c.kind === 'iso42001') return { type: 'iso42001', id: c.code, ref: `ISO 42001 ${c.code}`, label: cut(`ISO/IEC 42001 ${c.code} — ${c.title}`, 160) };
   if (c.kind === 'journey' && c.checklist_id) return { type: 'checklist', id: c.checklist_id, ref: `RJC_2026 ${c.section_order}.${c.task_order}`, label: cut(c.title, 120) };
   return null;
 }

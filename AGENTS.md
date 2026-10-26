@@ -75,6 +75,11 @@ docker compose -f docker-compose.base44.yml up -d
 - Incident deadlines (RJC 24 h / 72 h / 24 h after end of impact / 30 working days; DORA RTS 2025/301):
   `incidentDeadlines()` in `src/lib/complianceUtils.js`.
 - AI prompts append `LEGAL_AI_CONTEXT` (`src/lib/legal/aiContext.js`).
+- Guias ISO (separadores «ISO/IEC 27001» e «ISO/IEC 42001»): um só componente, `src/components/legal/IsoGuideTab.jsx`
+  (`ISO_GUIDES`), dados em `src/data/legal/iso27001.json` e `iso42001.json` (textos próprios; estrutura conferida com
+  os textos oficiais), checklists `ISO27001_2022`/`ISO42001_2023` com `applicable`, `justification` e
+  `implementation_method`, análise de lacunas em `src/lib/legal/isoGuide.js`. Fontes conferidas (só metadados, nada
+  alojado): `src/data/legal/iso-references.json` → `docs/legal/referencias-iso.md`. Nunca copiar texto das normas.
 
 ## Evidências, ativos e ferramentas (`/assets`, `/evidence`)
 - `Evidence` só é criada pela função `evidence` (service role): o ficheiro (≤ 8 MB, base64) chega à função, que

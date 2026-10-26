@@ -23,6 +23,7 @@ const FRAMEWORK_NAMES = {
   EU_2024_2690: 'Regulamento de Execução (UE) 2024/2690',
   DORA: 'DORA — Regulamento (UE) 2022/2554',
   ISO27001: 'ISO/IEC 27001:2022',
+  ISO42001: 'ISO/IEC 42001:2023 — Sistema de gestão da inteligência artificial',
   NIST_CSF: 'NIST CSF',
   CIS_V8: 'CIS Controls v8.1.2',
   TISAX_ISA6: 'TISAX - VDA ISA 6.0.3',
