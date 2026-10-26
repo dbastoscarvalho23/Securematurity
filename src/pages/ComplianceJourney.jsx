@@ -17,7 +17,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
-import { JOURNEY_FRAMEWORK, LEGACY_JOURNEY_FRAMEWORK, JOURNEY_TEMPLATE_PT, JOURNEY_TEMPLATE_EN } from '@/lib/legal/journeyTemplate';
+import { JOURNEY_FRAMEWORK, LEGACY_JOURNEY_FRAMEWORK, JOURNEY_TEMPLATE_PT, JOURNEY_TEMPLATE_EN, journeyTask } from '@/lib/legal/journeyTemplate';
 import { buildJourneyRecords, findScopeItem } from '@/lib/legal/qualification';
 import QualificationWizard from '@/components/customers/QualificationWizard';
 import { useCustomerEvidence } from '@/components/evidence/EvidencePanel';
@@ -208,10 +208,10 @@ const LEGACY_TEMPLATE_PT = [
 function SectionCard({ section, items, queryKey, template, customerUsers }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(true);
-  // Build a map from task_order -> translated text using the template for this section
+  // Tarefa do modelo por ordem (título simples + base legal; os modelos anteriores são só texto).
   const translatedTasks = {};
   if (template) {
-    template.tasks.forEach((text, idx) => { translatedTasks[idx + 1] = text; });
+    template.tasks.forEach((task, idx) => { translatedTasks[idx + 1] = journeyTask(task); });
   }
   const total = items.length;
   const done = items.filter(i => i.status === 'done').length;
@@ -248,7 +248,8 @@ function SectionCard({ section, items, queryKey, template, customerUsers }) {
       {expanded && (
         <CardContent className="pt-0 space-y-2">
           {[...items].sort((a, b) => (a.task_order ?? 0) - (b.task_order ?? 0)).map(item => (
-            <ChecklistItemRow key={item.id} item={item} queryKey={queryKey} displayText={translatedTasks[item.task_order]} customerUsers={customerUsers} />
+            <ChecklistItemRow key={item.id} item={item} queryKey={queryKey} displayText={translatedTasks[item.task_order]?.title}
+              basis={translatedTasks[item.task_order]?.basis} from2028={translatedTasks[item.task_order]?.from2028} customerUsers={customerUsers} />
           ))}
         </CardContent>
       )}

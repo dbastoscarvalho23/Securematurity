@@ -356,7 +356,9 @@ export function buildJourneyRecords(template, { customerId, customerName = '', f
         framework,
         section: sec.section,
         section_order: sec.section_order,
-        task_text: task,
+        // Modelo atual: { title, basis }; modelos anteriores: texto.
+        task_text: typeof task === 'string' ? task : (task.basis ? `${task.title} (${task.basis})` : task.title),
+        ...(typeof task === 'string' || !task.basis ? {} : { requirement_ref: task.basis }),
         task_order: idx + 1,
         status: 'pending',
       });

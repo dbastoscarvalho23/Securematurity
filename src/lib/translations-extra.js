@@ -4,6 +4,10 @@
 
 export const extraPt = {
   x_doc_back_to_review: 'Documento alterado: voltou a «Em revisão» e precisa de nova aprovação.',
+  x_journey_basis: 'Base legal',
+  x_journey_from_2028: 'Obrigatória a partir de 22-06-2028',
+  x_measure_expected: 'O que guardar como evidência',
+  x_measure_official: 'Texto oficial da medida',
   x_doc_approved_by_auto: 'Preenchido na aprovação',
   x_mail_title: 'Envio de email',
   x_mail_desc: 'Remetente usado nos alertas, notificações e convites enviados pela plataforma.',
@@ -193,6 +197,10 @@ export const extraPt = {
 
 export const extraEn = {
   x_doc_back_to_review: 'Document changed: it is back to «Under review» and needs a new approval.',
+  x_journey_basis: 'Legal basis',
+  x_journey_from_2028: 'Mandatory from 22-06-2028',
+  x_measure_expected: 'What to keep as evidence',
+  x_measure_official: 'Official text of the measure',
   x_doc_approved_by_auto: 'Filled in on approval',
   x_mail_title: 'Email delivery',
   x_mail_desc: 'Sender used for alerts, notifications and invitations sent by the platform.',
