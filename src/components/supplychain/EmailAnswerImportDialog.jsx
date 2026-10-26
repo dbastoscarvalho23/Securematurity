@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { Mail, Sparkles, Check, X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { aiAssist } from '@/lib/ai';
 
-export default function EmailAnswerImportDialog({ open, onClose, questions, onImport }) {
+export default function EmailAnswerImportDialog({ open, onClose, questions, onImport, customerId }) {
   const { t, language } = useLanguage();
   const [emailText, setEmailText] = useState('');
   const [parsing, setParsing] = useState(false);
@@ -24,7 +24,8 @@ export default function EmailAnswerImportDialog({ open, onClose, questions, onIm
         const qText = (isPt && q.question_text_pt) ? q.question_text_pt : q.question_text;
         return `${i + 1}. [ID:${q.id}] ${qText}`;
       }).join('\n');
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await aiAssist('supplier_email_answer_extraction', {
+        customerId,
         prompt: `You are extracting supplier answers from an email reply to a security questionnaire.
 
 Here are the questions:
@@ -42,7 +43,7 @@ For each question, extract:
 If a question was not answered, set answer to null.
 
 Return a JSON object: { "answers": [{ "question_id": string, "answer": string | null, "answer_notes": string }] }`,
-        response_json_schema: {
+        schema: {
           type: 'object',
           properties: {
             answers: {

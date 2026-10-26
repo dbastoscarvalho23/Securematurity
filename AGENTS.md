@@ -124,6 +124,10 @@ docker compose -f docker-compose.base44.yml up -d
   O resultado é `AiDraft` (rascunho); nunca é evidência. Evidências `restricted` (ativos/ferramentas) não vão à IA.
 - Fornecedor: segredo `AI_PROVIDER` (`base44` por defeito; `anthropic` exige `ANTHROPIC_API_KEY` e `ANTHROPIC_MODEL`).
   Cada pedido consome a quota `ai` (`LicenseUsageRecord`).
+- Escolha do fornecedor e chamada ao modelo: `base44/shared/llm.ts` (`callLLM`), usada por `aiDraft` e `aiAssist`.
+- Pedidos de IA da interface: só por `aiAssist(purpose, { prompt, schema, customerId })` em `src/lib/ai.js` (função
+  `aiAssist`: sessão, módulo `ai_assistant`, quota `ai`, auditoria `ai_assist`, `purpose` numa lista fechada, recusa 422
+  se o pedido contiver IP/FQDN de um `Asset` com `internet_exposed`). Nunca usar `InvokeLLM` no browser.
 
 ## Escrita
 - Todo o texto visível segue `docs/style/pt-pt.md` (PT-PT, AO90, sem chavões). Chaves novas sem ficheiro próprio:

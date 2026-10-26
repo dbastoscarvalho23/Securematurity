@@ -15,6 +15,7 @@ import SendQuestionnaireEmailDialog from './SendQuestionnaireEmailDialog';
 import EmailAnswerImportDialog from './EmailAnswerImportDialog';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
+import { aiAssist } from '@/lib/ai';
 
 const ANSWER_TYPES = ['yes_no', 'scale_1_5', 'text', 'multiple_choice'];
 
@@ -250,14 +251,15 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
       ? `covering these specific subjects: ${areas.join(', ')}`
       : `covering general cybersecurity topics such as Access Control, Data Protection, Incident Response, and Network Security`;
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await aiAssist('supplier_questionnaire_generation', {
+        customerId: questionnaire?.customer_id,
         prompt: `Generate a cybersecurity supply chain questionnaire for assessing a supplier named "${questionnaire.supplier_name || 'the supplier'}".
 The questionnaire should ${areaContext}.
 For EACH subject/area, generate EXACTLY ${count} practical, auditable questions.
 For EVERY question provide both the English version (question_text) and the European Portuguese translation (question_text_pt).
 Return a JSON object with this schema: { "questions": [{ "area": string, "question_text": string, "question_text_pt": string, "answer_type": "yes_no" | "scale_1_5" | "text" }] }
 ${LEGAL_AI_CONTEXT}`,
-        response_json_schema: {
+        schema: {
           type: 'object',
           properties: {
             questions: {
@@ -332,7 +334,8 @@ ${LEGAL_AI_CONTEXT}`,
         answer_type: q.answer_type,
         options: q.options || [],
       }));
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await aiAssist('supplier_questionnaire_translation', {
+        customerId: questionnaire?.customer_id,
         prompt: `You are a professional translator. Translate the following cybersecurity questionnaire questions to European Portuguese (Portugal, 1990 spelling agreement, never Brazilian forms), in a plain professional register.
 For each question, translate:
 - question_text → question_text_pt (the full question in Portuguese)
@@ -342,7 +345,7 @@ Return ONLY a JSON object with a "translations" array. Each item must have: "id"
 
 Questions to translate:
 ${JSON.stringify(questionsPayload, null, 2)}`,
-        response_json_schema: {
+        schema: {
           type: 'object',
           properties: {
             translations: {
@@ -509,6 +512,7 @@ ${JSON.stringify(questionsPayload, null, 2)}`,
         open={showEmailImport}
         onClose={() => setShowEmailImport(false)}
         questions={questions}
+        customerId={questionnaire?.customer_id}
         onImport={handleEmailImport}
       />
 
