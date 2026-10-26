@@ -16,6 +16,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import { aiAssist } from '@/lib/ai';
 
 const FRAMEWORK_COLORS = {
   NIS2: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
@@ -110,7 +111,7 @@ export default function QuestionBank() {
     const BATCH_SIZE = 10;
     for (let i = 0; i < untranslated.length; i += BATCH_SIZE) {
       const batch = untranslated.slice(i, i + BATCH_SIZE);
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await aiAssist('question_bank_translation', {
         prompt: `You are a professional translator specialising in European Portuguese (Portugal, 1990 spelling agreement), not Brazilian Portuguese. Use a plain professional register, without marketing filler, emojis or exclamation marks.
 Translate the following cybersecurity assessment questions and their guidance texts to European Portuguese (Portugal).
 Use an impersonal formal register ("a organização", "a entidade"), never "você"; European vocabulary and spelling (utilizador, ficheiro, ecrã, registo, contacto), no Brazilian forms.
@@ -119,7 +120,7 @@ Questions to translate (JSON array):
 ${JSON.stringify(batch.map(q => ({ id: q.id, question_text: q.question_text, guidance: q.guidance || '' })), null, 2)}
 
 Return only valid JSON with the translations.`,
-        response_json_schema: {
+        schema: {
           type: 'object',
           properties: {
             translations: {

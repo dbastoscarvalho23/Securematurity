@@ -15,6 +15,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { translateDomain } from '@/lib/domainTranslations';
 import LoadingState from '@/components/shared/LoadingState';
 import { LEGAL_AI_CONTEXT } from '@/lib/legal/aiContext';
+import { aiAssist } from '@/lib/ai';
 
 export default function AssessmentDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -131,7 +132,8 @@ export default function AssessmentDetail() {
         target: r.target_level || 4,
       }));
 
-      const aiResult = await base44.integrations.Core.InvokeLLM({
+      const aiResult = await aiAssist('assessment_recommendations', {
+        customerId: assessment?.customer_id,
         prompt: `You are a cybersecurity compliance expert. Analyze these assessment responses and generate actionable recommendations.
 
 Assessment data: ${JSON.stringify(responseSummary)}
@@ -141,7 +143,7 @@ Return 5-8 prioritized recommendations.
 IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 Annex A structure (Organizational Controls, People Controls, Physical Controls, Technological Controls). Do NOT use the 2013 version's domain structure.
 
 ${LEGAL_AI_CONTEXT}`,
-        response_json_schema: {
+        schema: {
           type: "object",
           properties: {
             recommendations: {
@@ -164,6 +166,10 @@ ${LEGAL_AI_CONTEXT}`,
             }
           }
         }
+      }).catch((e) => {
+        // A avaliação já ficou concluída; sem IA (licença, quota, erro) não se geram recomendações.
+        console.error('[AssessmentDetail] recomendações por IA indisponíveis:', e?.message || e);
+        return null;
       });
 
       if (aiResult?.recommendations) {

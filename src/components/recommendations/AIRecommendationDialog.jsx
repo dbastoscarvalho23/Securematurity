@@ -6,12 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Sparkles, Loader2, CheckSquare, Square } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
 import { FRAMEWORK_NAMES, SELECTABLE_FRAMEWORKS } from '@/lib/frameworkConstants';
 import { LEGAL_AI_CONTEXT } from '@/lib/legal/aiContext';
+import { aiAssist } from '@/lib/ai';
 
 
 const FRAMEWORKS = SELECTABLE_FRAMEWORKS.map((code) => ({ code, name: FRAMEWORK_NAMES[code] }));
@@ -40,7 +40,8 @@ export default function AIRecommendationDialog({ open, onOpenChange, customers, 
     const fw = FRAMEWORKS.find(f => f.code === framework);
     const customer = customers?.find(c => c.id === customerId);
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await aiAssist('recommendation_generation', {
+      customerId: customerId !== 'none' ? customerId : undefined,
       prompt: `You are a cybersecurity compliance expert. Generate actionable improvement recommendations for the ${fw?.name || framework} framework.
 ${customer ? `Organization context: ${customer.name}, sector: ${customer.sector?.replace(/_/g, ' ')}, size: ${customer.num_employees} employees.` : ''}
 
@@ -51,7 +52,7 @@ Include clear titles, detailed descriptions, effort estimates, and suggested tim
 ${customer?.rjc_qualification ? `RJC profile: qualification ${customer.rjc_qualification}${customer.conformity_level ? `, conformity level ${customer.conformity_level}` : ''}${customer.epr_group ? `, public entity group ${customer.epr_group}` : ''}${customer.dora_applicable ? ', DORA applies' : ''}.` : ''}
 
 ${LEGAL_AI_CONTEXT}`,
-      response_json_schema: {
+      schema: {
         type: 'object',
         properties: {
           recommendations: {

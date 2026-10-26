@@ -6,12 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Sparkles, Loader2, CheckSquare, Square, AlertTriangle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
 import { FRAMEWORK_NAMES, SELECTABLE_FRAMEWORKS, FRAMEWORK_DOMAINS as OFFICIAL_FRAMEWORK_DOMAINS } from '@/lib/frameworkConstants';
 import { LEGAL_AI_CONTEXT } from '@/lib/legal/aiContext';
+import { aiAssist } from '@/lib/ai';
 
 // Normalize text for comparison
 const normalize = (str) => str?.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim() || '';
@@ -93,7 +93,7 @@ export default function AIQuestionGeneratorDialog({ open, onOpenChange, existing
       valid_domains: FRAMEWORK_DOMAINS[fw.code] || [],
     }));
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await aiAssist('question_gap_analysis', {
       prompt: `You are a cybersecurity compliance expert. Analyze the following existing assessment questions and identify coverage gaps.
 
 Existing questions:
@@ -112,7 +112,7 @@ CRITICAL RULES:
 - Use maturity_scale answer type.
 
 ${LEGAL_AI_CONTEXT}`,
-      response_json_schema: {
+      schema: {
         type: 'object',
         properties: {
           questions: {

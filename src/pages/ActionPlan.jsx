@@ -25,6 +25,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
+import { aiAssist } from '@/lib/ai';
 
 const STATUS_ICONS = {
   todo: <Circle className="w-4 h-4 text-muted-foreground" />,
@@ -262,7 +263,8 @@ export default function ActionPlan() {
     const BATCH_SIZE = 10;
     for (let i = 0; i < untranslated.length; i += BATCH_SIZE) {
       const batch = untranslated.slice(i, i + BATCH_SIZE);
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await aiAssist('recommendation_translation', {
+        customerId,
         prompt: `You are a professional translator specialising in European Portuguese (Portugal, 1990 spelling agreement), not Brazilian Portuguese. Use a plain professional register, without marketing filler, emojis or exclamation marks.
 Translate the following cybersecurity recommendation titles and descriptions to European Portuguese (Portugal).
 Use formal register ("a organização"), European vocabulary and spelling.
@@ -271,7 +273,7 @@ Recommendations to translate (JSON array):
 ${JSON.stringify(batch.map(r => ({ id: r.id, title: r.title, description: r.description })), null, 2)}
 
 Return only valid JSON with the translations.`,
-        response_json_schema: {
+        schema: {
           type: 'object',
           properties: {
             translations: {

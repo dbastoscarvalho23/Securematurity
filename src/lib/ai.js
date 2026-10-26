@@ -9,7 +9,24 @@ export const aiReview = (customerId, evidenceId) => call({ action: 'review', cus
 export const aiApprove = (customerId, id, createDocument) => call({ action: 'approve', customer_id: customerId, id, create_document: createDocument });
 export const aiDiscard = (customerId, id) => call({ action: 'discard', customer_id: customerId, id });
 
-export const MEASURE_KINDS = ['policy', 'procedure', 'record', 'evidence_plan'];
+/**
+ * Pedido de IA da interface (função «aiAssist»): o browser nunca chama o modelo diretamente. O servidor confirma a
+ * sessão, a licença e a quota, recusa pedidos com ativos expostos à Internet (art. 32.º) e regista a auditoria.
+ * Devolve o objeto JSON que respeita `schema` (a mesma forma que a integração do Base44 devolvia no browser). Erros chegam como Error com a
+ * mensagem do servidor.
+ */
+export async function aiAssist(purpose, { prompt, schema, customerId, fileUrls } = {}) {
+  const data = await invokeFn('aiAssist', {
+    purpose,
+    prompt,
+    schema,
+    ...(customerId ? { customer_id: customerId } : {}),
+    ...(fileUrls?.length ? { file_urls: fileUrls } : {}),
+  });
+  return data?.result ?? null;
+}
+
+export const MEASURE_KINDS =['policy', 'procedure', 'record', 'evidence_plan'];
 export const INCIDENT_KINDS = ['incident_initial', 'incident_update', 'incident_end', 'incident_interim', 'incident_final'];
 
 export function draftToMarkdown(d) {
