@@ -330,3 +330,4 @@ export default async function (req) {
     return json({ error: error?.message || 'Erro' }, error instanceof LicenseError ? error.status : 400);
   }
 }
+
