@@ -1,38 +1,29 @@
-# Domínio próprio: app.ankoraone.com (Cloudflare)
+# Domínio próprio: app.ankoraone.com
 
-O domínio já foi acrescentado e ligado à app Securematurity no Base44 (verificação pendente até o DNS apontar).
+Estado a 26 de outubro de 2026: o domínio está **verificado e ligado à app nativa AnkoraOne_DC_Repo** (id `6adf8df867faaf60a171efa5`). Saiu da app antiga Securematurity, que fica só como cópia de segurança em `securematurity-80cb9ed8.base44.app`.
 
-## 1. Registo DNS no Cloudflare
+## Registos na Cloudflare (zona ankoraone.com)
 
-Na zona `ankoraone.com` → DNS → Records → Add record:
-
-| Tipo | Nome | Destino | Proxy | TTL |
+| Tipo | Nome | Valor | Proxy | Para quê |
 |---|---|---|---|---|
-| CNAME | `app` | `base44.onrender.com` | **DNS only** (nuvem cinzenta) | Auto |
+| A | `app` | `216.24.57.1` | conforme está hoje | App (alojamento do Base44) |
+| CNAME | `www.app` | `base44.onrender.com` | conforme está hoje | Redirecionamento |
+| CNAME | `em.app` | `u117374045.wl046.sendgrid.net` | **DNS only** | Envio de email da plataforma |
+| CNAME | `s1._domainkey.app` | `s1.domainkey.u117374045.wl046.sendgrid.net` | **DNS only** | DKIM |
+| CNAME | `s2._domainkey.app` | `s2.domainkey.u117374045.wl046.sendgrid.net` | **DNS only** | DKIM |
 
-- Deixe o proxy **desligado** (nuvem cinzenta). O alojamento do Base44 (Render) só emite o certificado TLS e
-  verifica o domínio quando vê o pedido diretamente; com o proxy ligado a verificação e as renovações podem falhar.
-- Não crie registos `AAAA`/`A` para `app` além do CNAME.
-- Se a zona tiver registos `CAA`, acrescente `0 issue "letsencrypt.org"` e `0 issue "pki.goog"` (o Render usa
-  estas autoridades).
+Os registos de email têm de estar com a nuvem cinzenta («DNS only»): com o proxy ligado respondem com o IP da Cloudflare e o Base44 não os verifica.
 
-## 2. Verificação
+Se a zona tiver registos `CAA`, acrescente `0 issue "letsencrypt.org"` e `0 issue "pki.goog"` (autoridades usadas pelo alojamento).
 
-A verificação começa sozinha (o domínio já está «ligado» no Base44). Normalmente demora minutos; o certificado TLS
-é emitido logo a seguir. Para confirmar: `https://app.ankoraone.com` deve abrir a app com certificado válido.
+## Proxy da Cloudflare em `app`
 
-## 3. Se quiser o proxy do Cloudflare (WAF, cache)
+Hoje `app` passa pelo proxy da Cloudflare e funciona. Para o manter:
+1. SSL/TLS → modo **Full (strict)** (nunca «Flexible»).
+2. Se o certificado do Base44 deixar de renovar, mudar `app` para «DNS only» e voltar a verificar no Base44.
 
-Só depois de verificado e com certificado emitido:
-1. SSL/TLS → Overview → modo **Full (strict)** (nunca «Flexible», que causa ciclos de redirecionamento).
-2. Ative a nuvem laranja no registo `app`.
-3. Confirme que a app e o início de sessão continuam a funcionar. Se o certificado do Base44 deixar de renovar,
-   volte a «DNS only».
+## Verificar
 
-## 4. Depois de ativo
-
-- O endereço `securematurity-80cb9ed8.base44.app` continua a funcionar; os utilizadores podem usar qualquer um.
-- Envio de email com remetente `@ankoraone.com`: configurável no Base44 (domínio de email próprio, com registos
-  SPF/DKIM no Cloudflare) — pedido à parte.
-- Para a produção (AnkoraOne Plataforma GRC) use outro nome (ex.: `portal.ankoraone.com`) ou mova este domínio
-  quando a produção passar a ser servida por esta app.
+- `https://app.ankoraone.com` abre a app com certificado válido.
+- Estado no Base44: API `POST /api/apps/{app_id}/custom-domains/{domain_id}/status` (`verificationStatus: verified`).
+- Domínio de email: API `GET /api/apps/{app_id}/custom-email-domains` (`configuration_status: active`).

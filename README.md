@@ -1,27 +1,23 @@
-# AnkoraOne (Securematurity)
+# AnkoraOne
 
-Plataforma interna de conformidade (RGPD, NIS2, RJC 2026, DORA) construída com Vite + React 18 sobre o backend cloud da Base44.
+Plataforma de conformidade em cibersegurança (RJC/NIS2, ISO/IEC 27001, DORA, TISAX, RGPD) construída com Vite + React 18 sobre o backend do Base44.
 
-## Requisitos e configuração
+- Produção: <https://app.ankoraone.com> — app nativa **AnkoraOne_DC_Repo** no Base44 (id `6adf8df867faaf60a171efa5`).
+- Documentação: [`docs/README.md`](docs/README.md) (arquitetura, publicação, domínio, email, IA, repositório documental, legal, onboarding).
 
-1. Clonar o repositório (URL Git do projeto na Base44).
-2. Instalar dependências: `npm install` (Node 22).
-3. Criar `.env.local` (ou usar o dashboard de Secrets da Base44) com:
+## Desenvolvimento local
+
+1. Clonar este repositório e instalar dependências: `npm install` (Node 22).
+2. Criar `.env.local` com:
 
 ```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
+VITE_BASE44_APP_ID=6adf8df867faaf60a171efa5
+VITE_BASE44_APP_BASE_URL=https://ankora-one-dc-repo-a171efa5.base44.app
 ```
 
-4. Arrancar em desenvolvimento:
+3. `npm run dev` (só frontend, contra o backend publicado) ou `base44 dev` (backend local, ver `AGENTS.md`).
 
-```bash
-npm run dev                     # local
-# ou, no sandbox Base44:
-docker compose -f docker-compose.base44.yml up -d   # serve em http://localhost:3000
-```
-
-As credenciais de cloud (`VITE_BASE44_APP_ID`, `VITE_BASE44_APP_BASE_URL`, `AUTOMATION_SECRET`) são entregues ao sandbox via `/run/base44/app.env`; `./.env.base44-defaults` contém placeholders commitados para permitir o boot sem valores. Não configurar SSO Google/Microsoft — o redirect falha no host de preview (autenticação por email/palavra-passe + OTP).
+A entrada é feita com Google, Microsoft ou email e palavra-passe; a app só abre a utilizadores convidados. Publicação: [`docs/deploy-base44.md`](docs/deploy-base44.md).
 
 ## Rotas
 
@@ -90,10 +86,12 @@ Todas as rotas autenticadas passam por `RouteGuard` (papéis por rota); visitant
 
 ## Testes
 
-Vitest + jsdom + Testing Library (`vitest.config.js`, backend mockado — corre offline):
+Vitest + jsdom + Testing Library (`vitest.config.js`, backend simulado — corre sem rede):
 
 ```bash
-docker compose -f docker-compose.base44.yml exec web npm test
+npx vitest run
 ```
 
-Docs da plataforma: <https://docs.base44.com/Integrations/Using-GitHub>
+Nota: 6 testes de `RouteGuard` estão desatualizados face às regras de navegação de outubro de 2026 e precisam de revisão.
+
+Documentação do Base44: <https://docs.base44.com>
