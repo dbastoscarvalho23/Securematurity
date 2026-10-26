@@ -10,6 +10,7 @@ import MeasuresTab from '@/components/legal/MeasuresTab';
 import RelationsTab from '@/components/legal/RelationsTab';
 import ObligationsTab from '@/components/legal/ObligationsTab';
 import ComplianceTab from '@/components/legal/ComplianceTab';
+import Iso27001Tab from '@/components/legal/Iso27001Tab';
 
 const TABS = [
   ['instruments', 'legal_tab_instruments', InstrumentsTab],
@@ -18,6 +19,7 @@ const TABS = [
   ['obligations', 'legal_tab_obligations', ObligationsTab],
   ['relations', 'legal_tab_relations', RelationsTab],
   ['compliance', 'legal_tab_compliance', ComplianceTab],
+  ['iso27001', 'legal_tab_iso27001', Iso27001Tab],
 ];
 
 export default function LegalLibrary() {

@@ -8,12 +8,16 @@
  *  - Perguntas antigas de referenciais oficiais (sem `source_ref`) ou que deixaram de constar das fontes são
  *    DESATIVADAS (is_active = false), nunca apagadas — as respostas de avaliações anteriores mantêm-se.
  *  - Perguntas criadas para uma avaliação concreta (assessment_id) não são tocadas.
+ *  - Exceção: o guia ISO/IEC 27001:2022 usa a estrutura da norma com textos próprios da AnkoraOne (a norma não é
+ *    reproduzida). As perguntas do Anexo A levam essa indicação em `source_ref`. Neste referencial só são desativadas
+ *    perguntas criadas pela sincronização (com `source_ref`); as perguntas criadas pelos utilizadores ficam como estão.
  */
 import { loadLegal, flattenQnrcs, LEVELS, catalog } from './index';
 import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
 
 const LEVEL_PT = { basico: 'Básico', substancial: 'Substancial', elevado: 'Elevado' };
 const REG_URL = 'https://files.diariodarepublica.pt/2s/2026/06/118000000/0003200120.pdf';
+export const ISO_SOURCE_NOTE = 'AnkoraOne (descrição própria; validação com a norma pendente)';
 const CHUNK = 50;
 
 const inst = (id) => catalog.instruments.find((i) => i.id === id) || {};
@@ -33,8 +37,8 @@ const bullets = (arr) => (arr || []).join('\n');
 
 /** Constrói a lista oficial de referenciais, controlos e perguntas. */
 export async function buildOfficialSet() {
-  const [qnrcs, nis2, rx, dora, isa6, isa27] = await Promise.all(
-    ['qnrcs', 'nis2', 'regexec2690', 'dora', 'isa6', 'isa2027'].map((k) => loadLegal(k)));
+  const [qnrcs, nis2, rx, dora, isa6, isa27, iso] = await Promise.all(
+    ['qnrcs', 'nis2', 'regexec2690', 'dora', 'isa6', 'isa2027', 'iso27001'].map((k) => loadLegal(k)));
 
   const frameworks = [];
   const add = (fw) => { frameworks.push({ ...fw, controls: [], questions: [] }); return frameworks[frameworks.length - 1]; };
@@ -109,7 +113,31 @@ export async function buildOfficialSet() {
       fw.questions.push({ control_id: c.id, domain, domain_pt: domain, question_text: c.question, guidance, source_ref: ref });
     }
   }
+
+  // ISO/IEC 27001:2022 — Anexo A (guia AnkoraOne: estrutura da norma, descrições próprias).
+  // Códigos «A.n.m»: src/lib/frameworkMappings.js liga-os aos controlos n.m da ISO/IEC 27002.
+  frameworks.push(isoFramework(iso));
   return frameworks;
+}
+
+/** Referencial ISO27001 a partir de src/data/legal/iso27001.json (só os 93 controlos do Anexo A). */
+export function isoFramework(iso) {
+  const fw = { code: 'ISO27001', name: FRAMEWORK_NAMES.ISO27001, version: '2022', reference_url: iso.source.url,
+    description: `${iso.source.title}. ${iso.source.ref} ${iso.source.note}`,
+    keepUnmanaged: true, controls: [], questions: [] };
+  for (const it of iso.items.filter((x) => x.kind === 'control')) {
+    const ref = `ISO/IEC 27001:2022, Anexo A, ${it.ref} — ${ISO_SOURCE_NOTE}`;
+    const guidance = [
+      it.description,
+      `O que guardar como evidência: ${it.evidence}`,
+      it.qnrcs.length && `Controlos QNRCS ligados (Reg. 756/2026, Anexo I): ${it.qnrcs.join(', ')}`,
+    ].filter(Boolean).join('\n\n');
+    const title = `${it.id} — ${it.title}`;
+    fw.controls.push({ control_id: it.id, domain: it.group_name, title, description: guidance, source_ref: ref, source_url: iso.source.url });
+    fw.questions.push({ control_id: it.id, domain: it.group_name, domain_pt: it.group_name, question_text: title, question_text_pt: title,
+      guidance, guidance_pt: guidance, source_ref: ref });
+  }
+  return fw;
 }
 
 async function inChunks(items, fn) {
@@ -179,9 +207,10 @@ export async function syncLegalLibrary(base44, { onProgress } = {}) {
       if (!ex) qCreate.push(data);
       else if (differs(ex, data, ['domain', 'domain_pt', 'question_text', 'question_text_pt', 'guidance', 'guidance_pt', 'source_ref', 'order_index']) || ex.is_active === false) qUpdate.push({ id: ex.id, ...data });
     });
-    // Perguntas antigas (sem fonte oficial) ou já não constantes das fontes: desativar
+    // Perguntas antigas (sem fonte oficial) ou já não constantes das fontes: desativar.
+    // Com keepUnmanaged (ISO 27001) as perguntas sem source_ref — criadas pelos utilizadores — não são tocadas.
     const qDeactivate = existingQ
-      .filter((x) => x.is_active !== false && (!x.source_ref || !wanted.has(x.control_id)))
+      .filter((x) => x.is_active !== false && (x.source_ref ? !wanted.has(x.control_id) : !fw.keepUnmanaged))
       .map((x) => ({ id: x.id, is_active: false }));
     await inChunks(qCreate, (b) => base44.entities.Question.bulkCreate(b));
     await inChunks(qUpdate, (b) => base44.entities.Question.bulkUpdate(b));

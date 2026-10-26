@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +49,10 @@ function ControlCard({ control }) {
 export default function QnrcsTab() {
   const { t } = useLanguage();
   const { data, loading } = useLegalData(loadLegal, 'qnrcs');
-  const [search, setSearch] = useState('');
+  // ?q=<controlo> (ex.: vindo do guia ISO/IEC 27001) abre a pesquisa já preenchida e os objetivos expandidos.
+  const [params] = useSearchParams();
+  const initialQ = params.get('q') || '';
+  const [search, setSearch] = useState(initialQ);
   const [objective, setObjective] = useState('all');
   const [level, setLevel] = useState('all');
 
@@ -113,7 +117,7 @@ export default function QnrcsTab() {
       </div>
       <p className="text-xs text-muted-foreground">{t('legal_controls_count', { count: total })}</p>
 
-      <Accordion type="multiple" className="space-y-2">
+      <Accordion type="multiple" className="space-y-2" defaultValue={initialQ ? data.objectives.map((o) => o.code) : undefined}>
         {filtered.map((o) => (
           <AccordionItem key={o.code} value={o.code} className="border rounded-lg px-3">
             <AccordionTrigger className="hover:no-underline">

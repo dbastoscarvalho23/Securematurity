@@ -28,7 +28,8 @@ export const DEFAULT_CUSTOMER_FRAMEWORKS = ['NIS2', 'QNRC', 'ISO27001', 'NIST_CS
 
 // Domínios dos referenciais sem documento oficial na Biblioteca Legal (mantidos como estavam).
 const LEGACY_DOMAINS = {
-  ISO27001: ['Information Security Policies', 'Organization of Information Security', 'Human Resource Security', 'Asset Management', 'Access Control', 'Cryptography', 'Physical Security', 'Operations Security', 'Communications Security', 'System Acquisition', 'Supplier Relationships', 'Incident Management', 'Business Continuity', 'Compliance'],
+  // ISO/IEC 27001:2022 — os quatro temas do Anexo A (iguais a group_name em src/data/legal/iso27001.json).
+  ISO27001: ['Controlos organizacionais', 'Controlos de pessoas', 'Controlos físicos', 'Controlos tecnológicos'],
   NIST_CSF: ['Identify', 'Protect', 'Detect', 'Respond', 'Recover'],
   CIS_V8: ['Inventory & Control', 'Data Protection', 'Secure Configuration', 'Account Management', 'Access Control', 'Vulnerability Management', 'Audit Log Management', 'Email & Web Browser', 'Malware Defenses', 'Network Infrastructure', 'Data Recovery', 'Network Monitoring', 'Security Awareness', 'Service Provider Management', 'Application Security', 'Incident Response', 'Penetration Testing'],
   GDPR: ['Lawfulness & Transparency', 'Data Subject Rights', 'Consent Management', 'Data Minimisation', 'Purpose Limitation', 'Storage Limitation', 'Accuracy', 'Security of Processing', 'Data Breach Notification', 'Data Protection by Design', 'Data Protection Officer', 'International Transfers', 'Records of Processing', 'Data Processor Management'],

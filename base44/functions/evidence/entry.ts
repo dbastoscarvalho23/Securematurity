@@ -23,7 +23,7 @@ import { resolveProvider, putFile, getFile, sha256Hex, fromBase64, toBase64, MAX
 
 const TYPES = ['screenshot', 'tool_report', 'contract_licence', 'policy_procedure', 'log_record', 'test_audit_report', 'other'];
 const METHODS = ['examine', 'interview', 'test'];
-const LINK_TYPES = ['measure', 'control', 'question', 'asset', 'component', 'incident', 'task', 'checklist', 'supplier', 'vulnerability'];
+const LINK_TYPES = ['measure', 'control', 'question', 'asset', 'component', 'incident', 'task', 'checklist', 'supplier', 'vulnerability', 'iso27001'];
 
 // Entities a link may point to, checked to belong to the evidence's customer.
 const RESTRICTED_LINKS = ['asset', 'component'];
