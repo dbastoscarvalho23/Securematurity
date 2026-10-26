@@ -117,7 +117,7 @@ export default function TopBar({ onMenuClick }) {
 
   return (
     <>
-      <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0">
+      <header className="sticky top-0 z-30 h-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border flex items-center justify-between gap-4 px-4 md:px-8 flex-shrink-0">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -128,23 +128,23 @@ export default function TopBar({ onMenuClick }) {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <h2 className="text-base font-semibold text-foreground">{pageTitle}</h2>
+          <h2 className="text-sm font-semibold text-foreground truncate">{pageTitle}</h2>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-4">
           <GlobalSearch />
           <NotificationBell />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2.5 text-sm font-medium h-9 px-3">
-                <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-                  {initials}
-                </div>
-                <div className="hidden md:flex flex-col items-start leading-tight">
-                  <span className="text-sm font-medium">{displayName}</span>
+              <Button variant="ghost" className="gap-2.5 h-10 px-2">
+                <div className="hidden md:flex flex-col items-end leading-tight">
+                  <span className="text-[11px] font-semibold text-foreground">{displayName}</span>
                   {!isAdmin && customerName && (
-                    <span className="text-xs text-muted-foreground">{customerName}</span>
+                    <span className="text-[10px] text-muted-foreground">{customerName}</span>
                   )}
+                </div>
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">
+                  {initials}
                 </div>
               </Button>
             </DropdownMenuTrigger>

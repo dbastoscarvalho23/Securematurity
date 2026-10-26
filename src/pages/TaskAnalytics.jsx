@@ -13,7 +13,7 @@ import { format, isAfter, parseISO } from 'date-fns';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 
-const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444'];
+const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--destructive))'];
 
 const STATUS_LABELS = { todo: 'To-Do', in_progress: 'In Progress', done: 'Done' };
 
