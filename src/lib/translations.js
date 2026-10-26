@@ -17,6 +17,7 @@ import { legalEn, legalPt } from './translations-legal';
 import { assetsEn, assetsPt } from './translations-assets';
 import { licensingEn, licensingPt } from './translations-licensing';
 import { aiEn, aiPt } from './translations-ai';
+import { extraEn, extraPt } from './translations-extra';
 export const translations = {
   en: {
     // assessments
@@ -492,3 +493,5 @@ Object.assign(translations.en, licensingEn);
 Object.assign(translations.pt, licensingPt);
 Object.assign(translations.en, aiEn);
 Object.assign(translations.pt, aiPt);
+Object.assign(translations.en, extraEn);
+Object.assign(translations.pt, extraPt);

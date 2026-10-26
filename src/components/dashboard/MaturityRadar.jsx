@@ -37,7 +37,7 @@ export default function MaturityRadar({ data }) {
               tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
             />
             <Radar
-              name={t('maturity_initial') === 'Inicial' ? 'Atual' : 'Current'}
+              name={t('x_radar_current')}
               dataKey="current"
               stroke="hsl(var(--chart-1))"
               fill="hsl(var(--chart-1))"
@@ -45,7 +45,7 @@ export default function MaturityRadar({ data }) {
               strokeWidth={2}
             />
             <Radar
-              name={t('maturity_initial') === 'Inicial' ? 'Objetivo' : 'Target'}
+              name={t('x_radar_target')}
               dataKey="target"
               stroke="hsl(var(--chart-2))"
               fill="hsl(var(--chart-2))"

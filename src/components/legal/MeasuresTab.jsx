@@ -25,10 +25,10 @@ export default function MeasuresTab() {
 
   const exportCsv = () => {
     if (entityType === 'ee_ei') {
-      downloadCsv(`medidas-minimas-${level}.csv`, [t('legal_control'), t('legal_level'), t('legal_measure'), t('legal_verification'), 'Referência'],
+      downloadCsv(`medidas-minimas-${level}.csv`, [t('legal_control'), t('legal_level'), t('legal_measure'), t('legal_verification'), t('x_legal_reference')],
         rows.map((r) => [`${r.control.id} — ${r.control.statement}`, t(`legal_level_${r.level}`), r.measure, r.verification, `Reg. 756/2026, Anexo III, pág. ${r.page}`]));
     } else {
-      downloadCsv(`medidas-minimas-epr-grupo-${group}.csv`, [t('legal_area'), t('legal_epr_group'), t('legal_measure'), t('legal_verification'), 'Referência'],
+      downloadCsv(`medidas-minimas-epr-grupo-${group}.csv`, [t('legal_area'), t('legal_epr_group'), t('legal_measure'), t('legal_verification'), t('x_legal_reference')],
         rows.map((r) => [`${r.code} — ${r.area}`, r.group, r.measure, r.verification, `Reg. 756/2026, Anexo IV, pág. ${r.page}`]));
     }
   };

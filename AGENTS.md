@@ -113,3 +113,23 @@ docker compose -f docker-compose.base44.yml up -d
   esconde menu e rotas. No servidor próprio (Node.js + PostgreSQL) aplicar `requireModule` em todas as rotas.
 - Lugares: com subscrição, `Customer.user_seat_limit` = `seat_limit` da licença (mínimo 5) e o campo fica bloqueado
   na ficha do cliente.
+
+## Assistente de IA (função `aiDraft`, módulo `ai_assistant`)
+- Fontes: só textos oficiais em `base44/shared/legalPack.ts`, gerado por `python3 tools/legal/build_ai_pack.py` a partir
+  de `src/data/legal/` (voltar a gerar quando a Biblioteca Legal mudar). Pontos do Reg. 2024/2690 são sugeridos por
+  semelhança de texto e aparecem marcados como «relacionado por semelhança».
+- Estruturas: `base44/shared/aiTemplates.ts`. Os relatórios seguem as alíneas do DL 125/2025 (art. 30.º anual;
+  arts. 42.º a 44.º incidentes); secções `fixed` (contacto, estatística trimestral) são preenchidas pelo código.
+- Validação: citações fora das fontes são removidas; artigos/prazos não presentes nas fontes e chavões geram avisos.
+  O resultado é `AiDraft` (rascunho); nunca é evidência. Evidências `restricted` (ativos/ferramentas) não vão à IA.
+- Fornecedor: segredo `AI_PROVIDER` (`base44` por defeito; `anthropic` exige `ANTHROPIC_API_KEY` e `ANTHROPIC_MODEL`).
+  Cada pedido consome a quota `ai` (`LicenseUsageRecord`).
+
+## Escrita
+- Todo o texto visível segue `docs/style/pt-pt.md` (PT-PT, AO90, sem chavões). Chaves novas sem ficheiro próprio:
+  `src/lib/translations-extra.js` (prefixo `x_`). Termo oficial: «cadeia de abastecimento».
+
+## Agendamentos
+- App importada: o Base44 não aceita workflows («Workflows are not supported for this app type»), por isso os
+  ficheiros em `base44/workflows/` (lembretes, CVE Monitor) não correm nesta app. Alternativa: agendador externo
+  (ex.: GitHub Actions) a chamar a função com o cabeçalho `x-automation-secret`.

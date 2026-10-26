@@ -5,7 +5,7 @@ import { logEmailSent } from '../../shared/audit.ts';
 import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
 import { riskScore, scoreLevel, RISK_STATUS_LABELS as STATUS_LABELS } from '../../shared/riskLevel.ts';
 
-const LEVEL_PT = { Critical: 'Crítico', High: 'Elevado', Medium: 'Médio', Low: 'Baixo' };
+const LEVEL_PT = { Critical: 'Crítico', High: 'Alto', Medium: 'Médio', Low: 'Baixo' };
 const STATUS_PT = { open: 'Aberto', in_treatment: 'Em tratamento', accepted: 'Aceite', closed: 'Fechado' };
 
 Deno.serve(async (req) => {

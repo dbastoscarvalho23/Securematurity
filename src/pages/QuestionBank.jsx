@@ -111,9 +111,9 @@ export default function QuestionBank() {
     for (let i = 0; i < untranslated.length; i += BATCH_SIZE) {
       const batch = untranslated.slice(i, i + BATCH_SIZE);
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a professional translator specialising in European Portuguese (Portugal), not Brazilian Portuguese.
+        prompt: `You are a professional translator specialising in European Portuguese (Portugal, 1990 spelling agreement), not Brazilian Portuguese. Use a plain professional register, without marketing filler, emojis or exclamation marks.
 Translate the following cybersecurity assessment questions and their guidance texts to European Portuguese (Portugal).
-Use formal register ("você"/"a organização"), European vocabulary and spelling (e.g. "implementação" not "implementação", avoid Brazilian colloquialisms).
+Use an impersonal formal register ("a organização", "a entidade"), never "você"; European vocabulary and spelling (utilizador, ficheiro, ecrã, registo, contacto), no Brazilian forms.
 
 Questions to translate (JSON array):
 ${JSON.stringify(batch.map(q => ({ id: q.id, question_text: q.question_text, guidance: q.guidance || '' })), null, 2)}

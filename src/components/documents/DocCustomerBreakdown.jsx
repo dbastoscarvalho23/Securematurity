@@ -19,7 +19,7 @@ export default function DocCustomerBreakdown({ docs, customers, isAdmin, user })
       // Group by customer
       const map = {};
       for (const doc of docs) {
-        const name = doc.customer_name || 'Global';
+        const name = doc.customer_name || t('x_global');
         if (!map[name]) map[name] = { name, total: 0, approved: 0, under_review: 0, draft: 0, deprecated: 0 };
         map[name].total++;
         if (doc.status) map[name][doc.status] = (map[name][doc.status] || 0) + 1;
@@ -29,7 +29,7 @@ export default function DocCustomerBreakdown({ docs, customers, isAdmin, user })
       // Group by level for customer users
       const map = {};
       for (const doc of docs) {
-        const name = doc.level?.charAt(0).toUpperCase() + doc.level?.slice(1) || 'Unknown';
+        const name = doc.level ? t(`x_doc_level_${doc.level}`) : t('x_unknown');
         if (!map[name]) map[name] = { name, total: 0, approved: 0, under_review: 0, draft: 0, deprecated: 0 };
         map[name].total++;
         if (doc.status) map[name][doc.status] = (map[name][doc.status] || 0) + 1;

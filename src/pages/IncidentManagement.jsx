@@ -21,6 +21,9 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import EvidencePanel from '@/components/evidence/EvidencePanel';
+import AiDraftDialog from '@/components/ai/AiDraftDialog';
+import { INCIDENT_KINDS } from '@/lib/ai';
+import { Sparkles } from 'lucide-react';
 
 const CATEGORIES = ['malware_ransomware','data_breach','ddos','phishing','unauthorized_access','insider_threat','system_failure','physical_security','supply_chain','other'];
 
@@ -109,6 +112,7 @@ export default function IncidentManagement() {
   const [severityFilter, setSeverityFilter] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [aiIncident, setAiIncident] = useState(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
 
@@ -369,6 +373,9 @@ export default function IncidentManagement() {
               </div>
             )}
             {editing?.customer_id && (
+              <Button type="button" variant="outline" size="sm" className="w-fit" onClick={() => setAiIncident(editing)}><Sparkles className="w-3.5 h-3.5 mr-1" />{t('ai_incident_button')}</Button>
+            )}
+            {editing?.customer_id && (
               <EvidencePanel customerId={editing.customer_id}
                 provider={customers.find((c) => c.id === editing.customer_id)?.storage_provider}
                 links={[{ type: 'incident', id: editing.id, label: editing.title }]} />
@@ -382,6 +389,8 @@ export default function IncidentManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AiDraftDialog open={aiIncident !== null} onOpenChange={(v) => !v && setAiIncident(null)} customerId={aiIncident?.customer_id}
+        target={aiIncident ? { type: 'incident', id: aiIncident.id } : null} kinds={INCIDENT_KINDS} title={aiIncident ? `${t('ai_incident_button')} — ${aiIncident.title}` : ''} />
     </div>
   );
 }

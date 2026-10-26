@@ -13,6 +13,7 @@ import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
 import ComplianceGapsSummary from '@/components/evidence/ComplianceGapsSummary';
 import EvidenceRegister from '@/components/evidence/EvidenceRegister';
+import AiWorkspace from '@/components/ai/AiWorkspace';
 
 function fileIcon(name = '') {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -132,6 +133,7 @@ export default function EvidenceOverview() {
   return (
     <div className="space-y-6">
       <EvidenceRegister />
+      <AiWorkspace />
 
       {/* Compliance Gaps Summary */}
       <div className="space-y-3">
