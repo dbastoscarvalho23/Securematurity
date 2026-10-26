@@ -9,7 +9,14 @@
         "customer_admin",
         "user"
       ],
-      "default": "user"
+      "default": "user",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "display_name": {
       "type": "string",
@@ -17,11 +24,25 @@
     },
     "customer_id": {
       "type": "string",
-      "description": "Reference to Customer"
+      "description": "Cliente (tenant) do utilizador. Só um administrador da plataforma ou o servidor (service role) o pode alterar: todas as regras RLS dependem deste valor.",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "customer_name": {
       "type": "string",
-      "description": "Denormalized customer name"
+      "description": "Denormalized customer name",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "language": {
       "type": "string",

@@ -4,7 +4,14 @@
   "properties": {
     "user_email": {
       "type": "string",
-      "description": "Email of the recipient user"
+      "description": "Email of the recipient user",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "type": {
       "type": "string",
@@ -18,15 +25,36 @@
         "task_due_soon",
         "general"
       ],
-      "description": "Notification type"
+      "description": "Notification type",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "title": {
       "type": "string",
-      "description": "Short notification title"
+      "description": "Short notification title",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "message": {
       "type": "string",
-      "description": "Notification body"
+      "description": "Notification body",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "is_read": {
       "type": "boolean",
@@ -34,19 +62,47 @@
     },
     "entity_type": {
       "type": "string",
-      "description": "Related entity type (Task, RiskItem, SecurityDocument, etc.)"
+      "description": "Related entity type (Task, RiskItem, SecurityDocument, etc.)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "entity_id": {
       "type": "string",
-      "description": "ID of the related entity"
+      "description": "ID of the related entity",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "link": {
       "type": "string",
-      "description": "App route to navigate to on click"
+      "description": "App route to navigate to on click",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "customer_id": {
       "type": "string",
-      "description": "Reference to Customer"
+      "description": "Reference to Customer",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [
@@ -56,16 +112,9 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "created_by_id": "{{user.id}}"
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "$or": [

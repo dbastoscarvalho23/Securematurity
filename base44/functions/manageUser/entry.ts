@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { userCustomerId } from '../../shared/http.ts';
 
 /**
  * manageUser — single backend entry point for all User entity mutations.
@@ -43,8 +44,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // customer_admin: target must belong to their own customer
-    if (!isPlatformAdmin && targetUser.customer_id !== currentUser.customer_id) {
+    // customer_admin: must itself belong to a customer, and the target must belong to that same customer
+    const callerCustomerId = userCustomerId(currentUser);
+    if (!isPlatformAdmin && (!callerCustomerId || userCustomerId(targetUser) !== callerCustomerId)) {
       return Response.json({ error: 'Forbidden: You can only manage users in your customer' }, { status: 403 });
     }
 

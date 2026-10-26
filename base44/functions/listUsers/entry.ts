@@ -25,14 +25,16 @@ Deno.serve(async (req) => {
         users = await base44.asServiceRole.entities.User.list();
       }
     } else {
-      // customer_admin: only users in their customer
-      const query = { customer_id: userCustomerId(currentUser) };
+      // customer_admin: only users in their customer (none when the caller has no customer)
+      const callerCustomerId = userCustomerId(currentUser);
+      if (!callerCustomerId) return json({ error: 'Forbidden' }, 403);
+      const query = { customer_id: callerCustomerId };
       if (page !== null && pageSize !== null) {
         total = await base44.asServiceRole.entities.User.count(query);
         users = await base44.asServiceRole.entities.User.filter(query, '-created_date', pageSize, page * pageSize);
       } else {
         const allUsers = await base44.asServiceRole.entities.User.list();
-        users = allUsers.filter(u => u.customer_id === userCustomerId(currentUser));
+        users = allUsers.filter(u => userCustomerId(u) === callerCustomerId);
       }
     }
 

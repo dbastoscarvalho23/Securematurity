@@ -117,12 +117,15 @@ export default function UserManagementPanel() {
       const trackedRole = isCustomerAdmin ? 'user' : inviteRole;
       await base44.users.inviteUser(inviteEmail, platformRole);
       const alreadyTracked = invitedUsers.find(u => u.email === inviteEmail);
-      if (!alreadyTracked) {
+      // Platform admins are not tenant members: no InvitedUser tracking row for them.
+      // A customer_admin's invite always belongs to their own customer (RLS requires it).
+      if (!alreadyTracked && trackedRole !== 'admin') {
         await base44.entities.InvitedUser.create({
           email: inviteEmail,
           role: trackedRole,
           status: 'inactive',
           invited_by: me?.email || '',
+          ...(isCustomerAdmin && me?.customer_id ? { customer_id: me.customer_id, customer_name: me.customer_name || '' } : {}),
         });
       }
       toast.success(`${t('settings_invitation_sent')} ${inviteEmail}`);
