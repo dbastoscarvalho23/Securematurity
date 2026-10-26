@@ -92,5 +92,5 @@ jobs:
         run: |
           # O CLI autentica-se com BASE44_API_KEY (chave de workspace b44k_ com apps:deploy, ou token pessoal).
           # Sem TTY e com limite de tempo: se a chave não servir, falha em vez de ficar à espera de login.
-          timeout 600 npx --yes base44@0.2.3 whoami --app-id "${BASE44_APP_ID}" < /dev/null
+          timeout 90 npx --yes base44@0.2.3 whoami --app-id "${BASE44_APP_ID}" < /dev/null || { echo "::error::A chave BASE44_API_KEY não serve ao CLI: use uma chave de workspace (b44k_) com a permissão apps:deploy"; exit 1; }
           timeout 900 npx --yes base44@0.2.3 functions deploy --app-id "${BASE44_APP_ID}" < /dev/null
