@@ -53,7 +53,7 @@
     "valid_until": {
       "type": "string",
       "format": "date",
-      "description": "Data a partir da qual deixa de ser válida (pede renovação)"
+      "description": "Último dia de validade (depois desta data a evidência expira e pede renovação)"
     },
     "status": {
       "type": "string",
@@ -165,6 +165,7 @@
       "type": "string",
       "description": "Referência privada do ficheiro no repositório (nunca um link público)",
       "rls": {
+        "read": false,
         "write": {
           "user_condition": {
             "role": "admin"
@@ -245,6 +246,30 @@
           }
         }
       }
+    },
+    "restricted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Ligada a ativos ou ferramentas (informação reservada): só administradores do cliente",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "superseded": {
+      "type": "boolean",
+      "default": false,
+      "description": "Substituída por uma versão mais recente",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [
@@ -265,7 +290,26 @@
           }
         },
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            },
+            {
+              "data.restricted": false
+            }
+          ]
         }
       ]
     },

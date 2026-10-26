@@ -17,6 +17,7 @@ const STYLE = {
   pending: 'bg-chart-3/10 text-chart-3 border-chart-3/30',
   expired: 'bg-destructive/10 text-destructive border-destructive/30',
   rejected: 'bg-muted text-muted-foreground line-through',
+  superseded: 'bg-muted text-muted-foreground',
 };
 
 /** Registo de evidências estruturadas (com ficheiro, hash, validade e revisão). */
@@ -52,7 +53,7 @@ export default function EvidenceRegister() {
               <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('at_filter_all')} ({items.length})</SelectItem>
-                {['valid', 'pending', 'expired', 'rejected'].map((s) => <SelectItem key={s} value={s}>{t(`ev_state_${s}`)} ({counts[s] || 0})</SelectItem>)}
+                {['valid', 'pending', 'expired', 'rejected', 'superseded'].map((s) => <SelectItem key={s} value={s}>{t(`ev_state_${s}`)} ({counts[s] || 0})</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

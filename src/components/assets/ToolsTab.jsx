@@ -12,10 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Loader2, Trash2, ShieldCheck, Upload } from 'lucide-react';
 import { toast } from 'sonner';
-import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { writeAuditLog } from '@/lib/auditLog';
+import { saveComponent, deleteComponent } from '@/lib/assetsApi';
 import { TOOL_CATALOG, toolById, toolName } from '@/lib/legal/toolCatalog';
 import { linkKey } from '@/lib/evidence';
 import EvidencePanel, { useCustomerEvidence, evidenceSummary } from '@/components/evidence/EvidencePanel';
@@ -35,24 +34,27 @@ function ToolDialog({ open, onOpenChange, component, customer, assets }) {
   const [q, setQ] = useState('');
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-  useEffect(() => { if (open) { setForm({ ...EMPTY, ...(component || {}) }); setQ(''); } }, [open, component]);
+  useEffect(() => {
+    if (!open) return;
+    setForm(Object.fromEntries(Object.entries({ ...EMPTY, ...(component || {}) }).map(([k, v]) => [k, v ?? EMPTY[k] ?? ''])));
+    setQ('');
+  }, [open, component]);
   const cat = toolById(form.category);
   const codes = new Set(form.asset_codes || []);
   const list = assets.filter((a) => a.lifecycle !== 'retired' && (!q || `${a.asset_code} ${a.name}`.toLowerCase().includes(q.toLowerCase()))).slice(0, 300);
   const toggle = (code) => set('asset_codes', codes.has(code) ? [...codes].filter((c) => c !== code) : [...codes, code]);
 
   const save = async () => {
-    if (!cat || !form.product.trim()) { toast.error(t('tl_missing')); return; }
+    if (!cat || !(form.product || '').trim()) { toast.error(t('tl_missing')); return; }
     setSaving(true);
     try {
       const payload = {
-        customer_id: customer.id, category: cat.id, product: form.product.trim(), vendor: form.vendor.trim(), version: form.version.trim(),
+        category: cat.id, product: (form.product || '').trim(), vendor: (form.vendor || '').trim(), version: (form.version || '').trim(),
         asset_codes: form.asset_codes, nis2_letters: cat.nis2, regexec_points: cat.regexec, qnrcs_controls: cat.qnrcs,
-        owner: form.owner.trim(), status: form.status, notes: form.notes,
+        owner: (form.owner || '').trim(), status: form.status, notes: form.notes,
       };
       if (isAdmin) payload.coverage_confirmed = Boolean(form.coverage_confirmed);
-      const rec = editing ? await base44.entities.Component.update(component.id, payload) : await base44.entities.Component.create(payload);
-      await writeAuditLog({ action: editing ? 'component_updated' : 'component_created', entity_type: 'Component', entity_id: rec?.id || component?.id, details: `${cat.pt}: ${payload.product}` });
+      await saveComponent(customer.id, payload, editing ? component.id : undefined);
       toast.success(t('at_saved'));
       qc.invalidateQueries({ queryKey: ['components', customer.id] });
       onOpenChange(false);
@@ -61,8 +63,7 @@ function ToolDialog({ open, onOpenChange, component, customer, assets }) {
   const remove = async () => {
     if (!window.confirm(t('tl_delete_confirm', { name: component.product }))) return;
     try {
-      await base44.entities.Component.delete(component.id);
-      await writeAuditLog({ action: 'component_deleted', entity_type: 'Component', entity_id: component.id, details: component.product });
+      await deleteComponent(customer.id, component.id);
       qc.invalidateQueries({ queryKey: ['components', customer.id] });
       toast.success(t('at_deleted'));
       onOpenChange(false);

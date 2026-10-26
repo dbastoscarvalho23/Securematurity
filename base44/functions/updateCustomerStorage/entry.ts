@@ -30,6 +30,14 @@ export default async function (req) {
       return json({ error: 'Forbidden' }, 403);
     }
 
+    if (provider === 'webdav') {
+      // O NAS tem de estar configurado (e testado com sucesso) antes de passar a ser o repositório do cliente.
+      const conn = (await base44.asServiceRole.entities.StorageConnection.filter({ customer_id: customerId, provider: 'webdav' }))[0];
+      if (!conn || !conn.last_test_ok) {
+        return json({ error: 'O NAS deste cliente ainda não está configurado ou o último teste falhou. Peça ao administrador da plataforma para o configurar.' }, 409);
+      }
+    }
+
     await base44.asServiceRole.entities.Customer.update(customerId, { storage_provider: provider });
 
     return json({ success: true, provider });

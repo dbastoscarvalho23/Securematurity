@@ -49,6 +49,7 @@ export default function CustomerStoragePanel() {
   const enabledProviders = config?.enabled_providers?.length ? config.enabled_providers : ALL_PROVIDERS;
   const providerOptions = Array.from(new Set([...enabledProviders, provider]));
 
+  // webdav: o servidor só o aceita se o NAS do cliente estiver configurado e testado.
   const isConnected = (id) => id === 'base44' || id === 'webdav' || Boolean(connections?.[id]);
 
   useEffect(() => {

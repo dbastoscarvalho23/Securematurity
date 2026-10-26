@@ -158,8 +158,8 @@ export function parseAssetRows(rows, existingCodes = new Set()) {
     if (d.internet_exposed) {
       if (!d.ip_address && !d.fqdn) warnings.push('Ativo acessível pela Internet sem IP nem FQDN (art. 32.º, n.º 1, al. f) e g))');
     }
-    if (d.ip_address && !d.ip_address.split(/[;,\s]+/).every((ip) => IPV4.test(ip) || IPV6.test(ip))) errors.push('Endereço IP inválido');
-    if (d.fqdn && !d.fqdn.split(/[;,\s]+/).every((h) => FQDN.test(h))) errors.push('FQDN inválido');
+    if (d.ip_address && !d.ip_address.split(/[;,\s]+/).filter(Boolean).every((ip) => IPV4.test(ip) || IPV6.test(ip))) errors.push('Endereço IP inválido');
+    if (d.fqdn && !d.fqdn.split(/[;,\s]+/).filter(Boolean).every((h) => FQDN.test(h))) errors.push('FQDN inválido');
     if (d.asset_code) {
       if (codesInFile.has(d.asset_code)) errors.push(`ID repetido no ficheiro (linha ${codesInFile.get(d.asset_code)})`);
       else codesInFile.set(d.asset_code, rowNo);

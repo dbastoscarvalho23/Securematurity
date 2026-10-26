@@ -6,33 +6,17 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Upload, Loader2, FileSpreadsheet, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { writeAuditLog } from '@/lib/auditLog';
-import { readWorkbook, parseAssetRows, parseToolRows, diffAsset } from '@/lib/assets';
+import { readWorkbook, parseAssetRows, parseToolRows } from '@/lib/assets';
+import { importAssets } from '@/lib/assetsApi';
 import { TOOL_CATALOG } from '@/lib/legal/toolCatalog';
-import { recordAssetHistory } from './AssetDialog';
 
 export const TEMPLATE_URL = '/templates/AnkoraOne_Modelo_Inventario_Ativos_e_Ferramentas.xlsx';
 export const TEMPLATE_CSV_URL = '/templates/AnkoraOne_Modelo_Inventario_Ativos.csv';
 const MAX_ROWS = 5000;
 
-async function pool(items, size, fn, onStep) {
-  let i = 0; let done = 0;
-  const worker = async () => {
-    while (i < items.length) {
-      const it = items[i++];
-      await fn(it);
-      onStep(++done);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(size, items.length) }, worker));
-}
-
-export default function AssetImportDialog({ open, onOpenChange, customer, assets = [], components = [] }) {
+export default function AssetImportDialog({ open, onOpenChange, customer, assets = [] }) {
   const { t } = useLanguage();
-  const { user } = useAuth();
   const qc = useQueryClient();
   const fileRef = useRef(null);
   const [file, setFile] = useState(null);
@@ -70,47 +54,16 @@ export default function AssetImportDialog({ open, onOpenChange, customer, assets
   const run = async () => {
     if (!total) return;
     setRunning(true); setProgress(0);
-    const byCode = Object.fromEntries(assets.map((a) => [a.asset_code, a]));
-    const compKey = (c) => `${c.category}|${(c.product || '').toLowerCase()}`;
-    const compByKey = Object.fromEntries(components.map((c) => [compKey(c), c]));
-    let created = 0; let updated = 0; let failed = 0; let tools = 0;
     try {
-      await pool(validAssets, 4, async ({ data }) => {
-        try {
-          const payload = { ...data, customer_id: customer.id };
-          const prev = byCode[data.asset_code];
-          if (prev) {
-            // Atualiza só os campos presentes no ficheiro.
-            const changes = diffAsset(prev, { ...prev, ...payload });
-            if (Object.keys(changes).length) {
-              await base44.entities.Asset.update(prev.id, payload);
-              await recordAssetHistory({ customerId: customer.id, asset: { ...prev, ...payload }, action: 'import', changes, email: user?.email });
-            }
-            updated += 1;
-          } else {
-            const rec = await base44.entities.Asset.create(payload);
-            await recordAssetHistory({ customerId: customer.id, asset: rec, action: 'import', changes: diffAsset({}, payload), email: user?.email });
-            created += 1;
-          }
-        } catch { failed += 1; }
-      }, (n) => setProgress(n));
-      await pool(validTools, 4, async ({ data }) => {
-        try {
-          const prev = compByKey[compKey(data)];
-          if (prev) await base44.entities.Component.update(prev.id, data);
-          else await base44.entities.Component.create({ ...data, customer_id: customer.id });
-          tools += 1;
-        } catch { failed += 1; }
-      }, (n) => setProgress(validAssets.length + n));
-      await writeAuditLog({
-        action: 'assets_imported', entity_type: 'Asset', entity_id: customer.id,
-        details: `Importação de «${file?.name}»: ${created} ativo(s) criado(s), ${updated} atualizado(s), ${tools} ferramenta(s), ${failed} falha(s)`,
-      });
-      toast.success(t('at_import_done', { created, updated, tools, failed }));
+      const r = await importAssets(customer.id, validAssets.map((x) => x.data), validTools.map((x) => x.data), (f) => setProgress(f * total));
+      const msg = t('at_import_done', { created: r.created, updated: r.updated, tools: r.tools, failed: r.failed.length });
+      r.failed.length ? toast.warning(`${msg} — ${r.failed.slice(0, 3).map((f) => `${f.code || f.tool}: ${f.error}`).join('; ')}`) : toast.success(msg);
       qc.invalidateQueries({ queryKey: ['assets', customer.id] });
       qc.invalidateQueries({ queryKey: ['components', customer.id] });
       reset();
       onOpenChange(false);
+    } catch (e) {
+      toast.error(e?.message || t('ev_error'));
     } finally {
       setRunning(false);
     }

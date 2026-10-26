@@ -1,8 +1,7 @@
 import { base44 } from '@/api/base44Client';
 
 /** Limites e tipos aceites (iguais aos verificados na função `evidence`). */
-export const EVIDENCE_MAX_NATIVE = 50 * 1024 * 1024;
-export const EVIDENCE_MAX_EXTERNAL = 8 * 1024 * 1024;
+export const EVIDENCE_MAX_BYTES = 8 * 1024 * 1024;
 export const EVIDENCE_ACCEPT = '.pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.csv,.json,.xml,.zip,.docx,.xlsx,.pptx,.doc,.xls,.odt,.ods,.eml';
 export const EVIDENCE_TYPES = ['screenshot', 'tool_report', 'contract_licence', 'policy_procedure', 'log_record', 'test_audit_report', 'other'];
 export const EVIDENCE_METHODS = ['examine', 'interview', 'test'];
@@ -22,22 +21,17 @@ const invoke = async (payload) => {
 };
 
 /**
- * Carrega um ficheiro como evidência privada do cliente.
- * Repositório nativo: o browser carrega em armazenamento privado e a função calcula o hash.
- * Repositórios externos (Google Drive, OneDrive, NAS): o ficheiro segue para a função, que o guarda lá.
+ * Carrega um ficheiro como evidência privada do cliente. O ficheiro segue para a função «evidence», que verifica o
+ * conteúdo, calcula o SHA-256 e o guarda no repositório do cliente (nativo, Google Drive, OneDrive ou NAS).
  */
 export async function uploadEvidence({ file, customerId, meta }) {
-  const common = { ...meta, customer_id: customerId, file_name: file.name, mime_type: file.type || 'application/octet-stream' };
-  // O servidor decide o repositório efetivo (o do cliente, se estiver ativo na plataforma).
-  const { provider } = await invoke({ action: 'provider', customer_id: customerId });
-  if (!provider || provider === 'base44') {
-    if (file.size > EVIDENCE_MAX_NATIVE) throw new Error('O ficheiro excede 50 MB');
-    const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
-    return (await invoke({ action: 'create_native', file_uri, ...common })).evidence;
-  }
-  if (file.size > EVIDENCE_MAX_EXTERNAL) throw new Error('O ficheiro excede 8 MB (limite para repositórios externos)');
+  if (file.size > EVIDENCE_MAX_BYTES) throw new Error('O ficheiro excede 8 MB');
   const content_base64 = await fileToBase64(file);
-  return (await invoke({ action: 'create_external', content_base64, ...common })).evidence;
+  const { valid_until, ...rest } = meta;
+  return (await invoke({
+    action: 'create', content_base64, ...rest, ...(valid_until ? { valid_until } : {}),
+    customer_id: customerId, file_name: file.name, mime_type: file.type || 'application/octet-stream',
+  })).evidence;
 }
 
 /** Abre ou descarrega o ficheiro de uma evidência (o acesso fica registado na auditoria). */
@@ -65,6 +59,7 @@ export const deleteEvidence = (evidence) => invoke({ action: 'delete', evidence_
 
 /** Estado efetivo: aceite e dentro da validade conta como «evidenciado». */
 export function evidenceState(ev, today = new Date().toISOString().slice(0, 10)) {
+  if (ev.superseded) return 'superseded';
   if (ev.status === 'rejected') return 'rejected';
   if (ev.valid_until && ev.valid_until < today) return 'expired';
   return ev.status === 'accepted' ? 'valid' : 'pending';

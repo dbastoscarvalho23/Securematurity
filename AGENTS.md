@@ -77,15 +77,18 @@ docker compose -f docker-compose.base44.yml up -d
 - AI prompts append `LEGAL_AI_CONTEXT` (`src/lib/legal/aiContext.js`).
 
 ## Evidências, ativos e ferramentas (`/assets`, `/evidence`)
-- `Evidence` só é criada pela função `evidence` (service role): valida o tenant, as ligações (`links`/`link_keys`
-  `tipo:id`), MIME e tamanho, calcula SHA-256 e versiona por `supersedes_id`. O browser nunca recebe `storage_ref`;
-  downloads por `action: 'download'` (URL assinado de 300 s ou base64) e ficam na auditoria.
+- `Evidence` só é criada pela função `evidence` (service role): o ficheiro (≤ 8 MB, base64) chega à função, que
+  confirma o tipo pelos primeiros bytes, calcula o SHA-256 e o guarda no repositório do cliente — nunca se aceitam
+  referências de ficheiros vindas do browser. `storage_ref` não é legível por ninguém (FLS read false). Versões por
+  `supersedes_id` (a anterior fica `superseded`). Evidências ligadas a ativos/ferramentas ficam `restricted` (só
+  customer_admin e admin). Downloads por `action: 'download'` (URL assinado de 300 s ou base64), sempre auditados.
 - Repositório efetivo por cliente: `resolveProvider()` em `base44/shared/storage.ts` (respeita
-  `StorageSettings.enabled_providers`); o frontend pergunta-o com `action: 'provider'`. Nativo = `UploadPrivateFile`;
-  Google Drive/OneDrive = conta da plataforma, pasta `AnkoraOne/<cliente>/evidencias`, sem partilhas; `webdav` = NAS do
-  cliente (HTTPS obrigatório, IPs públicos, credenciais em `StorageConnection` cifradas com o segredo
-  `STORAGE_ENCRYPTION_KEY`). FTP não é suportado de propósito. Os anexos antigos (`uploadFile`) continuam no nativo
-  para clientes `webdav`.
-- `Asset`/`AssetHistory`/`Component`: só admin e customer_admin do tenant (lista do art. 32.º é «reservado»).
+  `StorageSettings.enabled_providers`). Nativo = `UploadPrivateFile` no servidor; Google Drive/OneDrive = conta da
+  plataforma, pasta `AnkoraOne/<cliente>/evidencias`, sem partilhas; `webdav` = NAS do cliente (HTTPS, nome DNS com
+  IPs públicos, portas 443/5006/8443, sem redirecionamentos; credenciais em `StorageConnection` cifradas com o segredo
+  `STORAGE_ENCRYPTION_KEY`; `updateCustomerStorage` só aceita `webdav` com o NAS testado). FTP não é suportado de
+  propósito. Os anexos antigos (`uploadFile`) continuam no nativo para clientes `webdav`.
+- `Asset`/`AssetHistory`/`Component`: leitura só admin e customer_admin do tenant (lista do art. 32.º é «reservado»);
+  escritas só pela função `assets` (tenant, validação e histórico escritos no servidor).
   Importação no browser (`src/lib/assets.js`, SheetJS) com os cabeçalhos do modelo em `public/templates/`; upsert por
   `asset_code`. Catálogo de ferramentas → alíneas NIS2: `src/lib/legal/toolCatalog.js`.

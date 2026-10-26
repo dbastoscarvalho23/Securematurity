@@ -74,32 +74,65 @@ export async function decryptSecret(enc) {
 
 // ── SSRF guard for customer-supplied WebDAV hosts ────────────────────────────
 
-function isPrivateIp(ip) {
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
-    const [a, b] = ip.split(".").map(Number);
-    return a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a >= 224;
+/** Expande um IPv6 para 8 grupos de 16 bits (aceita a forma com IPv4 no fim). */
+function ipv6Groups(ip) {
+  let h = ip.toLowerCase().split("%")[0];
+  const v4 = h.match(/(\d{1,3}(?:\.\d{1,3}){3})$/);
+  if (v4) {
+    const p = v4[1].split(".").map(Number);
+    h = h.slice(0, -v4[1].length) + ((p[0] << 8) | p[1]).toString(16) + ":" + ((p[2] << 8) | p[3]).toString(16);
   }
-  const h = ip.toLowerCase();
-  if (h.startsWith("::ffff:")) return isPrivateIp(h.slice(7));
-  return h === "::" || h === "::1" || /^(fe[89ab]|f[cd]|ff)/.test(h);
+  const [head, tail] = h.includes("::") ? h.split("::") : [h, null];
+  const hs = head ? head.split(":") : [];
+  const ts = tail ? tail.split(":") : [];
+  const fill = tail === null ? [] : Array(8 - hs.length - ts.length).fill("0");
+  const g = [...hs, ...fill, ...ts].map((x) => parseInt(x || "0", 16));
+  return g.length === 8 && g.every((n) => n >= 0 && n <= 0xffff) ? g : null;
 }
 
+function isPrivateV4(a, b) {
+  return a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 198 && (b === 18 || b === 19)) || a >= 224;
+}
+
+export function isPrivateIp(ip) {
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
+    const [a, b] = ip.split(".").map(Number);
+    return isPrivateV4(a, b);
+  }
+  const g = ipv6Groups(ip);
+  if (!g) return true; // formato desconhecido: recusar
+  const v4of = (hi) => isPrivateV4(hi >> 8, hi & 0xff);
+  if (g.slice(0, 5).every((n) => n === 0) && (g[5] === 0xffff || g[5] === 0)) return g[5] === 0 && g[6] === 0 ? true : v4of(g[6]); // ::ffff:a.b.c.d e ::a.b.c.d
+  if (g[0] === 0x64 && g[1] === 0xff9b) return true; // NAT64
+  if (g[0] === 0x2002) return true; // 6to4 (IPv4 embutido)
+  if (g[0] === 0x2001 && g[1] === 0) return true; // Teredo
+  if (g.every((n, i) => (i < 7 ? n === 0 : n <= 1))) return true; // :: e ::1
+  return (g[0] & 0xffc0) === 0xfe80 || (g[0] & 0xfe00) === 0xfc00 || (g[0] & 0xff00) === 0xff00;
+}
+
+/**
+ * Aceita apenas https:// para um nome DNS cujos endereços sejam todos públicos. Falha fechado: sem resolução DNS
+ * disponível, ou com um IP literal no lugar do nome, o pedido é recusado. É chamada antes de cada pedido ao NAS.
+ * Risco residual: entre esta verificação e a ligação do fetch, um DNS malicioso pode mudar a resposta (rebinding);
+ * o endereço só pode ser configurado por um administrador da plataforma, e os redirecionamentos estão desativados.
+ */
 export async function assertPublicHttpsUrl(url) {
   let u;
   try { u = new URL(url); } catch { throw new Error("URL inválido"); }
   if (u.protocol !== "https:") throw new Error("O repositório tem de usar HTTPS");
   if (u.username || u.password) throw new Error("Não inclua credenciais no URL");
-  const host = u.hostname.replace(/^\[|\]$/g, "");
-  if (isPrivateIp(host) || host === "localhost") throw new Error("Endereço privado não permitido");
-  if (typeof Deno.resolveDns === "function" && !/^[\d.:]+$/.test(host)) {
-    let addrs = [];
-    for (const t of ["A", "AAAA"]) {
-      try { addrs = addrs.concat(await Deno.resolveDns(host, t)); } catch { /* sem registos deste tipo */ }
-    }
-    if (!addrs.length) throw new Error("Não foi possível resolver o anfitrião");
-    if (addrs.some((a) => isPrivateIp(String(a)))) throw new Error("O anfitrião resolve para um endereço privado");
+  if (u.port && !["443", "5006", "8443"].includes(u.port)) throw new Error("Porta não permitida (use 443, 5006 ou 8443)");
+  const host = u.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  if (/^[\d.]+$/.test(host) || host.includes(":")) throw new Error("Use o nome DNS do NAS, não um endereço IP");
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") || !host.includes(".")) throw new Error("Endereço privado não permitido");
+  if (typeof Deno.resolveDns !== "function") throw new Error("Resolução DNS indisponível: ligação recusada");
+  let addrs = [];
+  for (const t of ["A", "AAAA"]) {
+    try { addrs = addrs.concat(await Deno.resolveDns(host, t)); } catch { /* sem registos deste tipo */ }
   }
+  if (!addrs.length) throw new Error("Não foi possível resolver o anfitrião");
+  if (addrs.some((a) => isPrivateIp(String(a)))) throw new Error("O anfitrião resolve para um endereço privado");
   return u;
 }
 

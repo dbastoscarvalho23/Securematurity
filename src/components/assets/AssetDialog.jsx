@@ -10,10 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Trash2, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { writeAuditLog } from '@/lib/auditLog';
-import { ASSET_TYPES, CRITICALITY, LIFECYCLE, checkAsset, diffAsset } from '@/lib/assets';
+import { saveAsset, deleteAsset } from '@/lib/assetsApi';
+import { ASSET_TYPES, CRITICALITY, LIFECYCLE, checkAsset } from '@/lib/assets';
 import EvidencePanel from '@/components/evidence/EvidencePanel';
 
 const EMPTY = {
@@ -30,26 +29,15 @@ function toRecord(f) {
   for (const [k, v] of Object.entries(f)) {
     if (['confidentiality', 'integrity', 'authenticity', 'availability', 'rto_hours', 'rpo_hours'].includes(k)) out[k] = v === '' || v == null ? null : Number(v);
     else if (k === 'dependencies') out[k] = Array.isArray(v) ? v : String(v || '').split(/[;,\n]/).map((s) => s.trim()).filter(Boolean);
+    else if (['end_of_support', 'last_review'].includes(k)) out[k] = v ? String(v) : null;
     else if (typeof v === 'string') out[k] = v.trim();
     else out[k] = v;
   }
   return out;
 }
 
-export async function recordAssetHistory({ customerId, asset, action, changes, email }) {
-  try {
-    await base44.entities.AssetHistory.create({
-      customer_id: customerId, asset_id: asset.id, asset_code: asset.asset_code, action,
-      changes: JSON.stringify(changes || {}).slice(0, 20000), user_email: email,
-    });
-  } catch (e) {
-    console.warn('AssetHistory write failed', e);
-  }
-}
-
 export default function AssetDialog({ open, onOpenChange, asset, customer, assets = [] }) {
   const { t } = useLanguage();
-  const { user } = useAuth();
   const qc = useQueryClient();
   const [form, setForm] = useState(EMPTY);
   const [deps, setDeps] = useState('');
@@ -75,24 +63,15 @@ export default function AssetDialog({ open, onOpenChange, asset, customer, asset
   const record = toRecord({ ...form, dependencies: deps });
   const { errors, warnings } = checkAsset(record, otherCodes);
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ['assets', customer.id] });
+  const refresh = () => { qc.invalidateQueries({ queryKey: ['assets', customer.id] }); qc.invalidateQueries({ queryKey: ['asset-history'] }); };
 
   const save = async () => {
     if (errors.length) { toast.error(errors[0]); return; }
     setSaving(true);
     try {
-      const payload = { ...record, customer_id: customer.id };
-      for (const k of ['id', 'created_date', 'updated_date', 'created_by', 'created_by_id', 'is_sample']) delete payload[k];
-      if (editing) {
-        const changes = diffAsset(asset, payload);
-        await base44.entities.Asset.update(asset.id, payload);
-        await recordAssetHistory({ customerId: customer.id, asset: { ...asset, ...payload }, action: 'update', changes, email: user?.email });
-        await writeAuditLog({ action: 'asset_updated', entity_type: 'Asset', entity_id: asset.id, details: `Ativo ${payload.asset_code} atualizado (${Object.keys(changes).length} campo(s))` });
-      } else {
-        const created = await base44.entities.Asset.create(payload);
-        await recordAssetHistory({ customerId: customer.id, asset: created, action: 'create', changes: diffAsset({}, payload), email: user?.email });
-        await writeAuditLog({ action: 'asset_created', entity_type: 'Asset', entity_id: created.id, details: `Ativo ${payload.asset_code} criado` });
-      }
+      const payload = { ...record };
+      for (const k of ['id', 'customer_id', 'created_date', 'updated_date', 'created_by', 'created_by_id', 'is_sample']) delete payload[k];
+      await saveAsset(customer.id, payload, editing ? asset.id : undefined);
       toast.success(t('at_saved'));
       refresh();
       onOpenChange(false);
@@ -106,9 +85,7 @@ export default function AssetDialog({ open, onOpenChange, asset, customer, asset
   const remove = async () => {
     if (!window.confirm(t('at_delete_confirm', { code: asset.asset_code }))) return;
     try {
-      await recordAssetHistory({ customerId: customer.id, asset, action: 'delete', changes: diffAsset(asset, {}), email: user?.email });
-      await base44.entities.Asset.delete(asset.id);
-      await writeAuditLog({ action: 'asset_deleted', entity_type: 'Asset', entity_id: asset.id, details: `Ativo ${asset.asset_code} eliminado` });
+      await deleteAsset(customer.id, asset.id);
       toast.success(t('at_deleted'));
       refresh();
       onOpenChange(false);

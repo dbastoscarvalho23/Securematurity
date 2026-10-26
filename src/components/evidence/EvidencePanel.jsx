@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Paperclip, Upload, Download, Check, X, Loader2, ShieldCheck, Trash2 } from 'lucide-react';
+import { Paperclip, Upload, Download, Check, X, Loader2, ShieldCheck, Trash2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
@@ -21,6 +21,7 @@ const STATE_STYLE = {
   pending: 'bg-chart-3/10 text-chart-3 border-chart-3/30',
   expired: 'bg-destructive/10 text-destructive border-destructive/30',
   rejected: 'bg-muted text-muted-foreground line-through',
+  superseded: 'bg-muted text-muted-foreground',
 };
 
 /** Todas as evidências de um cliente (uma só consulta partilhada pela página). */
@@ -45,6 +46,7 @@ export function evidenceSummary(items = []) {
   const out = {};
   for (const ev of items) {
     const st = evidenceState(ev);
+    if (st === 'superseded') continue; // só conta a versão mais recente
     for (const k of ev.link_keys || []) if (!out[k] || rank[st] > rank[out[k]]) out[k] = st;
   }
   return out;
@@ -73,6 +75,7 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [file, setFile] = useState(null);
+  const [replacing, setReplacing] = useState(null); // evidência de que se carrega uma nova versão
   const [form, setForm] = useState({ title: '', description: '', evidence_type: 'other', method: 'examine', collected_at: new Date().toISOString().slice(0, 10), valid_until: '' });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const refresh = () => qc.invalidateQueries({ queryKey: ['evidence', customerId] });
@@ -81,9 +84,9 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
     if (!file || !form.title.trim()) { toast.error(t('ev_missing')); return; }
     setBusy(true);
     try {
-      await uploadEvidence({ file, provider, customerId, meta: { ...form, links } });
+      await uploadEvidence({ file, customerId, meta: { ...form, links, ...(replacing ? { supersedes_id: replacing.id } : {}) } });
       toast.success(t('ev_uploaded'));
-      setOpen(false); setFile(null); setForm((f) => ({ ...f, title: '', description: '', valid_until: '' }));
+      setOpen(false); setFile(null); setReplacing(null); setForm((f) => ({ ...f, title: '', description: '', valid_until: '' }));
       refresh();
     } catch (e) {
       toast.error(e?.message || t('ev_error'));
@@ -114,6 +117,7 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
 
       {open && (
         <div className="grid sm:grid-cols-2 gap-2 rounded-md bg-muted/40 p-2">
+          {replacing && <p className="sm:col-span-2 text-xs font-medium">{t('ev_new_version_of', { title: replacing.title, v: (replacing.version || 1) + 1 })}</p>}
           <div className="sm:col-span-2 flex items-center gap-2">
             <input ref={fileRef} type="file" accept={EVIDENCE_ACCEPT} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; setFile(f || null); if (f && !form.title) set('title', f.name.replace(/\.[^.]+$/, '')); }} />
             <Button type="button" size="sm" variant="secondary" onClick={() => fileRef.current?.click()}>{t('ev_choose_file')}</Button>
@@ -140,7 +144,7 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
           </div>
           <div className="sm:col-span-2 space-y-1"><Label className="text-xs">{t('ev_field_description')}</Label><Textarea rows={2} value={form.description} onChange={(e) => set('description', e.target.value)} /></div>
           <div className="sm:col-span-2 flex justify-end gap-2">
-            <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>{t('common_cancel')}</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => { setOpen(false); setReplacing(null); }}>{t('common_cancel')}</Button>
             <Button type="button" size="sm" onClick={submit} disabled={busy} className="gap-1">{busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}{t('ev_submit')}</Button>
           </div>
           <p className="sm:col-span-2 text-[11px] text-muted-foreground">{t('ev_privacy_note')}</p>
@@ -154,7 +158,7 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
           {items.map((ev) => {
             const st = evidenceState(ev);
             return (
-              <li key={ev.id} className="py-2 flex flex-wrap items-center gap-2 text-xs">
+              <li key={ev.id} className={`py-2 flex flex-wrap items-center gap-2 text-xs ${st === 'superseded' ? 'opacity-60' : ''}`}>
                 <Badge variant="outline" className={`text-[10px] ${STATE_STYLE[st]}`}>{t(`ev_state_${st}`)}</Badge>
                 <span className="font-medium">{ev.title}</span>
                 {ev.version > 1 && <span className="text-muted-foreground">v{ev.version}</span>}
@@ -162,6 +166,7 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
                 <span className="text-muted-foreground font-mono" title={ev.sha256}>SHA-256 {ev.sha256?.slice(0, 10)}…</span>
                 <div className="ml-auto flex gap-1">
                   <Button type="button" size="icon" variant="ghost" className="h-7 w-7" title={t('ev_open')} onClick={() => act(() => openEvidence(ev))}><Download className="w-3.5 h-3.5" /></Button>
+                  {canUpload && st !== 'superseded' && <Button type="button" size="icon" variant="ghost" className="h-7 w-7" title={t('ev_new_version')} onClick={() => { setReplacing(ev); setForm((f) => ({ ...f, title: ev.title, evidence_type: ev.evidence_type || 'other', method: ev.method || 'examine', description: ev.description || '' })); setOpen(true); }}><RefreshCw className="w-3.5 h-3.5" /></Button>}
                   {isAdmin && ev.status !== 'accepted' && <Button type="button" size="icon" variant="ghost" className="h-7 w-7" title={t('ev_accept')} onClick={() => act(() => reviewEvidence(ev, 'accepted', ''), t('ev_reviewed'))}><Check className="w-3.5 h-3.5 text-chart-2" /></Button>}
                   {isAdmin && ev.status !== 'rejected' && <Button type="button" size="icon" variant="ghost" className="h-7 w-7" title={t('ev_reject')} onClick={() => act(() => reviewEvidence(ev, 'rejected', ''), t('ev_reviewed'))}><X className="w-3.5 h-3.5 text-destructive" /></Button>}
                   {isAdmin && <Button type="button" size="icon" variant="ghost" className="h-7 w-7" title={t('ev_delete')} onClick={() => { if (window.confirm(t('ev_delete_confirm'))) act(() => deleteEvidence(ev), t('ev_deleted')); }}><Trash2 className="w-3.5 h-3.5" /></Button>}
