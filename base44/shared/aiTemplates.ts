@@ -67,3 +67,4 @@ export const BANNED_PHRASES = [
   'solução robusta', 'abordagem holística', 'tudo num só lugar', 'aproveite ao máximo', 'sem complicações', 'parceiro de confiança',
   'no mundo atual', 'no panorama atual', 'é importante notar', 'é crucial', 'em suma', 'vale a pena salientar', 'usuário', 'tela',
 ];
+
