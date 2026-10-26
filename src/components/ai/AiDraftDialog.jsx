@@ -20,10 +20,12 @@ export default function AiDraftDialog({ open, onOpenChange, customerId, target, 
   const [kind, setKind] = useState(kinds?.[0]);
   const [instructions, setInstructions] = useState('');
   const [busy, setBusy] = useState(false);
-  const [draft, setDraft] = useState(initialDraft);
-  useEffect(() => { if (open) { setKind(kinds?.[0]); setInstructions(''); setDraft(initialDraft); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [generated, setGenerated] = useState(null);
+  useEffect(() => { if (open) { setKind(kinds?.[0]); setInstructions(''); setGenerated(null); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  const draft = generated ?? initialDraft;
+  const setDraft = setGenerated;
 
-  const { data: preview, isLoading } = useQuery({
+  const { data: preview, isLoading, error: previewError } = useQuery({
     queryKey: ['ai-sources', customerId, JSON.stringify(target), kind],
     queryFn: () => aiSources(customerId, target, kind),
     enabled: open && Boolean(customerId && target && kind) && !draft,
@@ -58,6 +60,7 @@ export default function AiDraftDialog({ open, onOpenChange, customerId, target, 
                   {(preview?.sources || []).map((s) => <li key={s.id} className={s.related ? 'text-muted-foreground' : ''}><span className="font-mono">[{s.id}]</span> {s.label}</li>)}
                 </ul>
               )}
+              {previewError && <p className="text-xs text-destructive">{previewError.message}</p>}
               {preview?.sections?.length > 0 && <p className="text-[11px] text-muted-foreground">{t('ai_structure')}: {preview.sections.map((s) => s.heading).join(' · ')}</p>}
             </div>
             <div className="space-y-1">

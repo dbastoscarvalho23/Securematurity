@@ -65,6 +65,14 @@ export async function requireModule(base44, user, customerId, moduleCode) {
   return ent;
 }
 
+/** Recusa (429) se a quota mensal já estiver esgotada, sem a consumir. */
+export async function checkQuota(base44, customerId, feature, quota) {
+  if (quota == null || quota === '') return;
+  const month = today().slice(0, 7);
+  const rec = (await base44.asServiceRole.entities.LicenseUsageRecord.filter({ customer_id: customerId, month, feature }))[0];
+  if ((rec?.usage_count || 0) >= Number(quota)) throw new LicenseError(`Quota mensal esgotada (${rec?.usage_count || 0}/${quota})`, 429);
+}
+
 /** Consome uma unidade da quota mensal (ex.: pedidos de IA). Recusa quando a quota está esgotada. */
 export async function consumeQuota(base44, customerId, feature, quota) {
   const db = base44.asServiceRole.entities;

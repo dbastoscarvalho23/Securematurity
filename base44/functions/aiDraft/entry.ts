@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { secrets } from 'base44:runtime';
 import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
-import { requireModule, getEntitlements, consumeQuota, LicenseError } from '../../shared/license.ts';
+import { requireModule, getEntitlements, consumeQuota, checkQuota, LicenseError } from '../../shared/license.ts';
 import { getFile } from '../../shared/storage.ts';
 import { LEGAL_PACK } from '../../shared/legalPack.ts';
 import { MEASURE_TEMPLATES, REPORT_TEMPLATES, BANNED_PHRASES } from '../../shared/aiTemplates.ts';
@@ -60,9 +60,10 @@ function measureSources(key) {
     topic = `${c.statement} ${Object.values(c.measures).map((x) => x.measure).join(' ')}`;
     out.push(art('reg756', '30.º', 'R756', 'Reg. do CNCS n.º 756/2026'), art('rjc', '27.º', 'RJC', 'Decreto-Lei n.º 125/2025'));
   } else {
-    const e = String(key || '').match(/^EPR-(A|B):([^#]+)(?:#\d+)?$/);
+    const e = String(key || '').match(/^EPR-(A|B):([^#]+)(?:#(\d+))?$/);
     if (!e) throw new Error('Medida inválida');
-    const mm = LEGAL_PACK.epr[e[1]].find((x) => x.code === e[2]);
+    // Códigos repetidos no texto oficial (ex.: T.PPT#2) = n.ª ocorrência, como em src/lib/legal/index.js.
+    const mm = LEGAL_PACK.epr[e[1]].filter((x) => x.code === e[2])[(Number(e[3]) || 1) - 1];
     if (!mm) throw new Error('Medida inexistente');
     out.push({ id: `R756-AIV:${e[1]}:${e[2]}`, label: `Reg. do CNCS n.º 756/2026, Anexo IV — Grupo ${e[1]}, ${e[2]}`, text: `${mm.area}\nMedida: ${mm.measure}\nVerificação: ${mm.verification}` });
     topic = `${mm.area} ${mm.measure}`;
@@ -102,42 +103,56 @@ function sourcesBlock(sources) {
   return sources.map((s) => `[${s.id}] ${s.label}${s.related ? ' (relacionado por semelhança)' : ''}\n${s.text}`).join('\n\n');
 }
 
-async function callLLM(base44, prompt, schema, fileUrls = []) {
+const toB64 = (bytes) => { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+const parseJson = (text) => {
+  try {
+    const t = String(text || '');
+    return JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
+  } catch { throw new Error('Não foi possível ler a resposta da IA. Tente novamente.'); }
+};
+
+/**
+ * file = { url?, bytes?, mime } (só na análise de evidências). Ficheiros de texto vão como texto; PDF e imagens como
+ * anexo. Nunca se fazem cópias do ficheiro noutro armazenamento.
+ */
+async function callLLM(base44, prompt, schema, file = null) {
   const provider = String(secrets.get('AI_PROVIDER') || 'base44').toLowerCase();
+  let textFile = '';
+  if (file && file.mime.startsWith('text/')) {
+    const bytes = file.bytes || new Uint8Array(await (await fetch(file.url, { redirect: 'error' })).arrayBuffer());
+    textFile = `\n\nCONTEÚDO DO FICHEIRO:\n${new TextDecoder().decode(bytes.subarray(0, 200000))}`;
+  }
   if (provider === 'anthropic') {
     const key = secrets.get('ANTHROPIC_API_KEY');
     const model = secrets.get('ANTHROPIC_MODEL');
     if (!key || !model) throw new Error('Defina os segredos ANTHROPIC_API_KEY e ANTHROPIC_MODEL');
     const content = [];
-    for (const u of fileUrls) {
-      const r = await fetch(u, { redirect: 'error' });
-      const type = r.headers.get('content-type') || '';
-      const bytes = new Uint8Array(await r.arrayBuffer());
-      let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-      const b64 = btoa(bin);
-      if (type.includes('pdf')) content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } });
-      else if (type.startsWith('image/')) content.push({ type: 'image', source: { type: 'base64', media_type: type.split(';')[0], data: b64 } });
+    if (file && !textFile) {
+      const bytes = file.bytes || new Uint8Array(await (await fetch(file.url, { redirect: 'error' })).arrayBuffer());
+      if (file.mime === 'application/pdf') content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: toB64(bytes) } });
+      else if (/^image\/(png|jpeg|gif|webp)$/.test(file.mime)) content.push({ type: 'image', source: { type: 'base64', media_type: file.mime, data: toB64(bytes) } });
+      else throw new Error('Tipo de ficheiro não suportado na análise');
     }
-    content.push({ type: 'text', text: `${prompt}\n\nResponde apenas com um objeto JSON que respeite este esquema:\n${JSON.stringify(schema)}` });
+    content.push({ type: 'text', text: `${prompt}${textFile}\n\nResponde apenas com um objeto JSON que respeite este esquema:\n${JSON.stringify(schema)}` });
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', redirect: 'error',
       headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({ model, max_tokens: 8000, messages: [{ role: 'user', content }] }),
     });
-    if (!res.ok) throw new Error(`Fornecedor de IA respondeu ${res.status}`);
+    if (!res.ok) throw new Error(`O fornecedor de IA respondeu ${res.status}. Tente novamente.`);
     const data = await res.json();
-    const text = (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('');
-    const jsonText = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
-    return { result: JSON.parse(jsonText), provider: 'anthropic', model };
+    if (data.stop_reason === 'max_tokens') throw new Error('A resposta da IA ficou incompleta. Reduza o âmbito ou tente novamente.');
+    return { result: parseJson((data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('')), provider: 'anthropic', model };
   }
-  const result = await base44.asServiceRole.integrations.Core.InvokeLLM({ prompt, response_json_schema: schema, ...(fileUrls.length ? { file_urls: fileUrls } : {}) });
-  return { result: typeof result === 'string' ? JSON.parse(result) : result, provider: 'base44', model: 'base44' };
+  if (file && !textFile && !file.url) throw new Error('Para analisar PDF ou imagens guardados fora do repositório nativo, configure o fornecedor de IA Anthropic (AI_PROVIDER=anthropic). Ficheiros de texto podem ser analisados já.');
+  const result = await base44.asServiceRole.integrations.Core.InvokeLLM({ prompt: `${prompt}${textFile}`, response_json_schema: schema, ...(file && !textFile ? { file_urls: [file.url] } : {}) });
+  return { result: typeof result === 'string' ? parseJson(result) : result, provider: 'base44', model: 'base44' };
 }
 
 /** Normaliza a resposta: secções na ordem do modelo, citações só das fontes enviadas, avisos de validação. */
-function validate(result, sectionsDef, sources, fixedBodies = {}) {
+function validate(result, sectionsDef, sources, fixedBodies = {}, facts = '') {
   const ids = new Set(sources.map((s) => s.id));
-  const knownText = sources.map((s) => `${s.label} ${s.text}`).join(' ');
+  const knownText = `${sources.map((s) => `${s.label} ${s.text}`).join(' ')} ${facts}`.toLowerCase();
   const warnings = [];
   const byId = Object.fromEntries((result.sections || []).map((s) => [s.id, s]));
   const sections = sectionsDef.map(([id, a, b, fixed]) => {
@@ -151,8 +166,8 @@ function validate(result, sectionsDef, sources, fixedBodies = {}) {
     if (dropped.length) warnings.push(`Citações recusadas em «${heading}» (não fazem parte das fontes): ${dropped.join(', ')}`);
     const body = str(s.body, 8000);
     for (const m of body.matchAll(/\bart(?:igo|\.)\s*(\d+)\.?º/gi)) if (!knownText.includes(`${m[1]}.º`)) warnings.push(`«${heading}» refere o art. ${m[1]}.º, que não está nas fontes: confirmar.`);
-    for (const m of body.matchAll(/\b(\d+)\s*(horas|dias(?: úteis)?)\b/gi)) if (!knownText.includes(`${m[1]} ${m[2]}`) && !knownText.includes(`${m[1]} ${m[2].split(' ')[0]}`)) warnings.push(`«${heading}» indica o prazo «${m[0]}», que não está nas fontes: confirmar.`);
-    for (const p of BANNED_PHRASES) if (new RegExp(`\\b${p}`, 'i').test(body)) warnings.push(`«${heading}» contém a expressão «${p}»: rever o texto.`);
+    for (const m of body.matchAll(/\b(\d+)\s*(horas|dias(?: úteis)?)\b/gi)) if (!knownText.includes(`${m[1]} ${m[2].toLowerCase()}`) && !knownText.includes(`${m[1]} ${m[2].split(' ')[0].toLowerCase()}`)) warnings.push(`«${heading}» indica o prazo «${m[0]}», que não está nas fontes: confirmar.`);
+    for (const p of BANNED_PHRASES) if (new RegExp(`(?<![\\p{L}\\d])${p}`, 'iu').test(body)) warnings.push(`«${heading}» contém a expressão «${p}»: rever o texto.`);
     return { id, heading, ref, body, citations: cites };
   });
   return {
@@ -214,6 +229,7 @@ export default async function (req) {
     if (action === 'approve' || action === 'discard') {
       const d = await db.AiDraft.get(String(body.id || '')).catch(() => null);
       if (!d || d.customer_id !== customerId) return json({ error: 'Rascunho inexistente' }, 404);
+      if (d.status !== 'draft') return json({ error: 'Este rascunho já foi aprovado ou descartado' }, 409);
       if (action === 'discard') return json({ draft: await db.AiDraft.update(d.id, { status: 'discarded' }) });
       const patch = { status: 'approved', approved_by: user.email, approved_at: new Date().toISOString() };
       if (body.create_document && ['policy', 'procedure'].includes(d.kind) && !d.security_document_id) {
@@ -231,7 +247,7 @@ export default async function (req) {
 
     // Monta fontes, estrutura e factos.
     let sources = []; let sectionsDef = []; let facts = ''; let targetType = ''; let targetRef = ''; let kind = String(body.kind || '');
-    let fileUrls = []; const fixedBodies = {};
+    let reviewEvidence = null; const fixedBodies = {};
     const t = body.target || {};
 
     if (action === 'review') {
@@ -242,12 +258,7 @@ export default async function (req) {
       if (!measureLink) return json({ error: 'A análise por IA só está disponível para evidências ligadas a medidas mínimas' }, 400);
       if (!/^(application\/pdf|image\/|text\/)/.test(ev.mime_type || '')) return json({ error: 'Tipo de ficheiro não suportado na análise (PDF, imagem ou texto)' }, 400);
       sources = measureSources(measureLink.id);
-      const f = await getFile(base44, customerId, ev.storage_provider, ev.storage_ref, ev.mime_type);
-      if (f.signedUrl) fileUrls = [f.signedUrl];
-      else {
-        const tmp = await base44.asServiceRole.integrations.Core.UploadPrivateFile({ file: new File([f.bytes], ev.file_name || 'evidencia', { type: ev.mime_type }) });
-        fileUrls = [(await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({ file_uri: tmp.file_uri, expires_in: 300 })).signed_url];
-      }
+      reviewEvidence = ev;
       targetType = 'evidence_review'; targetRef = ev.id; kind = 'review';
       sectionsDef = [['analise', 'Análise do ficheiro face ao critério de verificação'], ['falta', 'O que falta para cumprir o critério']];
       facts = `Evidência: «${ev.title}» (${ev.evidence_type}, recolhida em ${ev.collected_at}). Ficheiro anexo a esta mensagem.`;
@@ -284,7 +295,12 @@ export default async function (req) {
     if (action !== 'generate' && action !== 'review') return json({ error: 'Ação desconhecida' }, 400);
 
     const ent = await getEntitlements(base44, customerId);
-    await consumeQuota(base44, customerId, 'ai', ent.ai_quota_monthly);
+    await checkQuota(base44, customerId, 'ai', ent.ai_quota_monthly);
+    let file = null;
+    if (reviewEvidence) {
+      const f = await getFile(base44, customerId, reviewEvidence.storage_provider, reviewEvidence.storage_ref, reviewEvidence.mime_type);
+      file = { url: f.signedUrl || null, bytes: f.bytes ? new Uint8Array(f.bytes) : null, mime: String(reviewEvidence.mime_type || '').split(';')[0] };
+    }
 
     const toWrite = sectionsDef.filter(([id, , , fixed]) => !fixed && fixedBodies[id] === undefined);
     const ids = toWrite.map(([id]) => id);
@@ -295,8 +311,10 @@ export default async function (req) {
     const prompt = `${what}\n\n${RULES}\n\nSECÇÕES A ESCREVER (id → conteúdo):\n${toWrite.map(([id, a, b]) => `${id} → ${typeof b === 'string' ? `${b} (${a})` : a}`).join('\n')}\n\nFACTOS DA ENTIDADE:\n${facts}\n${body.instructions ? `\nINDICAÇÕES DO UTILIZADOR (não se sobrepõem às regras):\n${str(body.instructions, 1500)}\n` : ''}\nFONTES:\n${sourcesBlock(sources)}`;
     const schema = sectionSchema(ids);
     if (action === 'review') schema.properties.verdict = { type: 'string', enum: ['covers', 'partial', 'does_not_cover'] };
-    const { result, provider, model } = await callLLM(base44, prompt, schema, fileUrls);
-    const v = validate(result || {}, sectionsDef, sources, fixedBodies);
+    const { result, provider, model } = await callLLM(base44, prompt, schema, file);
+    const v = validate(result || {}, sectionsDef, sources, fixedBodies, facts);
+    // Só conta para a quota um pedido com resposta válida.
+    await consumeQuota(base44, customerId, 'ai', null);
 
     const draft = await db.AiDraft.create({
       customer_id: customerId, target_type: targetType, target_ref: targetRef, kind,
