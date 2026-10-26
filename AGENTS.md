@@ -92,3 +92,8 @@ docker compose -f docker-compose.base44.yml up -d
   escritas só pela função `assets` (tenant, validação e histórico escritos no servidor).
   Importação no browser (`src/lib/assets.js`, SheetJS) com os cabeçalhos do modelo em `public/templates/`; upsert por
   `asset_code`. Catálogo de ferramentas → alíneas NIS2: `src/lib/legal/toolCatalog.js`.
+- Alertas CVE (`CveWatch`/`CveAlert`, função `cveMonitor`, workflow «CVE Monitor» a cada 4 h): por fabricante do
+  inventário, com o nome CPE do NVD (API 2.0, `virtualMatchString` + janela `lastMod*` ≤ 120 dias). Alerta quando o CVE
+  é recente (ou entrou no KEV da CISA) e a gravidade CVSS (v3.1 → v4.0 → v3.0, entrada Primary) atinge a mínima
+  escolhida (`critical` ≥ 9,0; `high` ≥ 7,0). Ao NVD só seguem nomes CPE. Segredo opcional `NVD_API_KEY`
+  (50 pedidos/30 s em vez de 5). «Registar vulnerabilidade» cria o `Vulnerability` com prazo de 7/30 dias.

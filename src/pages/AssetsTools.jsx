@@ -9,13 +9,14 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import AssetsTab from '@/components/assets/AssetsTab';
 import ToolsTab from '@/components/assets/ToolsTab';
+import CveTab from '@/components/assets/CveTab';
 
 export default function AssetsTools() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') === 'tools' ? 'tools' : 'assets';
+  const tab = ['tools', 'cve'].includes(params.get('tab')) ? params.get('tab') : 'assets';
   const [selected, setSelected] = useState(params.get('customer') || null);
   const customerId = isAdmin ? selected : user?.customer_id;
 
@@ -48,9 +49,11 @@ export default function AssetsTools() {
           <TabsList>
             <TabsTrigger value="assets">{t('at_tab_assets')}</TabsTrigger>
             <TabsTrigger value="tools">{t('at_tab_tools')}</TabsTrigger>
+            <TabsTrigger value="cve">{t('cve_tab')}</TabsTrigger>
           </TabsList>
           <TabsContent value="assets" className="mt-4">{tab === 'assets' && <AssetsTab customer={customer} />}</TabsContent>
           <TabsContent value="tools" className="mt-4">{tab === 'tools' && <ToolsTab customer={customer} />}</TabsContent>
+          <TabsContent value="cve" className="mt-4">{tab === 'cve' && <CveTab customer={customer} />}</TabsContent>
         </Tabs>
       )}
     </div>

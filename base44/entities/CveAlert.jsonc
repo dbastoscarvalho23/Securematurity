@@ -1,0 +1,142 @@
+{
+  "name": "CveAlert",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "watch_id": {
+      "type": "string"
+    },
+    "cve_id": {
+      "type": "string"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high"
+      ]
+    },
+    "cvss_score": {
+      "type": "number"
+    },
+    "cvss_version": {
+      "type": "string"
+    },
+    "cvss_vector": {
+      "type": "string"
+    },
+    "published": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_modified": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "description": {
+      "type": "string"
+    },
+    "manufacturer": {
+      "type": "string"
+    },
+    "cpe_vendor": {
+      "type": "string"
+    },
+    "cpe_product": {
+      "type": "string"
+    },
+    "asset_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "kev": {
+      "type": "boolean",
+      "default": false,
+      "description": "No catálogo CISA KEV (exploração ativa conhecida)"
+    },
+    "kev_added": {
+      "type": "string",
+      "format": "date"
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "acknowledged",
+        "dismissed",
+        "converted"
+      ],
+      "default": "new"
+    },
+    "vulnerability_id": {
+      "type": "string",
+      "description": "Registo Vulnerability criado a partir do alerta"
+    },
+    "handled_by": {
+      "type": "string"
+    },
+    "handled_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "customer_id",
+    "cve_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

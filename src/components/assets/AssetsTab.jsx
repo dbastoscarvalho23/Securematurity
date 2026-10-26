@@ -15,6 +15,7 @@ import { linkKey } from '@/lib/evidence';
 import { useCustomerEvidence, evidenceSummary } from '@/components/evidence/EvidencePanel';
 import AssetDialog from './AssetDialog';
 import AssetImportDialog from './AssetImportDialog';
+import { OPEN_ALERT } from '@/lib/cve';
 
 export const EV_BADGE = {
   valid: 'bg-chart-2/10 text-chart-2 border-chart-2/30',
@@ -51,6 +52,22 @@ export default function AssetsTab({ customer }) {
   const { data: components = [] } = useComponents(customer.id);
   const { data: evidence = [] } = useCustomerEvidence(customer.id);
   const evByKey = useMemo(() => evidenceSummary(evidence), [evidence]);
+  const { data: cveAlerts = [] } = useQuery({
+    queryKey: ['cve-alerts', customer.id],
+    queryFn: () => base44.entities.CveAlert.filter({ customer_id: customer.id }, '-published', 2000),
+  });
+  // Alertas CVE em aberto por ativo (o mais grave primeiro).
+  const cveByAsset = useMemo(() => {
+    const out = {};
+    for (const a of cveAlerts) {
+      if (!OPEN_ALERT.includes(a.status)) continue;
+      for (const c of a.asset_codes || []) {
+        const cur = (out[c] ||= { n: 0, critical: 0, kev: 0 });
+        cur.n += 1; if (a.severity === 'critical') cur.critical += 1; if (a.kev) cur.kev += 1;
+      }
+    }
+    return out;
+  }, [cveAlerts]);
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('all');
   const [editing, setEditing] = useState(null);
@@ -62,11 +79,12 @@ export default function AssetsTab({ customer }) {
       if (filter === 'internet' && !a.internet_exposed) return false;
       if (filter === 'critical' && !['critical', 'high'].includes(a.criticality)) return false;
       if (filter === 'no_evidence' && evByKey[linkKey('asset', a.id)] === 'valid') return false;
+      if (filter === 'cve' && !cveByAsset[a.asset_code]) return false;
       if (filter === 'retired' ? a.lifecycle !== 'retired' : (filter !== 'all' && a.lifecycle === 'retired')) return false;
       if (!s) return true;
       return [a.asset_code, a.name, a.service, a.owner, a.fqdn, a.ip_address, a.manufacturer].some((v) => String(v || '').toLowerCase().includes(s));
     });
-  }, [assets, q, filter, evByKey]);
+  }, [assets, q, filter, evByKey, cveByAsset]);
 
   const exposed = assets.filter((a) => a.internet_exposed && a.lifecycle !== 'retired');
   const today = new Date().toISOString().slice(0, 10);
@@ -88,12 +106,13 @@ export default function AssetsTab({ customer }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
           [t('at_kpi_total'), assets.filter((a) => a.lifecycle !== 'retired').length],
           [t('at_kpi_internet'), exposed.length],
           [t('at_kpi_review_overdue'), overdue],
           [t('at_kpi_eos'), eos],
+          [t('cve_kpi_assets'), Object.keys(cveByAsset).length],
         ].map(([label, n]) => (
           <Card key={label}><CardContent className="p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="text-xl font-semibold">{n}</p></CardContent></Card>
         ))}
@@ -107,7 +126,7 @@ export default function AssetsTab({ customer }) {
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {['all', 'internet', 'critical', 'no_evidence', 'retired'].map((f) => <SelectItem key={f} value={f}>{t(`at_filter_${f}`)}</SelectItem>)}
+            {['all', 'internet', 'critical', 'no_evidence', 'cve', 'retired'].map((f) => <SelectItem key={f} value={f}>{t(`at_filter_${f}`)}</SelectItem>)}
           </SelectContent>
         </Select>
         <Button onClick={() => setEditing({})}><Plus className="w-4 h-4 mr-1" />{t('at_new_asset')}</Button>
@@ -126,6 +145,7 @@ export default function AssetsTab({ customer }) {
               <tr>
                 {['asset_code', 'name', 'asset_type', 'service', 'criticality', 'internet_exposed', 'lifecycle', 'last_review'].map((f) => <th key={f} className="text-left p-2 font-medium">{t(`as_f_${f}`)}</th>)}
                 <th className="text-left p-2 font-medium">{t('ev_title')}</th>
+                <th className="text-left p-2 font-medium">CVE</th>
               </tr>
             </thead>
             <tbody>
@@ -142,6 +162,11 @@ export default function AssetsTab({ customer }) {
                     <td className="p-2 text-xs">{a.lifecycle ? t(`as_life_${a.lifecycle}`) : '—'}</td>
                     <td className="p-2 text-xs">{a.last_review || '—'}</td>
                     <td className="p-2">{ev ? <Badge variant="outline" className={`text-[10px] ${EV_BADGE[ev]}`}>{t(`ev_badge_${ev}`)}</Badge> : <span className="text-xs text-muted-foreground">—</span>}</td>
+                    <td className="p-2">{cveByAsset[a.asset_code] ? (
+                      <Badge variant="outline" className={`text-[10px] ${cveByAsset[a.asset_code].critical ? 'bg-destructive/10 text-destructive border-destructive/30' : 'bg-chart-3/10 text-chart-3 border-chart-3/30'}`} title={t('cve_asset_badge_help')}>
+                        {cveByAsset[a.asset_code].n}{cveByAsset[a.asset_code].kev ? ' · KEV' : ''}
+                      </Badge>
+                    ) : <span className="text-xs text-muted-foreground">—</span>}</td>
                   </tr>
                 );
               })}
