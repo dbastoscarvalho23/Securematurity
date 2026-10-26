@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
-import { format, eachDayOfInterval, subDays, startOfWeek, eachWeekOfInterval } from 'date-fns';
+import { format, eachDayOfInterval, subDays, eachWeekOfInterval } from 'date-fns';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function DocActivityChart({ docs, versions, rangeDays, isLoading }) {

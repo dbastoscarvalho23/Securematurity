@@ -39,6 +39,7 @@ const PAGE_TITLE_KEYS = {
   '/action-plan': 'page_action_plan',
   '/reports': 'page_reports',
   '/admin': 'page_admin',
+  '/backoffice': 'page_backoffice',
   '/audit-log': 'page_audit_log',
   '/settings': 'page_settings',
   '/risk-assessment': 'page_risk_assessment',

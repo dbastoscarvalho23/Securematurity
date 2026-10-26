@@ -13,6 +13,7 @@ import { customersEn, customersPt } from './translations-customers';
 import { trainingEn, trainingPt } from './translations-training';
 import { genReportsEn, genReportsPt } from './translations-genreports';
 import { storageEn, storagePt } from './translations-storage';
+import { legalEn, legalPt } from './translations-legal';
 export const translations = {
   en: {
     // assessments
@@ -53,6 +54,9 @@ export const translations = {
     // common
     common_loading: 'Loading...',
     common_save: 'Save',
+    common_prev: 'Previous',
+    common_next: 'Next',
+    common_page_of: 'Page {current} of {total}',
     common_cancel: 'Cancel',
     common_delete: 'Delete',
     common_edit: 'Edit',
@@ -91,20 +95,23 @@ export const translations = {
     common_delete_error: 'Failed to delete',
     common_update_error: 'Failed to update',
     // compliance
-    compliance_journey_title: 'Compliance Journey — RJCS',
-    compliance_journey_subtitle: 'Legal Framework for Cybersecurity — Step-by-step compliance checklist',
+    compliance_journey_title: 'Compliance Journey — RJC',
+    compliance_journey_subtitle: 'Cybersecurity Legal Framework (Decree-Law 125/2025) and CNCS Regulation 756/2026 — step-by-step checklist',
+    compliance_legacy_title: 'This journey was created with the previous checklist (RJCS)',
+    compliance_legacy_desc: 'It remains available for reference. Create the new journey, based on Decree-Law 125/2025 and Regulation 756/2026, to follow the obligations in force.',
+    compliance_create_new_journey: 'Create RJC 2026 journey',
     compliance_select_customer: 'Select a customer...',
     compliance_select_customer_prompt: 'Select a customer to view the checklist',
     compliance_not_initialised: 'Checklist not yet initialised',
-    compliance_not_initialised_desc: 'Click below to create the full RJCS checklist for',
-    compliance_init_button: 'Initialise RJCS Checklist',
+    compliance_not_initialised_desc: 'Click below to create the full RJC checklist (Decree-Law 125/2025 and Regulation 756/2026) for',
+    compliance_init_button: 'Initialise RJC Checklist',
     compliance_total_tasks: 'Total Tasks',
     compliance_completed: 'Completed',
     compliance_in_progress: 'In Progress',
     compliance_overall_progress: 'Overall Progress',
     compliance_reinit: 'Reinitialise Checklist',
     compliance_reinit_confirm: 'Are you sure you want to reinitialise the checklist? All data will be lost.',
-    compliance_init_success: 'RJCS checklist initialised successfully!',
+    compliance_init_success: 'RJC checklist initialised successfully!',
     compliance_section_completed_of: 'completed',
     // maturity
     maturity_initial: 'Initial',
@@ -139,6 +146,12 @@ export const translations = {
     nav_action_plan: 'Action Plan',
     nav_question_bank: 'Question DB',
     nav_admin: 'Admin',
+    nav_backoffice: 'Backoffice',
+    backoffice_tab_overview: 'Overview',
+    backoffice_tab_customers: 'Customers',
+    backoffice_tab_users: 'Users',
+    backoffice_tab_frameworks: 'Frameworks',
+    backoffice_tab_audit: 'Audit',
     nav_audit_log: 'Audit Log',
     nav_email_report: 'Email Report',
     nav_settings: 'Settings',
@@ -158,6 +171,7 @@ export const translations = {
     page_action_plan: 'Action Plan',
     page_reports: 'Reports & Analytics',
     page_admin: 'Admin Dashboard',
+    page_backoffice: 'Backoffice',
     page_audit_log: 'Audit Log',
     page_settings: 'Settings',
     page_risk_assessment: 'Risk Assessment',
@@ -257,6 +271,9 @@ export const translations = {
     // common
     common_loading: 'A carregar...',
     common_save: 'Guardar',
+    common_prev: 'Anterior',
+    common_next: 'Seguinte',
+    common_page_of: 'Página {current} de {total}',
     common_cancel: 'Cancelar',
     common_delete: 'Eliminar',
     common_edit: 'Editar',
@@ -295,20 +312,23 @@ export const translations = {
     common_delete_error: 'Erro ao eliminar',
     common_update_error: 'Erro ao atualizar',
     // compliance
-    compliance_journey_title: 'Jornada de Conformidade — RJCS',
-    compliance_journey_subtitle: 'Regime Jurídico da Cibersegurança — Checklist passo a passo',
+    compliance_journey_title: 'Jornada de Conformidade — RJC',
+    compliance_journey_subtitle: 'Regime Jurídico da Cibersegurança (DL n.º 125/2025) e Regulamento do CNCS n.º 756/2026 — checklist passo a passo',
+    compliance_legacy_title: 'Esta jornada foi criada com a checklist anterior (RJCS)',
+    compliance_legacy_desc: 'Mantém-se disponível para consulta. Crie a nova jornada, baseada no DL n.º 125/2025 e no Regulamento n.º 756/2026, para acompanhar as obrigações em vigor.',
+    compliance_create_new_journey: 'Criar jornada RJC 2026',
     compliance_select_customer: 'Selecionar cliente...',
     compliance_select_customer_prompt: 'Selecione um cliente para ver a checklist',
     compliance_not_initialised: 'Checklist ainda não inicializada',
-    compliance_not_initialised_desc: 'Clique abaixo para criar a checklist RJCS completa para',
-    compliance_init_button: 'Inicializar Checklist RJCS',
+    compliance_not_initialised_desc: 'Clique abaixo para criar a checklist RJC completa (DL n.º 125/2025 e Regulamento n.º 756/2026) para',
+    compliance_init_button: 'Inicializar checklist RJC',
     compliance_total_tasks: 'Total de Tarefas',
     compliance_completed: 'Concluídas',
     compliance_in_progress: 'Em Progresso',
     compliance_overall_progress: 'Progresso Global',
     compliance_reinit: 'Reinicializar Checklist',
     compliance_reinit_confirm: 'Tem a certeza que quer reinicializar a checklist? Todos os dados serão perdidos.',
-    compliance_init_success: 'Checklist RJCS inicializada com sucesso!',
+    compliance_init_success: 'Checklist RJC inicializada com sucesso!',
     compliance_section_completed_of: 'concluídas',
     // maturity
     maturity_initial: 'Inicial',
@@ -343,6 +363,12 @@ export const translations = {
     nav_action_plan: 'Plano de Ação',
     nav_question_bank: 'BD de Perguntas',
     nav_admin: 'Administração',
+    nav_backoffice: 'Backoffice',
+    backoffice_tab_overview: 'Visão geral',
+    backoffice_tab_customers: 'Clientes',
+    backoffice_tab_users: 'Utilizadores',
+    backoffice_tab_frameworks: 'Frameworks',
+    backoffice_tab_audit: 'Auditoria',
     nav_audit_log: 'Registo de Auditoria',
     nav_email_report: 'Relatório de E-mails',
     nav_settings: 'Definições',
@@ -362,6 +388,7 @@ export const translations = {
     page_action_plan: 'Plano de Ação',
     page_reports: 'Relatórios e Análises',
     page_admin: 'Painel de Administração',
+    page_backoffice: 'Backoffice',
     page_audit_log: 'Registo de Auditoria',
     page_settings: 'Definições',
     page_risk_assessment: 'Avaliação de Risco',
@@ -454,3 +481,5 @@ Object.assign(translations.en, genReportsEn);
 Object.assign(translations.pt, genReportsPt);
 Object.assign(translations.en, storageEn);
 Object.assign(translations.pt, storagePt);
+Object.assign(translations.en, legalEn);
+Object.assign(translations.pt, legalPt);

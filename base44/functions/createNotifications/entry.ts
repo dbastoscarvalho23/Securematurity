@@ -1,4 +1,5 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { json, hasAutomationSecret } from "../../shared/http.ts";
 
 const ENTITY_MAP = {
   Task: 'Task',
@@ -13,13 +14,20 @@ Deno.serve(async (req) => {
 
     const { event, data, old_data } = payload;
 
+    // Authorization: this function writes with service role, so only the
+    // platform's automations — which carry the shared secret — may invoke it.
+    // Anonymous or user-authenticated callers are rejected before any read/write.
+    if (!hasAutomationSecret(req, payload)) {
+      return json({ error: 'Unauthorized' }, 403);
+    }
+
     // Only process trusted entity-automation events (create/update/delete).
     // Reject anything missing a valid automation event envelope.
     if (!event || !ENTITY_MAP[event.entity_name] || !['create', 'update', 'delete'].includes(event.type)) {
-      return Response.json({ skipped: true, reason: 'invalid automation event' });
+      return json({ skipped: true, reason: 'invalid automation event' });
     }
     if (!data) {
-      return Response.json({ skipped: true, reason: 'no data' });
+      return json({ skipped: true, reason: 'no data' });
     }
 
     // Do NOT trust caller-supplied data fields (target email, title, customer).
@@ -35,15 +43,20 @@ Deno.serve(async (req) => {
       }
     }
     if (!real) {
-      return Response.json({ skipped: true, reason: 'entity not found' });
+      return json({ skipped: true, reason: 'entity not found' });
     }
+
+    // old_data is caller-supplied, so only accept it when it references the
+    // same record — forged "previous" data can no longer suppress or skew
+    // notifications.
+    const previous = old_data?.id === event.entity_id ? old_data : null;
 
     const notifications = [];
 
     // ── Task changes ────────────────────────────────────────────────
     if (event.entity_name === 'Task') {
       const task = real;
-      const prevStatus = old_data?.status;
+      const prevStatus = previous?.status;
 
       // Task completed
       if (task.status === 'done' && prevStatus && prevStatus !== 'done') {
@@ -64,7 +77,7 @@ Deno.serve(async (req) => {
       }
 
       // Task assigned (new assignment or changed assignment)
-      if (task.assigned_to && task.assigned_to !== old_data?.assigned_to) {
+      if (task.assigned_to && task.assigned_to !== previous?.assigned_to) {
         notifications.push({
           user_email: task.assigned_to,
           type: 'task_assigned',
@@ -81,8 +94,8 @@ Deno.serve(async (req) => {
       // Task status changed (notify assigned user)
       if (
         task.assigned_to &&
-        old_data?.status &&
-        task.status !== old_data.status &&
+        previous?.status &&
+        task.status !== previous?.status &&
         task.status !== 'done'
       ) {
         const statusLabels = { todo: 'To Do', in_progress: 'In Progress', blocked: 'Blocked' };
@@ -103,7 +116,7 @@ Deno.serve(async (req) => {
     // ── RiskItem changes ─────────────────────────────────────────────
     if (event.entity_name === 'RiskItem') {
       const risk = real;
-      const prevStatus = old_data?.status;
+      const prevStatus = previous?.status;
 
       // Risk status changed
       if (prevStatus && risk.status !== prevStatus && risk.owner_email) {
@@ -122,7 +135,7 @@ Deno.serve(async (req) => {
       }
 
       // Risk owner assigned
-      if (risk.owner_email && risk.owner_email !== old_data?.owner_email) {
+      if (risk.owner_email && risk.owner_email !== previous?.owner_email) {
         notifications.push({
           user_email: risk.owner_email,
           type: 'risk_status',
@@ -140,7 +153,7 @@ Deno.serve(async (req) => {
     // ── SecurityDocument changes ─────────────────────────────────────
     if (event.entity_name === 'SecurityDocument') {
       const doc = real;
-      const prevStatus = old_data?.status;
+      const prevStatus = previous?.status;
 
       if (doc.status === 'approved' && prevStatus !== 'approved' && doc.owner_email) {
         notifications.push({
@@ -176,8 +189,8 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.Notification.bulkCreate(notifications);
     }
 
-    return Response.json({ created: notifications.length });
+    return json({ created: notifications.length });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, 500);
   }
 });

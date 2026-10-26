@@ -75,7 +75,18 @@
         }
       ]
     },
-    "read": null,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.changed_by": "{{user.email}}"
+        }
+      ]
+    },
     "update": {
       "user_condition": {
         "role": "admin"

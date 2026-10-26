@@ -25,7 +25,9 @@
           "call": "invoke_backend_function",
           "with": {
             "function_name": "createNotifications",
-            "args": {}
+            "args": {
+              "automation_secret": "${ secrets.AUTOMATION_SECRET }"
+            }
           },
           "then": "end"
         }

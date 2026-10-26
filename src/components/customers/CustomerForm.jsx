@@ -7,15 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLanguage } from '@/lib/LanguageContext';
+import RegulatoryProfileFields, { REGULATORY_FIELDS } from '@/components/legal/RegulatoryProfileFields';
+import { FRAMEWORK_NAMES, DEFAULT_CUSTOMER_FRAMEWORKS, SELECTABLE_FRAMEWORKS } from '@/lib/frameworkConstants';
 
-const FRAMEWORKS = [
-  { code: 'NIS2', name: 'NIS2 / DL 125/2025' },
-  { code: 'ISO27001', name: 'ISO/IEC 27001' },
-  { code: 'NIST_CSF', name: 'NIST Cybersecurity Framework' },
-  { code: 'CIS_V8', name: 'CIS Controls v8' },
-  { code: 'QNRC', name: 'QNRC' },
-  { code: 'GDPR', name: 'GDPR' },
-];
+
+const FRAMEWORKS = SELECTABLE_FRAMEWORKS.map((code) => ({ code, name: FRAMEWORK_NAMES[code] }));
 
 const SECTORS = [
   { value: 'financial_services', label: 'Financial Services' },
@@ -49,11 +45,12 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
     cybersecurity_manager_phone: customer?.cybersecurity_manager_phone || '',
     num_employees: customer?.num_employees || '',
     status: customer?.status || 'onboarding',
-    allowed_frameworks: customer?.allowed_frameworks || ['NIS2', 'ISO27001', 'NIST_CSF', 'CIS_V8', 'QNRC', 'GDPR'],
+    allowed_frameworks: customer?.allowed_frameworks || DEFAULT_CUSTOMER_FRAMEWORKS,
     notes: customer?.notes || '',
     user_seat_limit: customer?.user_seat_limit ?? 5,
     user_seat_addon_count: customer?.user_seat_addon_count ?? 0,
     storage_provider: customer?.storage_provider || 'base44',
+    ...Object.fromEntries(REGULATORY_FIELDS.map((f) => [f, customer?.[f] ?? (f === 'rjc_qualification' ? 'por_determinar' : (f.endsWith('_applicable') ? false : ''))])),
   });
 
   const toggleFramework = (code) => {
@@ -144,6 +141,8 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
               <Input value={form.cybersecurity_manager_phone} onChange={e => set('cybersecurity_manager_phone', e.target.value)} placeholder="+351 900 000 000" />
             </div>
           </div>
+
+          <RegulatoryProfileFields form={form} set={set} />
 
           <div className="space-y-2">
             <Label>{t('customers_detail_frameworks')}</Label>

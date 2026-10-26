@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { ShieldAlert, Building2, ClipboardCheck } from 'lucide-react';
+import { Building2, ClipboardCheck } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import MaturityRadar from '@/components/dashboard/MaturityRadar';
 import FrameworkScoreCard from '@/components/dashboard/FrameworkScoreCard';
@@ -24,13 +24,13 @@ export default function Dashboard() {
   const isAdmin = user?.role === 'admin';
   const customerId = user?.customer_id;
 
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [], isLoading: customersLoading } = useQuery({
     queryKey: ['customers'],
     queryFn: () => base44.entities.Customer.list(),
     enabled: isAdmin,
   });
 
-  const { data: assessments = [] } = useQuery({
+  const { data: assessments = [], isLoading: assessmentsLoading } = useQuery({
     queryKey: ['assessments', user?.email, customerId],
     queryFn: () => isAdmin
       ? base44.entities.Assessment.list('-created_date', 50)
@@ -93,6 +93,7 @@ export default function Dashboard() {
         {isAdmin && (
           <StatCard
             title={t('dashboard_active_customers')}
+            loading={customersLoading}
             value={customers.filter(c => c.status === 'active').length}
             subtitle={`${customers.length} ${t('dashboard_total')}`}
             icon={Building2}
@@ -101,6 +102,7 @@ export default function Dashboard() {
         )}
         <StatCard
           title={t('dashboard_completed_assessments')}
+          loading={assessmentsLoading}
           value={completedAssessments.length}
           subtitle={`${assessments.filter(a => a.status === 'in_progress').length} ${t('dashboard_in_progress')}`}
           icon={ClipboardCheck}

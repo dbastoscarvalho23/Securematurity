@@ -2,11 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, Check, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import QuestionCard from '@/components/assessments/QuestionCard';
 import AssessmentResults from '@/components/assessments/AssessmentResults';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { translateDomain } from '@/lib/domainTranslations';
 import LoadingState from '@/components/shared/LoadingState';
+import { LEGAL_AI_CONTEXT } from '@/lib/legal/aiContext';
 
 export default function AssessmentDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -50,7 +51,9 @@ export default function AssessmentDetail() {
       // Manual mode: load the specific existing questions by their saved IDs
       const questionIds = assessment?.question_ids;
       if (questionIds?.length > 0) {
-        const allGlobal = await base44.entities.Question.filter({ is_active: true }, 'order_index', 500);
+        // Load by the saved IDs only — the assessment's own question list is
+      // authoritative here (bank questions may lack the is_active flag).
+        const allGlobal = await base44.entities.Question.list('order_index', 500);
         const idSet = new Set(questionIds);
         return allGlobal.filter(q => idSet.has(q.id));
       }
@@ -135,7 +138,9 @@ Assessment data: ${JSON.stringify(responseSummary)}
 
 For each significant gap (current level < target level), provide a recommendation. Focus on the most impactful improvements.
 Return 5-8 prioritized recommendations.
-IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 Annex A structure (Organizational Controls, People Controls, Physical Controls, Technological Controls). Do NOT use the 2013 version's domain structure.`,
+IMPORTANT: For any ISO 27001 controls, strictly follow the ISO/IEC 27001:2022 Annex A structure (Organizational Controls, People Controls, Physical Controls, Technological Controls). Do NOT use the 2013 version's domain structure.
+
+${LEGAL_AI_CONTEXT}`,
         response_json_schema: {
           type: "object",
           properties: {

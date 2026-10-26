@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ScrollText,
-  Shield,
   BookOpen,
   ListTodo,
   Target,
@@ -28,9 +27,11 @@ import {
   Bug,
   Gauge,
   GraduationCap,
-  Bot
+  Bot,
+  Scale
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Logo from '@/components/layout/Logo';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -51,6 +52,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
     // Customers list only for admin
     ...(isAdmin ? [{ path: '/customers', labelKey: 'nav_customers', icon: Building2 }] : []),
     { path: '/compliance-journey', labelKey: 'nav_compliance_journey', icon: MapPin },
+    { path: '/legal-library', labelKey: 'nav_legal_library', icon: Scale },
     { path: '/assessments', labelKey: 'nav_assessments', icon: ClipboardCheck },
     { path: '/evidence', labelKey: 'nav_evidence', icon: Paperclip },
     { path: '/tasks', labelKey: 'nav_tasks', icon: ListTodo },
@@ -73,7 +75,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
 
   const systemItems = [
     ...(isAdmin ? [
-      { path: '/admin', labelKey: 'nav_admin', icon: ShieldCheck },
+      { path: '/backoffice', labelKey: 'nav_backoffice', icon: ShieldCheck },
       { path: '/audit-log', labelKey: 'nav_audit_log', icon: ScrollText },
       { path: '/email-report', labelKey: 'nav_email_report', icon: MailCheck },
     ] : []),
@@ -124,10 +126,9 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
       >
         {/* Logo */}
         <div className="h-16 flex items-center px-4 border-b border-sidebar-border flex-shrink-0">
-          <Shield className="w-7 h-7 text-primary flex-shrink-0" />
+          <Logo size={36} rounded="rounded-md" />
           {!collapsed && (
-            <div className="ml-3 overflow-hidden">
-              <span className="font-bold text-base tracking-tight block leading-tight">AnkoraOne</span>
+            <div className="ml-2 overflow-hidden">
               <span className="text-xs text-sidebar-foreground/40 block">{t('sidebar_subtitle')}</span>
             </div>
           )}

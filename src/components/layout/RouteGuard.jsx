@@ -12,13 +12,13 @@ import { useAuth } from '@/lib/AuthContext';
 
 // Routes accessible by 'user' role (with a customer assigned)
 const USER_ALLOWED = [
-  '/', '/compliance-journey', '/assessments', '/evidence',
+  '/', '/compliance-journey', '/legal-library', '/assessments', '/evidence',
   '/tasks', '/task-analytics', '/risk-assessment', '/security-documents',
   '/document-audit-trail', '/supply-chain', '/suppliers', '/reports', '/settings',
 ];
 
 // Routes NOT accessible by customer_admin
-const CUSTOMER_ADMIN_BLOCKED = ['/admin', '/audit-log', '/customers', '/question-bank', '/ropa', '/incidents', '/dsr', '/vulnerabilities', '/compliance-metrics', '/training'];
+const CUSTOMER_ADMIN_BLOCKED = ['/admin', '/backoffice', '/backoffice/customers', '/backoffice/users', '/backoffice/audit', '/audit-log', '/customers', '/question-bank', '/ropa', '/incidents', '/dsr', '/vulnerabilities', '/compliance-metrics', '/training'];
 
 export default function RouteGuard({ path, children }) {
   const { user } = useAuth();

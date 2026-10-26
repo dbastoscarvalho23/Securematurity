@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Paperclip, Download, FileText, ExternalLink, FolderOpen } from 'lucide-react';
-import { format } from 'date-fns';
 import { useLanguage } from '@/lib/LanguageContext';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';

@@ -12,7 +12,7 @@
     },
     "framework": {
       "type": "string",
-      "description": "Framework this checklist belongs to (e.g. RJCS)",
+      "description": "Checklist a que pertence: RJC_2026 (jornada RJC/Reg. 756/2026), RJCS (jornada anterior, só consulta) ou RJC_MEDIDAS_MINIMAS (Anexos III/IV do Reg. 756/2026)",
       "default": "RJCS"
     },
     "section": {
@@ -54,6 +54,18 @@
     "notes": {
       "type": "string",
       "description": "Additional notes or evidence"
+    },
+    "requirement_id": {
+      "type": "string",
+      "description": "Identificador da medida oficial (ex.: ID.GA-1@basico ou EPR-B:O.CRI)"
+    },
+    "requirement_ref": {
+      "type": "string",
+      "description": "Referência legal da medida (ex.: Reg. 756/2026, Anexo III)"
+    },
+    "level": {
+      "type": "string",
+      "description": "Nível de conformidade ou grupo a que a medida pertence"
     }
   },
   "required": [
