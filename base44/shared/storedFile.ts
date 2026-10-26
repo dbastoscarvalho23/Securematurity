@@ -1,19 +1,78 @@
-import { resolveProvider, putFile, sha256Hex } from './storage.ts';
+import { resolveProvider, putFile, sha256Hex, CONTEXT_FOLDER } from './storage.ts';
 
 /** Prefixo guardado nos campos `file_url` para ficheiros privados (abertos pela função `files`). */
 export const FILE_SCHEME = 'ankora-file://';
 
-const SUBFOLDER: Record<string, string> = {
-  security_document: 'documentos', document_version: 'documentos', nomination: 'nomeacoes', task: 'tarefas',
-  comment: 'tarefas', assessment: 'avaliacoes', training: 'formacao', report: 'relatorios', framework: 'referenciais', other: 'outros',
+export const FILE_CONTEXTS = Object.keys(CONTEXT_FOLDER);
+// Dados pessoais, relatórios e ativos: só administradores do cliente.
+const RESTRICTED_CONTEXTS = new Set(['training', 'report', 'asset']);
+
+/**
+ * Registo a que cada contexto se refere (context_id). É deste registo que sai o cliente do ficheiro, para que um
+ * ficheiro carregado pelo administrador da plataforma para o cliente X vá sempre para o repositório de X.
+ * Comentários são anexados à tarefa (context_id = id da tarefa).
+ */
+const CONTEXT_ENTITY: Record<string, string[]> = {
+  security_document: ['SecurityDocument'],
+  document_version: ['DocumentVersion', 'SecurityDocument'],
+  nomination: ['NominationDocument'],
+  task: ['Task'],
+  comment: ['Task'],
+  assessment: ['Assessment'],
+  training: ['TrainingUser'],
+  risk: ['RiskItem'],
+  incident: ['Incident'],
+  supplier: ['Supplier'],
+  asset: ['Asset'],
+  ai_draft: ['AiDraft'],
 };
-export const FILE_CONTEXTS = Object.keys(SUBFOLDER);
-// Dados pessoais e relatórios: só administradores do cliente.
-const RESTRICTED_CONTEXTS = new Set(['training', 'report']);
+
+export class TenantError extends Error {
+  status: number;
+  constructor(message: string, status = 403) { super(message); this.status = status; }
+}
+
+/**
+ * Decide o cliente (tenant) de um ficheiro novo.
+ *  - Com context_id de um registo conhecido: o cliente é o do registo. Um utilizador de outro cliente é recusado;
+ *    o administrador da plataforma que indique outro cliente recebe erro (evita gravar no repositório errado).
+ *  - Sem registo: administrador → customer_id indicado (vazio = armazenamento da plataforma); restantes → o seu.
+ * Devolve o registo Customer (ou null para ficheiros da plataforma).
+ */
+export async function resolveFileTenant(base44: any, { admin, ownCustomerId, requestedCustomerId, context, contextId }: {
+  admin: boolean; ownCustomerId: string; requestedCustomerId?: string; context: string; contextId?: string;
+}) {
+  const requested = String(requestedCustomerId || '');
+  if (!admin && requested && requested !== ownCustomerId) throw new TenantError('Forbidden', 403);
+  let customerId = admin ? requested : ownCustomerId;
+
+  const id = String(contextId || '');
+  if (id && CONTEXT_ENTITY[context]) {
+    let rec = null;
+    for (const ent of CONTEXT_ENTITY[context]) {
+      rec = await base44.asServiceRole.entities[ent].get(id).catch(() => null);
+      if (rec) break;
+    }
+    if (rec?.customer_id) {
+      if (!admin && rec.customer_id !== ownCustomerId) throw new TenantError('Forbidden', 403);
+      if (admin && requested && requested !== rec.customer_id) {
+        throw new TenantError('O cliente indicado não corresponde ao registo do ficheiro', 409);
+      }
+      customerId = rec.customer_id;
+    }
+  }
+
+  if (!customerId && !admin) throw new TenantError('Sem cliente associado', 403);
+  if (!customerId) return null;
+  const customer = await base44.asServiceRole.entities.Customer.get(customerId).catch(() => null);
+  if (!customer) throw new TenantError('Cliente inexistente', 404);
+  return customer;
+}
 
 /**
  * Guarda um ficheiro de forma privada no repositório do cliente (ou no armazenamento privado da plataforma,
  * quando não há cliente) e cria o registo StoredFile. Devolve { record, url } com url = ankora-file://<id>.
+ * `customer` tem de ser o cliente do registo (ver resolveFileTenant), nunca o de quem carrega.
  */
 export async function storePrivateFile(base44: any, { customer, bytes, fileName, mimeType, context = 'other', contextId = '', uploadedBy = '' }: {
   customer: any | null; bytes: Uint8Array; fileName: string; mimeType: string; context?: string; contextId?: string; uploadedBy?: string;
@@ -21,7 +80,7 @@ export async function storePrivateFile(base44: any, { customer, bytes, fileName,
   const ctx = FILE_CONTEXTS.includes(context) ? context : 'other';
   const provider = customer ? await resolveProvider(base44, customer) : 'base44';
   const target = customer || { id: 'plataforma', name: 'Plataforma' };
-  const { ref } = await putFile(base44, target, provider, { bytes, fileName, mimeType, subfolder: SUBFOLDER[ctx] });
+  const { ref, folder, location } = await putFile(base44, target, provider, { bytes, fileName, mimeType, folder: CONTEXT_FOLDER[ctx] });
   const record = await base44.asServiceRole.entities.StoredFile.create({
     customer_id: customer?.id || '',
     file_name: fileName,
@@ -30,6 +89,8 @@ export async function storePrivateFile(base44: any, { customer, bytes, fileName,
     sha256: await sha256Hex(bytes),
     storage_provider: provider,
     storage_ref: ref,
+    folder,
+    storage_location: location,
     context: ctx,
     context_id: String(contextId || '').slice(0, 120),
     restricted: RESTRICTED_CONTEXTS.has(ctx),

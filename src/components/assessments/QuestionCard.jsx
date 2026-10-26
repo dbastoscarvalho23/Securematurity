@@ -113,6 +113,7 @@ export default function QuestionCard({ question, index, response, onSave, langua
         {(response?.attachments || []).length > 0 && (
           <EvidenceUploader
             customerId={customerId}
+            contextId={response?.assessment_id}
             attachments={response?.attachments || []}
             onAttachmentsChange={handleAttachmentsChange}
           />

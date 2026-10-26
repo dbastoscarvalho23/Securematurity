@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { writeAuditLog } from '@/lib/auditLog';
+import { applyCustomerStorage } from '@/lib/repository';
 import { toast } from 'sonner';
 
 export default function Customers() {
@@ -42,10 +43,24 @@ export default function Customers() {
     queryFn: () => base44.entities.Customer.list('-created_date'),
   });
 
+  // Repositório documental: aplicado depois de o cliente existir (a ligação ao NAS precisa do id do cliente).
+  // Uma falha aqui não desfaz a gravação do cliente: fica no repositório anterior e o aviso é mostrado.
+  const applyStorage = async (customerId, storage) => {
+    if (!storage) return;
+    try {
+      const res = await applyCustomerStorage(customerId, storage);
+      if (!res.ok) toast.warning(`${t('repo_apply_nas_failed')} ${t(res.warning) || res.warning}`);
+    } catch (e) {
+      toast.warning(`${t('repo_apply_failed')} ${e?.message || ''}`);
+    }
+    queryClient.invalidateQueries({ queryKey: ['nas-connection', customerId] });
+  };
+
   const createMutation = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: async ({ data, storage }) => {
       const result = await base44.entities.Customer.create(data);
       await writeAuditLog({ action: 'customer_created', entity_type: 'Customer', entity_id: result?.id, details: `Created customer: ${data.name}` });
+      if (result?.id) await applyStorage(result.id, storage);
       return result;
     },
     onSuccess: (created) => {
@@ -57,9 +72,10 @@ export default function Customers() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
+    mutationFn: async ({ id, data, storage }) => {
       const result = await base44.entities.Customer.update(id, data);
       await writeAuditLog({ action: 'customer_updated', entity_type: 'Customer', entity_id: id, details: `Updated customer: ${data.name}` });
+      await applyStorage(id, storage);
       return result;
     },
     onSuccess: () => {
@@ -87,11 +103,11 @@ export default function Customers() {
     c.nif?.includes(search)
   );
 
-  const handleSubmit = (data) => {
+  const handleSubmit = (data, storage) => {
     if (editingCustomer) {
-      updateMutation.mutate({ id: editingCustomer.id, data });
+      updateMutation.mutate({ id: editingCustomer.id, data, storage });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate({ data, storage });
     }
   };
 

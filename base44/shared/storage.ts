@@ -1,24 +1,87 @@
 import { secrets } from "base44:runtime";
 
 /**
- * Per-customer evidence repositories.
+ * Repositório documental por cliente (tenant).
  *
- * Every file is kept PRIVATE: nothing here creates public or "anyone with the link"
- * shares. Files are read back only through the `evidence` function, after it has
- * checked that the caller belongs to the file's customer.
+ * Todos os ficheiros ficam PRIVADOS: nada aqui cria partilhas públicas nem links «qualquer pessoa com o link».
+ * Os ficheiros só são lidos pelas funções `files` e `evidence`, depois de confirmarem que quem pede pertence ao
+ * cliente do ficheiro.
  *
- *   base44       – Base44 private storage (UploadPrivateFile / CreateFileSignedUrl)
- *   google_drive – the platform's Google Drive connection, folder AnkoraOne/<customer>
- *   one_drive    – the platform's OneDrive connection, folder AnkoraOne/<customer>
- *   webdav       – the customer's own NAS / Nextcloud over HTTPS (WebDAV), credentials in
- *                  StorageConnection with the password encrypted (AES-GCM, STORAGE_ENCRYPTION_KEY)
+ *   base44       – armazenamento privado da plataforma (UploadPrivateFile / CreateFileSignedUrl); sem pastas reais,
+ *                  a pasta fica registada no campo `folder` do registo
+ *   google_drive – a ligação Google Drive da plataforma (conta da empresa), pasta <localização>/<pasta>
+ *   one_drive    – a ligação OneDrive da plataforma (conta da empresa), pasta <localização>/<pasta>
+ *   webdav       – o NAS / Nextcloud do próprio cliente sobre HTTPS (WebDAV), <pasta base>/<localização>/<pasta>;
+ *                  credenciais em StorageConnection com a palavra-passe cifrada (AES-GCM, STORAGE_ENCRYPTION_KEY)
  *
- * Plain FTP is deliberately not supported: it sends credentials and files unencrypted.
+ * Localização: `Customer.storage_root` (ex.: «AnkoraOne/Neora Consulting»); vazio = ROOT/folderFor(cliente).
+ * Mudar de repositório ou de localização só afeta os ficheiros novos: os antigos guardam a referência absoluta
+ * (id no Drive/OneDrive, caminho completo no NAS) e continuam a abrir onde estão.
+ *
+ * FTP simples não é suportado de propósito: envia credenciais e ficheiros sem cifra.
  */
 
 export const PROVIDERS = ["base44", "google_drive", "one_drive", "webdav"];
-export const MAX_EXTERNAL_BYTES = 8 * 1024 * 1024; // request/response size used for external repositories
-const ROOT = "AnkoraOne";
+export const MAX_EXTERNAL_BYTES = 8 * 1024 * 1024; // tamanho máximo de pedido/resposta nos repositórios externos
+export const ROOT = "AnkoraOne";
+
+// ── Estrutura de pastas (igual para todos os clientes) ───────────────────────
+// Manter igual a REPOSITORY_FOLDERS e CONTEXT_FOLDER em src/lib/repository.js (o teste repository.test.js compara).
+
+export const REPOSITORY_FOLDERS = [
+  { key: "framing", label: "01 Enquadramento" },
+  { key: "security_docs", label: "02 Documentos de segurança" },
+  { key: "evidence", label: "03 Evidências" },
+  { key: "assessments", label: "04 Avaliações" },
+  { key: "risks", label: "05 Riscos" },
+  { key: "incidents", label: "06 Incidentes" },
+  { key: "suppliers", label: "07 Fornecedores" },
+  { key: "assets", label: "08 Ativos (restrito)" },
+  { key: "training", label: "09 Formação" },
+  { key: "reports", label: "10 Relatórios" },
+  { key: "ai_drafts", label: "11 Rascunhos de IA aprovados" },
+  { key: "other", label: "99 Outros" },
+];
+const FOLDER_BY_KEY = Object.fromEntries(REPOSITORY_FOLDERS.map((f) => [f.key, f.label]));
+
+/** Nome da pasta (ex.: «03 Evidências») para uma chave; chaves desconhecidas vão para «99 Outros». */
+export function folderLabel(key) {
+  return FOLDER_BY_KEY[key] || FOLDER_BY_KEY.other;
+}
+
+/** Contexto de um ficheiro guardado pela função `files` (StoredFile.context) → pasta. */
+export const CONTEXT_FOLDER = {
+  qualification: "framing",
+  security_document: "security_docs",
+  document_version: "security_docs",
+  nomination: "security_docs",
+  assessment: "assessments",
+  risk: "risks",
+  incident: "incidents",
+  supplier: "suppliers",
+  asset: "assets",
+  training: "training",
+  report: "reports",
+  ai_draft: "ai_drafts",
+  task: "other",
+  comment: "other",
+  framework: "other",
+  other: "other",
+};
+
+/**
+ * Pasta de uma evidência, pelas ligações: ativos/componentes → 08 (restrito); incidente → 06; fornecedor → 07;
+ * restantes (medidas, controlos, perguntas, jornada, tarefas, vulnerabilidades) → 03. `hint` só aceita «framing»
+ * (relatório de enquadramento) e nunca tira uma evidência restrita da pasta 08.
+ */
+export function evidenceFolderKey(links, restricted, hint = "") {
+  const types = new Set((links || []).map((l) => l?.type));
+  if (restricted || types.has("asset") || types.has("component")) return "assets";
+  if (hint === "framing") return "framing";
+  if (types.has("incident")) return "incidents";
+  if (types.has("supplier")) return "suppliers";
+  return "evidence";
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -29,6 +92,55 @@ export function safeName(name) {
 
 export function folderFor(customer) {
   return safeName(`${customer?.name || "cliente"}-${String(customer?.id || "").slice(-6)}`);
+}
+
+/** Como safeName, mas tira primeiro os acentos («Câmara» → «Camara», em vez de «Ca_mara»). */
+export function safePathSegment(name) {
+  return safeName(String(name || "").normalize("NFKD").replace(/[̀-ͯ]/g, ""));
+}
+
+export const STORAGE_ROOT_MAX_SEGMENTS = 6;
+export const STORAGE_ROOT_MAX_LENGTH = 200;
+
+/**
+ * Valida e normaliza a localização escolhida para o repositório de um cliente.
+ * Regras: pastas separadas por «/», cada uma limpa por safePathSegment; sem «.» nem «..»; sem pastas vazias;
+ * no máximo 6 pastas e 200 caracteres. Vazio = localização por omissão. Devolve o caminho normalizado ou lança erro.
+ * Manter igual a normalizeStorageRoot em src/lib/repository.js.
+ */
+export function normalizeStorageRoot(input) {
+  const raw = String(input ?? "").trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+  if (!raw) return "";
+  if (raw.length > STORAGE_ROOT_MAX_LENGTH) throw new Error(`A localização pode ter no máximo ${STORAGE_ROOT_MAX_LENGTH} caracteres`);
+  const parts = raw.split("/").map((p) => p.trim());
+  if (parts.some((p) => !p)) throw new Error("A localização não pode ter pastas vazias («//»)");
+  if (parts.some((p) => /^\.+$/.test(p))) throw new Error("A localização não pode conter «.» nem «..»");
+  if (parts.length > STORAGE_ROOT_MAX_SEGMENTS) throw new Error(`A localização pode ter no máximo ${STORAGE_ROOT_MAX_SEGMENTS} pastas`);
+  const clean = parts.map(safePathSegment);
+  if (clean.some((p) => /^\.+$/.test(p))) throw new Error("A localização não pode conter «.» nem «..»");
+  const out = clean.join("/");
+  if (out.length > STORAGE_ROOT_MAX_LENGTH) throw new Error(`A localização pode ter no máximo ${STORAGE_ROOT_MAX_LENGTH} caracteres`);
+  return out;
+}
+
+/** Localização por omissão de um cliente: AnkoraOne/<nome>-<fim do id>. */
+export function defaultStorageRoot(customer) {
+  return `${ROOT}/${folderFor(customer)}`;
+}
+
+/**
+ * Pastas da localização efetiva do cliente. Um valor inválido gravado diretamente na entidade (sem passar pela
+ * função updateCustomerStorage) é ignorado e usa-se a localização por omissão.
+ */
+export function rootSegments(customer) {
+  let root = "";
+  try { root = normalizeStorageRoot(customer?.storage_root); } catch { root = ""; }
+  return (root || defaultStorageRoot(customer)).split("/");
+}
+
+/** Caminho legível de uma pasta do cliente, ex.: «AnkoraOne/Neora Consulting/03 Evidências». */
+export function storageLocation(customer, folderKey) {
+  return [...rootSegments(customer), folderLabel(folderKey)].join("/");
 }
 
 export async function sha256Hex(bytes) {
@@ -160,6 +272,31 @@ export async function resolveProvider(base44, customer) {
   return wanted;
 }
 
+/**
+ * Estado da ligação da plataforma ao Google Drive ou OneDrive e a conta (empresa) ligada.
+ * Devolve { connected, account } — account = e-mail/nome da conta, ou '' se o serviço não o devolver.
+ */
+export async function connectedAccount(base44, provider) {
+  const connector = { google_drive: "googledrive", one_drive: "one_drive" }[provider];
+  if (!connector) return { connected: false, account: "" };
+  let token = "";
+  try { token = (await base44.asServiceRole.connectors.getConnection(connector))?.accessToken || ""; } catch { token = ""; }
+  if (!token) return { connected: false, account: "" };
+  try {
+    const headers = { Authorization: `Bearer ${token}` };
+    if (provider === "google_drive") {
+      const r = await fetch("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress,displayName)", { headers });
+      const d = r.ok ? await r.json() : null;
+      return { connected: true, account: String(d?.user?.emailAddress || d?.user?.displayName || "") };
+    }
+    const r = await fetch("https://graph.microsoft.com/v1.0/me?$select=userPrincipalName,mail,displayName", { headers });
+    const d = r.ok ? await r.json() : null;
+    return { connected: true, account: String(d?.mail || d?.userPrincipalName || d?.displayName || "") };
+  } catch {
+    return { connected: true, account: "" };
+  }
+}
+
 async function webdavConfig(base44, customerId) {
   const rows = await base44.asServiceRole.entities.StorageConnection.filter({ customer_id: customerId, provider: "webdav" });
   const cfg = rows[0];
@@ -192,16 +329,22 @@ export async function testWebdav(base44, customerId) {
 
 // ── Put / get ────────────────────────────────────────────────────────────────
 
-/** Stores bytes in the customer's repository. Returns { provider, ref }. */
-export async function putFile(base44, customer, provider, { bytes, fileName, mimeType, subfolder = "evidencias" }) {
+/**
+ * Guarda bytes no repositório do cliente, na pasta `folder` (chave de REPOSITORY_FOLDERS).
+ * `customer` tem de ser o cliente DO REGISTO a que o ficheiro pertence, nunca o de quem carrega.
+ * Devolve { provider, ref, folder (nome da pasta), location (caminho; vazio no armazenamento da plataforma) }.
+ */
+export async function putFile(base44, customer, provider, { bytes, fileName, mimeType, folder = "other" }) {
   const name = `${Date.now()}-${safeName(fileName)}`;
-  const folder = folderFor(customer);
+  const label = folderLabel(folder);
+  const segments = [...rootSegments(customer), label];
+  const location = segments.join("/");
 
   if (provider === "base44") {
     const file = new File([bytes], name, { type: mimeType || "application/octet-stream" });
     const { file_uri } = await base44.asServiceRole.integrations.Core.UploadPrivateFile({ file });
     if (!file_uri) throw new Error("Falha no armazenamento privado");
-    return { provider, ref: file_uri };
+    return { provider, ref: file_uri, folder: label, location: "" };
   }
 
   if (provider === "google_drive") {
@@ -212,11 +355,11 @@ export async function putFile(base44, customer, provider, { bytes, fileName, mim
       const l = await (await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`, { headers: auth })).json();
       if (l.files?.length) return l.files[0].id;
       const c = await (await fetch("https://www.googleapis.com/drive/v3/files", { method: "POST", headers: { ...auth, "Content-Type": "application/json" }, body: JSON.stringify({ name: fname, mimeType: "application/vnd.google-apps.folder", ...(parent ? { parents: [parent] } : {}) }) })).json();
+      if (!c?.id) throw new Error("Não foi possível criar a pasta no Google Drive");
       return c.id;
     };
-    const root = await ensure(ROOT, null);
-    const cust = await ensure(folder, root);
-    const sub = await ensure(subfolder, cust);
+    let sub = null;
+    for (const seg of segments) sub = await ensure(seg, sub);
     const boundary = `ankoraone-${crypto.randomUUID()}`;
     const enc = new TextEncoder();
     const head = enc.encode(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name, mimeType, parents: [sub] })}\r\n--${boundary}\r\nContent-Type: ${mimeType || "application/octet-stream"}\r\n\r\n`);
@@ -225,29 +368,30 @@ export async function putFile(base44, customer, provider, { bytes, fileName, mim
     body.set(head, 0); body.set(new Uint8Array(bytes), head.length); body.set(tail, head.length + bytes.byteLength);
     const up = await (await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id", { method: "POST", headers: { ...auth, "Content-Type": `multipart/related; boundary=${boundary}` }, body })).json();
     if (!up?.id) throw new Error("Falha no envio para o Google Drive");
-    return { provider, ref: up.id }; // no sharing permission: the file stays private to the connected account
+    return { provider, ref: up.id, folder: label, location }; // sem permissões de partilha: fica privado na conta ligada
   }
 
   if (provider === "one_drive") {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection("one_drive");
-    const path = [ROOT, folder, subfolder, name].map(encodeURIComponent).join("/");
+    const path = [...segments, name].map(encodeURIComponent).join("/");
     const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${path}:/content`, { method: "PUT", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": mimeType || "application/octet-stream" }, body: bytes });
     const item = await r.json().catch(() => null);
     if (!r.ok || !item?.id) throw new Error("Falha no envio para o OneDrive");
-    return { provider, ref: item.id }; // no sharing link is created
+    return { provider, ref: item.id, folder: label, location }; // não é criado nenhum link de partilha
   }
 
   if (provider === "webdav") {
     const { base, auth, basePath } = await webdavConfig(base44, customer.id);
     let acc = basePath;
-    for (const seg of [ROOT, folder, subfolder]) {
+    for (const seg of segments) {
       acc = acc ? `${acc}/${seg}` : seg;
       await davMkcol(davUrl(base, acc) + "/", auth);
     }
     const rel = `${acc}/${name}`;
     const r = await fetch(davUrl(base, rel), { method: "PUT", headers: { Authorization: auth, "Content-Type": mimeType || "application/octet-stream" }, body: bytes, redirect: "error" });
     if (!r.ok) throw new Error(`Falha no envio para o NAS (${r.status})`);
-    return { provider, ref: rel };
+    // ref = caminho completo a partir do URL do NAS: continua válido se a localização mudar depois.
+    return { provider, ref: rel, folder: label, location: acc };
   }
 
   throw new Error("Repositório não suportado");

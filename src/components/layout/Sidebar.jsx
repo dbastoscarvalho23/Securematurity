@@ -15,6 +15,7 @@ import {
   Target,
   TrendingUp,
   FolderLock,
+  FolderTree,
   Activity,
   TriangleAlert,
   Paperclip,
@@ -79,6 +80,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
   ];
   const governItems = [
     { path: '/security-documents', labelKey: 'nav_documents', icon: FolderLock },
+    { path: '/repository', labelKey: 'nav_repository', icon: FolderTree },
     { path: '/document-audit-trail', labelKey: 'nav_doc_audit_trail', icon: Activity },
     { path: '/supply-chain', labelKey: 'nav_supply_chain', icon: Truck },
     { path: '/suppliers', labelKey: 'nav_suppliers', icon: Building2 },

@@ -3,22 +3,27 @@ import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId }
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, LicenseError } from '../../shared/license.ts';
 import { checkFile } from '../../shared/fileCheck.ts';
-import { resolveProvider, putFile, getFile, sha256Hex, fromBase64, toBase64, MAX_EXTERNAL_BYTES } from '../../shared/storage.ts';
+import {
+  resolveProvider, putFile, getFile, sha256Hex, fromBase64, toBase64, MAX_EXTERNAL_BYTES, evidenceFolderKey,
+  normalizeStorageRoot, defaultStorageRoot,
+} from '../../shared/storage.ts';
 
 /**
  * Evidências com ficheiro anexo (privado).
  *
  * Ações:
- *  - provider        { customer_id? } → repositório efetivo do cliente.
- *  - create          { content_base64, file_name, mime_type, ...meta } → o ficheiro chega aqui e é a função que o
- *                     guarda no repositório do cliente (nativo privado, Google Drive, OneDrive ou NAS WebDAV).
+ *  - provider        { customer_id? } → repositório efetivo do cliente e localização dos ficheiros novos.
+ *  - create          { content_base64, file_name, mime_type, folder?, ...meta } → o ficheiro chega aqui e é a função
+ *                     que o guarda no repositório do cliente (nativo privado, Google Drive, OneDrive ou NAS WebDAV),
+ *                     na pasta dada por evidenceFolderKey (folder: 'framing' só para o relatório de enquadramento).
  *                     Nunca se aceitam referências de ficheiros vindas do browser.
  *  - download        { evidence_id }  → URL assinado (5 min) ou conteúdo em base64; cada acesso fica na auditoria.
  *  - review          { evidence_id, status: accepted|rejected, notes } → só administrador da plataforma (consultor).
  *  - delete          { evidence_id }  → só administrador da plataforma.
  *
  * meta: title, description, evidence_type, method, collected_at, valid_until, links[{type,id,ref,label}], supersedes_id, customer_id (só admin)
- * O cliente da evidência é sempre o do utilizador; só um administrador da plataforma pode indicar outro.
+ * O cliente da evidência é sempre o do utilizador; só um administrador da plataforma pode indicar outro (ou, sem
+ * indicar, é o dos registos ligados). O cliente do próprio administrador nunca é usado por omissão.
  */
 
 const TYPES = ['screenshot', 'tool_report', 'contract_licence', 'policy_procedure', 'log_record', 'test_audit_report', 'other'];
@@ -45,6 +50,17 @@ async function cleanLinks(base44, customerId, links) {
     out.push({ type: l.type, id: str(l.id, 120), ref: str(l.ref, 120), label: str(l.label, 200) });
   }
   return out;
+}
+
+/** Cliente dos registos ligados (para o administrador que não indicou o cliente); '' se não houver. */
+async function customerFromLinks(base44, links) {
+  for (const l of Array.isArray(links) ? links.slice(0, 50) : []) {
+    const ent = l && LINK_ENTITY[l.type];
+    if (!ent || !l.id) continue;
+    const rec = await base44.asServiceRole.entities[ent].get(String(l.id)).catch(() => null);
+    if (rec?.customer_id) return rec.customer_id;
+  }
+  return '';
 }
 
 async function buildMeta(base44, body, customerId) {
@@ -98,18 +114,29 @@ export default async function (req) {
       if (!customer) return json({ error: 'Cliente inexistente' }, 404);
       const effective = await resolveProvider(base44, customer);
       const wanted = customer.storage_provider || 'base44';
-      return json({ provider: effective, wanted, fallback: effective !== wanted });
+      let root = '';
+      try { root = normalizeStorageRoot(customer.storage_root); } catch { root = ''; }
+      return json({
+        provider: effective, wanted, fallback: effective !== wanted,
+        // Localização dos ficheiros novos (no armazenamento da plataforma não há pastas reais).
+        root: root || defaultStorageRoot(customer), custom_root: Boolean(root),
+        configured_at: customer.storage_configured_at || null,
+      });
     }
 
     if (action === 'create' || action === 'create_external') {
-      const customerId = admin ? (body.customer_id || userCustomerId(user)) : userCustomerId(user);
-      if (!customerId) return json({ error: 'Sem cliente associado' }, 403);
+      // Cliente da evidência: o do utilizador; o administrador da plataforma indica o cliente ou este sai dos
+      // registos ligados. Nunca se usa o cliente do próprio administrador por omissão (o ficheiro iria para o
+      // repositório errado).
+      const customerId = admin ? (str(body.customer_id, 64) || await customerFromLinks(base44, body.links)) : userCustomerId(user);
+      if (!customerId) return json({ error: admin ? 'Indique o cliente da evidência' : 'Sem cliente associado' }, admin ? 400 : 403);
       if (!admin && body.customer_id && body.customer_id !== customerId) return json({ error: 'Forbidden' }, 403);
       const customer = await base44.asServiceRole.entities.Customer.get(customerId).catch(() => null);
       if (!customer) return json({ error: 'Cliente inexistente' }, 404);
       await requireModule(base44, user, customerId, 'documents_evidence');
       const provider = await resolveProvider(base44, customer);
       const meta = await buildMeta(base44, body, customerId);
+      const folderKey = evidenceFolderKey(meta.links, meta.restricted, body.folder === 'framing' ? 'framing' : '');
       if (meta.restricted && !admin && user.role !== 'customer_admin') return json({ error: 'Só os administradores do cliente podem anexar evidências a ativos e ferramentas' }, 403);
       const fileName = str(body.file_name, 200);
       const bytes = fromBase64(body.content_base64);
@@ -121,9 +148,9 @@ export default async function (req) {
         if (!prevNow || prevNow.superseded) return json({ error: 'Essa evidência já tem uma versão mais recente' }, 409);
         await base44.asServiceRole.entities.Evidence.update(meta.supersedes_id, { superseded: true });
       }
-      let ref;
+      let stored;
       try {
-        ref = (await putFile(base44, customer, provider, { bytes, fileName, mimeType: mime })).ref;
+        stored = await putFile(base44, customer, provider, { bytes, fileName, mimeType: mime, folder: folderKey });
       } catch (e) {
         if (meta.supersedes_id) await base44.asServiceRole.entities.Evidence.update(meta.supersedes_id, { superseded: false }).catch(() => null);
         throw e;
@@ -137,12 +164,14 @@ export default async function (req) {
         size_bytes: bytes.byteLength,
         sha256,
         storage_provider: provider,
-        storage_ref: ref,
+        storage_ref: stored.ref,
+        folder: stored.folder,
+        storage_location: stored.location,
         uploaded_by: user.email,
       });
       await logAudit(base44, 'evidence_created', {
         user_email: user.email, customer_id: customerId, entity_type: 'Evidence', entity_id: ev.id,
-        details: `Evidência «${meta.title}» (${provider}, SHA-256 ${sha256.slice(0, 12)}…) ligada a ${meta.link_keys.length} registo(s)`,
+        details: `Evidência «${meta.title}» (${provider}, pasta «${stored.folder}», SHA-256 ${sha256.slice(0, 12)}…) ligada a ${meta.link_keys.length} registo(s)`,
       });
       const { storage_ref: _hidden, ...safe } = ev;
       return json({ evidence: safe });

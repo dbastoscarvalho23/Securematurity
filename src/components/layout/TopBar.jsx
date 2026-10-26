@@ -44,6 +44,7 @@ const PAGE_TITLE_KEYS = {
   '/settings': 'page_settings',
   '/risk-assessment': 'page_risk_assessment',
   '/security-documents': 'page_security_documents',
+  '/repository': 'page_repository',
   '/document-audit-trail': 'page_document_audit_trail',
   '/compliance-journey': 'page_compliance_journey',
   '/evidence': 'page_evidence',

@@ -11,7 +11,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useLanguage } from '@/lib/LanguageContext';
 import RegulatoryProfileFields, { REGULATORY_FIELDS } from '@/components/legal/RegulatoryProfileFields';
 import { FRAMEWORK_NAMES, DEFAULT_CUSTOMER_FRAMEWORKS, SELECTABLE_FRAMEWORKS } from '@/lib/frameworkConstants';
-import NasConnectionPanel from './NasConnectionPanel';
+import RepositorySettings, {
+  initialRepositoryValue, repositoryPayload, repositoryChanged, repositoryValueError,
+} from '@/components/storage/RepositorySettings';
+import { toast } from 'sonner';
 
 
 const FRAMEWORKS = SELECTABLE_FRAMEWORKS.map((code) => ({ code, name: FRAMEWORK_NAMES[code] }));
@@ -59,7 +62,6 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
     notes: customer?.notes || '',
     user_seat_limit: customer?.user_seat_limit ?? 5,
     user_seat_addon_count: customer?.user_seat_addon_count ?? 0,
-    storage_provider: customer?.storage_provider || 'base44',
     ...Object.fromEntries(REGULATORY_FIELDS.map((f) => [f, customer?.[f] ?? (f === 'rjc_qualification' ? 'por_determinar' : (f.endsWith('_applicable') ? false : ''))])),
   });
 
@@ -72,9 +74,15 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
     }));
   };
 
+  // Repositório documental: gravado pela função updateCustomerStorage (valida a localização) depois de o cliente
+  // existir, nunca diretamente na entidade.
+  const [repository, setRepository] = useState(() => initialRepositoryValue(customer));
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(form);
+    const rootError = repositoryValueError(repository);
+    if (rootError) { toast.error(t(rootError)); return; }
+    onSubmit(form, repositoryChanged(customer, repository) ? repositoryPayload(repository) : null);
   };
 
   const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
@@ -169,28 +177,14 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label>{t('storage_provider_label')}</Label>
-              <Select value={form.storage_provider} onValueChange={v => set('storage_provider', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="base44">{t('storage_provider_base44')}</SelectItem>
-                  <SelectItem value="google_drive">{t('storage_provider_google_drive')}</SelectItem>
-                  <SelectItem value="one_drive">{t('storage_provider_one_drive')}</SelectItem>
-                  <SelectItem value="webdav">{t('storage_provider_webdav')}</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">{t('storage_provider_help')}</p>
-            </div>
-            <div className="md:col-span-2 text-xs text-muted-foreground space-y-1 pt-6">
-              <p>{t(`storage_provider_note_${form.storage_provider}`)}</p>
-              <p>{t('storage_provider_ftp_note')}</p>
-            </div>
-          </div>
-          {form.storage_provider === 'webdav' && (customer?.id
-            ? <NasConnectionPanel customerId={customer.id} />
-            : <p className="text-xs text-chart-3">{t('nas_save_customer_first')}</p>)}
+          <RepositorySettings
+            customer={customer}
+            customerName={form.name}
+            value={repository}
+            onChange={setRepository}
+            canEditNas
+          />
+          <p className="text-xs text-muted-foreground -mt-2">{t('storage_provider_ftp_note')}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">

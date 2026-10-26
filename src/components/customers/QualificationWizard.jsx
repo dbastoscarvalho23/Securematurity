@@ -306,6 +306,7 @@ export default function QualificationWizard({ open, onOpenChange, customer, onDo
           title: t('qw_evidence_title', { date: fmtDate(date) }),
           description: `${t('qw_evidence_desc')} ${qualLabel}.`,
           evidence_type: 'test_audit_report', method: 'interview', collected_at: date,
+          folder: 'framing', // repositório documental: 01 Enquadramento
           links: scopeItem ? [{ type: 'checklist', id: scopeItem.id, ref: 'RJC, arts. 3.º a 8.º', label: (scopeItem.task_text || '').slice(0, 120) }] : [],
         },
       });

@@ -173,6 +173,28 @@
         }
       }
     },
+    "folder": {
+      "type": "string",
+      "description": "Pasta do repositório documental (ex.: «03 Evidências», «08 Ativos (restrito)»)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "storage_location": {
+      "type": "string",
+      "description": "Caminho da pasta no repositório externo no momento da gravação (vazio no armazenamento da plataforma)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
     "links": {
       "type": "array",
       "description": "Registos que esta evidência comprova",

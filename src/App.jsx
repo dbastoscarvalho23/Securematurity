@@ -34,6 +34,7 @@ import Tasks from '@/pages/Tasks';
 import ActionPlan from '@/pages/ActionPlan';
 import TaskAnalytics from '@/pages/TaskAnalytics';
 import SecurityDocuments from '@/pages/SecurityDocuments';
+import Repository from '@/pages/Repository';
 import DocumentAuditTrail from '@/pages/DocumentAuditTrail';
 import RiskAssessment from '@/pages/RiskAssessment';
 import EvidenceOverview from '@/pages/EvidenceOverview';
@@ -115,6 +116,7 @@ const AuthenticatedApp = () => {
           <Route path="/task-analytics" element={<RouteGuard path="/task-analytics"><TaskAnalytics /></RouteGuard>} />
           <Route path="/risk-assessment" element={<RouteGuard path="/risk-assessment"><RiskAssessment /></RouteGuard>} />
           <Route path="/security-documents" element={<RouteGuard path="/security-documents"><SecurityDocuments /></RouteGuard>} />
+          <Route path="/repository" element={<RouteGuard path="/repository"><Repository /></RouteGuard>} />
           <Route path="/document-audit-trail" element={<RouteGuard path="/document-audit-trail"><DocumentAuditTrail /></RouteGuard>} />
           <Route path="/action-plan" element={<RouteGuard path="/action-plan"><ActionPlan /></RouteGuard>} />
           <Route path="/evidence" element={<RouteGuard path="/evidence"><EvidenceOverview /></RouteGuard>} />

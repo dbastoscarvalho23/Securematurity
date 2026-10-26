@@ -109,6 +109,15 @@
       "default": "base44",
       "description": "External cloud storage provider where this customer's uploaded and generated files are stored"
     },
+    "storage_root": {
+      "type": "string",
+      "description": "Localização do repositório documental (pastas separadas por «/», ex.: «AnkoraOne/Neora Consulting»). Vazio = AnkoraOne/<cliente>. Alterada pela função updateCustomerStorage, que a valida."
+    },
+    "storage_configured_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Última alteração do repositório ou da localização (os ficheiros anteriores ficam onde estavam)"
+    },
     "rjc_qualification": {
       "type": "string",
       "enum": [
