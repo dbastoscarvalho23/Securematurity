@@ -4,6 +4,7 @@ import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId }
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, checkQuota, consumeQuota, LicenseError } from '../../shared/license.ts';
 import { checkFile } from '../../shared/fileCheck.ts';
+import { assertAiRateLimit } from '../../shared/rateLimit.ts';
 import { fromBase64, getFile, sha256Hex, folderLabel, MAX_EXTERNAL_BYTES } from '../../shared/storage.ts';
 import { storePrivateFile, FILE_SCHEME } from '../../shared/storedFile.ts';
 import { buildMeta, str } from '../../shared/evidenceMeta.ts';
@@ -234,6 +235,8 @@ export default async function (req) {
       if (!OPEN_STATES.includes(it.status) && !stale) return json({ error: it.status === 'classifying' ? 'A classificação deste documento já está em curso' : 'Este documento já foi indexado ou rejeitado' }, 409);
       if (!aiPurposeEnabled(await getAiSettings(base44), 'document_classification')) return json({ error: AI_DISABLED_MESSAGE }, 403);
       await requireModule(base44, user, customer.id, 'ai_assistant');
+      // Mesmo limite de ritmo dos outros pedidos de IA (30 por minuto e por utilizador).
+      await assertAiRateLimit(base44, user);
       await checkQuota(base44, customer.id, 'ai');
 
       const { bytes, url } = await readStored(it);
