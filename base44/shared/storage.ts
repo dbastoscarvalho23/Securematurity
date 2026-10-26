@@ -27,8 +27,11 @@ export const ROOT = "AnkoraOne";
 
 // ── Estrutura de pastas (igual para todos os clientes) ───────────────────────
 // Manter igual a REPOSITORY_FOLDERS e CONTEXT_FOLDER em src/lib/repository.js (o teste repository.test.js compara).
+// «00 Por classificar» (inbox): documentos carregados para classificação (função documentIntake), antes de serem
+// indexados como evidência.
 
 export const REPOSITORY_FOLDERS = [
+  { key: "inbox", label: "00 Por classificar" },
   { key: "framing", label: "01 Enquadramento" },
   { key: "security_docs", label: "02 Documentos de segurança" },
   { key: "evidence", label: "03 Evidências" },
@@ -63,6 +66,7 @@ export const CONTEXT_FOLDER = {
   training: "training",
   report: "reports",
   ai_draft: "ai_drafts",
+  intake: "inbox",
   task: "other",
   comment: "other",
   framework: "other",

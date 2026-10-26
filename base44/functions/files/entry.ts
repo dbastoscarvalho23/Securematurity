@@ -32,7 +32,8 @@ Deno.serve(async (req) => {
     const action = String(body.action || '');
 
     if (action === 'upload') {
-      const context = FILE_CONTEXTS.includes(body.context) ? body.context : 'other';
+      // «intake» (00 Por classificar) só é usado pela função documentIntake, que cria também o DocumentIntake.
+      const context = FILE_CONTEXTS.includes(body.context) && body.context !== 'intake' ? body.context : 'other';
       // O cliente do ficheiro é o do registo (context_id), não o de quem carrega.
       let customer = null;
       try {

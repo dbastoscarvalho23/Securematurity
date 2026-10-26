@@ -5,10 +5,12 @@ import { invokeFn } from '@/lib/invokeFn';
 /**
  * Pontos de uso do assistente de IA e valor por omissão (sem registo AiSettings ou sem lista guardada).
  * Manter igual a AI_PURPOSE_DEFAULTS em base44/shared/llm.ts, que é quem decide no servidor.
- * «documents» abrange tudo o que passa pela função aiDraft.
+ * «documents» abrange tudo o que passa pela função aiDraft; «document_classification», a classificação de documentos
+ * em «00 Por classificar» (função documentIntake).
  */
 export const AI_PURPOSES = [
   { key: 'documents', default: true },
+  { key: 'document_classification', default: true },
   { key: 'supplier_questionnaire_generation', default: true },
   { key: 'supplier_email_answer_extraction', default: true },
   { key: 'assessment_recommendations', default: true },

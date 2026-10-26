@@ -55,6 +55,7 @@ A mesma para todos os clientes (`REPOSITORY_FOLDERS` em `base44/shared/storage.t
 
 | Pasta | O que lá fica |
 |---|---|
+| 00 Por classificar | Documentos carregados para classificação, antes de serem indexados como evidência |
 | 01 Enquadramento | Relatório de enquadramento (assistente de qualificação RJC) |
 | 02 Documentos de segurança | Documentos de segurança, versões de documentos, nomeações |
 | 03 Evidências | Evidências ligadas a medidas, controlos, perguntas, jornada, tarefas, vulnerabilidades |
@@ -70,8 +71,8 @@ A mesma para todos os clientes (`REPOSITORY_FOLDERS` em `base44/shared/storage.t
 
 Ficheiros da função `files` (`StoredFile.context` → pasta, `CONTEXT_FOLDER`): `qualification` → 01;
 `security_document`, `document_version`, `nomination` → 02; `assessment` → 04; `risk` → 05; `incident` → 06;
-`supplier` → 07; `asset` → 08; `training` → 09; `report` → 10; `ai_draft` → 11; `task`, `comment`, `framework`,
-`other` → 99.
+`supplier` → 07; `asset` → 08; `training` → 09; `report` → 10; `ai_draft` → 11; `intake` → 00 (só a função
+`documentIntake`; a função `files` não aceita este contexto); `task`, `comment`, `framework`, `other` → 99.
 
 Evidências (função `evidence`, `evidenceFolderKey`): ligadas a ativo ou componente, ou restritas → 08; relatório de
 enquadramento (`folder: 'framing'`) → 01; ligadas a incidente → 06; ligadas a fornecedor → 07; restantes → 03.
@@ -106,10 +107,49 @@ Menu «Governar», depois de Documentos; módulo da licença `documents_evidence
 plataforma (escolhe o cliente), administrador do cliente e utilizador.
 
 - Junta `StoredFile`, `Evidence` (versões atuais; as substituídas aparecem a pedido), anexos antigos de documentos e
-  nomeações e rascunhos de IA aprovados, agrupados pelas 12 pastas.
+  nomeações e rascunhos de IA aprovados, agrupados pelas 13 pastas. Os documentos de «00 Por classificar» já
+  indexados aparecem só como evidência (o mesmo ficheiro), não duas vezes.
 - Pesquisa e filtros por pasta, tipo e período. Mostra ficheiro, registo, quem carregou, data, tamanho, repositório e
   localização.
 - Cartão do topo: repositório em uso, localização, conta ligada e ficheiros por repositório.
+- Área «Por classificar» (administradores), descrita abaixo.
+
+## Por classificar (função `documentIntake`, entidade `DocumentIntake`)
+
+Dado um documento do cliente, a plataforma propõe o que é, avalia-o e indica as medidas, tarefas da jornada ou
+controlos a que se liga; uma pessoa confirma. Só o administrador da plataforma e o administrador do cliente.
+
+1. **Carregar** (vários ficheiros de uma vez, até 8 MB cada): o ficheiro é verificado como nas evidências (tipo pelos
+   primeiros bytes, SHA-256) e guardado de forma privada em «00 Por classificar» (`StoredFile`, contexto `intake`).
+   Um ficheiro com o mesmo SHA-256 já carregado e não rejeitado não é guardado outra vez.
+2. **Pré-seleção, sem IA** (`base44/shared/classify.ts`): texto extraído no servidor (`base44/shared/textExtract.ts`:
+   texto, CSV, JSON, XML, Markdown, DOCX, XLSX, PPTX, ODT/ODS/ODP; PDF e imagens sem texto local, conta só o nome do
+   ficheiro) e comparado com os candidatos do cliente — medidas aplicáveis (nível de conformidade ou grupo do Anexo IV;
+   sem qualificação, todos os controlos do QNRCS no nível mínimo), tarefas da jornada RJC_2026 (ligadas aos registos
+   `ComplianceChecklist` do cliente por secção e ordem), itens ISO/IEC 27001 (se o cliente tem o referencial
+   `ISO27001` ou já começou o guia) e os níveis de documento L1 a L4. Pontuação: minúsculas, sem acentos nem palavras
+   vazias, raiz simples das palavras, peso por campo (título 3, verificação/evidência 2, texto 1,5) e pela raridade
+   do termo; o código citado no documento (ex.: «PR.FC-1», «A.5.15») soma 3. Ficam os 20 melhores.
+3. **Classificar** (ponto de uso `document_classification`, módulo `ai_assistant`, quota `ai`): o modelo recebe só
+   os candidatos e o documento e devolve tipo, nível, tipo de evidência, método, título, resumo, datas, aprovador,
+   pasta e até 8 ligações com confiança, excerto literal, avaliação (Cumpre / Cumpre em parte / Não cumpre) e o que
+   falta. O servidor valida tudo (ver `docs/ia.md`). Com IP/FQDN de um ativo exposto à Internet no texto, nada é
+   enviado e o documento fica com erro.
+4. **Rever e indexar**: a pessoa marca as ligações, pode acrescentar outras (pesquisa em todos os candidatos do
+   cliente), corrige título, tipo, método, validade e pasta e, se quiser, cria um documento de segurança em rascunho
+   com o mesmo ficheiro. A evidência é criada «Por rever» com as mesmas validações da função `evidence`, a apontar para
+   o mesmo ficheiro (sem novo carregamento). Medidas e tarefas não mudam de estado. Tarefas da jornada só se ligam se o
+   registo `ComplianceChecklist` existir. Sem IA (ponto desligado ou sem licença), indexa-se à mão a partir da
+   pré-seleção.
+5. **Rejeitar**: fica registado o motivo; o ficheiro continua em «00 Por classificar».
+
+Pasta depois de indexar: no repositório da plataforma muda o campo `folder` do `StoredFile` e da evidência. No Google
+Drive, OneDrive e NAS o ficheiro **não é movido**: continua fisicamente em `<localização>/00 Por classificar`
+(`storage_location` guarda esse caminho real) e só muda a pasta registada na plataforma.
+
+Auditoria: `document_intake_uploaded`, `document_classified` (sem texto do documento),
+`document_classification_refused`, `document_indexed`, `document_intake_rejected`, além de `evidence_created` e
+`document_created`.
 
 ## Segurança
 

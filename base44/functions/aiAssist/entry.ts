@@ -3,6 +3,7 @@ import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId }
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, getEntitlements, checkQuota, consumeQuota, LicenseError } from '../../shared/license.ts';
 import { callLLM, parseJson, getAiSettings, aiPurposeEnabled, aiProvider, AI_DISABLED_MESSAGE } from '../../shared/llm.ts';
+import { containsExposedAsset } from '../../shared/exposedAssets.ts';
 
 /**
  * Pedidos de IA feitos a partir da interface (módulo «ai_assistant»).
@@ -29,37 +30,6 @@ const PURPOSES = new Set([
 
 const MAX_PROMPT = 60000;
 const MAX_FILES = 5;
-const MAX_ASSETS = 500;
-
-/** Valores identificadores de ativos expostos à Internet (IP, FQDN) com tamanho suficiente para não dar falsos positivos. */
-function exposedIdentifiers(assets) {
-  const out = new Set();
-  for (const a of assets) {
-    if (!a?.internet_exposed) continue;
-    for (const v of [a.ip_address, a.fqdn]) {
-      for (const part of String(v || '').split(/[\s,;]+/)) {
-        const x = part.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-        if (x.length >= 4) out.add(x);
-      }
-    }
-  }
-  return [...out];
-}
-
-/** O prompt contém algum IP ou FQDN de um ativo exposto à Internet? (comparação literal, sem distinguir maiúsculas) */
-async function containsExposedAsset(base44, customerId, prompt) {
-  const db = base44.asServiceRole.entities;
-  // Sem cliente (admin da plataforma em trabalho global): verifica os ativos expostos de todos os clientes.
-  const query = customerId ? { customer_id: customerId, internet_exposed: true } : { internet_exposed: true };
-  // Se não for possível confirmar, recusa (a regra do art. 32.º não pode falhar em aberto).
-  const assets = await db.Asset.filter(query, '-updated_date', MAX_ASSETS).catch(() => {
-    throw new Error('Não foi possível confirmar que o pedido não contém dados de ativos. Tente novamente.');
-  });
-  const text = prompt.toLowerCase();
-  const esc = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // Coincidência exata (10.0.0.1 não coincide com 10.0.0.15 nem com a.10.0.0.1).
-  return exposedIdentifiers(assets).some((id) => new RegExp(`(^|[^a-z0-9.-])${esc(id)}(?![a-z0-9-]|\\.[a-z0-9])`).test(text));
-}
 
 export default async function (req) {
   try {
