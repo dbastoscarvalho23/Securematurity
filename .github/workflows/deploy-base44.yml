@@ -4,7 +4,8 @@
 # e a publicação inclui frontend, funções, entidades e workflows agendados. Este workflow só publica a versão
 # que já está na app; não envia código. Corre à mão (Actions → Publicar no Base44 → Run workflow).
 #
-# Requer o segredo BASE44_API_KEY (token pessoal com acesso de edição à app).
+# Requer o segredo BASE44_API_KEY: token de acesso pessoal criado no workspace onde está a app (Enterprise), com
+# «Full access» e permissão para publicar. Um token de outro workspace recebe 404, porque não vê a app.
 
 name: Publicar no Base44
 
@@ -42,6 +43,13 @@ jobs:
             "https://app.base44.com/api/apps/${BASE44_APP_ID}/deploy" \
             -H "Authorization: Bearer ${BASE44_API_KEY}" -H 'Content-Type: application/json' -d "$body")
           echo "HTTP ${status}"; cat response.json; echo
-          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then echo "::error::Publicação recusada (HTTP ${status})"; exit 1; fi
+          case "$status" in
+            2??) ;;
+            401) echo "::error::Token inválido ou expirado (HTTP 401): crie um novo token pessoal e grave-o no segredo BASE44_API_KEY"; exit 1 ;;
+            403) echo "::error::O token não tem permissão para publicar (HTTP 403): use um token com «Full access» de uma conta com permissão de publicar a app"; exit 1 ;;
+            404) echo "::error::A app ${BASE44_APP_ID} não é visível para este token (HTTP 404): o token tem de ser criado no workspace onde está a app"; exit 1 ;;
+            409) echo "::error::A app ainda está a gerar código ou há conflito (HTTP 409): tente de novo dentro de alguns minutos"; exit 1 ;;
+            *) echo "::error::Publicação recusada (HTTP ${status})"; exit 1 ;;
+          esac
           echo "### Publicado no Base44" >> "$GITHUB_STEP_SUMMARY"
           cat response.json >> "$GITHUB_STEP_SUMMARY"
