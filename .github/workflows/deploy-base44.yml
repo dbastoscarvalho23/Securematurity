@@ -86,7 +86,8 @@ jobs:
 
       - name: Publicar as funções no Base44
         env:
-          BASE44_API_KEY: ${{ secrets.BASE44_API_KEY }}
+          # Chave de workspace (b44k_) com apps:deploy. Usa BASE44_CLI_KEY se existir; senão BASE44_API_KEY.
+          BASE44_API_KEY: ${{ secrets.BASE44_CLI_KEY || secrets.BASE44_API_KEY }}
           BASE44_APP_ID: ${{ env.BASE44_APP_ID }}
           CI: 'true'
         run: |
