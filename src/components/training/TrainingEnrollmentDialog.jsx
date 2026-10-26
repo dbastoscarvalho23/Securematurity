@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { sendEmail } from '@/lib/mail';
 import { useLanguage } from '@/lib/LanguageContext';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -147,7 +148,7 @@ export default function TrainingEnrollmentDialog({ open, onClose, training, cust
     const subject = t('training_email_subject', { title: training.title });
     const targets = enrollments.filter(e => e.user_email);
     const results = await Promise.allSettled(targets.map(e =>
-      base44.integrations.Core.SendEmail({ to: e.user_email, subject, body: html })
+      sendEmail({ to: e.user_email, subject, html, customerId: training?.customer_id || customer?.id, entityType: 'Training', entityId: training?.id })
     ));
     let sent = 0;
     const sentIds = [];

@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml } from "../../shared/escapeHtml.ts";
 import { json, authorizeAutomationOrAdmin } from "../../shared/http.ts";
 import { logEmailSent } from "../../shared/audit.ts";
+import { sendMail } from '../../shared/mail.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -68,7 +69,7 @@ Deno.serve(async (req) => {
       `;
 
       try {
-        await base44.asServiceRole.integrations.Core.SendEmail({
+        await sendMail(base44, {
           to: ownerEmail,
           subject: `[Ação necessária] ${docs.length} documento${docs.length > 1 ? 's' : ''} de segurança com revisão prevista`,
           body,

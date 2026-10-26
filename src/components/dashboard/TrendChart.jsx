@@ -36,9 +36,9 @@ export default function TrendChart({ data, frameworks, title: titleProp }) {
 
   if (!data || data.length === 0) {
     return (
-      <Card className="h-full flex flex-col">
-        <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
-        <CardContent className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+      <Card className="h-full flex flex-col rounded-[10px] shadow-none">
+        <CardHeader className="p-5 pb-4"><CardTitle className="text-[13px] font-semibold">{title}</CardTitle></CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center p-5 pt-0 text-muted-foreground text-xs">
           {t('dashboard_trends_empty')}
         </CardContent>
       </Card>
@@ -46,71 +46,71 @@ export default function TrendChart({ data, frameworks, title: titleProp }) {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
+    <Card className="h-full flex flex-col rounded-[10px] shadow-none">
+      <CardHeader className="p-5 pb-4">
+        <CardTitle className="text-[13px] font-semibold">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
-        {fwList.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-3">
-            {fwList.map((fw, i) => {
-              const isHidden = hidden.has(fw);
-              const color = COLORS[i % COLORS.length];
-              const label = FRAMEWORK_NAMES?.[fw] || fw;
-              return (
-                <button
-                  key={fw}
-                  type="button"
-                  onClick={() => toggle(fw)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                    isHidden
-                      ? 'bg-muted/40 text-muted-foreground border-border opacity-60'
-                      : 'bg-background text-foreground border-border hover:bg-muted/50'
-                  }`}
-                  aria-pressed={!isHidden}
-                >
-                  <span
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: isHidden ? 'hsl(var(--muted-foreground) / 0.4)' : color }}
-                  />
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-        <div className="flex-1 flex items-center justify-center min-h-[240px]">
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="period" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-              <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+      <CardContent className="flex-1 flex flex-col gap-3 p-5 pt-0">
+        <div className="flex-1 flex items-center justify-center min-h-[220px]">
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="period" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} />
+              <YAxis domain={[0, 5]} axisLine={false} tickLine={false} width={36} tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} />
               <Tooltip
                 contentStyle={{
                   background: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '8px',
-                  fontSize: '12px'
+                  fontSize: '11px'
                 }}
+                labelStyle={{ color: 'hsl(var(--foreground))' }}
               />
               {visibleFws.map((fw) => {
                 const i = fwList.indexOf(fw);
+                const color = COLORS[i % COLORS.length];
                 return (
                   <Line
                     key={fw}
                     type="monotone"
                     dataKey={fw}
                     name={FRAMEWORK_NAMES?.[fw] || fw}
-                    stroke={COLORS[i % COLORS.length]}
+                    stroke={color}
                     strokeWidth={2}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={{ r: 3, strokeWidth: 2, stroke: color, fill: 'hsl(var(--card))' }}
+                    activeDot={{ r: 5, strokeWidth: 2, stroke: 'hsl(var(--foreground))', fill: color }}
                   />
                 );
               })}
             </LineChart>
           </ResponsiveContainer>
         </div>
+        {fwList.length > 0 && (
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+            {fwList.map((fw, i) => {
+              const isHidden = hidden.has(fw);
+              const color = COLORS[i % COLORS.length];
+              return (
+                <button
+                  key={fw}
+                  type="button"
+                  onClick={() => toggle(fw)}
+                  title={FRAMEWORK_NAMES?.[fw] || fw}
+                  className={`inline-flex items-center gap-1.5 text-[9px] font-medium transition-opacity ${
+                    isHidden ? 'text-muted-foreground opacity-50 line-through' : 'text-foreground hover:opacity-80'
+                  }`}
+                  aria-pressed={!isHidden}
+                >
+                  <span
+                    className="h-0.5 w-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: isHidden ? 'hsl(var(--muted-foreground) / 0.4)' : color }}
+                  />
+                  {fw}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
