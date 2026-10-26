@@ -36,7 +36,7 @@ export default function SubscriptionDialog({ open, onOpenChange, customer, subsc
     if (!open || !customer) return;
     const s = subscription || {};
     setForm({
-      tier_code: s.tier_code || catalog.tiers[0]?.code || '', addon_codes: s.addon_codes || [], status: s.status || 'active',
+      tier_code: s.tier_code || catalog.tiers.find((x) => x.is_active !== false && !x.archived_at && x.version)?.code || '', addon_codes: s.addon_codes || [], status: s.status || 'active',
       started_date: s.started_date || new Date().toISOString().slice(0, 10), expires_date: s.expires_date || '', trial_ends_at: s.trial_ends_at || '',
       grace_until: s.grace_until || '', seat_limit: s.seat_limit ?? ((customer.user_seat_limit ?? 5) + (customer.user_seat_addon_count ?? 0)), ai_quota_monthly: s.ai_quota_monthly ?? '',
       quota_warn_pct: s.quota_warn_pct ?? 80, notes: s.notes || '', closed_reason: s.closed_reason || '',
@@ -100,7 +100,7 @@ export default function SubscriptionDialog({ open, onOpenChange, customer, subsc
               <Label className="text-xs">{t('lic_tier')}</Label>
               <Select value={form.tier_code || undefined} onValueChange={(v) => set('tier_code', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{catalog.tiers.filter((x) => x.is_active !== false).map((x) => <SelectItem key={x.code} value={x.code}>{x.name}{x.version ? ` (v${x.version})` : ''}</SelectItem>)}</SelectContent>
+                <SelectContent>{catalog.tiers.filter((x) => x.code === subscription?.tier_code || (x.is_active !== false && !x.archived_at && x.version)).map((x) => <SelectItem key={x.code} value={x.code}>{x.name}{x.version ? ` (v${x.version})` : ''}{x.is_active === false || x.archived_at ? ` · ${t('lic_inactive')}` : ''}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
@@ -115,7 +115,7 @@ export default function SubscriptionDialog({ open, onOpenChange, customer, subsc
             {date('expires_date', t('lic_expires'))}
             {date('grace_until', t('lic_grace'))}
             {form.status === 'trial' && date('trial_ends_at', t('lic_trial_ends'))}
-            <div className="space-y-1"><Label className="text-xs">{t('lic_ai_quota')}</Label><Input type="number" min={0} value={form.ai_quota_monthly ?? ''} onChange={(e) => set('ai_quota_monthly', e.target.value)} placeholder={t('lic_unlimited')} /></div>
+            <div className="space-y-1"><Label className="text-xs">{t('lic_ai_quota')}</Label><Input type="number" min={0} value={form.ai_quota_monthly ?? ''} onChange={(e) => set('ai_quota_monthly', e.target.value)} placeholder={tier?.quotas?.ai != null ? t('lic_bundle_quota', { n: tier.quotas.ai }) : t('lic_unlimited')} /></div>
             <div className="space-y-1"><Label className="text-xs">{t('lic_warn_pct')}</Label><Input type="number" min={1} max={100} value={form.quota_warn_pct ?? ''} onChange={(e) => set('quota_warn_pct', e.target.value)} /></div>
           </div>
           {form.status === 'closed' && <div className="space-y-1"><Label className="text-xs">{t('lic_closed_reason')}</Label><Input value={form.closed_reason || ''} onChange={(e) => set('closed_reason', e.target.value)} /></div>}

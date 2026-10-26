@@ -14,6 +14,8 @@ import EmptyState from '@/components/shared/EmptyState';
 import ComplianceGapsSummary from '@/components/evidence/ComplianceGapsSummary';
 import EvidenceRegister from '@/components/evidence/EvidenceRegister';
 import AiWorkspace from '@/components/ai/AiWorkspace';
+import FileLink from '@/components/shared/FileLink';
+import { isPrivateFile } from '@/lib/cloudStorage';
 
 function fileIcon(name = '') {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -261,9 +263,9 @@ export default function EvidenceOverview() {
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{f.evidence_notes}</p>
                         )}
                       </div>
-                      {f.url && isSafeUrl(f.url) && (
-                        <a
-                          href={f.url}
+                      {f.url && (isPrivateFile(f.url) || isSafeUrl(f.url)) && (
+                        <FileLink
+                          url={f.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex-shrink-0"
@@ -271,7 +273,7 @@ export default function EvidenceOverview() {
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
                             <ExternalLink className="w-3.5 h-3.5" />
                           </Button>
-                        </a>
+                        </FileLink>
                       )}
                     </div>
                   ))}

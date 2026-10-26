@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, ExternalLink, X } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, ExternalLink, X, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/table';
 import CustomerForm from '@/components/customers/CustomerForm';
 import CustomerDetailPanel from '@/components/customers/CustomerDetailPanel';
+import QualificationWizard from '@/components/customers/QualificationWizard';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -30,6 +32,9 @@ export default function Customers() {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [search, setSearch] = useState('');
+  // Enquadramento (RJC) proposto logo após criar o cliente; também disponível no menu de cada cliente.
+  const [offerCustomer, setOfferCustomer] = useState(null);
+  const [wizardCustomer, setWizardCustomer] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: customers = [], isLoading } = useQuery({
@@ -43,9 +48,10 @@ export default function Customers() {
       await writeAuditLog({ action: 'customer_created', entity_type: 'Customer', entity_id: result?.id, details: `Created customer: ${data.name}` });
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setShowForm(false);
+      if (created?.id) setOfferCustomer(created);
     },
     onError: (err) => toast.error(err?.message || t('x_customer_create_failed')),
   });
@@ -205,6 +211,9 @@ export default function Customers() {
                           <DropdownMenuItem onClick={() => handleEdit(c)}>
                                             <Pencil className="w-4 h-4 mr-2" /> {t('customers_menu_edit')}
                                           </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => { if (editingCustomer?.id === c.id) { setShowForm(false); setEditingCustomer(null); } setWizardCustomer(c); }}>
+                                            <Scale className="w-4 h-4 mr-2" /> {c.rjc_qualification && c.rjc_qualification !== 'por_determinar' ? t('qw_review') : t('qw_start')}
+                                          </DropdownMenuItem>
                                           {c.website && (
                                             <DropdownMenuItem onClick={() => window.open(c.website, '_blank')}>
                                               <ExternalLink className="w-4 h-4 mr-2" /> {t('customers_menu_website')}
@@ -243,6 +252,33 @@ export default function Customers() {
           </div>
         )}
       </div>
+
+      <Dialog open={Boolean(offerCustomer)} onOpenChange={(v) => { if (!v) setOfferCustomer(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Scale className="w-5 h-5 text-primary" /> {t('qw_offer_title')}</DialogTitle>
+            <DialogDescription><strong className="text-foreground">{offerCustomer?.name}</strong> — {t('qw_offer_desc')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setOfferCustomer(null)}>{t('qw_offer_later')}</Button>
+            <Button className="gap-2" onClick={() => { setWizardCustomer(offerCustomer); setOfferCustomer(null); }}><Scale className="w-4 h-4" /> {t('qw_offer_now')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {wizardCustomer && (
+        <QualificationWizard
+          open={Boolean(wizardCustomer)}
+          onOpenChange={(v) => { if (!v) setWizardCustomer(null); }}
+          customer={wizardCustomer}
+          onDone={async () => {
+            if (selectedCustomer?.id === wizardCustomer.id) {
+              const fresh = await base44.entities.Customer.get(wizardCustomer.id).catch(() => null);
+              if (fresh) setSelectedCustomer(fresh);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

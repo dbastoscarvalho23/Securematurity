@@ -5,6 +5,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { riskScore, riskLevelLabel } from '@/lib/riskEngine';
 import { useLanguage } from '@/lib/LanguageContext';
+import FileLink from '@/components/shared/FileLink';
 
 const TYPE_TITLES = {
   risk: 'x_rd_type_risk',
@@ -225,9 +226,9 @@ export default function RecordDetailDialog({ record, type, open, onOpenChange })
               <Field label={t('x_rd_evidence_notes')}>{record.evidence_notes}</Field>
               <Field label={t('x_rd_attachments')}>
                 {(record.attachments || []).map((a, i) => (
-                  <a key={i} href={a.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline mr-2">
+                  <FileLink key={i} url={a.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline mr-2">
                     {a.name}
-                  </a>
+                  </FileLink>
                 ))}
               </Field>
               {record.created_date && <Field label={t('x_rd_created')}>{formatDate(record.created_date)}</Field>}

@@ -103,7 +103,7 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
       const created = await uploadEvidence({ file, customerId, meta: { ...form, links, ...(replacing ? { supersedes_id: replacing.id } : {}) } });
       toast.success(t('ev_uploaded'));
       const doReview = aiAllowed && measureLink && autoReview && reviewable(file) && created && !created.restricted;
-      setOpen(false); setFile(null); setReplacing(null); setForm((f) => ({ ...f, title: '', description: '', valid_until: '' }));
+      setOpen(false); setFile(null); setReplacing(null); if (fileRef.current) fileRef.current.value = ''; setForm((f) => ({ ...f, title: '', description: '', valid_until: '' }));
       refresh();
       if (doReview) runReview(created);
     } catch (e) {
@@ -169,7 +169,7 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
           </div>
           <div className="sm:col-span-2 space-y-1"><Label className="text-xs">{t('ev_field_description')}</Label><Textarea rows={2} value={form.description} onChange={(e) => set('description', e.target.value)} /></div>
           <div className="sm:col-span-2 flex justify-end gap-2">
-            <Button type="button" size="sm" variant="ghost" onClick={() => { setOpen(false); setReplacing(null); }}>{t('common_cancel')}</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => { setOpen(false); setReplacing(null); setFile(null); if (fileRef.current) fileRef.current.value = ''; }}>{t('common_cancel')}</Button>
             <Button type="button" size="sm" onClick={submit} disabled={busy} className="gap-1">{busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}{t('ev_submit')}</Button>
           </div>
           {aiAllowed && measureLink && (

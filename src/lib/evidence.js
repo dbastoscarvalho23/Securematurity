@@ -2,7 +2,7 @@ import { invokeFn } from '@/lib/invokeFn';
 
 /** Limites e tipos aceites (iguais aos verificados na função `evidence`). */
 export const EVIDENCE_MAX_BYTES = 8 * 1024 * 1024;
-export const EVIDENCE_ACCEPT = '.pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.csv,.json,.xml,.zip,.docx,.xlsx,.pptx,.doc,.xls,.odt,.ods,.eml';
+export const EVIDENCE_ACCEPT = '.pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.md,.csv,.json,.xml,.zip,.docx,.xlsx,.pptx,.doc,.xls,.ppt,.odt,.ods,.odp,.eml';
 export const EVIDENCE_TYPES = ['screenshot', 'tool_report', 'contract_licence', 'policy_procedure', 'log_record', 'test_audit_report', 'other'];
 export const EVIDENCE_METHODS = ['examine', 'interview', 'test'];
 

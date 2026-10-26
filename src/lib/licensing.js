@@ -37,26 +37,38 @@ export const callLicensing = (payload) => invokeFn('licensing', payload);
 /** Licença efetiva do utilizador atual (ou do cliente indicado, para o admin). */
 export function useLicense(customerId) {
   const { user } = useAuth();
+  const key = customerId || user?.customer_id || 'none';
+  const cacheKey = `ankora-license-${user?.id || 'anon'}-${key}`;
   const q = useQuery({
-    queryKey: ['license-me', customerId || user?.customer_id || 'none'],
-    queryFn: () => callLicensing({ action: 'me', ...(customerId ? { customer_id: customerId } : {}) }),
+    queryKey: ['license-me', key],
+    queryFn: async () => {
+      const data = await callLicensing({ action: 'me', ...(customerId ? { customer_id: customerId } : {}) });
+      try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch { /* sem armazenamento local */ }
+      return data;
+    },
     enabled: Boolean(user),
     staleTime: 5 * 60 * 1000,
     retry: 2,
   });
-  // Se não for possível obter a licença, falha fechado (o servidor recusa de qualquer forma).
-  if (q.isError) return { ...q, data: { state: 'unavailable', effective: false, modules: [] } };
+  // Falha ao obter a licença: usa a última licença conhecida neste browser. Sem nenhuma, marca «unavailable»,
+  // que no ecrã não esconde módulos (uma falha temporária não pode parecer perda de acesso). O servidor
+  // continua a recusar o que não estiver licenciado.
+  if (q.isError) {
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem(cacheKey) || 'null'); } catch { cached = null; }
+    return { ...q, data: cached || { state: 'unavailable', effective: false, modules: [] } };
+  }
   return q;
 }
 
 /**
- * O utilizador tem o módulo? O admin da plataforma tem sempre. Enquanto a licença carrega devolve true
- * (o servidor recusa de qualquer forma o que não estiver licenciado).
+ * O utilizador tem o módulo? O admin da plataforma tem sempre. Enquanto a licença carrega, ou se o serviço de
+ * licenças não responder, devolve true (o servidor recusa de qualquer forma o que não estiver licenciado).
  */
 export function hasModule(license, user, code) {
   if (!code || user?.role === 'admin') return true;
   if (!license) return true;
-  if (license.state === 'legacy') return true;
+  if (license.state === 'legacy' || license.state === 'unavailable') return true;
   return Boolean(license.effective && (license.modules || []).includes(code));
 }
 

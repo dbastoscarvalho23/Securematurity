@@ -8,7 +8,9 @@ import { ExternalLink, RotateCcw, ChevronDown, ChevronRight } from 'lucide-react
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { writeAuditLog } from '@/lib/auditLog';
+import { revertDocument } from '@/lib/documents';
+import { notifyDocumentStatus } from '@/lib/notifications';
+import FileLink from '@/components/shared/FileLink';
 
 const STATUS_STYLES = {
   draft: 'bg-muted text-muted-foreground',
@@ -38,47 +40,10 @@ export default function VersionHistoryDialog({ open, onOpenChange, doc, canRever
   });
 
   const revertMutation = useMutation({
+    // Reposição no servidor: guarda o estado atual como versão, repõe a escolhida e devolve o documento a revisão.
     mutationFn: async (version) => {
-      // Snapshot current state first
-      await base44.entities.DocumentVersion.create({
-        document_id: doc.id,
-        ...(doc.customer_id ? { customer_id: doc.customer_id } : {}),
-        version_label: doc.version,
-        title: doc.title,
-        description: doc.description,
-        level: doc.level,
-        status: doc.status,
-        file_url: doc.file_url,
-        file_name: doc.file_name,
-        approved_by: doc.approved_by,
-        approved_date: doc.approved_date,
-        review_date: doc.review_date,
-        tags: doc.tags,
-        framework_codes: doc.framework_codes,
-        changed_by: user?.email,
-        change_note: `Auto-snapshot before reverting to version ${version.version_label || version.id}`,
-      });
-      // Revert
-      await base44.entities.SecurityDocument.update(doc.id, {
-        title: version.title,
-        description: version.description,
-        level: version.level,
-        status: 'under_review',
-        file_url: version.file_url,
-        file_name: version.file_name,
-        approved_by: version.approved_by,
-        approved_date: version.approved_date,
-        review_date: version.review_date,
-        tags: version.tags,
-        framework_codes: version.framework_codes,
-        version: version.version_label,
-      });
-      await writeAuditLog({
-        action: 'document_version_reverted',
-        entity_type: 'SecurityDocument',
-        entity_id: doc.id,
-        details: `Reverted "${doc.title}" to version ${version.version_label || version.id}`,
-      });
+      const res = await revertDocument(doc.id, version.id);
+      if (res?.document?.id) notifyDocumentStatus(res.document.id, res.document.status, doc);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['securityDocuments'] });
@@ -86,6 +51,7 @@ export default function VersionHistoryDialog({ open, onOpenChange, doc, canRever
       toast.success(t('vhist_reverted'));
       onOpenChange(false);
     },
+    onError: (err) => toast.error(err?.message || t('x_tool_error')),
   });
 
   return (
@@ -154,9 +120,9 @@ export default function VersionHistoryDialog({ open, onOpenChange, doc, canRever
                     <div className="flex items-center gap-2 pt-1">
                       {v.file_url && (
                         <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7" asChild>
-                          <a href={v.file_url} target="_blank" rel="noreferrer">
+                          <FileLink url={v.file_url} target="_blank" rel="noreferrer">
                             <ExternalLink className="w-3 h-3" /> {t('common_view_file')}
-                          </a>
+                          </FileLink>
                         </Button>
                       )}
                       {canRevert && (

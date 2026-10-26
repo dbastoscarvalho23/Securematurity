@@ -3,6 +3,8 @@
 // Os parâmetros usam a sintaxe {nome} do t() de LanguageContext.
 
 export const extraPt = {
+  x_doc_back_to_review: 'Documento alterado: voltou a «Em revisão» e precisa de nova aprovação.',
+  x_doc_approved_by_auto: 'Preenchido na aprovação',
   x_mail_title: 'Envio de email',
   x_mail_desc: 'Remetente usado nos alertas, notificações e convites enviados pela plataforma.',
   x_mail_provider: 'Fornecedor',
@@ -190,6 +192,8 @@ export const extraPt = {
 };
 
 export const extraEn = {
+  x_doc_back_to_review: 'Document changed: it is back to «Under review» and needs a new approval.',
+  x_doc_approved_by_auto: 'Filled in on approval',
   x_mail_title: 'Email delivery',
   x_mail_desc: 'Sender used for alerts, notifications and invitations sent by the platform.',
   x_mail_provider: 'Provider',

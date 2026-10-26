@@ -7,6 +7,7 @@ import { Loader2, Paperclip, Upload, X, FileText, FileImage, FileArchive, Extern
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import FileLink from '@/components/shared/FileLink';
 
 function fileIcon(name = '') {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -22,7 +23,7 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function TaskAttachments({ attachments = [], onChange }) {
+export default function TaskAttachments({ attachments = [], onChange, customerId, taskId }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const fileInputRef = useRef(null);
@@ -35,7 +36,7 @@ export default function TaskAttachments({ attachments = [], onChange }) {
     try {
       const uploaded = [];
       for (const file of Array.from(files)) {
-        const res = await uploadFile(file);
+        const res = await uploadFile(file, customerId, 'task', taskId);
         uploaded.push({
           name: file.name,
           url: res.file_url,
@@ -46,8 +47,8 @@ export default function TaskAttachments({ attachments = [], onChange }) {
       }
       onChange([...attachments, ...uploaded]);
       toast.success(t('ta_attached', { n: uploaded.length }));
-    } catch {
-      toast.error(t('ta_upload_failed'));
+    } catch (err) {
+      toast.error(err?.message || t('ta_upload_failed'));
     } finally {
       setUploading(false);
     }
@@ -110,15 +111,15 @@ export default function TaskAttachments({ attachments = [], onChange }) {
               <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-lg border bg-muted/30 group hover:bg-muted/50 transition-colors">
                 <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <a
-                    href={att.url}
+                  <FileLink
+                    url={att.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs font-medium text-primary hover:underline flex items-center gap-1 truncate"
                   >
                     <span className="truncate">{att.name}</span>
                     <ExternalLink className="w-2.5 h-2.5 flex-shrink-0" />
-                  </a>
+                  </FileLink>
                   <p className="text-[10px] text-muted-foreground">
                     {att.uploaded_by && <span>{att.uploaded_by}</span>}
                     {att.size ? <span> · {formatBytes(att.size)}</span> : null}

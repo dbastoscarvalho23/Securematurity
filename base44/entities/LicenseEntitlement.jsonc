@@ -17,6 +17,13 @@
     "is_active": {
       "type": "boolean",
       "default": true
+    },
+    "quota_feature": {
+      "type": "string",
+      "description": "Funcionalidade quantitativa: feature de LicenseUsageRecord que limita (ex.: ai). Vazio = sem quota"
+    },
+    "display_order": {
+      "type": "number"
     }
   },
   "required": [
