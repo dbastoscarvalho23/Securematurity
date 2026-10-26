@@ -53,11 +53,5 @@
       "default": "en",
       "description": "Preferred UI language"
     }
-  },
-  "required": [
-    "display_name",
-    "customer_id",
-    "customer_name"
-  ]
+  }
 }
-
