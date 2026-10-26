@@ -1,12 +1,7 @@
-import { base44 } from '@/api/base44Client';
+import { invokeFn } from '@/lib/invokeFn';
 
 /** Chamadas à função «cveMonitor» (fonte: NVD do NIST). Ao NVD só seguem nomes de fabricante/produto. */
-async function call(payload) {
-  const res = await base44.functions.invoke('cveMonitor', payload);
-  const data = res?.data ?? res;
-  if (data?.error) throw new Error(data.error);
-  return data;
-}
+const call = (payload) => invokeFn('cveMonitor', payload);
 
 export const suggestCpe = (keyword) => call({ action: 'suggest', keyword });
 export const saveWatch = (customerId, watch, id) => call({ action: 'save_watch', customer_id: customerId, id, watch });

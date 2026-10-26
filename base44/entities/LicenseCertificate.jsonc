@@ -1,0 +1,107 @@
+{
+  "name": "LicenseCertificate",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "serial": {
+      "type": "string",
+      "description": "Número de série do certificado"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "superseded",
+        "revoked"
+      ],
+      "default": "active"
+    },
+    "payload": {
+      "type": "string",
+      "description": "Conteúdo assinado (JSON canónico)"
+    },
+    "jws": {
+      "type": "string",
+      "description": "Certificado assinado (JWS compacto, EdDSA/Ed25519)"
+    },
+    "key_id": {
+      "type": "string"
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date"
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "issued_by": {
+      "type": "string"
+    },
+    "revoked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revoked_reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "serial"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

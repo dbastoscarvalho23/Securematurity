@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { invokeFn } from '@/lib/invokeFn';
 
 /** Limites e tipos aceites (iguais aos verificados na função `evidence`). */
 export const EVIDENCE_MAX_BYTES = 8 * 1024 * 1024;
@@ -13,12 +13,7 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   r.readAsDataURL(file);
 });
 
-const invoke = async (payload) => {
-  const res = await base44.functions.invoke('evidence', payload);
-  const data = res?.data ?? res;
-  if (data?.error) throw new Error(data.error);
-  return data;
-};
+const invoke = (payload) => invokeFn('evidence', payload);
 
 /**
  * Carrega um ficheiro como evidência privada do cliente. O ficheiro segue para a função «evidence», que verifica o

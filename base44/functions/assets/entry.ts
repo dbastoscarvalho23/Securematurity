@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
+import { requireModule, LicenseError } from '../../shared/license.ts';
 
 /**
  * Escritas no inventário de ativos e nas ferramentas (Asset, Component, AssetHistory).
@@ -96,6 +97,7 @@ export default async function (req) {
     if (!admin && body.customer_id && body.customer_id !== customerId) return json({ error: 'Forbidden' }, 403);
     const customer = await base44.asServiceRole.entities.Customer.get(customerId).catch(() => null);
     if (!customer) return json({ error: 'Cliente inexistente' }, 404);
+    await requireModule(base44, user, customerId, 'asset_management');
 
     const db = base44.asServiceRole.entities;
     const history = (asset, action, changes) => db.AssetHistory.create({
@@ -214,7 +216,7 @@ export default async function (req) {
 
     return json({ error: 'Ação desconhecida' }, 400);
   } catch (error) {
-    return json({ error: error?.message || 'Erro' }, 400);
+    return json({ error: error?.message || 'Erro' }, error instanceof LicenseError ? error.status : 400);
   }
 }
 

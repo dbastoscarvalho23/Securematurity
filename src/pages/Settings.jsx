@@ -9,7 +9,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 const UserManagementPanel = lazy(() => import('@/components/backoffice/UserManagementPanel'));
 const FrameworksPanel = lazy(() => import('@/components/backoffice/FrameworksPanel'));
-import { Settings as SettingsIcon, Trash2, User, Bell, FileBarChart, GraduationCap, HardDrive, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, Trash2, User, Bell, FileBarChart, GraduationCap, HardDrive, Loader2, BadgeCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
@@ -21,6 +21,7 @@ import CustomerStoragePanel from '@/components/settings/CustomerStoragePanel';
 import StorageProvidersPanel from '@/components/settings/StorageProvidersPanel';
 import CustomerStorageAssignmentsPanel from '@/components/settings/CustomerStorageAssignmentsPanel';
 import ReminderSettingsPanel from '@/components/settings/ReminderSettingsPanel';
+import LicenseSettingsPanel from '@/components/licensing/LicenseSettingsPanel';
 import GeneratedReportsPanel from '@/components/genreports/GeneratedReportsPanel';
 import TrainingReportsPanel from '@/components/genreports/TrainingReportsPanel';
 
@@ -122,6 +123,7 @@ export default function Settings() {
           <TabsTrigger value="users">{t('settings_tab_users')}</TabsTrigger>
           <TabsTrigger value="frameworks">{t('settings_tab_frameworks')}</TabsTrigger>
           <TabsTrigger value="reminders" className="flex items-center gap-1.5"><Bell className="w-3.5 h-3.5" />{t('settings_tab_reminders')}</TabsTrigger>
+          {currentUser?.customer_id && <TabsTrigger value="license" className="flex items-center gap-1.5"><BadgeCheck className="w-3.5 h-3.5" />{t('settings_tab_license')}</TabsTrigger>}
           {isAdmin && (
             <TabsTrigger value="generated-reports" className="flex items-center gap-1.5"><FileBarChart className="w-3.5 h-3.5" />{t('nav_generated_reports')}</TabsTrigger>
           )}
@@ -231,6 +233,12 @@ export default function Settings() {
         </TabsContent>
 
         {/* Reminders Tab */}
+        {currentUser?.customer_id && (
+          <TabsContent value="license" className="space-y-4 mt-4">
+            <LicenseSettingsPanel />
+          </TabsContent>
+        )}
+
         <TabsContent value="reminders" className="space-y-4 mt-4">
           <ReminderSettingsPanel customers={customers} isAdmin={isAdmin} isReadOnly={isReadOnly} />
         </TabsContent>

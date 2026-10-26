@@ -1,12 +1,7 @@
-import { base44 } from '@/api/base44Client';
+import { invokeFn } from '@/lib/invokeFn';
 
 /** Escritas de ativos e ferramentas: passam sempre pela função «assets» (tenant, validação e histórico no servidor). */
-export async function assetsCall(payload) {
-  const res = await base44.functions.invoke('assets', payload);
-  const data = res?.data ?? res;
-  if (data?.error) throw new Error(data.error);
-  return data;
-}
+export const assetsCall = (payload) => invokeFn('assets', payload);
 
 export const saveAsset = (customerId, asset, id) => assetsCall({ action: 'asset_save', customer_id: customerId, id, asset });
 export const deleteAsset = (customerId, id) => assetsCall({ action: 'asset_delete', customer_id: customerId, id });

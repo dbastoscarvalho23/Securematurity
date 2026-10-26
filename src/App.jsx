@@ -26,6 +26,7 @@ const BackofficeLayout = lazy(() => import('@/pages/backoffice/BackofficeLayout'
 const BackofficeOverview = lazy(() => import('@/pages/backoffice/BackofficeOverview'));
 const UserManagementPanel = lazy(() => import('@/components/backoffice/UserManagementPanel'));
 const FrameworksPanel = lazy(() => import('@/components/backoffice/FrameworksPanel'));
+const LicensingPanel = lazy(() => import('@/components/licensing/LicensingPanel'));
 import AuditLog from '@/pages/AuditLog';
 import Settings from '@/pages/Settings';
 import QuestionBank from '@/pages/QuestionBank';
@@ -103,6 +104,7 @@ const AuthenticatedApp = () => {
             <Route path="customers" element={<Customers />} />
             <Route path="users" element={<LazySection><UserManagementPanel /></LazySection>} />
             <Route path="frameworks" element={<LazySection><FrameworksPanel /></LazySection>} />
+            <Route path="licensing" element={<LazySection><LicensingPanel /></LazySection>} />
             <Route path="audit" element={<AuditLog />} />
           </Route>
           <Route path="/admin" element={<RouteGuard path="/admin"><Navigate to="/backoffice" replace /></RouteGuard>} />

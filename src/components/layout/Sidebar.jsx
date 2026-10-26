@@ -36,6 +36,7 @@ import Logo from '@/components/layout/Logo';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useLicense, hasModule, moduleForPath } from '@/lib/licensing';
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onCloseMobile }) {
   const location = useLocation();
@@ -103,11 +104,14 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
     { path: '/supply-chain', labelKey: 'nav_supply_chain', icon: Truck },
   ];
 
+  const { data: license } = useLicense();
+  const licensed = (items) => items.filter((i) => hasModule(license, user, moduleForPath(i.path)));
+
   const navGroups = [
-    { labelKey: 'nav_main', items: visibleMainItems },
-    { labelKey: 'nav_supply_chain_group', items: supplyChainItems },
+    { labelKey: 'nav_main', items: licensed(visibleMainItems) },
+    { labelKey: 'nav_supply_chain_group', items: licensed(supplyChainItems) },
     ...(isAdmin ? [{ labelKey: 'nav_tools', items: toolsNavItems }] : []),
-    { labelKey: 'nav_system', items: systemItems },
+    { labelKey: 'nav_system', items: licensed(systemItems) },
     ...(isAdmin ? [{ labelKey: 'nav_development', items: developmentItems }] : []),
   ];
 

@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,6 +34,13 @@ const SECTORS = [
 const EMPLOYEE_RANGES = ['1-50', '51-250', '251-1000', '1001-5000', '5000+'];
 
 export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }) {
+  // Com subscrição atribuída, os lugares são geridos em Backoffice → Licenciamento.
+  const { data: subs = [] } = useQuery({
+    queryKey: ['lic-sub-of', customer?.id],
+    queryFn: () => base44.entities.TenantSubscription.filter({ customer_id: customer.id }),
+    enabled: Boolean(customer?.id),
+  });
+  const licensed = subs.some((x) => x.status !== 'closed');
   const { t } = useLanguage();
   const [form, setForm] = useState({
     nif: customer?.nif || '',
@@ -200,9 +209,12 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
               <Input
                 type="number"
                 min={5}
+                disabled={licensed}
+                title={licensed ? t('lic_seats_managed') : undefined}
                 value={form.user_seat_limit}
                 onChange={e => set('user_seat_limit', Math.max(5, parseInt(e.target.value) || 5))}
               />
+              {licensed && <p className="text-[11px] text-muted-foreground">{t('lic_seats_managed')}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>{t('common_notes')}</Label>

@@ -3,6 +3,7 @@ import { secrets } from 'base44:runtime';
 import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 import { hasAutomationSecret } from '../../shared/automationSecret.ts';
 import { logAudit } from '../../shared/audit.ts';
+import { requireModule, getEntitlements, LicenseError } from '../../shared/license.ts';
 
 /**
  * Monitorização de CVE por fabricante do inventário de ativos (fonte: NVD do NIST, API 2.0).
@@ -75,8 +76,15 @@ async function fetchCves(vendor, product, since, until) {
 }
 
 /** Corre os fabricantes vigiados indicados; agrupa por fabricante/produto para poupar pedidos ao NVD. */
-async function runWatches(base44, watches) {
+async function runWatches(base44, allWatches) {
   const db = base44.asServiceRole.entities;
+  // Só os clientes com o módulo «cve_monitoring» na licença efetiva.
+  const allowed = {};
+  for (const id of [...new Set(allWatches.map((w) => w.customer_id))]) {
+    const ent = await getEntitlements(base44, id).catch(() => null);
+    allowed[id] = Boolean(ent?.effective && ent.modules.includes('cve_monitoring'));
+  }
+  const watches = allWatches.filter((w) => allowed[w.customer_id]);
   const now = new Date();
   const groups = {};
   for (const w of watches) (groups[`${w.cpe_vendor}|${w.cpe_product || ''}`] ||= []).push(w);
@@ -189,6 +197,7 @@ export default async function (req) {
     if (!admin && user.role !== 'customer_admin') return json({ error: 'Forbidden' }, 403);
     const action = body.action;
     const db = base44.asServiceRole.entities;
+    if (!admin) await requireModule(base44, user, userCustomerId(user), 'cve_monitoring');
 
     if (action === 'suggest') {
       const keyword = str(body.keyword, 80).trim();
@@ -284,7 +293,7 @@ export default async function (req) {
     return json({ error: 'Ação desconhecida' }, 400);
   } catch (error) {
     const msg = error?.message || 'Erro';
-    return json({ error: msg }, msg === 'Forbidden' ? 403 : 400);
+    return json({ error: msg }, error instanceof LicenseError ? error.status : msg === 'Forbidden' ? 403 : 400);
   }
 }
 
