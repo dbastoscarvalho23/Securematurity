@@ -46,3 +46,4 @@ export const SEED_STANDARDS = [
   ['ISO27001', 'ISO/IEC 27001:2022'], ['NIST_CSF', 'NIST CSF'], ['CIS_V8', 'CIS Controls v8.1.2'],
   ['TISAX_ISA6', 'TISAX — VDA ISA 6.0.3'], ['TISAX_ISA2027', 'TISAX — VDA ISA 2027'], ['GDPR', 'RGPD — Regulamento (UE) 2016/679'],
 ];
+
