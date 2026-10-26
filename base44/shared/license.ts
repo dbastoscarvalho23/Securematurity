@@ -6,6 +6,8 @@
  * a clientes criados antes do licenciamento; a consola de licenças assinala estes clientes.
  */
 
+import { SEED_MODULES } from './licenseCatalog.ts';
+
 export class LicenseError extends Error {
   status: number;
   constructor(message, status = 402) { super(message); this.status = status; }
@@ -39,7 +41,8 @@ export async function getEntitlements(base44, customerId) {
     tier_code: sub?.tier_code || null, modules: [], standards: [], seat_limit: sub?.seat_limit ?? null,
     ai_quota_monthly: sub?.ai_quota_monthly ?? null,
   };
-  if (!sub) { out.modules = [...active]; return out; }
+  // Legacy: todos os módulos (os do catálogo e, enquanto não houver catálogo, os do catálogo inicial).
+  if (!sub) { out.modules = [...new Set([...catalog.map((m) => m.code), ...SEED_MODULES.map((m) => m.code)])]; return out; }
   if (!out.effective) return out;
   const tier = (await db.LicenseTier.filter({ code: sub.tier_code }))[0];
   const set = new Set([...(tier?.modules || []), ...(sub.addon_codes || [])]);

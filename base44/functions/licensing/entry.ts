@@ -78,8 +78,9 @@ export default async function (req) {
       if (!admin && user.role !== 'customer_admin') return json({ error: 'Forbidden' }, 403);
       const r = await verifyJws(body.jws);
       if (!r.valid) return json(r);
+      // Um customer_admin só verifica certificados do seu cliente; os outros são «inválidos» (sem revelar se são genuínos).
+      if (!admin && r.payload.customer?.id !== userCustomerId(user)) return json({ valid: false, reason: 'Certificado inválido para este cliente' });
       const cert = (await db.LicenseCertificate.filter({ serial: r.payload.serial }))[0];
-      if (!admin && r.payload.customer?.id !== userCustomerId(user)) return json({ error: 'Forbidden' }, 403);
       const today = new Date().toISOString().slice(0, 10);
       return json({ ...r, status: cert?.status || 'unknown', expired: Boolean(r.payload.valid_until && today > r.payload.valid_until) });
     }
@@ -117,7 +118,7 @@ export default async function (req) {
       const data = {
         code: t.code, name: str(t.name, 120), description: str(t.description, 1000), commercial_value: str(t.commercial_value, 200),
         display_order: numOrNull(t.display_order) ?? 99, is_active: t.is_active !== false, is_partner_tier: Boolean(t.is_partner_tier),
-        modules_draft: draft, draft_note: str(t.draft_note, 500), draft_at: new Date().toISOString(), draft_by_email: user.email,
+        modules_draft: draft, has_draft: true, draft_note: str(t.draft_note, 500), draft_at: new Date().toISOString(), draft_by_email: user.email,
       };
       const rec = prev ? await db.LicenseTier.update(prev.id, data) : await db.LicenseTier.create({ ...data, modules: [], version: 0 });
       await changeLog({ action: 'save_tier_draft', entity_type: 'LicenseTier', entity_id: rec.id, before: { modules: prev?.modules || [] }, after: { modules_draft: draft } });
@@ -127,9 +128,9 @@ export default async function (req) {
     if (action === 'publish_tier') {
       const prev = (await db.LicenseTier.filter({ code: String(body.code || '') }))[0];
       if (!prev) return json({ error: 'Bundle inexistente' }, 404);
-      if (!Array.isArray(prev.modules_draft)) return json({ error: 'Sem rascunho para publicar' }, 400);
+      if (!prev.has_draft || !Array.isArray(prev.modules_draft)) return json({ error: 'Sem rascunho para publicar' }, 400);
       const rec = await db.LicenseTier.update(prev.id, {
-        modules: prev.modules_draft, modules_draft: null, draft_note: '', draft_at: null, draft_by_email: '',
+        modules: prev.modules_draft, modules_draft: [], has_draft: false, draft_note: '', draft_by_email: '',
         version: (prev.version || 0) + 1, published_at: new Date().toISOString(), published_by_email: user.email,
       });
       await changeLog({ action: 'publish_tier', entity_type: 'LicenseTier', entity_id: prev.id, changed_fields: ['modules'], before: { modules: prev.modules, version: prev.version }, after: { modules: prev.modules_draft, version: (prev.version || 0) + 1 }, reason: prev.draft_note || null });
@@ -162,10 +163,13 @@ export default async function (req) {
         status: ['trial', 'active', 'suspended', 'closed'].includes(s.status) ? s.status : 'active',
         started_date: dateOrNull(s.started_date) || new Date().toISOString().slice(0, 10),
         expires_date: dateOrNull(s.expires_date), trial_ends_at: dateOrNull(s.trial_ends_at), grace_until: dateOrNull(s.grace_until),
-        seat_limit: numOrNull(s.seat_limit) ?? 5, ai_quota_monthly: numOrNull(s.ai_quota_monthly), quota_warn_pct: numOrNull(s.quota_warn_pct) ?? 80,
+        seat_limit: numOrNull(s.seat_limit), ai_quota_monthly: numOrNull(s.ai_quota_monthly), quota_warn_pct: numOrNull(s.quota_warn_pct) ?? 80,
         notes: str(s.notes, 2000),
       };
+      if (!data.seat_limit || data.seat_limit < 5) return json({ error: 'Indique o número de utilizadores (mínimo 5)' }, 400);
+      if (data.status !== 'trial') data.trial_ends_at = null;
       if (data.status === 'closed') { data.closed_at = new Date().toISOString(); data.closed_reason = str(s.closed_reason, 500); }
+      else { data.closed_at = null; data.closed_reason = ''; }
       const prev = (await db.TenantSubscription.filter({ customer_id: customerId }, '-created_date', 5))[0];
       if (prev && prev.expires_date && data.expires_date && data.expires_date > prev.expires_date) { data.renewal_count = (prev.renewal_count || 0) + 1; data.last_renewed_at = new Date().toISOString(); }
       const sub = prev ? await db.TenantSubscription.update(prev.id, data) : await db.TenantSubscription.create(data);
@@ -174,8 +178,10 @@ export default async function (req) {
       // Ativações/desativações manuais (substituem as anteriores).
       if (Array.isArray(body.overrides)) {
         for (const tm of await db.TenantModule.filter({ customer_id: customerId, source: 'manual' }, '-created_date', 500)) await db.TenantModule.delete(tm.id);
+        const seenO = new Set();
         for (const o of body.overrides.slice(0, 50)) {
-          if (!known.has(o.module_code)) continue;
+          if (!known.has(o.module_code) || seenO.has(o.module_code)) continue;
+          seenO.add(o.module_code);
           await db.TenantModule.create({ customer_id: customerId, module_code: o.module_code, status: o.status === 'inactive' ? 'inactive' : 'active', source: 'manual', reason: str(o.reason, 300) || 'Manual', activated_at: new Date().toISOString(), ...(dateOrNull(o.expires_at) ? { expires_at: o.expires_at } : {}) });
         }
       }
@@ -190,9 +196,12 @@ export default async function (req) {
           if (ex) { if (ex.status !== 'active') await db.TenantStandard.update(ex.id, { status: 'active', activated_at: new Date().toISOString() }); }
           else await db.TenantStandard.create({ customer_id: customerId, standard_code: code, status: 'active', activated_at: new Date().toISOString() });
         }
-        if (wanted.length) await db.Customer.update(customerId, { allowed_frameworks: wanted });
+        // Referenciais fora do catálogo de licenças (ex.: antigos) mantêm-se como estavam.
+        const outside = (customer.allowed_frameworks || []).filter((c) => !valid.has(c));
+        await db.Customer.update(customerId, { allowed_frameworks: [...new Set([...wanted, ...outside])] });
       }
-      await db.Customer.update(customerId, { user_seat_limit: data.seat_limit });
+      // A licença passa a ser a fonte dos lugares: o limite do cliente fica igual e os extras antigos são incorporados.
+      await db.Customer.update(customerId, { user_seat_limit: data.seat_limit, user_seat_addon_count: 0 });
       const changed = Object.keys(data).filter((k) => JSON.stringify(prev?.[k] ?? null) !== JSON.stringify(data[k] ?? null));
       await changeLog({ customer_id: customerId, customer_name: customer.name, action: prev ? 'update_subscription' : 'create_subscription', entity_type: 'TenantSubscription', entity_id: sub.id, changed_fields: changed, before: prev ? Object.fromEntries(changed.map((k) => [k, prev[k] ?? null])) : {}, after: Object.fromEntries(changed.map((k) => [k, data[k] ?? null])), reason: str(body.reason, 500) || null });
       await logAudit(base44, 'license_changed', { user_email: user.email, customer_id: customerId, entity_type: 'TenantSubscription', entity_id: sub.id, details: `Licença ${tier.name} (${data.status}) — ${changed.join(', ') || 'sem alterações'}` });
@@ -207,7 +216,8 @@ export default async function (req) {
       const sub = ent.subscription;
       const tier = (await db.LicenseTier.filter({ code: sub.tier_code }))[0];
       const today = new Date().toISOString().slice(0, 10);
-      const validUntil = dateOrNull(body.valid_until) || sub.grace_until || sub.expires_date || sub.trial_ends_at || null;
+      const maxDate = (...d) => d.filter(Boolean).sort().pop() || null;
+      const validUntil = dateOrNull(body.valid_until) || (ent.state === 'trial' ? sub.trial_ends_at || null : maxDate(sub.expires_date, sub.grace_until));
       const serial = `ANK-${today.replace(/-/g, '')}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
       const payload = {
         v: 1, serial, issuer: 'AnkoraOne', issued_at: new Date().toISOString(), issued_by: user.email,

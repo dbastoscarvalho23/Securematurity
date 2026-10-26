@@ -108,3 +108,8 @@ docker compose -f docker-compose.base44.yml up -d
   `src/lib/licensing.js` (Sidebar e RouteGuard). Mantenha `subscriptionState()` igual nos dois ficheiros.
 - Certificados: JWS EdDSA (Ed25519) com o segredo `LICENSE_SIGNING_KEY` (PKCS8 base64); chave pública e `kid` em
   `base44/shared/licenseCatalog.ts`. Ao rodar a chave, mantenha a pública antiga para verificar certificados antigos.
+- Limite conhecido: as regras RLS do Base44 não leem a subscrição, por isso só `evidence`, `assets` e `cveMonitor`
+  recusam no servidor; nos restantes módulos (avaliações, risco, incidentes, fornecedores, relatórios) a licença só
+  esconde menu e rotas. No servidor próprio (Node.js + PostgreSQL) aplicar `requireModule` em todas as rotas.
+- Lugares: com subscrição, `Customer.user_seat_limit` = `seat_limit` da licença (mínimo 5) e o campo fica bloqueado
+  na ficha do cliente.

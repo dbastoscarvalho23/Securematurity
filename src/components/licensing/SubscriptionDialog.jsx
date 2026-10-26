@@ -16,6 +16,7 @@ import { callLicensing, subscriptionState, STATE_STYLE, downloadCertificateJson,
 import { LIC_KEYS } from './useCatalog';
 
 const STATUSES = ['trial', 'active', 'suspended', 'closed'];
+const NONE = [];
 
 export default function SubscriptionDialog({ open, onOpenChange, customer, subscription, catalog }) {
   const { t } = useLanguage();
@@ -27,9 +28,9 @@ export default function SubscriptionDialog({ open, onOpenChange, customer, subsc
   const [busy, setBusy] = useState('');
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const { data: tenantStandards = [] } = useQuery({ queryKey: ['lic-tstd', customer?.id], queryFn: () => base44.entities.TenantStandard.filter({ customer_id: customer.id, status: 'active' }), enabled: open && Boolean(customer) });
-  const { data: manual = [] } = useQuery({ queryKey: ['lic-tmanual', customer?.id], queryFn: () => base44.entities.TenantModule.filter({ customer_id: customer.id, source: 'manual' }), enabled: open && Boolean(customer) });
-  const { data: certs = [] } = useQuery({ queryKey: ['lic-certs', customer?.id], queryFn: () => base44.entities.LicenseCertificate.filter({ customer_id: customer.id }, '-issued_at', 50), enabled: open && Boolean(customer) });
+  const { data: tenantStandards = NONE, isFetched: stdLoaded } = useQuery({ queryKey: ['lic-tstd', customer?.id], queryFn: () => base44.entities.TenantStandard.filter({ customer_id: customer.id, status: 'active' }), enabled: open && Boolean(customer) });
+  const { data: manual = NONE, isFetched: manualLoaded } = useQuery({ queryKey: ['lic-tmanual', customer?.id], queryFn: () => base44.entities.TenantModule.filter({ customer_id: customer.id, source: 'manual' }), enabled: open && Boolean(customer) });
+  const { data: certs = NONE } = useQuery({ queryKey: ['lic-certs', customer?.id], queryFn: () => base44.entities.LicenseCertificate.filter({ customer_id: customer.id }, '-issued_at', 50), enabled: open && Boolean(customer) });
 
   useEffect(() => {
     if (!open || !customer) return;
@@ -37,13 +38,18 @@ export default function SubscriptionDialog({ open, onOpenChange, customer, subsc
     setForm({
       tier_code: s.tier_code || catalog.tiers[0]?.code || '', addon_codes: s.addon_codes || [], status: s.status || 'active',
       started_date: s.started_date || new Date().toISOString().slice(0, 10), expires_date: s.expires_date || '', trial_ends_at: s.trial_ends_at || '',
-      grace_until: s.grace_until || '', seat_limit: s.seat_limit ?? customer.user_seat_limit ?? 5, ai_quota_monthly: s.ai_quota_monthly ?? '',
+      grace_until: s.grace_until || '', seat_limit: s.seat_limit ?? ((customer.user_seat_limit ?? 5) + (customer.user_seat_addon_count ?? 0)), ai_quota_monthly: s.ai_quota_monthly ?? '',
       quota_warn_pct: s.quota_warn_pct ?? 80, notes: s.notes || '', closed_reason: s.closed_reason || '',
     });
     setReason('');
-  }, [open, customer, subscription, catalog.tiers]);
-  useEffect(() => { if (open) setStandards(tenantStandards.length ? tenantStandards.map((x) => x.standard_code) : (customer?.allowed_frameworks || [])); }, [open, tenantStandards, customer]);
-  useEffect(() => { if (open) setOverrides(manual.map((m) => ({ module_code: m.module_code, status: m.status, expires_at: m.expires_at || '', reason: m.reason || '' }))); }, [open, manual]);
+  }, [open, customer?.id, subscription?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Preenche uma vez por abertura, quando as consultas terminam (não volta a apagar as edições).
+  useEffect(() => {
+    if (open && stdLoaded) setStandards(tenantStandards.length ? tenantStandards.map((x) => x.standard_code) : (customer?.allowed_frameworks || []));
+  }, [open, stdLoaded, customer?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (open && manualLoaded) setOverrides(manual.map((m) => ({ module_code: m.module_code, status: m.status, expires_at: m.expires_at || '', reason: m.reason || '' })));
+  }, [open, manualLoaded, customer?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tier = catalog.tiers.find((x) => x.code === form.tier_code);
   const tierModules = new Set(tier?.modules || []);
@@ -104,7 +110,7 @@ export default function SubscriptionDialog({ open, onOpenChange, customer, subsc
                 <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{t(`lic_status_${s}`)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="space-y-1"><Label className="text-xs">{t('lic_seats')}</Label><Input type="number" min={1} value={form.seat_limit ?? ''} onChange={(e) => set('seat_limit', e.target.value)} /></div>
+            <div className="space-y-1"><Label className="text-xs">{t('lic_seats')}</Label><Input type="number" min={5} value={form.seat_limit ?? ''} onChange={(e) => set('seat_limit', e.target.value)} /></div>
             {date('started_date', t('lic_started'))}
             {date('expires_date', t('lic_expires'))}
             {date('grace_until', t('lic_grace'))}

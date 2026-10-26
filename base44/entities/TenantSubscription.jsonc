@@ -79,7 +79,14 @@
       "format": "date-time"
     },
     "closed_reason": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "ai_quota_monthly": {
       "type": "number",
@@ -89,7 +96,14 @@
       "type": "number"
     },
     "notes": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [

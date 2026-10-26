@@ -37,13 +37,16 @@ export const callLicensing = (payload) => invokeFn('licensing', payload);
 /** Licença efetiva do utilizador atual (ou do cliente indicado, para o admin). */
 export function useLicense(customerId) {
   const { user } = useAuth();
-  return useQuery({
+  const q = useQuery({
     queryKey: ['license-me', customerId || user?.customer_id || 'none'],
     queryFn: () => callLicensing({ action: 'me', ...(customerId ? { customer_id: customerId } : {}) }),
     enabled: Boolean(user),
     staleTime: 5 * 60 * 1000,
-    retry: 1,
+    retry: 2,
   });
+  // Se não for possível obter a licença, falha fechado (o servidor recusa de qualquer forma).
+  if (q.isError) return { ...q, data: { state: 'unavailable', effective: false, modules: [] } };
+  return q;
 }
 
 /**
@@ -53,6 +56,7 @@ export function useLicense(customerId) {
 export function hasModule(license, user, code) {
   if (!code || user?.role === 'admin') return true;
   if (!license) return true;
+  if (license.state === 'legacy') return true;
   return Boolean(license.effective && (license.modules || []).includes(code));
 }
 

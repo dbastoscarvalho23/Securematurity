@@ -13,7 +13,14 @@
     },
     "commercial_value": {
       "type": "string",
-      "description": "Valor comercial (texto livre)"
+      "description": "Valor comercial (texto livre)",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "modules": {
       "type": "array",
@@ -27,17 +34,45 @@
       "items": {
         "type": "string"
       },
-      "description": "Módulos em rascunho (por publicar)"
+      "description": "Módulos em rascunho (por publicar)",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "draft_note": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "draft_at": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "draft_by_email": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "version": {
       "type": "number",
@@ -60,6 +95,17 @@
     "is_active": {
       "type": "boolean",
       "default": true
+    },
+    "has_draft": {
+      "type": "boolean",
+      "default": false,
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   },
   "required": [

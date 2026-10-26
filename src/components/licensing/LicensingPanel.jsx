@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 import { callLicensing, subscriptionState, STATE_STYLE } from '@/lib/licensing';
+import { invokeFn } from '@/lib/invokeFn';
 import { useLicenseCatalog, LIC_KEYS } from './useCatalog';
 import SubscriptionDialog from './SubscriptionDialog';
 
@@ -28,11 +29,11 @@ function SubscriptionsTab({ catalog }) {
   const [editing, setEditing] = useState(null);
   const { data: customers = [] } = useQuery({ queryKey: ['lic-customers'], queryFn: () => base44.entities.Customer.list('name', 1000) });
   const { data: subs = [] } = useQuery({ queryKey: ['lic-subs'], queryFn: () => base44.entities.TenantSubscription.list('-updated_date', 2000) });
-  const { data: users = [] } = useQuery({ queryKey: ['lic-users'], queryFn: () => base44.entities.User.list('-created_date', 5000) });
+  const { data: users = [] } = useQuery({ queryKey: ['lic-users'], queryFn: async () => (await invokeFn('listUsers', {})).users || [] });
   const month = new Date().toISOString().slice(0, 7);
   const { data: usage = [] } = useQuery({ queryKey: ['lic-usage', month], queryFn: () => base44.entities.LicenseUsageRecord.filter({ month, feature: 'ai' }, '-usage_count', 2000) });
   const subByCustomer = useMemo(() => { const o = {}; for (const s of subs) if (!o[s.customer_id] || s.status !== 'closed') o[s.customer_id] = s; return o; }, [subs]);
-  const seats = users.reduce((acc, u) => { if (u.customer_id) acc[u.customer_id] = (acc[u.customer_id] || 0) + 1; return acc; }, {});
+  const seats = users.reduce((acc, u) => { const cid = u.customer_id || u.data?.customer_id; if (cid) acc[cid] = (acc[cid] || 0) + 1; return acc; }, {});
   const ai = Object.fromEntries(usage.map((u) => [u.customer_id, u.usage_count]));
   const tierName = Object.fromEntries(catalog.tiers.map((x) => [x.code, x.name]));
   const legacy = customers.filter((c) => !subByCustomer[c.id]).length;
@@ -82,7 +83,7 @@ function BundlesTab({ catalog }) {
   const [drafts, setDrafts] = useState({});
   const [busy, setBusy] = useState('');
   const [newCode, setNewCode] = useState('');
-  const draftOf = (tier) => drafts[tier.code] || { ...tier, modules_draft: tier.modules_draft || tier.modules || [] };
+  const draftOf = (tier) => drafts[tier.code] || { ...tier, modules_draft: tier.has_draft ? tier.modules_draft || [] : tier.modules || [] };
   const edit = (tier, patch) => setDrafts((d) => ({ ...d, [tier.code]: { ...draftOf(tier), ...patch } }));
   const save = async (tier) => {
     setBusy(`s-${tier.code}`);
@@ -105,7 +106,7 @@ function BundlesTab({ catalog }) {
       <div className="grid lg:grid-cols-3 gap-4">
         {catalog.tiers.map((tier) => {
           const d = draftOf(tier);
-          const pending = Array.isArray(tier.modules_draft) && JSON.stringify([...tier.modules_draft].sort()) !== JSON.stringify([...(tier.modules || [])].sort());
+          const pending = Boolean(tier.has_draft);
           return (
             <Card key={tier.id}>
               <CardHeader className="pb-2">

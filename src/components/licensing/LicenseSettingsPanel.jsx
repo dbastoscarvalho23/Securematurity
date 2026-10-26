@@ -25,7 +25,7 @@ export default function LicenseSettingsPanel() {
   if (isLoading || !lic) return <p className="text-sm text-muted-foreground">{t('common_loading')}</p>;
   const names = Object.fromEntries(modules.map((m) => [m.code, m.name]));
   const tier = tiers.find((x) => x.code === lic.tier_code);
-  const end = lic.trial_ends_at || lic.expires_date;
+  const end = lic.state === 'trial' ? lic.trial_ends_at : lic.expires_date;
   const cert = certs[0];
   return (
     <Card>
