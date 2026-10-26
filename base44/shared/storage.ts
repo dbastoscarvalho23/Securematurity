@@ -1,4 +1,5 @@
 import { secrets } from "base44:runtime";
+import { parsePropfind } from "./webdavXml.ts";
 
 /**
  * Repositório documental por cliente (tenant).
@@ -399,6 +400,84 @@ export async function putFile(base44, customer, provider, { bytes, fileName, mim
   }
 
   throw new Error("Repositório não suportado");
+}
+
+/**
+ * Lista os ficheiros de uma pasta do repositório externo do cliente (Google Drive, OneDrive ou NAS), sem criar
+ * pastas nem alterar nada. O repositório da plataforma não tem pastas reais: devolve lista vazia.
+ * Devolve { location, files: [{ ref, name, size, mimeType }] }; `ref` tem o mesmo formato que putFile devolve,
+ * para poder ser lido com getFile. Subpastas e documentos nativos do Google (sem conteúdo binário) ficam de fora,
+ * e são contados em `ignored`.
+ */
+export async function listFolder(base44, customer, provider, folder = "inbox", max = 500) {
+  const segments = [...rootSegments(customer), folderLabel(folder)];
+  const location = segments.join("/");
+  const files = [];
+  let ignored = 0;
+
+  if (provider === "google_drive") {
+    const { accessToken } = await base44.asServiceRole.connectors.getConnection("googledrive");
+    const auth = { Authorization: `Bearer ${accessToken}` };
+    const q = (s) => encodeURIComponent(s);
+    let parent = null;
+    for (const seg of segments) {
+      const cond = `mimeType='application/vnd.google-apps.folder' and name='${seg.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}' and trashed=false` + (parent ? ` and '${parent}' in parents` : "");
+      const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q(cond)}&fields=files(id)`, { headers: auth });
+      if (!r.ok) throw new Error(`Não foi possível ler o Google Drive (${r.status})`);
+      const l = await r.json();
+      if (!l.files?.length) return { location, files, ignored };
+      parent = l.files[0].id;
+    }
+    let pageToken = "";
+    do {
+      const cond = `'${parent}' in parents and trashed=false`;
+      const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q(cond)}&pageSize=200&fields=nextPageToken,files(id,name,size,mimeType)${pageToken ? `&pageToken=${q(pageToken)}` : ""}`, { headers: auth });
+      if (!r.ok) throw new Error(`Não foi possível ler o Google Drive (${r.status})`);
+      const l = await r.json();
+      for (const f of l.files || []) {
+        if (String(f.mimeType || "").startsWith("application/vnd.google-apps.")) { ignored += 1; continue; }
+        files.push({ ref: f.id, name: String(f.name || ""), size: Number(f.size || 0), mimeType: String(f.mimeType || "") });
+      }
+      pageToken = l.nextPageToken || "";
+    } while (pageToken && files.length < max);
+    return { location, files: files.slice(0, max), ignored };
+  }
+
+  if (provider === "one_drive") {
+    const { accessToken } = await base44.asServiceRole.connectors.getConnection("one_drive");
+    const path = segments.map(encodeURIComponent).join("/");
+    let url = `https://graph.microsoft.com/v1.0/me/drive/root:/${path}:/children?$select=id,name,size,file,folder&$top=200`;
+    while (url && files.length < max) {
+      const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+      if (r.status === 404) return { location, files, ignored };
+      if (!r.ok) throw new Error(`Não foi possível ler o OneDrive (${r.status})`);
+      const d = await r.json();
+      for (const it of d.value || []) {
+        if (!it.file) { ignored += 1; continue; }
+        files.push({ ref: it.id, name: String(it.name || ""), size: Number(it.size || 0), mimeType: String(it.file?.mimeType || "") });
+      }
+      url = d["@odata.nextLink"] || "";
+    }
+    return { location, files: files.slice(0, max), ignored };
+  }
+
+  if (provider === "webdav") {
+    const { base, auth, basePath } = await webdavConfig(base44, customer.id);
+    const acc = [basePath, ...segments].filter(Boolean).join("/");
+    const r = await fetch(davUrl(base, acc) + "/", { method: "PROPFIND", headers: { Authorization: auth, Depth: "1", "Content-Type": "application/xml" }, redirect: "error" });
+    if (r.status === 404) return { location: acc, files, ignored };
+    if (!(r.status === 207 || r.ok)) throw new Error(`Não foi possível ler o NAS (${r.status})`);
+    const xml = await r.text();
+    for (const e of parsePropfind(xml)) {
+      if (e.collection) { ignored += e.self ? 0 : 1; continue; }
+      if (!e.name) continue;
+      files.push({ ref: `${acc}/${e.name}`, name: e.name, size: e.size, mimeType: e.mimeType });
+      if (files.length >= max) break;
+    }
+    return { location: acc, files, ignored };
+  }
+
+  return { location: "", files, ignored };
 }
 
 /** Reads a stored file. Returns { signedUrl } for Base44, or { bytes, mimeType } otherwise. */

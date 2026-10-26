@@ -13,8 +13,9 @@ import { REPOSITORY_FOLDERS } from '@/lib/repository';
 // Lógica do servidor importada diretamente (o ficheiro não usa imports do Deno).
 import {
   buildCandidates, measureCandidates, journeyCandidates, shortlist, scoreCandidates, mentionsCode, tokens, normalizeText,
-  validateClassification, candidateToLink, excerptFound, CLASSIFY_FOLDERS, DOCUMENT_KINDS, MAX_LINKS,
+  validateClassification, candidateToLink, excerptFound, intakeMetrics, CLASSIFY_FOLDERS, DOCUMENT_KINDS, MAX_LINKS,
 } from '../../../base44/shared/classify.ts';
+import { parsePropfind } from '../../../base44/shared/webdavXml.ts';
 import { CLASSIFY_CATALOG } from '../../../base44/shared/classifyCatalog.ts';
 import { extractText, xmlToText, sharedStrings, sheetToText, decodeText, MAX_TEXT } from '../../../base44/shared/textExtract.ts';
 import { exposedIdentifiers, textHasIdentifier } from '../../../base44/shared/exposedAssets.ts';
@@ -215,5 +216,70 @@ describe('ativos expostos (art. 32.º)', () => {
     expect(textHasIdentifier('acesso por VPN.exemplo.pt', ids)).toBe(true);
     expect(textHasIdentifier('servidor 10.0.0.15', ids)).toBe(false);
     expect(textHasIdentifier('servidor 8.8.8.8', ids)).toBe(false);
+  });
+});
+describe('qualidade das propostas (intakeMetrics)', () => {
+  const keyOf = (id) => ({ 'measure:a': 'measure:A', 'measure:b': 'measure:B', 'iso27001:c': 'iso27001:5.1', 'journey:x': null }[id] ?? null);
+  const cls = (links, extra = {}) => ({ classified_at: '2026-10-01T10:00:00Z', provider: 'claude', model: 'm', links, ...extra });
+  const intakes = [
+    { status: 'accepted', decided_at: '2026-10-01T10:10:00Z', classification: cls([{ candidate_id: 'measure:a', confidence: 0.9 }, { candidate_id: 'measure:b', confidence: 0.4 }]),
+      accepted_links: [{ type: 'measure', id: 'A' }, { type: 'iso27001', id: '9.9' }] },
+    { status: 'accepted', decided_at: '2026-10-01T10:30:00Z', classification: cls([{ candidate_id: 'iso27001:c', confidence: 0.6 }, { candidate_id: 'journey:x', confidence: 0.9 }]),
+      accepted_links: [{ type: 'iso27001', id: '5.1' }] },
+    { status: 'rejected', classification: cls([{ candidate_id: 'measure:a', confidence: 0.9 }]) },
+    { status: 'proposed', classification: cls([{ candidate_id: 'measure:a', confidence: 0.9 }]) },
+    { status: 'accepted', accepted_links: [{ type: 'measure', id: 'A' }] }, // indexado à mão, sem proposta
+    { status: 'pending' },
+  ];
+  const m = intakeMetrics(intakes, keyOf);
+  it('conta estados e só mede documentos indexados com proposta', () => {
+    expect(m.total).toBe(6);
+    expect(m.by_status).toEqual({ accepted: 3, rejected: 1, proposed: 1, pending: 1 });
+    expect(m.classified).toBe(4);
+    expect(m.reviewed).toBe(2);
+    expect(m.rejected_after_proposal).toBe(1);
+  });
+  it('ligações mantidas, retiradas e acrescentadas (candidatos sem ligação ficam de fora)', () => {
+    expect(m.links).toEqual({ proposed: 3, kept: 2, dropped: 1, added: 1, kept_rate: 0.667, from_proposal_rate: 0.667 });
+    expect(m.documents_all_kept).toBe(1);
+    expect(m.documents_none_kept).toBe(0);
+  });
+  it('taxa por faixa de confiança e mediana do tempo até à decisão', () => {
+    const band = Object.fromEntries(m.by_confidence.map((b) => [b.band, b]));
+    expect(band.high).toMatchObject({ proposed: 1, kept: 1, kept_rate: 1 });
+    expect(band.medium).toMatchObject({ proposed: 1, kept: 1 });
+    expect(band.low).toMatchObject({ proposed: 1, kept: 0, kept_rate: 0 });
+    expect(m.median_minutes_to_decision).toBe(20);
+    expect(m.by_engine).toEqual([{ engine: 'claude · m', documents: 2, proposed: 3, kept: 2, kept_rate: 0.667 }]);
+  });
+  it('sem dados devolve taxas nulas', () => {
+    const e = intakeMetrics([], keyOf);
+    expect(e.links.kept_rate).toBeNull();
+    expect(e.median_minutes_to_decision).toBeNull();
+  });
+});
+
+describe('WebDAV PROPFIND (parsePropfind)', () => {
+  const xml = `<?xml version="1.0"?>
+<D:multistatus xmlns:D="DAV:">
+  <D:response><D:href>/dav/AnkoraOne/Cliente/00%20Por%20classificar/</D:href>
+    <D:propstat><D:prop><D:resourcetype><D:collection/></D:resourcetype></D:prop></D:propstat></D:response>
+  <D:response><D:href>/dav/AnkoraOne/Cliente/00%20Por%20classificar/Pol%C3%ADtica%20de%20seguran%C3%A7a.docx</D:href>
+    <D:propstat><D:prop><D:resourcetype/><D:getcontentlength>2048</D:getcontentlength>
+    <D:getcontenttype>application/vnd.openxmlformats-officedocument.wordprocessingml.document</D:getcontenttype></D:prop></D:propstat></D:response>
+  <D:response><D:href>/dav/AnkoraOne/Cliente/00%20Por%20classificar/antigos/</D:href>
+    <D:propstat><D:prop><D:resourcetype><D:collection/></D:resourcetype></D:prop></D:propstat></D:response>
+</D:multistatus>`;
+  it('lê nomes, tamanhos e pastas com qualquer prefixo', () => {
+    const r = parsePropfind(xml);
+    expect(r).toHaveLength(3);
+    expect(r[0]).toMatchObject({ collection: true, self: true });
+    expect(r[1]).toMatchObject({ name: 'Política de segurança.docx', size: 2048, collection: false, self: false });
+    expect(r[2]).toMatchObject({ name: 'antigos', collection: true, self: false });
+    expect(parsePropfind(xml.replace(/D:/g, 'd:').replace(/xmlns:D/, 'xmlns:d'))[1].name).toBe('Política de segurança.docx');
+  });
+  it('resposta vazia ou inválida não falha', () => {
+    expect(parsePropfind('')).toEqual([]);
+    expect(parsePropfind('<html>erro</html>')).toEqual([]);
   });
 });

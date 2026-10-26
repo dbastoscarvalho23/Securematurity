@@ -306,3 +306,81 @@ export function candidateToLink(c: Candidate) {
   if (c.kind === 'journey' && c.checklist_id) return { type: 'checklist', id: c.checklist_id, ref: `RJC_2026 ${c.section_order}.${c.task_order}`, label: cut(c.title, 120) };
   return null;
 }
+
+// ── Qualidade das propostas ──────────────────────────────────────────────────
+
+export const CONFIDENCE_BANDS = [
+  { key: 'high', min: 0.8 },
+  { key: 'medium', min: 0.5 },
+  { key: 'low', min: 0 },
+];
+
+const ratio = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 1000 : null);
+const bandOf = (c: number) => (CONFIDENCE_BANDS.find((b) => c >= b.min) || CONFIDENCE_BANDS[CONFIDENCE_BANDS.length - 1]).key;
+
+/**
+ * Mede a qualidade das propostas do modelo face à decisão das pessoas. Só entram nas taxas os documentos
+ * indexados que tinham proposta: uma ligação proposta conta como «mantida» se a pessoa a gravou na evidência.
+ * `linkKeyOf(candidateId)` devolve a chave `${type}:${id}` da ligação que esse candidato gera (ou null); as
+ * ligações gravadas comparam-se pela mesma chave, o que serve também para registos antigos sem
+ * `accepted_candidates`. Não lê texto nem ficheiros: só estados, contagens e confiança.
+ */
+export function intakeMetrics(intakes: any[], linkKeyOf: (candidateId: string) => string | null) {
+  const list = Array.isArray(intakes) ? intakes : [];
+  const by_status: Record<string, number> = {};
+  for (const it of list) by_status[it?.status || 'pending'] = (by_status[it?.status || 'pending'] || 0) + 1;
+
+  const bands: Record<string, { proposed: number; kept: number }> = {};
+  for (const b of CONFIDENCE_BANDS) bands[b.key] = { proposed: 0, kept: 0 };
+  const engines: Record<string, { documents: number; proposed: number; kept: number }> = {};
+  let proposed = 0; let kept = 0; let added = 0; let reviewed = 0; let allKept = 0; let noneKept = 0;
+  let rejectedAfterProposal = 0; let classified = 0;
+  const waits: number[] = [];
+
+  for (const it of list) {
+    const cls = it?.classification;
+    if (!cls?.classified_at) continue;
+    classified += 1;
+    if (it.status === 'rejected') { rejectedAfterProposal += 1; continue; }
+    if (it.status !== 'accepted') continue;
+    reviewed += 1;
+    const acceptedKeys = new Set((it.accepted_links || []).map((l: any) => `${l?.type}:${l?.id}`));
+    const proposedKeys = new Set<string>();
+    let docKept = 0; let docProposed = 0;
+    const engine = `${cls.provider || '—'} · ${cls.model || '—'}`;
+    engines[engine] = engines[engine] || { documents: 0, proposed: 0, kept: 0 };
+    engines[engine].documents += 1;
+    for (const l of Array.isArray(cls.links) ? cls.links : []) {
+      const key = linkKeyOf(String(l?.candidate_id || ''));
+      if (!key || proposedKeys.has(key)) continue;
+      proposedKeys.add(key);
+      const k = acceptedKeys.has(key);
+      const band = bandOf(Number(l?.confidence) || 0);
+      bands[band].proposed += 1; if (k) bands[band].kept += 1;
+      engines[engine].proposed += 1; if (k) engines[engine].kept += 1;
+      docProposed += 1; if (k) docKept += 1;
+    }
+    proposed += docProposed; kept += docKept;
+    added += [...acceptedKeys].filter((k) => !proposedKeys.has(k)).length;
+    if (docProposed > 0 && docKept === docProposed) allKept += 1;
+    if (docProposed > 0 && docKept === 0) noneKept += 1;
+    const t0 = Date.parse(cls.classified_at); const t1 = Date.parse(it.decided_at || '');
+    if (Number.isFinite(t0) && Number.isFinite(t1) && t1 >= t0) waits.push((t1 - t0) / 60000);
+  }
+
+  waits.sort((a, b) => a - b);
+  const median = waits.length ? Math.round(waits.length % 2 ? waits[(waits.length - 1) / 2] : (waits[waits.length / 2 - 1] + waits[waits.length / 2]) / 2) : null;
+  return {
+    total: list.length,
+    by_status,
+    classified,
+    reviewed,
+    rejected_after_proposal: rejectedAfterProposal,
+    links: { proposed, kept, dropped: proposed - kept, added, kept_rate: ratio(kept, proposed), from_proposal_rate: ratio(kept, kept + added) },
+    documents_all_kept: allKept,
+    documents_none_kept: noneKept,
+    by_confidence: CONFIDENCE_BANDS.map((b) => ({ band: b.key, ...bands[b.key], kept_rate: ratio(bands[b.key].kept, bands[b.key].proposed) })),
+    by_engine: Object.entries(engines).map(([engine, v]) => ({ engine, ...v, kept_rate: ratio(v.kept, v.proposed) })),
+    median_minutes_to_decision: median,
+  };
+}

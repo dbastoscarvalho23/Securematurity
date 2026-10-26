@@ -143,11 +143,29 @@ controlos a que se liga; uma pessoa confirma. Só o administrador da plataforma 
    pré-seleção.
 5. **Rejeitar**: fica registado o motivo; o ficheiro continua em «00 Por classificar».
 
+### Em lote
+
+- **Classificar todos**: trata, um de cada vez, os documentos ainda sem proposta («Por classificar» ou «Erro»), do mais
+  antigo para o mais recente, até 25 por clique. Cada documento conta como um pedido de IA (limite de 30 por minuto e
+  por utilizador, quota mensal `ai`). Para no primeiro limite de ritmo, quota esgotada ou licença, e pode ser parado a
+  meio; os erros de um documento (sem texto, ativo exposto) não param os restantes. As propostas continuam a precisar
+  de revisão uma a uma.
+- **Procurar na pasta** (só com Google Drive, OneDrive ou NAS): lê `<localização>/00 Por classificar` e cria um
+  registo por cada ficheiro que a plataforma ainda não conhece (sem `StoredFile` com a mesma referência), até 20 por
+  pedido. O ficheiro não é copiado nem movido; é verificado (tipo, 8 MB, SHA-256) como num carregamento e fica marcado
+  «Encontrado na pasta do repositório». Ficheiros com o mesmo SHA-256 de um documento já carregado contam como
+  duplicados e não voltam a ser lidos. Subpastas e documentos nativos do Google (Docs, Sheets, Slides, sem ficheiro
+  binário) ficam de fora: exporte-os como DOCX, XLSX ou PPTX.
+- **Qualidade das propostas**: para os documentos indexados que tinham proposta, quantas ligações propostas foram
+  mantidas, quantas foram acrescentadas à mão, a taxa por faixa de confiança (alta ≥ 0,8; média 0,5 a 0,8; baixa < 0,5),
+  por motor e a mediana do tempo até à decisão. Na revisão, ligações com confiança abaixo de 0,5 ou «Não cumpre» vêm
+  desmarcadas, por isso a faixa baixa mede quantas as pessoas acabam por marcar. Não lê texto nem ficheiros.
+
 Pasta depois de indexar: no repositório da plataforma muda o campo `folder` do `StoredFile` e da evidência. No Google
 Drive, OneDrive e NAS o ficheiro **não é movido**: continua fisicamente em `<localização>/00 Por classificar`
 (`storage_location` guarda esse caminho real) e só muda a pasta registada na plataforma.
 
-Auditoria: `document_intake_uploaded`, `document_classified` (sem texto do documento),
+Auditoria: `document_intake_uploaded`, `document_intake_scanned`, `document_classified` (sem texto do documento),
 `document_classification_refused`, `document_indexed`, `document_intake_rejected`, além de `evidence_created` e
 `document_created`.
 
