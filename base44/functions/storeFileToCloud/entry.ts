@@ -5,3 +5,4 @@ import { json } from '../../shared/http.ts';
 // função `files`, que guarda o ficheiro de forma privada no repositório do cliente e só o entrega
 // a utilizadores autorizados, com URL temporário.
 Deno.serve(() => json({ error: 'Função descontinuada: use a função «files».' }, 410));
+
