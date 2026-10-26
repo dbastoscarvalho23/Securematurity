@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, getEntitlements, consumeQuota, checkQuota, LicenseError } from '../../shared/license.ts';
+import { assertAiRateLimit } from '../../shared/rateLimit.ts';
 import { getFile } from '../../shared/storage.ts';
 import { LEGAL_PACK } from '../../shared/legalPack.ts';
 import { MEASURE_TEMPLATES, REPORT_TEMPLATES, BANNED_PHRASES } from '../../shared/aiTemplates.ts';
@@ -284,6 +285,8 @@ export default async function (req) {
     if (action === 'sources') return json({ sources: sources.map(({ id, label, related }) => ({ id, label, related: Boolean(related) })), sections: sectionsDef.map(([id, a, b]) => ({ id, heading: typeof b === 'string' ? b : a, ref: typeof b === 'string' ? a : '' })) });
     if (action !== 'generate' && action !== 'review') return json({ error: 'Ação desconhecida' }, 400);
 
+    // Rajada: a quota é mensal; o limite de ritmo é que impede esgotá-la em segundos.
+    await assertAiRateLimit(base44, user);
     const ent = await getEntitlements(base44, customerId);
     await checkQuota(base44, customerId, 'ai', ent.ai_quota_monthly);
     let file = null;
@@ -321,6 +324,3 @@ export default async function (req) {
     return json({ error: error?.message || 'Erro' }, error instanceof LicenseError ? error.status : 400);
   }
 }
-
-
-

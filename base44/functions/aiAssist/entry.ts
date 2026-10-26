@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, getEntitlements, checkQuota, consumeQuota, LicenseError } from '../../shared/license.ts';
+import { assertAiRateLimit } from '../../shared/rateLimit.ts';
 import { callLLM, parseJson, getAiSettings, aiPurposeEnabled, aiProvider, AI_DISABLED_MESSAGE } from '../../shared/llm.ts';
 import { containsExposedAsset } from '../../shared/exposedAssets.ts';
 
@@ -66,6 +67,9 @@ export default async function (req) {
       await logAudit(base44, 'ai_assist_refused', { user_email: user.email, customer_id: customerId || undefined, details: `IA recusada (${purpose}): o pedido contém dados de ativos expostos à Internet` });
       return json({ error: 'O pedido contém endereços de ativos expostos à Internet (lista do art. 32.º do Reg. 756/2026), que não podem ser enviados à IA. Retire esses dados e tente novamente.' }, 422);
     }
+
+    // Rajada: a quota é mensal, por isso é o limite de ritmo que impede esgotá-la em segundos.
+    await assertAiRateLimit(base44, user);
 
     if (customerId) {
       const ent = await getEntitlements(base44, customerId);

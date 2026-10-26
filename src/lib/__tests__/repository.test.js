@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 import {
   REPOSITORY_FOLDERS, CONTEXT_FOLDER, normalizeStorageRoot, defaultStorageRoot, effectiveStorageRoot,
   evidenceFolderKey, storedFileFolderKey, evidenceFileFolderKey, folderKeyFromLabel,
 } from '@/lib/repository';
 
-const serverSrc = fs.readFileSync(path.resolve(__dirname, '../../../base44/shared/storage.ts'), 'utf8');
+const serverSrc = fs.readFileSync(path.resolve(process.cwd(), 'base44/shared/storage.ts'), 'utf8');
 const block = (name, end) => {
   const start = serverSrc.indexOf(`export const ${name} =`);
   return serverSrc.slice(start, serverSrc.indexOf(end, start));
