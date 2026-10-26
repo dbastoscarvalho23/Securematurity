@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { hasSession } from '@/lib/hasSession';
 
 const AuthContext = createContext();
 
@@ -18,6 +19,13 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoadingAuth(true);
       setAuthError(null);
+      // Visitante sem token: não há sessão para resolver, por isso não se pede `me()`.
+      if (!hasSession()) {
+        setUser(null);
+        setIsAuthenticated(false);
+        setAuthError({ type: 'auth_required', message: 'É necessário iniciar sessão' });
+        return;
+      }
       // Log user login to audit trail (may also auto-assign customer_id / promote
       // role for previously-invited users). Resolve the FINAL user record BEFORE
       // the first setUser: rendering with the stale pre-assignment record made

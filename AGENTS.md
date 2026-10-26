@@ -17,7 +17,7 @@ docker compose -f docker-compose.base44.yml up -d
 - Secrets (`VITE_BASE44_APP_ID`, `VITE_BASE44_APP_BASE_URL`) are delivered via `/run/base44/app.env`; `./.env.base44-defaults` (committed, empty placeholders) is listed first in `env_file:` so compose boots even on checkouts without the platform file, and real values (listed last) override it.
 - Vite `server.host: true` + `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS` env var handle the preview proxy hostname (passed bare; Vite >= 6.1 appends it to allowedHosts). `BASE44_PREVIEW_MODE` is passed through bare (platform-managed sandbox flag); `CHOKIDAR_USEPOLLING=true` makes file watch reliable on bind mounts.
 - This is a frontend-only app: all data/auth goes through the Base44 cloud backend (`@base44/sdk` client in `src/api/base44Client.js`). There is NO local database — all data lives in the Base44 backend entities.
-- Unauthenticated visitors land on `/login`; a 401 "[Base44 SDK Error] Authentication required" console error on that page is expected pre-login behavior.
+- Unauthenticated visitors land on `/login`. Without a stored token nobody calls `base44.auth.me()`: `src/lib/hasSession.js` gates the profile reads in `AuthContext`, `ThemeContext` and `LanguageContext`, so a signed-out load issues no `User/me` request and logs no 401 in the console.
 - Dev verification: `curl -s http://localhost:3000/` should return the index HTML with the Vite dev client; `docker compose -f docker-compose.base44.yml logs web` shows the "Proxy enabled: /api -> ..." line once the SDK env vars are present.
 - Preview autenticada: a sessão vive no iframe; validar fluxos com preview_execute_code.
 
@@ -50,7 +50,7 @@ docker compose -f docker-compose.base44.yml up -d
 - RouteGuard lists and Sidebar were mirrored for the new paths.
 
 ## Notes / quirks
-- Unauthenticated visitors land on `/login`; a 401 "[Base44 SDK Error] Authentication required" console error on that page is expected pre-login behavior.
+- Unauthenticated visitors land on `/login`. Without a stored token nobody calls `base44.auth.me()`: `src/lib/hasSession.js` gates the profile reads in `AuthContext`, `ThemeContext` and `LanguageContext`, so a signed-out load issues no `User/me` request and logs no 401 in the console.
 - The automation secret value lives ONLY in the platform's Secrets (`AUTOMATION_SECRET`), read per request via `secrets.get()` in `base44/shared/automationSecret.ts` — never hardcode it in functions or workflows (`${ secrets.AUTOMATION_SECRET }` in workflow args, `x-automation-secret` header for manual triggers). Rotating it is a dashboard-only operation.
 - `Landing.jsx` was removed (was orphaned); orphan `landing_*` translation keys were cleaned from `translations-ui.js`.
 - `OAuthConsent.jsx` is a platform-managed MCP consent page, NOT routed in `App.jsx`; it references `base44/mcp/config.json` (a platform-managed file not exported to GitHub).

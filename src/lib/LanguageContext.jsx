@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { translations } from './translations';
 import { base44 } from '@/api/base44Client';
+import { hasSession } from '@/lib/hasSession';
 
 const LanguageContext = createContext();
 
@@ -10,8 +11,10 @@ export const LanguageProvider = ({ children }) => {
     catch { return 'en'; }
   });
 
-  // Sync from user profile when user loads (without depending on useAuth)
+  // Sync from user profile when user loads (without depending on useAuth;
+  // sem sessão não se pede o perfil — o pedido responderia sempre 401)
   useEffect(() => {
+    if (!hasSession()) return;
     try {
       base44.auth.me().then(user => {
         if (user?.language) {

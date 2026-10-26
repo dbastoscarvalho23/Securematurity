@@ -17,10 +17,13 @@ vi.mock('@/lib/LanguageContext', () => ({
 // signed-in visitor resolves to a user record — no network involved.
 const meMock = vi.fn();
 const invokeMock = vi.fn();
+let hasTokenValue = true;
 
 vi.mock('@/api/base44Client', () => ({
   base44: {
     auth: {
+      // Com token guardado o AuthProvider consulta a sessão (o caso real de quem inicia sessão).
+      hasToken: () => hasTokenValue,
       me: (...args) => meMock(...args),
       logout: vi.fn(),
       loginViaEmailPassword: vi.fn(),
@@ -32,6 +35,7 @@ vi.mock('@/api/base44Client', () => ({
 }));
 
 afterEach(() => {
+  hasTokenValue = true;
   meMock.mockReset();
   invokeMock.mockReset();
   // AuthContext fire-and-forgets `logUserLogin` after a successful me(); the
@@ -68,6 +72,14 @@ describe('Auth cycle (AuthProvider + ProtectedRoute)', () => {
     renderApp();
     await waitFor(() => expect(screen.getByText('Login page')).toBeTruthy());
     expect(screen.queryByText(/Dashboard for/)).toBeNull();
+  });
+
+  it('does not probe the session for a visitor with no stored token', async () => {
+    hasTokenValue = false;
+    window.localStorage.clear();
+    renderApp();
+    await waitFor(() => expect(screen.getByText('Login page')).toBeTruthy());
+    expect(meMock).not.toHaveBeenCalled();
   });
 
   it('keeps a signed-in user on the protected page', async () => {

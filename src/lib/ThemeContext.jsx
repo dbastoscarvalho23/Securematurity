@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { hasSession } from '@/lib/hasSession';
 
 const ThemeContext = createContext();
 
@@ -9,8 +10,9 @@ export const ThemeProvider = ({ children }) => {
     catch { return 'dark'; }
   });
 
-  // Sync from user profile on load
+  // Sync from user profile on load (só com sessão: sem token o pedido é sempre 401)
   useEffect(() => {
+    if (!hasSession()) return;
     try {
       base44.auth.me().then(user => {
         if (user?.theme) {
