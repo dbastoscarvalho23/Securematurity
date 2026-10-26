@@ -206,11 +206,11 @@
    "ref": "6.1.1",
    "title": "Ações para tratar riscos e oportunidades",
    "description": "Determinar os riscos e oportunidades do sistema de gestão considerando o contexto, o domínio de aplicação e a utilização prevista dos sistemas de IA; definir critérios que distinguem riscos aceitáveis de não aceitáveis.",
-   "evidence": "Critérios de risco de IA aprovados e plano de ações.",
+   "evidence": "Critérios de risco de IA aprovados e registo das ações para tratar riscos e oportunidades.",
    "iso27001": [
     "C.6.1.1"
    ],
-   "documented": false,
+   "documented": true,
    "order": 8
   },
   {
@@ -250,7 +250,7 @@
    "group_name": "Planeamento",
    "ref": "6.1.4",
    "title": "Avaliação de impacto dos sistemas de IA",
-   "description": "Definir um processo para avaliar as consequências potenciais dos sistemas de IA para pessoas, grupos de pessoas e a sociedade, considerando o contexto técnico e social e as jurisdições onde são usados; os resultados entram na avaliação de riscos.",
+   "description": "Avaliar, para cada sistema de IA, os efeitos que pode ter nas pessoas e na sociedade, tendo em conta onde e como é usado; o resultado alimenta a avaliação de riscos.",
    "evidence": "Procedimento de avaliação de impacto e avaliações por sistema de IA.",
    "iso27001": [],
    "documented": true,
@@ -632,7 +632,7 @@
    "group_name": "Recursos dos sistemas de IA",
    "ref": "4.6",
    "title": "Recursos humanos",
-   "description": "Documentar as pessoas e as competências envolvidas no desenvolvimento, implementação, operação, manutenção, verificação e desativação.",
+   "description": "Documentar a equipa e as competências usadas em cada fase do ciclo de vida do sistema de IA.",
    "evidence": "Matriz de competências da equipa de IA.",
    "iso27001": [
     "C.7.2",
@@ -785,7 +785,7 @@
    "group_name": "Ciclo de vida dos sistemas de IA",
    "ref": "6.2.6",
    "title": "Operação e monitorização",
-   "description": "Definir o necessário para operar o sistema, no mínimo monitorização do sistema e do desempenho, reparações, atualizações e suporte.",
+   "description": "Prever como o sistema é acompanhado e mantido em produção: monitorização, correções e suporte.",
    "evidence": "Procedimentos de operação e registos de monitorização.",
    "iso27001": [
     "A.8.6",
@@ -800,7 +800,7 @@
    "group_name": "Ciclo de vida dos sistemas de IA",
    "ref": "6.2.7",
    "title": "Documentação técnica",
-   "description": "Determinar a documentação técnica de que cada categoria de partes interessadas precisa (utilizadores, parceiros, autoridades) e disponibilizá-la na forma adequada.",
+   "description": "Documentação técnica adaptada a cada destinatário (por exemplo utilizadores, parceiros ou autoridades).",
    "evidence": "Documentação técnica por destinatário.",
    "iso27001": [
     "A.5.37"
@@ -994,7 +994,7 @@
    "group_name": "Relações com terceiros e clientes",
    "ref": "10.2",
    "title": "Repartição de responsabilidades",
-   "description": "Repartir as responsabilidades do ciclo de vida do sistema de IA entre a organização, parceiros, fornecedores, clientes e terceiros.",
+   "description": "Definir quem responde por cada fase do ciclo de vida quando há parceiros, fornecedores ou clientes envolvidos.",
    "evidence": "Matriz de responsabilidades partilhadas e cláusulas contratuais.",
    "iso27001": [
     "A.5.19",
@@ -1009,7 +1009,7 @@
    "group_name": "Relações com terceiros e clientes",
    "ref": "10.3",
    "title": "Fornecedores",
-   "description": "Processo para garantir que os serviços, produtos ou materiais dos fornecedores estão alinhados com a abordagem responsável da organização.",
+   "description": "Avaliar se o que os fornecedores entregam está de acordo com a abordagem responsável à IA da organização.",
    "evidence": "Avaliação de fornecedores de IA e requisitos contratuais.",
    "iso27001": [
     "A.5.19",

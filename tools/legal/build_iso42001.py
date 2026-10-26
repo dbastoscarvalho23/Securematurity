@@ -27,10 +27,10 @@ CLAUSES = [
   ("5.3", "Funções, responsabilidades e autoridades", "Atribuir e comunicar as responsabilidades no sistema de gestão da IA, incluindo quem assegura a conformidade e reporta o desempenho à gestão de topo.", "Matriz de funções e responsabilidades de IA comunicada.", ["C.5.3"]),
  ]),
  ("6", "Planeamento", [
-  ("6.1.1", "Ações para tratar riscos e oportunidades", "Determinar os riscos e oportunidades do sistema de gestão considerando o contexto, o domínio de aplicação e a utilização prevista dos sistemas de IA; definir critérios que distinguem riscos aceitáveis de não aceitáveis.", "Critérios de risco de IA aprovados e plano de ações.", ["C.6.1.1"]),
+  ("6.1.1", "Ações para tratar riscos e oportunidades", "Determinar os riscos e oportunidades do sistema de gestão considerando o contexto, o domínio de aplicação e a utilização prevista dos sistemas de IA; definir critérios que distinguem riscos aceitáveis de não aceitáveis.", "Critérios de risco de IA aprovados e registo das ações para tratar riscos e oportunidades.", ["C.6.1.1"]),
   ("6.1.2", "Avaliação de riscos de IA", "Definir e aplicar um processo de avaliação de riscos de IA que identifica, analisa (incluindo consequências para a organização, para pessoas e para a sociedade) e avalia os riscos, com resultados comparáveis e repetíveis.", "Metodologia de avaliação de riscos de IA e relatório de avaliação.", ["C.6.1.2"]),
   ("6.1.3", "Tratamento de riscos de IA e Declaração de Aplicabilidade", "Escolher as opções de tratamento, determinar os controlos (do Anexo A ou próprios), compará-los com o Anexo A, elaborar a Declaração de Aplicabilidade com a justificação de inclusões e exclusões e obter aprovação do plano de tratamento e dos riscos residuais.", "Plano de tratamento aprovado e Declaração de Aplicabilidade da ISO/IEC 42001 (separada da 27001).", ["C.6.1.3"]),
-  ("6.1.4", "Avaliação de impacto dos sistemas de IA", "Definir um processo para avaliar as consequências potenciais dos sistemas de IA para pessoas, grupos de pessoas e a sociedade, considerando o contexto técnico e social e as jurisdições onde são usados; os resultados entram na avaliação de riscos.", "Procedimento de avaliação de impacto e avaliações por sistema de IA.", []),
+  ("6.1.4", "Avaliação de impacto dos sistemas de IA", "Avaliar, para cada sistema de IA, os efeitos que pode ter nas pessoas e na sociedade, tendo em conta onde e como é usado; o resultado alimenta a avaliação de riscos.", "Procedimento de avaliação de impacto e avaliações por sistema de IA.", []),
   ("6.2", "Objetivos de IA e planeamento para os atingir", "Definir objetivos de IA mensuráveis e coerentes com a política, monitorizá-los e comunicá-los; planear o que será feito, com que recursos, por quem, até quando e como se avaliam os resultados.", "Objetivos de IA com indicadores, responsáveis e prazos.", ["C.6.2"]),
   ("6.3", "Planeamento de alterações", "Fazer as alterações ao sistema de gestão da IA de forma planeada.", "Registo de alterações planeadas e aprovadas.", ["C.6.3"]),
  ]),
@@ -73,7 +73,7 @@ ANNEX = [
   ("4.3", "Recursos de dados", "Documentar os dados usados por cada sistema de IA.", "Fichas dos conjuntos de dados (origem, finalidade, categorias, conservação).", ["A.5.9", "A.5.12"]),
   ("4.4", "Recursos de ferramentas", "Documentar as ferramentas usadas (algoritmos, bibliotecas, plataformas de treino e de avaliação).", "Lista de ferramentas e versões.", ["A.5.9"]),
   ("4.5", "Recursos de sistema e de computação", "Documentar a infraestrutura e a capacidade de computação usadas, incluindo serviços de nuvem.", "Descrição da infraestrutura e dos serviços contratados.", ["A.5.9", "A.5.23", "A.8.6"]),
-  ("4.6", "Recursos humanos", "Documentar as pessoas e as competências envolvidas no desenvolvimento, implementação, operação, manutenção, verificação e desativação.", "Matriz de competências da equipa de IA.", ["C.7.2", "A.6.3"]),
+  ("4.6", "Recursos humanos", "Documentar a equipa e as competências usadas em cada fase do ciclo de vida do sistema de IA.", "Matriz de competências da equipa de IA.", ["C.7.2", "A.6.3"]),
  ]),
  ("5", "Avaliação de impactos dos sistemas de IA", [
   ("5.2", "Processo de avaliação de impacto", "Processo para avaliar as consequências potenciais para pessoas, grupos de pessoas e a sociedade ao longo do ciclo de vida do sistema.", "Procedimento de avaliação de impacto aprovado.", ["C.6.1.2"]),
@@ -88,8 +88,8 @@ ANNEX = [
   ("6.2.3", "Documentação da conceção e do desenvolvimento", "Documentar a conceção e o desenvolvimento com base nos objetivos, requisitos e critérios definidos.", "Documentação de arquitetura, do modelo e das decisões de conceção.", ["A.8.25"]),
   ("6.2.4", "Verificação e validação", "Definir e documentar as medidas de verificação e validação e os critérios para as usar.", "Plano e relatórios de testes, com métricas de desempenho.", ["A.8.29"]),
   ("6.2.5", "Entrada em produção", "Documentar o plano de entrada em produção e confirmar que os requisitos são cumpridos antes de avançar.", "Plano e aprovação da entrada em produção.", ["A.8.31", "A.8.32"]),
-  ("6.2.6", "Operação e monitorização", "Definir o necessário para operar o sistema, no mínimo monitorização do sistema e do desempenho, reparações, atualizações e suporte.", "Procedimentos de operação e registos de monitorização.", ["A.8.6", "A.8.16"]),
-  ("6.2.7", "Documentação técnica", "Determinar a documentação técnica de que cada categoria de partes interessadas precisa (utilizadores, parceiros, autoridades) e disponibilizá-la na forma adequada.", "Documentação técnica por destinatário.", ["A.5.37"]),
+  ("6.2.6", "Operação e monitorização", "Prever como o sistema é acompanhado e mantido em produção: monitorização, correções e suporte.", "Procedimentos de operação e registos de monitorização.", ["A.8.6", "A.8.16"]),
+  ("6.2.7", "Documentação técnica", "Documentação técnica adaptada a cada destinatário (por exemplo utilizadores, parceiros ou autoridades).", "Documentação técnica por destinatário.", ["A.5.37"]),
   ("6.2.8", "Registo de eventos", "Determinar em que fases do ciclo de vida se registam eventos, no mínimo enquanto o sistema está em utilização.", "Configuração e amostras dos registos de eventos.", ["A.8.15"]),
  ]),
  ("7", "Dados para sistemas de IA", [
@@ -111,8 +111,8 @@ ANNEX = [
   ("9.4", "Utilização prevista", "Garantir que o sistema de IA é usado de acordo com a utilização prevista e com a documentação que o acompanha.", "Registos de monitorização da utilização face à finalidade prevista.", ["A.5.10"]),
  ]),
  ("10", "Relações com terceiros e clientes", [
-  ("10.2", "Repartição de responsabilidades", "Repartir as responsabilidades do ciclo de vida do sistema de IA entre a organização, parceiros, fornecedores, clientes e terceiros.", "Matriz de responsabilidades partilhadas e cláusulas contratuais.", ["A.5.19", "A.5.20"]),
-  ("10.3", "Fornecedores", "Processo para garantir que os serviços, produtos ou materiais dos fornecedores estão alinhados com a abordagem responsável da organização.", "Avaliação de fornecedores de IA e requisitos contratuais.", ["A.5.19", "A.5.21", "A.5.22"]),
+  ("10.2", "Repartição de responsabilidades", "Definir quem responde por cada fase do ciclo de vida quando há parceiros, fornecedores ou clientes envolvidos.", "Matriz de responsabilidades partilhadas e cláusulas contratuais.", ["A.5.19", "A.5.20"]),
+  ("10.3", "Fornecedores", "Avaliar se o que os fornecedores entregam está de acordo com a abordagem responsável à IA da organização.", "Avaliação de fornecedores de IA e requisitos contratuais.", ["A.5.19", "A.5.21", "A.5.22"]),
   ("10.4", "Clientes", "Garantir que a abordagem responsável ao desenvolvimento e à utilização de IA tem em conta as expectativas e necessidades dos clientes.", "Requisitos dos clientes registados e refletidos nos sistemas.", ["A.5.31"]),
  ]),
 ]
@@ -141,7 +141,7 @@ RISK_SOURCES = [
  ("C.3.7", "Maturidade da tecnologia", "Tecnologia pouco madura (limites desconhecidos, desvio de desempenho) ou excesso de confiança na madura."),
 ]
 
-DOCUMENTED = {"4.3", "5.2", "6.1.2", "6.1.3", "6.1.4", "6.2", "7.2", "7.5", "8.1", "8.2", "8.3", "8.4", "9.1", "9.2", "9.3", "10.2"}
+DOCUMENTED = {"4.3", "5.2", "6.1.1", "6.1.2", "6.1.3", "6.1.4", "6.2", "7.2", "7.5", "8.1", "8.2", "8.3", "8.4", "9.1", "9.2", "9.3", "10.2"}
 
 iso27 = json.load(open(os.path.join(ROOT, 'src/data/legal/iso27001.json')))
 ids27 = {i['id'] for i in iso27['items']}
