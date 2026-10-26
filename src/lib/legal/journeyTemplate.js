@@ -7,83 +7,88 @@
 export const JOURNEY_FRAMEWORK = 'RJC_2026';
 export const LEGACY_JOURNEY_FRAMEWORK = 'RJCS';
 
-const EFF = ' — produz efeitos a 22-06-2028 (DL 125/2025, art. 10.º, n.º 2)';
-const EFF_EN = ' — takes effect on 22-06-2028 (Decree-Law 125/2025, art. 10(2))';
+/** Data em que os artigos do RJC marcados com `from2028` passam a produzir efeitos (DL 125/2025, art. 10.º, n.º 2). */
+export const JOURNEY_EFFECTIVE_2028 = '2028-06-22';
 
+/**
+ * Cada tarefa tem um título simples (o que fazer e, quando existe, o prazo) e a base legal em `basis`,
+ * com as disposições oficiais completas na Biblioteca Legal. `from2028` assinala as obrigações que só
+ * produzem efeitos a 22-06-2028.
+ */
 export const JOURNEY_TEMPLATE_PT = [
   {
     section: 'A. Âmbito, autoidentificação e qualificação', section_order: 1,
     tasks: [
-      '1. Verificar se a entidade está abrangida: setores e tipos de entidade dos Anexos I e II, dimensão e exclusões (RJC, arts. 3.º, 4.º, 6.º e 7.º; instrumento de apoio da plataforma — Reg. 756/2026, art. 4.º, n.os 6 e 7).',
-      '2. Criar a conta da entidade na plataforma eletrónica do CNCS, com autenticação de nível de garantia elevado e perfis do representante legal, do responsável de cibersegurança e do ponto de contacto permanente (Reg. 756/2026, arts. 6.º e 7.º).',
-      '3. Efetuar a autoidentificação na plataforma: 30 dias após o início da atividade ou, para entidades já em atividade, 60 dias após a disponibilização da plataforma (RJC, art. 8.º, n.º 1; Reg. 756/2026, art. 8.º).',
-      '4. Pronunciar-se sobre o projeto de decisão de qualificação no prazo de 10 dias úteis (Reg. 756/2026, art. 9.º, n.os 1 a 3).',
-      '5. Registar na AnkoraOne a qualificação (essencial, importante ou pública relevante — Grupo A ou B) e o nível de conformidade notificados pelo CNCS (RJC, art. 8.º, n.º 5; Reg. 756/2026, art. 9.º, n.os 4 a 6 e 10).',
-      '6. Completar o registo definitivo com a informação do art. 35.º do RJC (Reg. 756/2026, art. 10.º).',
-      '7. Manter os dados permanentemente atualizados e comunicar alterações no prazo de 30 dias úteis — 3 meses para os prestadores de serviços digitais (RJC, art. 35.º, n.os 3 e 4; Reg. 756/2026, art. 11.º).',
+      { title: 'Confirmar se a entidade está abrangida pelo regime', basis: 'RJC, arts. 3.º, 4.º, 6.º e 7.º e Anexos I e II; Reg. 756/2026, art. 4.º, n.os 6 e 7' },
+      { title: 'Criar a conta da entidade na plataforma do CNCS', basis: 'Reg. 756/2026, arts. 6.º e 7.º' },
+      { title: 'Fazer a autoidentificação no CNCS (30 dias após iniciar atividade; 60 dias se já está em atividade)', basis: 'RJC, art. 8.º, n.º 1; Reg. 756/2026, art. 8.º' },
+      { title: 'Responder ao projeto de qualificação do CNCS em 10 dias úteis', basis: 'Reg. 756/2026, art. 9.º, n.os 1 a 3' },
+      { title: 'Registar na AnkoraOne a qualificação e o nível notificados pelo CNCS', basis: 'RJC, art. 8.º, n.º 5; Reg. 756/2026, art. 9.º, n.os 4 a 6 e 10' },
+      { title: 'Completar o registo definitivo no CNCS', basis: 'RJC, art. 35.º; Reg. 756/2026, art. 10.º' },
+      { title: 'Manter os dados do registo atualizados (alterações em 30 dias úteis)', basis: 'RJC, art. 35.º, n.os 3 e 4; Reg. 756/2026, art. 11.º' },
     ],
   },
   {
     section: 'B. Governação e responsáveis', section_order: 2,
     tasks: [
-      '1. Os órgãos de gestão aprovam as medidas de gestão dos riscos de cibersegurança e supervisionam a sua aplicação (RJC, art. 25.º, n.º 1, alíneas a) e b)).',
-      '2. Os órgãos de gestão asseguram a realização, com periodicidade regular, de ações de formação em cibersegurança (RJC, art. 25.º, n.º 1, alínea d)).',
-      '3. Designar o responsável de cibersegurança e comunicá-lo na plataforma no prazo de 20 dias úteis; entidades já em atividade: a contar da notificação da qualificação (RJC, art. 31.º, n.os 1, 3 e 4; Reg. 756/2026, art. 14.º).',
-      '4. Comunicar sem demora injustificada a substituição do responsável de cibersegurança (RJC, art. 31.º, n.º 5).',
-      '5. Indicar o ponto de contacto permanente (24/7 em períodos de ativação) no prazo de 20 dias úteis e comunicar imediatamente quaisquer alterações (RJC, art. 32.º; Reg. 756/2026, art. 15.º).',
+      { title: 'A gestão aprova as medidas de cibersegurança e acompanha a sua aplicação', basis: 'RJC, art. 25.º, n.º 1, alíneas a) e b)' },
+      { title: 'A gestão garante formação regular em cibersegurança', basis: 'RJC, art. 25.º, n.º 1, alínea d)' },
+      { title: 'Nomear o responsável de cibersegurança e comunicá-lo em 20 dias úteis', basis: 'RJC, art. 31.º, n.os 1, 3 e 4; Reg. 756/2026, art. 14.º' },
+      { title: 'Comunicar logo a substituição do responsável de cibersegurança', basis: 'RJC, art. 31.º, n.º 5' },
+      { title: 'Indicar o ponto de contacto permanente em 20 dias úteis', basis: 'RJC, art. 32.º; Reg. 756/2026, art. 15.º' },
     ],
   },
   {
     section: 'C. Gestão dos riscos', section_order: 3,
     tasks: [
-      '1. Implementar o sistema de gestão de riscos de cibersegurança (RJC, art. 26.º, n.os 1 a 3).',
-      '2. Analisar e gerir os riscos de todos os ativos, pelo menos uma vez por ano e após alerta do CNCS, e documentar a análise (RJC, art. 29.º; Reg. 756/2026, art. 31.º, n.os 1 a 3)' + EFF + '.',
-      '3. Analisar o risco residual após a adoção das medidas de cibersegurança (RJC, art. 29.º, n.º 2; Reg. 756/2026, art. 31.º, n.º 4)' + EFF + '.',
+      { title: 'Pôr em prática a gestão dos riscos de cibersegurança', basis: 'RJC, art. 26.º, n.os 1 a 3' },
+      { title: 'Analisar os riscos de todos os ativos, pelo menos uma vez por ano', basis: 'RJC, art. 29.º; Reg. 756/2026, art. 31.º, n.os 1 a 3', from2028: true },
+      { title: 'Avaliar o risco que fica depois de aplicar as medidas (risco residual)', basis: 'RJC, art. 29.º, n.º 2; Reg. 756/2026, art. 31.º, n.º 4', from2028: true },
     ],
   },
   {
     section: 'D. Medidas de cibersegurança', section_order: 4,
     tasks: [
-      '1. Aplicar as medidas mínimas do nível de conformidade (Reg. 756/2026, Anexo III) ou do grupo da entidade pública relevante (Anexo IV), incluindo as dos níveis inferiores (art. 30.º) — acompanhar em Biblioteca Legal › Conformidade. Para as entidades públicas relevantes, a obrigação consta do art. 33.º do RJC' + EFF + '.',
-      '2. Cobrir as medidas do art. 27.º, n.º 1, do RJC: tratamento de incidentes; continuidade (cópias de segurança, recuperação de desastres, gestão de crises); cadeia de abastecimento; aquisição, desenvolvimento e manutenção, incluindo vulnerabilidades; avaliação da eficácia; ciber-higiene e formação; criptografia; recursos humanos, controlo de acessos e gestão de ativos; autenticação multifator e comunicações seguras' + EFF + '.',
-      '3. Adotar sem demora injustificada as medidas corretivas necessárias (RJC, art. 27.º, n.º 2)' + EFF + '.',
-      '4. Elaborar e comunicar a lista de ativos diretamente acessíveis através da Internet: versão inicial até 31 de janeiro do ano seguinte à notificação da qualificação ou em 6 meses, o que ocorrer primeiro; depois, anualmente (Reg. 756/2026, art. 32.º).',
-      '5. Adaptar-se a uma nova qualificação ou a novas medidas mínimas no prazo de 6 meses (RJC, art. 26.º, n.º 8).',
+      { title: 'Aplicar as medidas mínimas do seu nível (ver Biblioteca Legal › Conformidade)', basis: 'Reg. 756/2026, art. 30.º e Anexos III e IV; RJC, art. 33.º', from2028: true },
+      { title: 'Cobrir as nove áreas obrigatórias: incidentes, continuidade, fornecedores, desenvolvimento, eficácia, formação, cifra, acessos e ativos, autenticação forte', basis: 'RJC, art. 27.º, n.º 1', from2028: true },
+      { title: 'Corrigir sem demora as falhas encontradas', basis: 'RJC, art. 27.º, n.º 2', from2028: true },
+      { title: 'Enviar ao CNCS a lista de ativos acessíveis pela Internet e atualizá-la todos os anos', basis: 'Reg. 756/2026, art. 32.º' },
+      { title: 'Adaptar-se em 6 meses a uma nova qualificação ou a novas medidas', basis: 'RJC, art. 26.º, n.º 8' },
     ],
   },
   {
     section: 'E. Cadeia de abastecimento', section_order: 5,
     tasks: [
-      '1. Identificar os fornecedores e prestadores de serviços críticos e avaliar os riscos da cadeia de abastecimento pelo menos uma vez por ano (QNRCS GR.CA-7, Reg. 756/2026, Anexo III).',
-      '2. Considerar as vulnerabilidades específicas de cada fornecedor, a qualidade dos produtos e as práticas de cibersegurança dos fornecedores, incluindo o desenvolvimento seguro (RJC, art. 28.º, alíneas a) a c))' + EFF + '.',
-      '3. Considerar as avaliações coordenadas de riscos e as decisões de restrição ou exclusão de equipamentos (RJC, art. 28.º, alíneas d) e e))' + EFF + '.',
+      { title: 'Identificar os fornecedores críticos e avaliar o seu risco todos os anos', basis: 'Reg. 756/2026, Anexo III (QNRCS GR.CA-7)' },
+      { title: 'Avaliar as práticas de segurança e a qualidade dos produtos de cada fornecedor', basis: 'RJC, art. 28.º, alíneas a) a c)', from2028: true },
+      { title: 'Ter em conta as avaliações coordenadas de risco e as restrições a equipamentos', basis: 'RJC, art. 28.º, alíneas d) e e)', from2028: true },
     ],
   },
   {
     section: 'F. Incidentes', section_order: 6,
     tasks: [
-      '1. Definir os critérios de incidente significativo (RJC, art. 40.º, n.os 3 e 4; Reg. 756/2026, art. 20.º, n.º 3).',
-      '2. Preparar as notificações na plataforma: inicial em 24 h, atualização até 72 h, fim de impacto em 24 h e relatório final em 30 dias úteis (RJC, arts. 41.º a 44.º; Reg. 756/2026, art. 20.º).',
-      '3. Prever os canais alternativos em caso de indisponibilidade (correio eletrónico ou telefone) (Reg. 756/2026, art. 17.º e art. 20.º, n.º 4).',
-      '4. Comunicar os incidentes significativos aos destinatários dos serviços, quando aplicável (RJC, art. 48.º).',
-      '5. Cumprir as restantes obrigações de notificação (Ministério Público, Polícia Judiciária, CNPD, GNS) (RJC, art. 40.º, n.º 5).',
+      { title: 'Definir quando um incidente é significativo', basis: 'RJC, art. 40.º, n.os 3 e 4; Reg. 756/2026, art. 20.º, n.º 3' },
+      { title: 'Preparar as notificações ao CNCS: 24 h, 72 h, fim do impacto em 24 h e relatório final em 30 dias úteis', basis: 'RJC, arts. 41.º a 44.º; Reg. 756/2026, art. 20.º' },
+      { title: 'Ter canais alternativos (email ou telefone) se a plataforma falhar', basis: 'Reg. 756/2026, art. 17.º e art. 20.º, n.º 4' },
+      { title: 'Informar os clientes afetados por incidentes significativos', basis: 'RJC, art. 48.º' },
+      { title: 'Cumprir as outras notificações obrigatórias (MP, PJ, CNPD, GNS)', basis: 'RJC, art. 40.º, n.º 5' },
     ],
   },
   {
     section: 'G. Formação e sensibilização', section_order: 7,
     tasks: [
-      '1. Definir e executar o plano de sensibilização e formação em cibersegurança de todo o pessoal (QNRCS PR.FC-1 e PR.FC-2).',
-      '2. Assegurar formação específica do pessoal com funções especializadas em cibersegurança e dos órgãos de gestão, direção e administração (QNRCS PR.FC-2).',
-      '3. Realizar testes e exercícios de cibersegurança e incorporar as melhorias identificadas (QNRCS ID.MC-2).',
+      { title: 'Ter e cumprir um plano de formação em cibersegurança para todo o pessoal', basis: 'Reg. 756/2026, Anexo III (QNRCS PR.FC-1 e PR.FC-2)' },
+      { title: 'Dar formação específica às equipas técnicas e à gestão', basis: 'Reg. 756/2026, Anexo III (QNRCS PR.FC-2)' },
+      { title: 'Fazer testes e exercícios e aplicar as melhorias', basis: 'Reg. 756/2026, Anexo III (QNRCS ID.MC-2)' },
     ],
   },
   {
     section: 'H. Relatórios, certificação e supervisão', section_order: 8,
     tasks: [
-      '1. Relatório anual: entidades essenciais até ao último dia útil de janeiro; entidades importantes quando solicitado — segundo os modelos obrigatórios (RJC, art. 30.º; Reg. 756/2026, art. 13.º)' + EFF + '.',
-      '2. Comunicar a revogação de certificações em 72 horas e a suspensão, renovação ou alteração de âmbito em 10 dias úteis (Reg. 756/2026, art. 27.º, n.º 6).',
-      '3. Organizar as evidências para a supervisão: ex ante para entidades essenciais, ex post para importantes e públicas relevantes (RJC, arts. 54.º e 55.º).',
-      '4. Notificar a participação em acordos de partilha de informações sobre cibersegurança (RJC, art. 24.º, n.os 6 e 7).',
+      { title: 'Enviar o relatório anual (essenciais: até ao último dia útil de janeiro)', basis: 'RJC, art. 30.º; Reg. 756/2026, art. 13.º', from2028: true },
+      { title: 'Comunicar alterações às certificações (revogação em 72 h; restantes em 10 dias úteis)', basis: 'Reg. 756/2026, art. 27.º, n.º 6' },
+      { title: 'Ter as evidências organizadas para a supervisão do CNCS', basis: 'RJC, arts. 54.º e 55.º' },
+      { title: 'Comunicar a adesão a acordos de partilha de informação', basis: 'RJC, art. 24.º, n.os 6 e 7' },
     ],
   },
 ];
@@ -92,76 +97,89 @@ export const JOURNEY_TEMPLATE_EN = [
   {
     section: 'A. Scope, self-identification and qualification', section_order: 1,
     tasks: [
-      '1. Check whether the entity is covered: sectors and types of entity in Annexes I and II, size and exclusions (RJC arts. 3, 4, 6 and 7; platform scope-checking tool — Reg. 756/2026, art. 4(6)-(7)).',
-      '2. Create the entity account on the CNCS electronic platform, with high-assurance authentication and profiles for the legal representative, the cybersecurity officer and the permanent point of contact (Reg. 756/2026, arts. 6 and 7).',
-      '3. Self-identify on the platform: within 30 days of starting activity or, for entities already operating, within 60 days of the platform becoming available (RJC art. 8(1); Reg. 756/2026, art. 8).',
-      '4. Comment on the draft qualification decision within 10 working days (Reg. 756/2026, art. 9(1)-(3)).',
-      '5. Record in AnkoraOne the qualification (essential, important or relevant public entity — Group A or B) and the conformity level notified by the CNCS (RJC art. 8(5); Reg. 756/2026, art. 9(4)-(6) and (10)).',
-      '6. Complete the definitive registration with the information in RJC art. 35 (Reg. 756/2026, art. 10).',
-      '7. Keep the data permanently up to date and report changes within 30 working days — 3 months for digital service providers (RJC art. 35(3)-(4); Reg. 756/2026, art. 11).',
+      { title: 'Confirm whether the entity is covered by the regime', basis: 'RJC arts. 3, 4, 6 and 7 and Annexes I and II; Reg. 756/2026, art. 4(6)-(7)' },
+      { title: 'Create the entity account on the CNCS platform', basis: 'Reg. 756/2026, arts. 6 and 7' },
+      { title: 'Self-identify with the CNCS (30 days after starting activity; 60 days if already operating)', basis: 'RJC art. 8(1); Reg. 756/2026, art. 8' },
+      { title: 'Reply to the CNCS draft qualification within 10 working days', basis: 'Reg. 756/2026, art. 9(1)-(3)' },
+      { title: 'Record in AnkoraOne the qualification and level notified by the CNCS', basis: 'RJC art. 8(5); Reg. 756/2026, art. 9(4)-(6) and (10)' },
+      { title: 'Complete the definitive registration with the CNCS', basis: 'RJC art. 35; Reg. 756/2026, art. 10' },
+      { title: 'Keep the registration data up to date (changes within 30 working days)', basis: 'RJC art. 35(3)-(4); Reg. 756/2026, art. 11' },
     ],
   },
   {
     section: 'B. Governance and accountable roles', section_order: 2,
     tasks: [
-      '1. Management bodies approve the cybersecurity risk-management measures and oversee their implementation (RJC art. 25(1)(a)-(b)).',
-      '2. Management bodies ensure that cybersecurity training is carried out regularly (RJC art. 25(1)(d)).',
-      '3. Appoint the cybersecurity officer and report them on the platform within 20 working days; entities already operating: counted from notification of the qualification (RJC art. 31(1), (3), (4); Reg. 756/2026, art. 14).',
-      '4. Report the replacement of the cybersecurity officer without undue delay (RJC art. 31(5)).',
-      '5. Designate the permanent point of contact (24/7 during activation periods) within 20 working days and report any change immediately (RJC art. 32; Reg. 756/2026, art. 15).',
+      { title: 'Management approves the cybersecurity measures and oversees them', basis: 'RJC art. 25(1)(a)-(b)' },
+      { title: 'Management ensures regular cybersecurity training', basis: 'RJC art. 25(1)(d)' },
+      { title: 'Appoint the cybersecurity officer and report them within 20 working days', basis: 'RJC art. 31(1), (3), (4); Reg. 756/2026, art. 14' },
+      { title: 'Report a change of cybersecurity officer without delay', basis: 'RJC art. 31(5)' },
+      { title: 'Designate the permanent point of contact within 20 working days', basis: 'RJC art. 32; Reg. 756/2026, art. 15' },
     ],
   },
   {
     section: 'C. Risk management', section_order: 3,
     tasks: [
-      '1. Implement the cybersecurity risk-management system (RJC art. 26(1)-(3)).',
-      '2. Analyse and manage the risks to all assets, at least once a year and after a CNCS alert, and document the analysis (RJC art. 29; Reg. 756/2026, art. 31(1)-(3))' + EFF_EN + '.',
-      '3. Analyse residual risk after adopting the cybersecurity measures (RJC art. 29(2); Reg. 756/2026, art. 31(4))' + EFF_EN + '.',
+      { title: 'Put cybersecurity risk management in place', basis: 'RJC art. 26(1)-(3)' },
+      { title: 'Analyse the risks to all assets at least once a year', basis: 'RJC art. 29; Reg. 756/2026, art. 31(1)-(3)', from2028: true },
+      { title: 'Assess the risk left after applying the measures (residual risk)', basis: 'RJC art. 29(2); Reg. 756/2026, art. 31(4)', from2028: true },
     ],
   },
   {
     section: 'D. Cybersecurity measures', section_order: 4,
     tasks: [
-      '1. Apply the minimum measures for the conformity level (Reg. 756/2026, Annex III) or the relevant public entity group (Annex IV), including those of lower levels (art. 30) — track them in Legal Library › Compliance. For relevant public entities the obligation is in RJC art. 33' + EFF_EN + '.',
-      '2. Cover the measures in RJC art. 27(1): incident handling; continuity (backups, disaster recovery, crisis management); supply chain; acquisition, development and maintenance, including vulnerabilities; effectiveness assessment; cyber hygiene and training; cryptography; human resources, access control and asset management; multi-factor authentication and secure communications' + EFF_EN + '.',
-      '3. Take the necessary corrective measures without undue delay (RJC art. 27(2))' + EFF_EN + '.',
-      '4. Prepare and submit the list of assets directly accessible from the Internet: initial version by 31 January of the year after the qualification notice or within 6 months, whichever comes first; then yearly (Reg. 756/2026, art. 32).',
-      '5. Adapt to a new qualification or new minimum measures within 6 months (RJC art. 26(8)).',
+      { title: 'Apply the minimum measures for your level (see Legal Library › Compliance)', basis: 'Reg. 756/2026, art. 30 and Annexes III and IV; RJC art. 33', from2028: true },
+      { title: 'Cover the nine mandatory areas: incidents, continuity, suppliers, development, effectiveness, training, encryption, access and assets, strong authentication', basis: 'RJC art. 27(1)', from2028: true },
+      { title: 'Fix the gaps found without delay', basis: 'RJC art. 27(2)', from2028: true },
+      { title: 'Send the CNCS the list of Internet-facing assets and update it every year', basis: 'Reg. 756/2026, art. 32' },
+      { title: 'Adapt within 6 months to a new qualification or new measures', basis: 'RJC art. 26(8)' },
     ],
   },
   {
     section: 'E. Supply chain', section_order: 5,
     tasks: [
-      '1. Identify critical suppliers and service providers and assess supply-chain risks at least once a year (QNRCS GR.CA-7, Reg. 756/2026, Annex III).',
-      '2. Take into account each supplier’s specific vulnerabilities, product quality and the suppliers’ cybersecurity practices, including secure development (RJC art. 28(a)-(c))' + EFF_EN + '.',
-      '3. Take into account coordinated risk assessments and decisions restricting or excluding equipment (RJC art. 28(d)-(e))' + EFF_EN + '.',
+      { title: 'Identify critical suppliers and assess their risk every year', basis: 'Reg. 756/2026, Annex III (QNRCS GR.CA-7)' },
+      { title: 'Assess each supplier’s security practices and product quality', basis: 'RJC art. 28(a)-(c)', from2028: true },
+      { title: 'Take coordinated risk assessments and equipment restrictions into account', basis: 'RJC art. 28(d)-(e)', from2028: true },
     ],
   },
   {
     section: 'F. Incidents', section_order: 6,
     tasks: [
-      '1. Define the criteria for a significant incident (RJC art. 40(3)-(4); Reg. 756/2026, art. 20(3)).',
-      '2. Prepare the platform notifications: initial within 24h, update within 72h, end of impact within 24h and final report within 30 working days (RJC arts. 41-44; Reg. 756/2026, art. 20).',
-      '3. Plan the alternative channels if the platform is unavailable (email or phone) (Reg. 756/2026, arts. 17 and 20(4)).',
-      '4. Inform the recipients of the services of significant incidents, where applicable (RJC art. 48).',
-      '5. Meet the other notification duties (Public Prosecutor, Judicial Police, CNPD, GNS) (RJC art. 40(5)).',
+      { title: 'Define when an incident is significant', basis: 'RJC art. 40(3)-(4); Reg. 756/2026, art. 20(3)' },
+      { title: 'Prepare the CNCS notifications: 24h, 72h, end of impact in 24h and final report in 30 working days', basis: 'RJC arts. 41-44; Reg. 756/2026, art. 20' },
+      { title: 'Have alternative channels (email or phone) if the platform is down', basis: 'Reg. 756/2026, arts. 17 and 20(4)' },
+      { title: 'Inform customers affected by significant incidents', basis: 'RJC art. 48' },
+      { title: 'Meet the other mandatory notifications (Prosecutor, Judicial Police, CNPD, GNS)', basis: 'RJC art. 40(5)' },
     ],
   },
   {
     section: 'G. Training and awareness', section_order: 7,
     tasks: [
-      '1. Define and run the cybersecurity awareness and training plan for all staff (QNRCS PR.FC-1 and PR.FC-2).',
-      '2. Provide specific training for staff with specialised cybersecurity roles and for management bodies (QNRCS PR.FC-2).',
-      '3. Run cybersecurity tests and exercises and incorporate the improvements identified (QNRCS ID.MC-2).',
+      { title: 'Have and follow a cybersecurity training plan for all staff', basis: 'Reg. 756/2026, Annex III (QNRCS PR.FC-1 and PR.FC-2)' },
+      { title: 'Give specific training to technical teams and management', basis: 'Reg. 756/2026, Annex III (QNRCS PR.FC-2)' },
+      { title: 'Run tests and exercises and apply the improvements', basis: 'Reg. 756/2026, Annex III (QNRCS ID.MC-2)' },
     ],
   },
   {
     section: 'H. Reporting, certification and supervision', section_order: 8,
     tasks: [
-      '1. Annual report: essential entities by the last working day of January; important entities when requested — using the mandatory templates (RJC art. 30; Reg. 756/2026, art. 13)' + EFF_EN + '.',
-      '2. Report revocation of certifications within 72 hours and suspension, renewal or change of scope within 10 working days (Reg. 756/2026, art. 27(6)).',
-      '3. Organise the evidence for supervision: ex ante for essential entities, ex post for important and relevant public entities (RJC arts. 54 and 55).',
-      '4. Notify participation in cybersecurity information-sharing arrangements (RJC art. 24(6)-(7)).',
+      { title: 'Send the annual report (essential entities: by the last working day of January)', basis: 'RJC art. 30; Reg. 756/2026, art. 13', from2028: true },
+      { title: 'Report changes to certifications (revocation in 72h; others in 10 working days)', basis: 'Reg. 756/2026, art. 27(6)' },
+      { title: 'Keep the evidence organised for CNCS supervision', basis: 'RJC arts. 54 and 55' },
+      { title: 'Report joining information-sharing arrangements', basis: 'RJC art. 24(6)-(7)' },
     ],
   },
 ];
+
+/** Normaliza uma tarefa (modelo atual em objeto, modelo anterior em texto). */
+export function journeyTask(task) {
+  if (!task) return null;
+  return typeof task === 'string' ? { title: task, basis: '', from2028: false } : task;
+}
+
+/** Texto guardado em ComplianceChecklist.task_text: título e base legal. */
+export function journeyTaskText(task) {
+  const t = journeyTask(task);
+  if (!t) return '';
+  return t.basis ? `${t.title} (${t.basis})` : t.title;
+}

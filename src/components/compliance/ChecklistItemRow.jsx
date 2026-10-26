@@ -19,7 +19,7 @@ import EvidencePanel from '@/components/evidence/EvidencePanel';
 import AiDraftDialog from '@/components/ai/AiDraftDialog';
 import { Sparkles, Paperclip } from 'lucide-react';
 
-export default function ChecklistItemRow({ item, queryKey, displayText, customerUsers = [] }) {
+export default function ChecklistItemRow({ item, queryKey, displayText, basis, from2028 = false, customerUsers = [] }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -72,6 +72,12 @@ export default function ChecklistItemRow({ item, queryKey, displayText, customer
           <p className={cn('text-sm leading-snug', item.status === 'done' && 'line-through text-muted-foreground', item.status === 'not_applicable' && 'text-muted-foreground')}>
             {displayText || item.task_text}
           </p>
+          {(basis || from2028) && (
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              {basis && <span className="text-[11px] text-muted-foreground" title={t('x_journey_basis')}>{basis}</span>}
+              {from2028 && <Badge variant="outline" className="text-[10px] font-normal text-chart-4 border-chart-4/30">{t('x_journey_from_2028')}</Badge>}
+            </div>
+          )}
           {!editing && (item.owner || item.due_date || item.notes) && (
             <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-muted-foreground">
               {item.owner && <span className="flex items-center gap-1"><User className="w-3 h-3" />{item.owner}</span>}

@@ -48,14 +48,17 @@ function MeasureRow({ m, record, onSave, canEdit, evState, tools = [], customerI
   }, [record?.id, record?.owner, record?.due_date, record?.notes]);
   const status = record?.status || 'pending';
   const code = m.control ? m.control.id : m.code;
-  const label = m.control ? m.control.statement : m.area;
+  // Título simples: a frase do controlo (Anexo I) ou a área da medida (Anexo IV). O texto completo da medida
+  // (Anexo III/IV) fica no detalhe; a «verificação» oficial diz o que guardar como evidência.
+  const title = m.control ? m.control.statement : m.area;
+  const basis = m.control ? `Reg. 756/2026, Anexo III — ${m.control.id}` : `Reg. 756/2026, Anexo IV — ${m.code}`;
   return (
     <div className="rounded-md border p-3 space-y-2">
       <div className="flex items-start gap-2 flex-wrap">
         <span className="font-mono text-xs font-semibold text-primary">{code}</span>
         {m.level && <LevelBadge level={m.level} />}
         {m.group && <Badge variant="outline" className="text-[11px]">{t('legal_epr_group')} {m.group}</Badge>}
-        <p className="text-sm flex-1 min-w-[12rem]">{m.measure}</p>
+        <p className="text-sm font-medium flex-1 min-w-[12rem]">{title}</p>
         {evState && <Badge variant="outline" className={`text-[10px] ${EV_BADGE[evState]}`}>{t(`ev_badge_${evState}`)}</Badge>}
         {onAi && <Button type="button" size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={() => onAi(m)} title={t('ai_measure_button')}><Sparkles className="w-3.5 h-3.5 mr-1" />{t('ai_short')}</Button>}
         <Select value={status} onValueChange={(v) => onSave({ status: v })} disabled={!canEdit}>
@@ -63,13 +66,14 @@ function MeasureRow({ m, record, onSave, canEdit, evState, tools = [], customerI
           <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{t(`legal_comp_status_${s}`)}</SelectItem>)}</SelectContent>
         </Select>
       </div>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      {m.verification && <p className="text-xs"><span className="font-medium">{t('x_measure_expected')}:</span> {m.verification}</p>}
+      <p className="text-[11px] text-muted-foreground">{basis}</p>
       <button type="button" className="text-xs text-primary hover:underline" onClick={() => setOpen((v) => !v)}>
-        {open ? '−' : '+'} {t('legal_verification')} · {t('legal_comp_owner')} · {t('legal_comp_notes')}
+        {open ? '−' : '+'} {t('x_measure_official')} · {t('legal_comp_owner')} · {t('legal_comp_notes')}
       </button>
       {open && (
         <div className="space-y-2 pt-1">
-          <p className="text-xs"><span className="font-medium">{t('legal_verification')}:</span> {m.verification}</p>
+          <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground">{t('x_measure_official')}:</span> {m.measure}</p>
           <div className="grid sm:grid-cols-2 gap-2">
             <Input value={draft.owner} disabled={!canEdit} onChange={(e) => setDraft({ ...draft, owner: e.target.value })} placeholder={t('legal_comp_owner')} />
             <Input type="date" value={draft.due_date} disabled={!canEdit} onChange={(e) => setDraft({ ...draft, due_date: e.target.value })} />
@@ -83,7 +87,7 @@ function MeasureRow({ m, record, onSave, canEdit, evState, tools = [], customerI
             <p className="text-xs"><span className="font-medium">{t('tl_covering')}:</span> {tools.map((c) => `${c.product}${c.vendor ? ` (${c.vendor})` : ''}`).join(' · ')}</p>
           )}
           <EvidencePanel customerId={customerId} provider={provider} canUpload={canEdit}
-            links={[{ type: 'measure', id: m.key, ref: code, label: `${code}${m.level ? ` · ${m.level}` : ''}` }]} />
+            links={[{ type: 'measure', id: m.key, ref: code, label: `${code}${m.level ? ` · ${m.level}` : ''} — ${title}`.slice(0, 160) }]} />
         </div>
       )}
     </div>
@@ -167,7 +171,7 @@ export default function ComplianceTab() {
           customer_id: customer.id, customer_name: customer.name, framework: CHECKLIST_FRAMEWORK,
           section: m.control ? `${m.control.objective.code} — ${m.control.objective.name}` : `${t('legal_epr_group')} ${m.group}`,
           section_order: m.control ? m.control.objective.number : (m.group === 'B' ? 1 : 2),
-          task_text: m.measure, task_order: index, requirement_id: m.key,
+          task_text: m.control ? m.control.statement : m.area, task_order: index, requirement_id: m.key,
           requirement_ref: m.control ? `Reg. 756/2026, Anexo III — ${m.control.id}` : `Reg. 756/2026, Anexo IV — ${m.code}`,
           level: m.level || `grupo_${m.group}`, status: 'pending', ...patch,
         });
