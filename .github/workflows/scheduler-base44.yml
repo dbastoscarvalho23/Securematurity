@@ -1,14 +1,10 @@
-# Agendador das funções do Base44.
-# A app Securematurity é importada do GitHub e o Base44 não corre workflows nesse tipo de app; este ficheiro
-# substitui os agendamentos de base44/workflows/. Horas em UTC.
+# Execução manual das funções agendadas do Base44.
+# Na app nativa AnkoraOne_DC_Repo os agendamentos correm no próprio Base44 (base44/workflows/); este ficheiro
+# fica só para correr uma função à mão ou como recurso, se um workflow do Base44 falhar. Horas em UTC.
 # Requer o segredo do repositório AUTOMATION_SECRET (o mesmo valor do segredo AUTOMATION_SECRET da app no Base44).
 name: Agendador Base44
 
 on:
-  schedule:
-    - cron: '17 */4 * * *'   # Alertas CVE (cveMonitor)
-    - cron: '0 7 * * *'      # Lembretes de revisão de documentos e prazos de risco
-    - cron: '0 5 1 * *'      # Relatório mensal (generateMonthlyAnnualReport)
   workflow_dispatch:
     inputs:
       function:
@@ -33,8 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      APP_ID: 6ab5373e7f8f586c80cb9ed8
-      APP_HOST: https://securematurity-80cb9ed8.base44.app
+      APP_ID: 6adf8df867faaf60a171efa5
+      APP_HOST: https://app.ankoraone.com
       AUTOMATION_SECRET: ${{ secrets.AUTOMATION_SECRET }}
     steps:
       - name: Escolher funções

@@ -1,6 +1,12 @@
 /** Catálogo inicial (igual à produção + módulos novos do Securematurity). Editável na consola de licenças. */
-export const LICENSE_PUBLIC_KEY = 'MCowBQYDK2VwAyEApWBoyJSvmeCkOh4zgUwyfkhVPMIr8h0wd/ALA44CyeA='; // SPKI DER base64 (Ed25519)
-export const LICENSE_KEY_ID = 'ank-2dbab69654d4';
+// Chave de assinatura em uso (SPKI DER base64, Ed25519). A privada está só no segredo LICENSE_SIGNING_KEY da app.
+export const LICENSE_PUBLIC_KEY = 'MCowBQYDK2VwAyEAHBk6/MhW+BYfC7x+UOBVFUC5siuVZhYhB1sk2KCQOeQ='; // app AnkoraOne_DC_Repo, out. 2026
+export const LICENSE_KEY_ID = 'ank-c92053f30934';
+// Chaves anteriores, só para verificar certificados já emitidos (identificadas pelo «kid» do cabeçalho).
+export const LICENSE_PUBLIC_KEYS: Record<string, string> = {
+  [LICENSE_KEY_ID]: LICENSE_PUBLIC_KEY,
+  'ank-2dbab69654d4': 'MCowBQYDK2VwAyEApWBoyJSvmeCkOh4zgUwyfkhVPMIr8h0wd/ALA44CyeA=', // app Securematurity (importada), retirada
+};
 
 export const SEED_MODULES = [
   { code: 'nis2_journey', name: 'Jornada de Conformidade', description: 'Jornada RJC/NIS2 e checklist', tier_code: 'core', display_order: 1 },

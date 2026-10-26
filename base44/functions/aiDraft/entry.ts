@@ -134,39 +134,67 @@ const parseJson = (text) => {
 /**
  * file = { url?, bytes?, mime } (só na análise de evidências). Ficheiros de texto vão como texto; PDF e imagens como
  * anexo. Nunca se fazem cópias do ficheiro noutro armazenamento.
+ *
+ * Fornecedor (segredo AI_PROVIDER):
+ *  - "claude" ou "anthropic": Claude (ANTHROPIC_API_KEY; modelo em ANTHROPIC_MODEL, por omissão DEFAULT_CLAUDE_MODEL).
+ *    Se o Claude não estiver configurado ou falhar, o pedido segue pelo LLM do Base44 e a resposta indica-o.
+ *  - "base44": só o LLM do Base44 (exceto PDF/imagens fora do repositório nativo, que exigem o Claude).
+ *  - sem valor: Claude quando existe ANTHROPIC_API_KEY, senão Base44.
  */
+const DEFAULT_CLAUDE_MODEL = 'claude-sonnet-5-5';
+
+function aiProvider() {
+  const raw = String(secrets.get('AI_PROVIDER') || '').trim().toLowerCase();
+  if (['claude', 'anthropic'].includes(raw)) return 'anthropic';
+  if (raw === 'base44') return 'base44';
+  return secrets.get('ANTHROPIC_API_KEY') ? 'anthropic' : 'base44';
+}
+
+async function callClaude(prompt, schema, file, textFile) {
+  const key = secrets.get('ANTHROPIC_API_KEY');
+  if (!key) throw new Error('Falta o segredo ANTHROPIC_API_KEY');
+  const model = String(secrets.get('ANTHROPIC_MODEL') || DEFAULT_CLAUDE_MODEL).trim();
+  const content = [];
+  if (file && !textFile) {
+    const bytes = file.bytes || new Uint8Array(await (await fetch(file.url, { redirect: 'error' })).arrayBuffer());
+    if (file.mime === 'application/pdf') content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: toB64(bytes) } });
+    else if (/^image\/(png|jpeg|gif|webp)$/.test(file.mime)) content.push({ type: 'image', source: { type: 'base64', media_type: file.mime, data: toB64(bytes) } });
+    else throw new Error('Tipo de ficheiro não suportado na análise');
+  }
+  content.push({ type: 'text', text: `${prompt}${textFile}\n\nResponde apenas com um objeto JSON que respeite este esquema:\n${JSON.stringify(schema)}` });
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST', redirect: 'error',
+    headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model, max_tokens: 8000, messages: [{ role: 'user', content }] }),
+  });
+  if (!res.ok) throw new Error(`O Claude respondeu ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const data = await res.json();
+  if (data.stop_reason === 'max_tokens') throw Object.assign(new Error('A resposta da IA ficou incompleta. Reduza o âmbito ou tente novamente.'), { final: true });
+  return { result: parseJson((data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('')), provider: 'anthropic', model };
+}
+
 async function callLLM(base44, prompt, schema, file = null) {
-  const provider = String(secrets.get('AI_PROVIDER') || 'base44').toLowerCase();
+  const provider = aiProvider();
   let textFile = '';
   if (file && file.mime.startsWith('text/')) {
     const bytes = file.bytes || new Uint8Array(await (await fetch(file.url, { redirect: 'error' })).arrayBuffer());
     textFile = `\n\nCONTEÚDO DO FICHEIRO:\n${new TextDecoder().decode(bytes.subarray(0, 200000))}`;
   }
-  if (provider === 'anthropic') {
-    const key = secrets.get('ANTHROPIC_API_KEY');
-    const model = secrets.get('ANTHROPIC_MODEL');
-    if (!key || !model) throw new Error('Defina os segredos ANTHROPIC_API_KEY e ANTHROPIC_MODEL');
-    const content = [];
-    if (file && !textFile) {
-      const bytes = file.bytes || new Uint8Array(await (await fetch(file.url, { redirect: 'error' })).arrayBuffer());
-      if (file.mime === 'application/pdf') content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: toB64(bytes) } });
-      else if (/^image\/(png|jpeg|gif|webp)$/.test(file.mime)) content.push({ type: 'image', source: { type: 'base64', media_type: file.mime, data: toB64(bytes) } });
-      else throw new Error('Tipo de ficheiro não suportado na análise');
+  // PDF ou imagem sem URL (repositório externo): só o Claude os recebe em base64.
+  const needsClaude = !!(file && !textFile && !file.url);
+  let claudeError = '';
+  if (provider === 'anthropic' || (needsClaude && secrets.get('ANTHROPIC_API_KEY'))) {
+    try {
+      return await callClaude(prompt, schema, file, textFile);
+    } catch (e) {
+      if (e?.final || needsClaude) throw e;
+      claudeError = String(e?.message || e).slice(0, 300);
+      console.error('[aiDraft] Claude indisponível, a usar o LLM do Base44:', claudeError);
     }
-    content.push({ type: 'text', text: `${prompt}${textFile}\n\nResponde apenas com um objeto JSON que respeite este esquema:\n${JSON.stringify(schema)}` });
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST', redirect: 'error',
-      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model, max_tokens: 8000, messages: [{ role: 'user', content }] }),
-    });
-    if (!res.ok) throw new Error(`O fornecedor de IA respondeu ${res.status}. Tente novamente.`);
-    const data = await res.json();
-    if (data.stop_reason === 'max_tokens') throw new Error('A resposta da IA ficou incompleta. Reduza o âmbito ou tente novamente.');
-    return { result: parseJson((data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('')), provider: 'anthropic', model };
   }
-  if (file && !textFile && !file.url) throw new Error('Para analisar PDF ou imagens guardados fora do repositório nativo, configure o fornecedor de IA Anthropic (AI_PROVIDER=anthropic). Ficheiros de texto podem ser analisados já.');
+  if (needsClaude) throw new Error('Para analisar PDF ou imagens guardados fora do repositório nativo, configure o Claude (segredo ANTHROPIC_API_KEY). Ficheiros de texto podem ser analisados já.');
   const result = await base44.asServiceRole.integrations.Core.InvokeLLM({ prompt: `${prompt}${textFile}`, response_json_schema: schema, ...(file && !textFile ? { file_urls: [file.url] } : {}) });
-  return { result: typeof result === 'string' ? parseJson(result) : result, provider: 'base44', model: 'base44' };
+  return { result: typeof result === 'string' ? parseJson(result) : result, provider: claudeError ? 'base44 (recurso)' : 'base44', model: 'base44', ...(claudeError ? { fallback_reason: claudeError } : {}) };
 }
 
 /** Normaliza a resposta: secções na ordem do modelo, citações só das fontes enviadas, avisos de validação. */
