@@ -7,6 +7,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useLicense, hasModule } from '@/lib/licensing';
+import { useAiEnabled } from '@/lib/ai';
 import AiDraftsList from './AiDraftsList';
 import AiDraftDialog from './AiDraftDialog';
 
@@ -22,6 +23,9 @@ export default function AiWorkspace() {
   const [year, setYear] = useState(String(lastYear));
   const [open, setOpen] = useState(false);
   const { data: customers = [] } = useQuery({ queryKey: ['ai-customers'], queryFn: () => base44.entities.Customer.list('name', 500), enabled: isAdmin });
+  // Ponto de uso «documents» (Definições → Aplicação → Assistente de IA): desligado, esconde só o que chama o modelo;
+  // a lista de rascunhos continua visível (aprovar e descartar não chamam o modelo).
+  const aiOn = useAiEnabled('documents');
   if (!(isAdmin || user?.role === 'customer_admin') || !hasModule(license, user, 'ai_assistant')) return null;
   return (
     <div className="space-y-3">
@@ -32,14 +36,14 @@ export default function AiWorkspace() {
             <SelectContent>{customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
           </Select>
         )}
-        <Select value={year} onValueChange={setYear}>
+        {aiOn && <Select value={year} onValueChange={setYear}>
           <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>{[0, 1, 2].map((d) => String(lastYear + 1 - d)).map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
-        </Select>
-        <Button size="sm" variant="outline" disabled={!customerId} onClick={() => setOpen(true)}><FileText className="w-3.5 h-3.5 mr-1" />{t('ai_annual_button')}</Button>
+        </Select>}
+        {aiOn && <Button size="sm" variant="outline" disabled={!customerId} onClick={() => setOpen(true)}><FileText className="w-3.5 h-3.5 mr-1" />{t('ai_annual_button')}</Button>}
       </div>
       <AiDraftsList customerId={customerId} />
-      <AiDraftDialog open={open} onOpenChange={setOpen} customerId={customerId} target={{ type: 'annual_report', year: Number(year) }} kinds={['annual']} title={`${t('ai_kind_annual')} — ${year}`} />
+      <AiDraftDialog open={open && aiOn} onOpenChange={setOpen} customerId={customerId} target={{ type: 'annual_report', year: Number(year) }} kinds={['annual']} title={`${t('ai_kind_annual')} — ${year}`} />
     </div>
   );
 }

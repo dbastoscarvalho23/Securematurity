@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, getEntitlements, checkQuota, consumeQuota, LicenseError } from '../../shared/license.ts';
-import { callLLM, parseJson } from '../../shared/llm.ts';
+import { callLLM, parseJson, getAiSettings, aiPurposeEnabled, aiProvider, AI_DISABLED_MESSAGE } from '../../shared/llm.ts';
 
 /**
  * Pedidos de IA feitos a partir da interface (módulo «ai_assistant»).
@@ -14,7 +14,7 @@ import { callLLM, parseJson } from '../../shared/llm.ts';
  * Só o administrador da plataforma pode indicar customer_id; os restantes utilizadores agem sempre sobre o seu cliente.
  */
 
-// Uma chave por ponto de chamada na interface.
+// Uma chave por ponto de chamada na interface. Cada uma pode ser ligada ou desligada em AiSettings (shared/llm.ts).
 const PURPOSES = new Set([
   'assessment_question_selection', // AssessmentWizardAI: escolher perguntas do banco para uma avaliação
   'assessment_recommendations', // AssessmentDetail: recomendações ao concluir uma avaliação
@@ -71,6 +71,7 @@ export default async function (req) {
 
     const purpose = String(body.purpose || '');
     if (!PURPOSES.has(purpose)) return json({ error: 'Pedido de IA não reconhecido' }, 400);
+    if (!aiPurposeEnabled(await getAiSettings(base44), purpose)) return json({ error: AI_DISABLED_MESSAGE }, 403);
     const prompt = typeof body.prompt === 'string' ? body.prompt : '';
     if (!prompt.trim()) return json({ error: 'Pedido de IA vazio' }, 400);
     if (prompt.length > MAX_PROMPT) return json({ error: `O pedido de IA é demasiado longo (máximo de ${MAX_PROMPT} caracteres). Reduza o âmbito.` }, 400);
@@ -103,6 +104,9 @@ export default async function (req) {
 
     // Um ficheiro: segue a escolha de fornecedor de shared/llm.ts. Vários: só o LLM do Base44 os recebe (por URL).
     let out;
+    if (fileUrls.length > 1 && (await aiProvider(base44)) === 'anthropic_only') {
+      return json({ error: 'Com o motor «Só Claude» só é possível enviar um ficheiro por pedido.' }, 400);
+    }
     if (fileUrls.length > 1) {
       const result = await base44.asServiceRole.integrations.Core.InvokeLLM({ prompt, response_json_schema: schema, file_urls: fileUrls });
       out = { result: typeof result === 'string' ? parseJson(result) : result, provider: 'base44', model: 'base44' };

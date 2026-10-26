@@ -22,7 +22,7 @@ import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import EvidencePanel from '@/components/evidence/EvidencePanel';
 import AiDraftDialog from '@/components/ai/AiDraftDialog';
-import { INCIDENT_KINDS } from '@/lib/ai';
+import { INCIDENT_KINDS, useAiEnabled } from '@/lib/ai';
 import { useLicense, hasModule } from '@/lib/licensing';
 import { Sparkles } from 'lucide-react';
 
@@ -119,6 +119,8 @@ export default function IncidentManagement() {
 
   const isAdmin = user?.role === 'admin';
   const { data: aiLicense } = useLicense(isAdmin ? editing?.customer_id || undefined : undefined);
+  // Ponto de uso «documents» (Definições → Aplicação → Assistente de IA); a licença continua a ser verificada à parte.
+  const aiDocs = useAiEnabled('documents');
   const customerId = user?.data?.customer_id || user?.customer_id;
 
   const { data: records = [], isLoading } = useQuery({
@@ -374,7 +376,7 @@ export default function IncidentManagement() {
                 </Select>
               </div>
             )}
-            {editing?.customer_id && (isAdmin || user?.role === 'customer_admin') && hasModule(aiLicense, user, 'ai_assistant') && (
+            {editing?.customer_id && (isAdmin || user?.role === 'customer_admin') && hasModule(aiLicense, user, 'ai_assistant') && aiDocs && (
               <Button type="button" variant="outline" size="sm" className="w-fit" onClick={() => setAiIncident(editing)}><Sparkles className="w-3.5 h-3.5 mr-1" />{t('ai_incident_button')}</Button>
             )}
             {editing?.customer_id && (

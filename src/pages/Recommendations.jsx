@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import TaskFormDialog from '@/components/tasks/TaskFormDialog';
 import AIRecommendationDialog from '@/components/recommendations/AIRecommendationDialog';
+import { useAiEnabled } from '@/lib/ai';
 import BulkActionBar from '@/components/shared/BulkActionBar';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
@@ -34,6 +35,8 @@ export default function Recommendations() {
   const [taskDialog, setTaskDialog] = useState(false);
   const [prefillTask, setPrefillTask] = useState(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  // Botão de IA só quando o ponto está ativo (Definições → Aplicação → Assistente de IA).
+  const aiGenerate = useAiEnabled('recommendation_generation');
   const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
   const [newRecDialog, setNewRecDialog] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -265,10 +268,12 @@ export default function Recommendations() {
               {isCheckingDuplicates ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
               {t('recs_check_duplicates')}
             </Button>
-            <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
-              <Sparkles className="w-4 h-4" />
-              {t('recs_ai_generate')}
-            </Button>
+            {aiGenerate && (
+              <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
+                <Sparkles className="w-4 h-4" />
+                {t('recs_ai_generate')}
+              </Button>
+            )}
             <Button onClick={() => setNewRecDialog(true)} className="gap-2">
               <Plus className="w-4 h-4" />
               {t('recs_new')}
@@ -409,7 +414,7 @@ export default function Recommendations() {
       />
 
       <AIRecommendationDialog
-        open={aiDialogOpen}
+        open={aiDialogOpen && aiGenerate}
         onOpenChange={setAiDialogOpen}
         customers={customers}
         onSave={async (recs) => {

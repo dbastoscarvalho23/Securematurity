@@ -1,4 +1,52 @@
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import { invokeFn } from '@/lib/invokeFn';
+
+/**
+ * Pontos de uso do assistente de IA e valor por omissão (sem registo AiSettings ou sem lista guardada).
+ * Manter igual a AI_PURPOSE_DEFAULTS em base44/shared/llm.ts, que é quem decide no servidor.
+ * «documents» abrange tudo o que passa pela função aiDraft.
+ */
+export const AI_PURPOSES = [
+  { key: 'documents', default: true },
+  { key: 'supplier_questionnaire_generation', default: true },
+  { key: 'supplier_email_answer_extraction', default: true },
+  { key: 'assessment_recommendations', default: true },
+  { key: 'recommendation_generation', default: true },
+  { key: 'assessment_question_selection', default: false },
+  { key: 'question_gap_analysis', default: false },
+  { key: 'question_bank_translation', default: false },
+  { key: 'recommendation_translation', default: false },
+  { key: 'supplier_questionnaire_translation', default: false },
+];
+
+export const AI_ENGINES = ['claude', 'claude_only', 'base44'];
+
+export const defaultAiPurposes = () => AI_PURPOSES.filter((p) => p.default).map((p) => p.key);
+
+/** Configuração do assistente (registo único AiSettings, ou null). */
+export function useAiSettings() {
+  return useQuery({
+    queryKey: ['ai-settings'],
+    queryFn: async () => {
+      const list = await base44.entities.AiSettings.list('-updated_date', 1);
+      return list?.[0] || null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** O ponto de uso está ativo? Sem lista guardada, valem os valores por omissão. */
+export function aiEnabled(settings, purpose) {
+  if (Array.isArray(settings?.enabled_purposes)) return settings.enabled_purposes.includes(purpose);
+  return AI_PURPOSES.some((p) => p.key === purpose && p.default);
+}
+
+/** Atalho para os componentes: false enquanto a configuração carrega (o botão só aparece quando se sabe que está ativo). */
+export function useAiEnabled(purpose) {
+  const { data, isSuccess } = useAiSettings();
+  return isSuccess && aiEnabled(data, purpose);
+}
 
 /** Assistente de IA (função «aiDraft»): rascunhos com base apenas nos textos oficiais da Biblioteca Legal. */
 const call = (payload) => invokeFn('aiDraft', payload);

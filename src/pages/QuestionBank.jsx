@@ -16,7 +16,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
-import { aiAssist } from '@/lib/ai';
+import { aiAssist, useAiSettings, aiEnabled } from '@/lib/ai';
 
 const FRAMEWORK_COLORS = {
   NIS2: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
@@ -42,6 +42,10 @@ export default function QuestionBank() {
   const [isDeduplicating, setIsDeduplicating] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateProgress, setTranslateProgress] = useState({ done: 0, total: 0 });
+  // Botões de IA só nos pontos ativos (Definições → Aplicação → Assistente de IA).
+  const { data: aiSettings, isSuccess: aiLoaded } = useAiSettings();
+  const aiTranslate = aiLoaded && aiEnabled(aiSettings, 'question_bank_translation');
+  const aiGaps = aiLoaded && aiEnabled(aiSettings, 'question_gap_analysis');
 
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ['questions'],
@@ -197,19 +201,23 @@ Return only valid JSON with the translations.`,
         description={t('qb_subtitle')}
         actions={
           <div className="flex gap-2 items-center flex-wrap">
-            <Button variant="outline" onClick={handleTranslate} disabled={isTranslating} className="gap-2">
-              {isTranslating
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('qb_translating')} {translateProgress.done}/{translateProgress.total}</>
-                : <><Languages className="w-4 h-4" /> {t('qb_translate_pt')}</>
-              }
-            </Button>
+            {aiTranslate && (
+              <Button variant="outline" onClick={handleTranslate} disabled={isTranslating} className="gap-2">
+                {isTranslating
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('qb_translating')} {translateProgress.done}/{translateProgress.total}</>
+                  : <><Languages className="w-4 h-4" /> {t('qb_translate_pt')}</>
+                }
+              </Button>
+            )}
             <Button variant="outline" onClick={handleRemoveDuplicates} disabled={isDeduplicating} className="gap-2">
               {isDeduplicating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
               {t('qb_remove_dupes')}
             </Button>
-            <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="gap-2">
-              <Sparkles className="w-4 h-4" /> {t('qb_ai_generate')}
-            </Button>
+            {aiGaps && (
+              <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="gap-2">
+                <Sparkles className="w-4 h-4" /> {t('qb_ai_generate')}
+              </Button>
+            )}
             <Button onClick={handleNew} className="gap-2">
               <Plus className="w-4 h-4" /> {t('qb_new_question')}
             </Button>
@@ -375,7 +383,7 @@ Return only valid JSON with the translations.`,
       />
 
       <AIQuestionGeneratorDialog
-        open={aiDialogOpen}
+        open={aiDialogOpen && aiGaps}
         onOpenChange={setAiDialogOpen}
         existingQuestions={questions}
         onSave={async (newQuestions) => {

@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Paperclip, Upload, Download, Check, X, Loader2, ShieldCheck, Trash2, RefreshCw, Sparkles } from 'lucide-react';
 import { useLicense, hasModule } from '@/lib/licensing';
-import { aiReview } from '@/lib/ai';
+import { aiReview, useAiEnabled } from '@/lib/ai';
 import AiDraftDialog from '@/components/ai/AiDraftDialog';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
@@ -81,7 +81,9 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
   const [file, setFile] = useState(null);
   const [replacing, setReplacing] = useState(null); // evidência de que se carrega uma nova versão
   const { data: license } = useLicense(isAdmin ? customerId : undefined);
-  const aiAllowed = (isAdmin || user?.role === 'customer_admin') && hasModule(license, user, 'ai_assistant');
+  // Ponto de uso «documents» (Definições → Aplicação → Assistente de IA); a licença continua a ser verificada à parte.
+  const aiDocs = useAiEnabled('documents');
+  const aiAllowed = (isAdmin || user?.role === 'customer_admin') && hasModule(license, user, 'ai_assistant') && aiDocs;
   const [review, setReview] = useState(null);
   const [reviewing, setReviewing] = useState(null);
   const runReview = async (ev) => {

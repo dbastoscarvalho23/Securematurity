@@ -3,11 +3,15 @@ import { secrets } from 'base44:runtime';
 /**
  * Chamada ao modelo de linguagem — ponto único para todas as funções (aiDraft, aiAssist).
  *
- * Fornecedor (segredo AI_PROVIDER, lido em cada pedido):
- *  - "claude" ou "anthropic": Claude (ANTHROPIC_API_KEY; modelo em ANTHROPIC_MODEL, por omissão DEFAULT_CLAUDE_MODEL).
+ * Motor: o registo AiSettings (Definições → Aplicação → Assistente de IA), lido com service role uma vez por pedido.
+ * Sem registo, vale o segredo AI_PROVIDER. Valores:
+ *  - "claude" (ou "anthropic"): Claude (ANTHROPIC_API_KEY; modelo em ANTHROPIC_MODEL, por omissão DEFAULT_CLAUDE_MODEL).
  *    Se o Claude não estiver configurado ou falhar, o pedido segue pelo LLM do Base44 e a resposta indica-o.
+ *  - "claude_only": só o Claude; se falhar, o pedido dá erro (sem recurso ao Base44).
  *  - "base44": só o LLM do Base44 (exceto PDF/imagens fora do repositório nativo, que exigem o Claude).
  *  - sem valor: Claude quando existe ANTHROPIC_API_KEY, senão Base44.
+ *
+ * Pontos de uso: o mesmo registo diz em que pontos da aplicação o assistente está ativo (enabled_purposes).
  *
  * file = { url?, bytes?, mime } (opcional). Ficheiros de texto vão como texto; PDF e imagens como anexo.
  * Nunca se fazem cópias do ficheiro noutro armazenamento.
@@ -23,9 +27,56 @@ export const parseJson = (text) => {
   } catch { throw new Error('Não foi possível ler a resposta da IA. Tente novamente.'); }
 };
 
-export function aiProvider() {
-  const raw = String(secrets.get('AI_PROVIDER') || '').trim().toLowerCase();
+/**
+ * Pontos de uso do assistente e valor por omissão (sem registo AiSettings ou sem lista guardada).
+ * Manter igual a AI_PURPOSES em src/lib/ai.js.
+ *  - documents: tudo o que passa por aiDraft (rascunhos de documentos, análise de evidências, notificações de incidentes).
+ *  - Desligados por omissão: escolha de perguntas (segue as medidas oficiais e a qualificação, não o modelo),
+ *    lacunas do banco de perguntas e traduções de texto oficial/legal (existe o texto de origem em PT-PT).
+ */
+export const AI_PURPOSE_DEFAULTS = {
+  documents: true,
+  supplier_questionnaire_generation: true,
+  supplier_email_answer_extraction: true,
+  assessment_recommendations: true,
+  recommendation_generation: true,
+  assessment_question_selection: false,
+  question_gap_analysis: false,
+  question_bank_translation: false,
+  recommendation_translation: false,
+  supplier_questionnaire_translation: false,
+};
+
+export const AI_DISABLED_MESSAGE = 'O assistente de IA não está ativo neste ponto.';
+
+// Cache só durante o pedido: a chave é o cliente do SDK criado para esse pedido.
+const settingsCache = new WeakMap();
+
+/** Registo AiSettings (ou null). Se não for possível lê-lo, o pedido falha: a escolha do administrador não pode ser ignorada. */
+export function getAiSettings(base44) {
+  if (!settingsCache.has(base44)) {
+    settingsCache.set(base44, base44.asServiceRole.entities.AiSettings.list('-updated_date', 1)
+      .then((list) => (Array.isArray(list) && list[0]) || null)
+      .catch((e) => {
+        console.error('[llm] Não foi possível ler AiSettings:', e?.message || e);
+        throw new Error('Não foi possível ler a configuração do assistente de IA. Tente novamente.');
+      }));
+  }
+  return settingsCache.get(base44);
+}
+
+/** O ponto de uso está ativo? Sem lista guardada, valem os valores por omissão. */
+export function aiPurposeEnabled(settings, purpose) {
+  if (Array.isArray(settings?.enabled_purposes)) return settings.enabled_purposes.includes(purpose);
+  return AI_PURPOSE_DEFAULTS[purpose] === true;
+}
+
+/** Motor efetivo: 'anthropic' (com recurso ao Base44), 'anthropic_only' ou 'base44'. */
+export async function aiProvider(base44) {
+  const settings = base44 ? await getAiSettings(base44) : null;
+  const raw = String(settings?.provider || secrets.get('AI_PROVIDER') || '').trim().toLowerCase();
   if (['claude', 'anthropic'].includes(raw)) return 'anthropic';
+  if (['claude_only', 'anthropic_only'].includes(raw)) return 'anthropic_only';
   if (raw === 'base44') return 'base44';
   return secrets.get('ANTHROPIC_API_KEY') ? 'anthropic' : 'base44';
 }
@@ -54,7 +105,7 @@ async function callClaude(prompt, schema, file, textFile) {
 }
 
 export async function callLLM(base44, prompt, schema, file = null) {
-  const provider = aiProvider();
+  const provider = await aiProvider(base44);
   let textFile = '';
   if (file && file.mime.startsWith('text/')) {
     const bytes = file.bytes || new Uint8Array(await (await fetch(file.url, { redirect: 'error' })).arrayBuffer());
@@ -62,6 +113,8 @@ export async function callLLM(base44, prompt, schema, file = null) {
   }
   // PDF ou imagem sem URL (repositório externo): só o Claude os recebe em base64.
   const needsClaude = !!(file && !textFile && !file.url);
+  // Só Claude: sem recurso ao Base44; o erro do Claude chega ao utilizador.
+  if (provider === 'anthropic_only') return await callClaude(prompt, schema, file, textFile);
   let claudeError = '';
   if (provider === 'anthropic' || (needsClaude && secrets.get('ANTHROPIC_API_KEY'))) {
     try {
