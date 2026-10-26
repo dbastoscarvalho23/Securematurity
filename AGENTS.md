@@ -36,8 +36,8 @@ docker compose -f docker-compose.base44.yml up -d
 - `base44/workflows/` — 8 workflow definitions (JSONC).
 - `base44/connectors/` — 2 connectors (googledrive, one_drive).
 - `base44/agents/` — 1 AI agent (framework_guide).
-- `base44/shared/` — shared utils used by all functions: `http.ts` (json/readJson response+parse helpers, auth gates `getAuthenticatedUser`/`isStaffRole`/`isPlatformAdmin`, record-level `canAccessRecord`, automation gate `authorizeAutomationOrAdmin`), `automationSecret.ts` (shared automation secret + `hasAutomationSecret`/`getAutomationSecret`), `audit.ts` (`logAudit`/`logEmailSent`), `reminderSettings.ts` (`getReminderSettings`, `buildRecipients`), `riskLevel.ts` (`riskScore`, `scoreLevel`), `escapeHtml.ts`.
-- Backend conventions: all functions import the SDK pinned at `npm:@base44/sdk@0.8.44`; responses use the `json(data, status)` helper; scheduled/system automations pass the shared secret via workflow `args.automation_secret` (also `x-automation-secret` header) — see the 4 "Notify"/reminders/purge workflows.
+- `base44/shared/` — shared utils used by all functions: `http.ts` (json/readJson response+parse helpers, auth gates `getAuthenticatedUser`/`isStaffRole`/`isPlatformAdmin`, record-level `canAccessRecord`, automation gate `authorizeAutomationOrAdmin`/`isAutomationCaller`), `audit.ts` (`logAudit`/`logEmailSent`), `reminderSettings.ts` (`getReminderSettings`, `buildRecipients`), `riskLevel.ts` (`riskScore`, `scoreLevel`), `escapeHtml.ts`.
+- Backend conventions: all functions import the SDK pinned at `npm:@base44/sdk@0.8.44`; responses use the `json(data, status)` helper; scheduled workflows (`base44/workflows/`) call functions with the app owner's session, so the platform-admin check is the automation gate — no shared secret in workflow files.
 
 ## Backoffice (`/backoffice`, admin-only)
 - Shell: `src/pages/backoffice/BackofficeLayout.jsx` (sub-nav: Visão geral, Clientes, Utilizadores, Auditoria).
@@ -51,7 +51,7 @@ docker compose -f docker-compose.base44.yml up -d
 
 ## Notes / quirks
 - Unauthenticated visitors land on `/login`; a 401 "[Base44 SDK Error] Authentication required" console error on that page is expected pre-login behavior.
-- The automation secret value lives ONLY in the platform's Secrets (`AUTOMATION_SECRET`), read per request via `secrets.get()` in `base44/shared/automationSecret.ts` — never hardcode it in functions or workflows (`${ secrets.AUTOMATION_SECRET }` in workflow args, `x-automation-secret` header for manual triggers). Rotating it is a dashboard-only operation.
+- Workflows run as the app owner (platform admin), confirmed with a temporary probe on 26/10/2026; `authorizeAutomationOrAdmin` and `isAutomationCaller` in `http.ts` only accept a platform admin. The old `AUTOMATION_SECRET` is no longer read by any function.
 - `Landing.jsx` was removed (was orphaned); orphan `landing_*` translation keys were cleaned from `translations-ui.js`.
 - `OAuthConsent.jsx` is a platform-managed MCP consent page, NOT routed in `App.jsx`; it references `base44/mcp/config.json` (a platform-managed file not exported to GitHub).
 - `FrameworkControl` entity is used by the AI agent (framework_guide) but not directly in frontend code.
@@ -155,14 +155,17 @@ docker compose -f docker-compose.base44.yml up -d
 - Regras partilhadas com outras funções: `buildMeta` em `base44/shared/evidenceMeta.ts` (também usada pela função
   `evidence`) e `containsExposedAsset` em `base44/shared/exposedAssets.ts` (também usada por `aiAssist`).
 - Indexar cria `Evidence` «Por rever» com o mesmo ficheiro e nunca altera o estado de medidas ou tarefas.
+- Em lote: «Classificar todos» no browser chama `classify` um documento de cada vez (até 25, para no 429/402/403).
+  `scan` lê a pasta «00 Por classificar» do Google Drive, OneDrive ou NAS (`listFolder` em `storage.ts`, PROPFIND em
+  `webdavXml.ts`) e cria `DocumentIntake` (`source: folder_scan`) para ficheiros que ainda não têm `StoredFile`, até 20
+  por pedido. `metrics` devolve `intakeMetrics()` de `classify.ts` (ligações propostas mantidas, acrescentadas à mão,
+  taxa por faixa de confiança); `accepted_candidates` guarda os candidatos escolhidos ao indexar.
 
 ## Escrita
 - Todo o texto visível segue `docs/style/pt-pt.md` (PT-PT, AO90, sem chavões). Chaves novas sem ficheiro próprio:
   `src/lib/translations-extra.js` (prefixo `x_`). Termo oficial: «cadeia de abastecimento».
 
 ## Agendamentos
-- App importada: o Base44 não aceita workflows («Workflows are not supported for this app type»), por isso os
-  ficheiros em `base44/workflows/` (lembretes, CVE Monitor) não correm nesta app. Os agendados correm em
-  `.github/workflows/scheduler-base44.yml` (GitHub Actions, cabeçalho `x-automation-secret`; segredo do repositório
-  `AUTOMATION_SECRET` igual ao do Base44). A purga de dados é só manual. Os workflows por evento (notificações ao
-  alterar documentos, riscos e tarefas) continuam sem correr nesta app.
+- App nativa AnkoraOne_DC_Repo: os agendados e os de evento correm no próprio Base44 (`base44/workflows/`, 8 ativos;
+  «Data Retention Purge» fica inativo e só se corre à mão). Os workflows chamam as funções com a sessão do proprietário
+  da app (administrador da plataforma). O antigo agendador por GitHub Actions foi removido.

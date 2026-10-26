@@ -5,12 +5,12 @@ import { logAudit } from '../../shared/audit.ts';
 import { requireModule, checkQuota, consumeQuota, LicenseError } from '../../shared/license.ts';
 import { checkFile } from '../../shared/fileCheck.ts';
 import { assertAiRateLimit } from '../../shared/rateLimit.ts';
-import { fromBase64, getFile, sha256Hex, folderLabel, MAX_EXTERNAL_BYTES } from '../../shared/storage.ts';
+import { fromBase64, getFile, sha256Hex, folderLabel, listFolder, resolveProvider, MAX_EXTERNAL_BYTES } from '../../shared/storage.ts';
 import { storePrivateFile, FILE_SCHEME } from '../../shared/storedFile.ts';
 import { buildMeta, str } from '../../shared/evidenceMeta.ts';
 import { extractText } from '../../shared/textExtract.ts';
 import {
-  buildCandidates, shortlist, candidatePromptLine, validateClassification, candidateToLink,
+  buildCandidates, shortlist, candidatePromptLine, validateClassification, candidateToLink, intakeMetrics,
   DOC_LEVELS, DOCUMENT_KINDS, EVIDENCE_TYPES, EVIDENCE_METHODS, CLASSIFY_FOLDERS, LINKABLE_KINDS, MAX_LINKS,
 } from '../../shared/classify.ts';
 import { callLLM, aiProvider, getAiSettings, aiPurposeEnabled, AI_DISABLED_MESSAGE } from '../../shared/llm.ts';
@@ -24,7 +24,12 @@ import { containsExposedAsset, exposedIdentifiers, textHasIdentifier } from '../
  * Ações:
  *  - upload     { customer_id? (só admin), file_name, mime_type, content_base64 } → ficheiro privado na pasta
  *                «00 Por classificar» do repositório do cliente + DocumentIntake (pending) + pré-seleção sem IA
- *  - list       { customer_id? }            - get { id } → registo, candidatos pré-selecionados e catálogo completo
+ *  - scan       { customer_id? }            → procura na pasta «00 Por classificar» do repositório externo (Google
+ *                Drive, OneDrive, NAS) ficheiros lá postos diretamente e cria um DocumentIntake por cada ficheiro novo
+ *                (até SCAN_BATCH por pedido; o ficheiro não é copiado nem movido)
+ *  - list       { customer_id? } → registos e repositório do cliente
+ *  - metrics    { customer_id? }            → qualidade das propostas (ligações mantidas, acrescentadas, por confiança)
+ *  - get        { id } → registo, candidatos pré-selecionados e catálogo completo
  *  - candidates { id }                      → volta a extrair o texto e a pontuar os candidatos (sem IA)
  *  - classify   { id }                      → proposta do modelo (ponto de uso «document_classification», módulo
  *                «ai_assistant», quota «ai»); recusada se o texto tiver ativos expostos à Internet (art. 32.º)
@@ -38,6 +43,7 @@ import { containsExposedAsset, exposedIdentifiers, textHasIdentifier } from '../
 const unzip = (bytes, opts) => unzipSync(bytes, opts);
 const CLASSIFY_STALE_MS = 5 * 60 * 1000;
 const OPEN_STATES = ['pending', 'proposed', 'error'];
+const SCAN_BATCH = 20;
 
 const NATIVE_NEEDS_CLAUDE = 'A classificação de PDF e imagens guardados fora do repositório da plataforma precisa do Claude. '
   + 'Escolha um motor com Claude em Definições → Aplicação → Assistente de IA, ou carregue o documento em DOCX ou texto.';
@@ -207,7 +213,77 @@ export default async function (req) {
 
     if (action === 'list') {
       const customer = await requestedCustomer();
-      return json({ intakes: await db.DocumentIntake.filter({ customer_id: customer.id }, '-created_date', 200) });
+      const [intakes, provider] = await Promise.all([
+        db.DocumentIntake.filter({ customer_id: customer.id }, '-created_date', 200),
+        resolveProvider(base44, customer).catch(() => 'base44'),
+      ]);
+      return json({ intakes, provider });
+    }
+
+    if (action === 'metrics') {
+      const customer = await requestedCustomer();
+      const [intakes, all] = await Promise.all([
+        db.DocumentIntake.filter({ customer_id: customer.id }, '-created_date', 2000),
+        candidateSet(customer),
+      ]);
+      const keyOf = new Map();
+      for (const c of all) {
+        const l = candidateToLink(c);
+        if (l) keyOf.set(c.id, `${l.type}:${l.id}`);
+      }
+      return json({ metrics: intakeMetrics(intakes || [], (id) => keyOf.get(id) || null) });
+    }
+
+    if (action === 'scan') {
+      const customer = await requestedCustomer();
+      await requireModule(base44, user, customer.id, 'documents_evidence');
+      const provider = await resolveProvider(base44, customer);
+      if (provider === 'base44') {
+        return json({ error: 'Este cliente usa o repositório da plataforma, que não tem pastas próprias: carregue os documentos com «Carregar documentos».' }, 400);
+      }
+      const { location, files, ignored } = await listFolder(base44, customer, provider, 'inbox');
+      // Ficheiros já conhecidos (carregados pela plataforma, encontrados antes ou já indexados) não voltam a entrar.
+      const known = await db.StoredFile.filter({ customer_id: customer.id, storage_provider: provider }, '-created_date', 5000).catch(() => []);
+      const knownRefs = new Set((known || []).map((f) => f.storage_ref));
+      const fresh = files.filter((f) => !knownRefs.has(f.ref));
+      const label = folderLabel('inbox');
+      const added = []; const duplicates = []; const skipped = [];
+      for (const f of fresh.slice(0, SCAN_BATCH)) {
+        const name = str(f.name, 200).trim() || 'documento';
+        if (f.size > MAX_EXTERNAL_BYTES) { skipped.push({ name, reason: 'Excede 8 MB' }); continue; }
+        let bytes; let mime;
+        try {
+          const got = await getFile(base44, customer.id, provider, f.ref, f.mimeType);
+          bytes = new Uint8Array(got.bytes);
+          mime = checkFile(name, f.mimeType || got.mimeType || '', bytes, MAX_EXTERNAL_BYTES);
+        } catch (e) {
+          skipped.push({ name, reason: str(e?.message || 'Não foi possível ler o ficheiro', 200) });
+          continue;
+        }
+        const sha256 = await sha256Hex(bytes);
+        const dup = (await db.DocumentIntake.filter({ customer_id: customer.id, sha256 }, '-created_date', 5).catch(() => []))
+          .find((d) => d.status !== 'rejected');
+        // O registo do ficheiro é criado mesmo para duplicados, para não voltar a ser descarregado na próxima procura.
+        const sf = await db.StoredFile.create({
+          customer_id: customer.id, file_name: name, mime_type: mime, size_bytes: bytes.byteLength, sha256,
+          storage_provider: provider, storage_ref: f.ref, folder: label, storage_location: location,
+          context: 'intake', context_id: dup?.id || '', restricted: false, uploaded_by: user.email,
+        });
+        if (dup) { duplicates.push({ name, intake_id: dup.id }); continue; }
+        let it = await db.DocumentIntake.create({
+          customer_id: customer.id, file_name: name, mime_type: mime, size_bytes: bytes.byteLength, sha256,
+          stored_file_id: sf.id, status: 'pending', uploaded_by: user.email, source: 'folder_scan', candidates: [], accepted_links: [],
+        });
+        await db.StoredFile.update(sf.id, { context_id: it.id }).catch(() => null);
+        try { it = (await preselect(it, customer, bytes)).rec; } catch (e) { console.error('[documentIntake] pré-seleção falhou:', e?.message || e); }
+        added.push(it);
+      }
+      const remaining = Math.max(0, fresh.length - SCAN_BATCH);
+      await logAudit(base44, 'document_intake_scanned', {
+        user_email: user.email, customer_id: customer.id, entity_type: 'DocumentIntake', entity_id: '',
+        details: `Pasta «${label}» (${provider}, ${location}): ${files.length} ficheiro(s), ${added.length} novo(s), ${duplicates.length} duplicado(s), ${skipped.length} ignorado(s)${remaining ? `, ${remaining} por procurar` : ''}`,
+      });
+      return json({ provider, location, found: files.length, added, duplicates, skipped, ignored, remaining });
     }
 
     const { it, customer } = await loadIntake();
@@ -295,13 +371,13 @@ export default async function (req) {
       const all = await candidateSet(customer);
       const byId = new Map(all.map((c) => [c.id, c]));
       const wanted = (Array.isArray(body.links) ? body.links : []).map((l) => str(typeof l === 'string' ? l : l?.candidate_id, 160)).filter(Boolean);
-      const links = []; const skipped = []; const seen = new Set();
+      const links = []; const skipped = []; const seen = new Set(); const chosen = [];
       for (const id of [...new Set(wanted)].slice(0, 30)) {
         const c = byId.get(id);
         const link = c && LINKABLE_KINDS.includes(c.kind) ? candidateToLink(c) : null;
         if (!link) { skipped.push(id); continue; }
         const k = `${link.type}:${link.id}`;
-        if (!seen.has(k)) { seen.add(k); links.push(link); }
+        if (!seen.has(k)) { seen.add(k); links.push(link); chosen.push(id); }
       }
       if (!links.length) return json({ error: 'Escolha pelo menos uma medida, tarefa da jornada ou controlo para indexar o documento' }, 400);
 
@@ -354,7 +430,7 @@ export default async function (req) {
       }
 
       const rec = await db.DocumentIntake.update(it.id, {
-        status: 'accepted', evidence_id: ev.id, accepted_links: links, decided_by: user.email, decided_at: new Date().toISOString(),
+        status: 'accepted', evidence_id: ev.id, accepted_links: links, accepted_candidates: chosen, decided_by: user.email, decided_at: new Date().toISOString(),
         ...(doc ? { security_document_id: doc.id } : {}),
       });
       await logAudit(base44, 'document_indexed', {

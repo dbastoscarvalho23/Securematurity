@@ -32,7 +32,17 @@ export async function uploadIntake(file, customerId) {
   });
 }
 
-export const listIntakes = async (customerId) => (await call({ action: 'list', customer_id: customerId }))?.intakes || [];
+/** Registos do cliente e o repositório efetivo (`provider`: base44, google_drive, one_drive, webdav). */
+export const listIntakes = async (customerId) => {
+  const r = await call({ action: 'list', customer_id: customerId });
+  return { intakes: r?.intakes || [], provider: r?.provider || 'base44' };
+};
+/** Procura ficheiros novos na pasta «00 Por classificar» do repositório externo (até 20 por pedido). */
+export const scanIntakeFolder = (customerId) => call({ action: 'scan', customer_id: customerId });
+export const intakeMetrics = async (customerId) => (await call({ action: 'metrics', customer_id: customerId }))?.metrics || null;
+/** Estados que a classificação em lote trata: os que ainda não têm proposta. */
+export const BATCH_STATES = ['pending', 'error'];
+export const BATCH_MAX = 25;
 export const getIntake = (id) => call({ action: 'get', id });
 export const refreshCandidates = (id) => call({ action: 'candidates', id });
 export const classifyIntake = (id) => call({ action: 'classify', id });

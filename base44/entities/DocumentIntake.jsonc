@@ -99,6 +99,36 @@
         }
       }
     },
+    "source": {
+      "type": "string",
+      "enum": [
+        "upload",
+        "folder_scan"
+      ],
+      "default": "upload",
+      "description": "upload = carregado na plataforma; folder_scan = encontrado na pasta «00 Por classificar» do repositório externo",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "accepted_candidates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ids dos candidatos escolhidos ao indexar (para medir a qualidade das propostas)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
     "classification": {
       "type": "object",
       "description": "Proposta validada no servidor (tipo, nível, título, resumo, datas, pasta, ligações com confiança e excerto, avisos, motor usado)",
