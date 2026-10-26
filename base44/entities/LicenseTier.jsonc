@@ -1,0 +1,105 @@
+{
+  "name": "LicenseTier",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "commercial_value": {
+      "type": "string",
+      "description": "Valor comercial (texto livre)"
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Módulos publicados"
+    },
+    "modules_draft": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Módulos em rascunho (por publicar)"
+    },
+    "draft_note": {
+      "type": "string"
+    },
+    "draft_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "draft_by_email": {
+      "type": "string"
+    },
+    "version": {
+      "type": "number",
+      "description": "Versão publicada"
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "published_by_email": {
+      "type": "string"
+    },
+    "display_order": {
+      "type": "number"
+    },
+    "is_partner_tier": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "code",
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "customer_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

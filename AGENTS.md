@@ -97,3 +97,14 @@ docker compose -f docker-compose.base44.yml up -d
   é recente (ou entrou no KEV da CISA) e a gravidade CVSS (v3.1 → v4.0 → v3.0, entrada Primary) atinge a mínima
   escolhida (`critical` ≥ 9,0; `high` ≥ 7,0). Ao NVD só seguem nomes CPE. Segredo opcional `NVD_API_KEY`
   (50 pedidos/30 s em vez de 5). «Registar vulnerabilidade» cria o `Vulnerability` com prazo de 7/30 dias.
+
+## Licenciamento (`/backoffice/licensing`)
+- Modelo igual ao da produção: `LicenseModule`, `LicenseEntitlement`, `LicenseTier` (bundle com rascunho → publicar,
+  versão), `LicenseStandard`, `TenantSubscription`, `TenantModule` (origem tier/addon/manual), `TenantStandard`,
+  `LicenseChangeLog`, `LicenseUsageRecord`, `LicenseCertificate`. Só o admin escreve (função `licensing`).
+- Módulos efetivos: `getEntitlements()` em `base44/shared/license.ts` (bundle ∪ extras ± manuais, só módulos ativos,
+  só com subscrição efetiva: trial/active/grace). Sem subscrição = modo «legacy» (tudo ativo). `requireModule()` nas
+  funções `evidence` (criar), `assets` e `cveMonitor`; admin passa sempre. No browser: `ROUTE_MODULES` em
+  `src/lib/licensing.js` (Sidebar e RouteGuard). Mantenha `subscriptionState()` igual nos dois ficheiros.
+- Certificados: JWS EdDSA (Ed25519) com o segredo `LICENSE_SIGNING_KEY` (PKCS8 base64); chave pública e `kid` em
+  `base44/shared/licenseCatalog.ts`. Ao rodar a chave, mantenha a pública antiga para verificar certificados antigos.

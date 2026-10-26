@@ -1,0 +1,84 @@
+{
+  "name": "TenantModule",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "module_code": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "tier",
+        "addon",
+        "manual"
+      ],
+      "description": "Origem da ativação"
+    },
+    "activated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "deactivated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "customer_id",
+    "module_code"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

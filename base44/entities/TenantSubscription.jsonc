@@ -1,0 +1,128 @@
+{
+  "name": "TenantSubscription",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Cliente (tenant)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "tier_code": {
+      "type": "string"
+    },
+    "addon_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Módulos extra fora do bundle"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "trial",
+        "active",
+        "suspended",
+        "closed"
+      ],
+      "default": "active"
+    },
+    "started_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "expires_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fim do período contratado (vazio = sem fim)"
+    },
+    "trial_ends_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "grace_until": {
+      "type": "string",
+      "format": "date",
+      "description": "Tolerância depois do fim"
+    },
+    "seat_limit": {
+      "type": "number"
+    },
+    "seats_used": {
+      "type": "number"
+    },
+    "monthly_usage_count": {
+      "type": "number"
+    },
+    "monthly_usage_reset_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "renewal_count": {
+      "type": "number"
+    },
+    "last_renewed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "closed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "closed_reason": {
+      "type": "string"
+    },
+    "ai_quota_monthly": {
+      "type": "number",
+      "description": "Pedidos de IA por mês (vazio = sem limite)"
+    },
+    "quota_warn_pct": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "tier_code"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
