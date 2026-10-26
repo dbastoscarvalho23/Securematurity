@@ -50,11 +50,17 @@ export default function FrameworksPanel() {
 
   const handleFwDocUpload = async (fw, file) => {
     setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], uploading: true } }));
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.Framework.update(fw.id, { document_url: file_url, document_name: file.name });
-    queryClient.invalidateQueries({ queryKey: ['frameworks'] });
-    setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], uploading: false } }));
-    toast.success(t('settings_doc_uploaded'));
+    try {
+      // Documentos de referência dos referenciais (normas públicas): ficam no armazenamento da plataforma.
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.entities.Framework.update(fw.id, { document_url: file_url, document_name: file.name });
+      queryClient.invalidateQueries({ queryKey: ['frameworks'] });
+      toast.success(t('settings_doc_uploaded'));
+    } catch (err) {
+      toast.error(err?.message || t('x_tool_error'));
+    } finally {
+      setFwRefEdit(prev => ({ ...prev, [fw.id]: { ...prev[fw.id], uploading: false } }));
+    }
   };
 
   const handleCreateFramework = async () => {
@@ -493,8 +499,14 @@ export default function FrameworksPanel() {
                         const file = e.target.files[0];
                         if (!file) return;
                         setNewFwForm(p => ({ ...p, uploadingDoc: true }));
-                        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-                        setNewFwForm(p => ({ ...p, document_url: file_url, document_name: file.name, uploadingDoc: false }));
+                        try {
+                          const { file_url } = await base44.integrations.Core.UploadFile({ file });
+                          setNewFwForm(p => ({ ...p, document_url: file_url, document_name: file.name }));
+                        } catch (err) {
+                          toast.error(err?.message || t('x_tool_error'));
+                        } finally {
+                          setNewFwForm(p => ({ ...p, uploadingDoc: false }));
+                        }
                       }} />
                     </label>
                   )}

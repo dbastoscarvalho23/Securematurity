@@ -30,6 +30,8 @@ export const SEED_ENTITLEMENTS = [
   ['cve_alerts', 'Alertas CVE por fabricante', 'cve_monitoring'],
   ['ropa_management', 'Gestão de RoPA', 'privacy'], ['dsr_management', 'Gestão de pedidos de titulares', 'privacy'],
   ['ai_document_drafts', 'Rascunhos de documentos por IA', 'ai_assistant'], ['ai_evidence_review', 'Análise de evidências por IA', 'ai_assistant'],
+  // 4.º elemento: quota mensal que esta funcionalidade limita (feature de LicenseUsageRecord; «ai» = consumeQuota da função aiDraft).
+  ['ai_requests', 'Pedidos de IA por mês', 'ai_assistant', 'ai'],
 ];
 
 const CORE = ['nis2_journey', 'assessments_action_plan', 'documents_evidence', 'knowledge_guidance', 'risk_management', 'reporting_audit_prep', 'asset_management'];

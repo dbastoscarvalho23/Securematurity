@@ -112,6 +112,7 @@ export default function QuestionCard({ question, index, response, onSave, langua
         {/* Anexos antigos (públicos) só aparecem se já existirem; as evidências novas são privadas e estruturadas. */}
         {(response?.attachments || []).length > 0 && (
           <EvidenceUploader
+            customerId={customerId}
             attachments={response?.attachments || []}
             onAttachmentsChange={handleAttachmentsChange}
           />

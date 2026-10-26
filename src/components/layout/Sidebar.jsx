@@ -29,7 +29,8 @@ import {
   GraduationCap,
   Bot,
   Scale,
-  Boxes
+  Boxes,
+  Lightbulb
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import AnkoraLogo from '@/components/layout/AnkoraLogo';
@@ -58,12 +59,16 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
     { path: '/assessments', labelKey: 'nav_assessments', icon: ClipboardCheck },
     { path: '/evidence', labelKey: 'nav_evidence', icon: Paperclip },
     { path: '/legal-library', labelKey: 'nav_legal_library', icon: Scale },
+    ...(isCustomerAdmin ? [{ path: '/framework-guide', labelKey: 'nav_framework_guide', icon: Bot }] : []),
     // Inventário de ativos e ferramentas: informação «reservada» (art. 32.º) — só administradores
     ...((isAdmin || isCustomerAdmin) ? [{ path: '/assets', labelKey: 'nav_assets_tools', icon: Boxes }] : []),
   ];
   const improveItems = [
     // Incidentes, vulnerabilidades e plano de ação: administrador do cliente (o admin tem-nos em «Desenvolvimento»/«Ferramentas»).
-    ...(isCustomerAdmin ? [{ path: '/action-plan', labelKey: 'nav_action_plan', icon: Target }] : []),
+    ...(isCustomerAdmin ? [
+      { path: '/action-plan', labelKey: 'nav_action_plan', icon: Target },
+      { path: '/recommendations', labelKey: 'page_recommendations', icon: Lightbulb },
+    ] : []),
     { path: '/tasks', labelKey: 'nav_tasks', icon: ListTodo },
     { path: '/task-analytics', labelKey: 'nav_task_analytics', icon: TrendingUp },
     { path: '/risk-assessment', labelKey: 'nav_risk_assessment', icon: TriangleAlert },

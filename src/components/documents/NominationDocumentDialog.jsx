@@ -9,6 +9,8 @@ import { uploadFile } from '@/lib/cloudStorage';
 import { Upload, Loader2, FileText, X } from 'lucide-react';
 import { validators, validateForm, hasErrors } from '@/lib/validation';
 import { useLanguage } from '@/lib/LanguageContext';
+import { toast } from 'sonner';
+import FileLink from '@/components/shared/FileLink';
 
 const ROLE_TYPES = [
   { value: 'risk_officer', labelKey: 'nom_role_risk_officer' },
@@ -48,10 +50,16 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await uploadFile(file);
-    set('file_url', file_url);
-    set('file_name', file.name);
-    setUploading(false);
+    try {
+      const { file_url } = await uploadFile(file, form.customer_id, 'nomination', doc?.id);
+      set('file_url', file_url);
+      set('file_name', file.name);
+    } catch (err) {
+      toast.error(err?.message || t('x_tool_error'));
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -65,8 +73,13 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
     setErrors(formErrors);
     if (hasErrors(formErrors)) return;
     setSaving(true);
-    await onSave(form);
-    setSaving(false);
+    try {
+      await onSave(form);
+    } catch (err) {
+      toast.error(err?.message || t('x_tool_error'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -168,7 +181,7 @@ export default function NominationDocumentDialog({ open, onOpenChange, doc, cust
             {form.file_url ? (
               <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/40 border text-sm">
                 <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <a href={form.file_url} target="_blank" rel="noreferrer" className="text-primary underline flex-1 truncate">{form.file_name || t('common_view_file')}</a>
+                <FileLink url={form.file_url} target="_blank" rel="noreferrer" className="text-primary underline flex-1 truncate">{form.file_name || t('common_view_file')}</FileLink>
                 <button type="button" onClick={() => { set('file_url', ''); set('file_name', ''); }} className="text-muted-foreground hover:text-destructive">
                   <X className="w-3.5 h-3.5" />
                 </button>

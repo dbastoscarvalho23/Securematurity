@@ -132,6 +132,8 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
           </div>
           <div className="border-t pt-4">
             <TaskAttachments
+              customerId={form.customer_id || task?.customer_id}
+              taskId={task?.id}
               attachments={form.attachments || []}
               onChange={val => set('attachments', val)}
             />

@@ -1,27 +1,22 @@
 import React, { useMemo, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Search, Plus, Upload, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Loader2, Search, ShieldCheck, AlertTriangle, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 import { callLicensing, subscriptionState, STATE_STYLE } from '@/lib/licensing';
 import { invokeFn } from '@/lib/invokeFn';
-import { useLicenseCatalog, LIC_KEYS } from './useCatalog';
+import { useLicenseCatalog } from './useCatalog';
 import SubscriptionDialog from './SubscriptionDialog';
-
-function useRefreshAll() {
-  const qc = useQueryClient();
-  return () => LIC_KEYS.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
-}
+import BundlesTab from './BundlesTab';
+import CatalogTab from './CatalogTab';
+import SeedDialog from './SeedDialog';
 
 function SubscriptionsTab({ catalog }) {
   const { t } = useLanguage();
@@ -72,122 +67,6 @@ function SubscriptionsTab({ catalog }) {
         </table>
       </div>
       <SubscriptionDialog open={editing !== null} onOpenChange={(v) => !v && setEditing(null)} customer={editing} subscription={editing ? subByCustomer[editing.id] : null} catalog={catalog} />
-    </div>
-  );
-}
-
-function BundlesTab({ catalog }) {
-  const { t } = useLanguage();
-  const refresh = useRefreshAll();
-  const { data: subs = [] } = useQuery({ queryKey: ['lic-subs'], queryFn: () => base44.entities.TenantSubscription.list('-updated_date', 2000) });
-  const [drafts, setDrafts] = useState({});
-  const [busy, setBusy] = useState('');
-  const [newCode, setNewCode] = useState('');
-  const draftOf = (tier) => drafts[tier.code] || { ...tier, modules_draft: tier.has_draft ? tier.modules_draft || [] : tier.modules || [] };
-  const edit = (tier, patch) => setDrafts((d) => ({ ...d, [tier.code]: { ...draftOf(tier), ...patch } }));
-  const save = async (tier) => {
-    setBusy(`s-${tier.code}`);
-    try { await callLicensing({ action: 'save_tier', tier: draftOf(tier) }); toast.success(t('lic_draft_saved')); setDrafts((d) => { const n = { ...d }; delete n[tier.code]; return n; }); refresh(); } catch (e) { toast.error(e?.message); } finally { setBusy(''); }
-  };
-  const publish = async (tier) => {
-    const affected = subs.filter((s) => s.tier_code === tier.code && s.status !== 'closed').length;
-    if (!window.confirm(t('lic_publish_confirm', { name: tier.name, n: affected }))) return;
-    setBusy(`p-${tier.code}`);
-    try { await callLicensing({ action: 'publish_tier', code: tier.code }); toast.success(t('lic_published')); refresh(); } catch (e) { toast.error(e?.message); } finally { setBusy(''); }
-  };
-  const create = async () => {
-    if (!/^[a-z0-9_]{2,60}$/.test(newCode)) { toast.error(t('lic_code_invalid')); return; }
-    try { await callLicensing({ action: 'save_tier', tier: { code: newCode, name: newCode, modules_draft: [] } }); setNewCode(''); refresh(); } catch (e) { toast.error(e?.message); }
-  };
-
-  return (
-    <div className="space-y-4">
-      <p className="text-xs text-muted-foreground">{t('lic_bundles_help')}</p>
-      <div className="grid lg:grid-cols-3 gap-4">
-        {catalog.tiers.map((tier) => {
-          const d = draftOf(tier);
-          const pending = Boolean(tier.has_draft);
-          return (
-            <Card key={tier.id}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2 flex-wrap">{tier.name}<span className="font-mono text-[11px] text-muted-foreground">{tier.code}</span>
-                  <Badge variant="outline" className="text-[10px]">v{tier.version || 0}</Badge>{pending && <Badge variant="outline" className="text-[10px] bg-chart-3/10 text-chart-3">{t('lic_draft_pending')}</Badge>}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-xs">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1"><Label className="text-[11px]">{t('lic_name')}</Label><Input className="h-8" value={d.name || ''} onChange={(e) => edit(tier, { name: e.target.value })} /></div>
-                  <div className="space-y-1"><Label className="text-[11px]">{t('lic_value')}</Label><Input className="h-8" value={d.commercial_value || ''} onChange={(e) => edit(tier, { commercial_value: e.target.value })} /></div>
-                </div>
-                <Textarea rows={2} value={d.description || ''} onChange={(e) => edit(tier, { description: e.target.value })} placeholder={t('ev_field_description')} />
-                <div className="rounded border p-2 space-y-1">
-                  {catalog.modules.map((m) => {
-                    const on = (d.modules_draft || []).includes(m.code);
-                    const was = (tier.modules || []).includes(m.code);
-                    return (
-                      <label key={m.code} className="flex items-center gap-2">
-                        <Checkbox checked={on} onCheckedChange={(v) => edit(tier, { modules_draft: v ? [...(d.modules_draft || []), m.code] : (d.modules_draft || []).filter((c) => c !== m.code) })} />
-                        <span className={on !== was ? 'font-medium text-chart-3' : ''}>{m.name}</span>{m.is_active === false && <span className="text-muted-foreground">· {t('lic_module_off')}</span>}
-                      </label>
-                    );
-                  })}
-                </div>
-                <Input className="h-8" value={d.draft_note || ''} onChange={(e) => edit(tier, { draft_note: e.target.value })} placeholder={t('lic_draft_note')} />
-                <div className="flex gap-2 justify-end">
-                  <Button size="sm" variant="outline" onClick={() => save(tier)} disabled={busy === `s-${tier.code}`}>{t('lic_save_draft')}</Button>
-                  <Button size="sm" onClick={() => publish(tier)} disabled={!pending || Boolean(drafts[tier.code]) || busy === `p-${tier.code}`}><Upload className="w-3.5 h-3.5 mr-1" />{t('lic_publish')}</Button>
-                </div>
-                {tier.published_at && <p className="text-[11px] text-muted-foreground">{t('lic_published_by', { date: tier.published_at.slice(0, 10), who: tier.published_by_email || '—' })}</p>}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-      <div className="flex gap-2 max-w-sm"><Input className="h-8" value={newCode} onChange={(e) => setNewCode(e.target.value.toLowerCase())} placeholder={t('lic_new_tier_code')} /><Button size="sm" variant="outline" onClick={create}><Plus className="w-3.5 h-3.5 mr-1" />{t('lic_new_tier')}</Button></div>
-    </div>
-  );
-}
-
-function CatalogTab({ catalog }) {
-  const { t } = useLanguage();
-  const refresh = useRefreshAll();
-  const [newMod, setNewMod] = useState({ code: '', name: '' });
-  const saveModule = async (m, patch) => { try { await callLicensing({ action: 'save_module', module: { ...m, ...patch } }); refresh(); } catch (e) { toast.error(e?.message); } };
-  const saveStd = async (s, patch) => { try { await callLicensing({ action: 'save_standard', standard: { ...s, ...patch } }); refresh(); } catch (e) { toast.error(e?.message); } };
-  const ents = catalog.entitlements.reduce((acc, e) => { (acc[e.module_code] ||= []).push(e.name); return acc; }, {});
-  return (
-    <div className="grid lg:grid-cols-2 gap-4">
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">{t('lic_modules')}</CardTitle></CardHeader>
-        <CardContent className="space-y-2 text-xs">
-          {catalog.modules.map((m) => (
-            <div key={m.id} className="flex items-start gap-2 border-b pb-2">
-              <Switch checked={m.is_active !== false} onCheckedChange={(v) => saveModule(m, { is_active: v })} />
-              <div className="min-w-0">
-                <p className="font-medium">{m.name} <span className="font-mono text-muted-foreground">{m.code}</span></p>
-                <p className="text-muted-foreground">{m.description}</p>
-                {ents[m.code] && <p className="text-[11px]">{ents[m.code].join(' · ')}</p>}
-              </div>
-            </div>
-          ))}
-          <p className="text-[11px] text-muted-foreground">{t('lic_module_off_help')}</p>
-          <div className="flex gap-2">
-            <Input className="h-8 font-mono" placeholder="codigo_modulo" value={newMod.code} onChange={(e) => setNewMod({ ...newMod, code: e.target.value.toLowerCase() })} />
-            <Input className="h-8" placeholder={t('lic_name')} value={newMod.name} onChange={(e) => setNewMod({ ...newMod, name: e.target.value })} />
-            <Button size="sm" variant="outline" onClick={() => saveModule({ is_active: true }, newMod).then(() => setNewMod({ code: '', name: '' }))}><Plus className="w-3.5 h-3.5" /></Button>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">{t('lic_standards')}</CardTitle></CardHeader>
-        <CardContent className="space-y-2 text-xs">
-          {catalog.standards.map((s) => (
-            <div key={s.id} className="flex items-center gap-2 border-b pb-2">
-              <Switch checked={s.offered !== false} onCheckedChange={(v) => saveStd(s, { offered: v })} />
-              <span className="font-medium">{s.name}</span><span className="font-mono text-muted-foreground">{s.code}</span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
     </div>
   );
 }
@@ -246,18 +125,16 @@ function HistoryTab() {
 export default function LicensingPanel() {
   const { t } = useLanguage();
   const catalog = useLicenseCatalog();
-  const refresh = useRefreshAll();
-  const [seeding, setSeeding] = useState(false);
-  const seed = async () => {
-    setSeeding(true);
-    try { const r = await callLicensing({ action: 'seed' }); toast.success(t('lic_seeded', r.created)); refresh(); } catch (e) { toast.error(e?.message); } finally { setSeeding(false); }
-  };
+  const [seedOpen, setSeedOpen] = useState(false);
   if (catalog.loading) return <p className="text-sm text-muted-foreground">{t('common_loading')}</p>;
+  const seedDialog = <SeedDialog open={seedOpen} onOpenChange={setSeedOpen} />;
   if (!catalog.modules.length || !catalog.tiers.length) {
     return (
       <Card><CardContent className="p-6 space-y-3 text-sm">
-        <p>{t('lic_empty')}</p>
-        <Button onClick={seed} disabled={seeding}>{seeding && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{t('lic_seed')}</Button>
+        <p className="font-medium">{t('lic_empty_title')}</p>
+        <p className="text-muted-foreground">{t('lic_empty')}</p>
+        <Button onClick={() => setSeedOpen(true)}><Database className="w-4 h-4 mr-2" />{t('lic_seed')}</Button>
+        {seedDialog}
       </CardContent></Card>
     );
   }
@@ -271,8 +148,12 @@ export default function LicensingPanel() {
       </TabsList>
       <TabsContent value="subs" className="mt-4"><SubscriptionsTab catalog={catalog} /></TabsContent>
       <TabsContent value="bundles" className="mt-4"><BundlesTab catalog={catalog} /></TabsContent>
-      <TabsContent value="catalog" className="mt-4"><CatalogTab catalog={catalog} /><div className="mt-3"><Button size="sm" variant="ghost" onClick={seed} disabled={seeding}>{t('lic_seed_missing')}</Button></div></TabsContent>
+      <TabsContent value="catalog" className="mt-4">
+        <CatalogTab catalog={catalog} />
+        <div className="mt-3 flex items-center gap-2"><Button size="sm" variant="ghost" onClick={() => setSeedOpen(true)}><Database className="w-3.5 h-3.5 mr-1" />{t('lic_seed_missing')}</Button></div>
+      </TabsContent>
       <TabsContent value="history" className="mt-4"><HistoryTab /></TabsContent>
+      {seedDialog}
     </Tabs>
   );
 }

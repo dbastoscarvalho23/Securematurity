@@ -38,11 +38,16 @@ export default function ApprovalDialog({ open, onOpenChange, doc, approverName, 
     setErrors(formErrors);
     if (Object.keys(formErrors).length > 0) return;
     setSaving(true);
-    await onConfirm({ comments, signature: signature.trim() });
-    setSaving(false);
-    setSignature('');
-    setComments('');
-    setErrors({});
+    try {
+      await onConfirm({ comments, signature: signature.trim() });
+      setSignature('');
+      setComments('');
+      setErrors({});
+    } catch {
+      // O erro já é mostrado pela mutação; o diálogo fica aberto para tentar de novo.
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleClose = () => {

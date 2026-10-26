@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search, FileText, Shield, BookOpen, Workflow, Zap, ExternalLink, Pencil, Trash2, ChevronDown, ChevronRight, CheckCircle, Clock, History, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { writeAuditLog } from '@/lib/auditLog';
+import { saveDocument, approveDocument, deleteDocument } from '@/lib/documents';
 import { notifyDocumentStatus, notifyEntityChange } from '@/lib/notifications';
 import { useLanguage } from '@/lib/LanguageContext';
 import SecurityDocumentDialog from '@/components/documents/SecurityDocumentDialog';
@@ -20,6 +20,7 @@ import NominationsPanel from '@/components/documents/NominationsPanel';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import FileLink from '@/components/shared/FileLink';
 
 const LEVEL_CONFIGS = [
   { id: 'policy',    labelKey: 'docs_level1_label', sublabelKey: 'docs_level1_sublabel', statLabelKey: 'docs_stat_policies',  exampleKeys: ['docs_level1_ex1','docs_level1_ex2','docs_level1_ex3'], icon: Shield,   color: 'text-chart-1', bg: 'bg-chart-1/10', border: 'border-chart-1/20' },
@@ -117,82 +118,30 @@ export default function SecurityDocuments() {
   };
 
   const saveMutation = useMutation({
-    mutationFn: async (form) => {
-      if (form.id) {
-        // If a regular user edits, set back to under_review
-        const updatedForm = isUser ? { ...form, status: 'under_review' } : form;
-        const before = allDocs.find((d) => d.id === form.id);
-        const result = await base44.entities.SecurityDocument.update(form.id, updatedForm);
-        if (updatedForm.status !== before?.status) notifyDocumentStatus(form.id, updatedForm.status, before);
-        notifyEntityChange('SecurityDocument', form.id, 'update', before || null);
-        await writeAuditLog({ action: 'document_updated', entity_type: 'SecurityDocument', entity_id: form.id, details: `Updated document: ${form.title}` });
-        return result;
+    // Gravação no servidor (função `documents`): permissões, versão anterior e regras de estado.
+    mutationFn: async ({ form, changeNote }) => {
+      const before = form.id ? allDocs.find((d) => d.id === form.id) : null;
+      const res = await saveDocument(form, changeNote);
+      const saved = res?.document;
+      if (saved?.id) {
+        if (res.status_changed) notifyDocumentStatus(saved.id, saved.status, before);
+        if (before) notifyEntityChange('SecurityDocument', saved.id, 'update', before);
       }
-      // New doc: admin/customer_admin -> draft, user -> under_review
-      const newForm = {
-        ...form,
-        owner_email: user?.email,
-        status: isUser ? 'under_review' : (form.status || 'draft'),
-        customer_id: isUser || isCustomerAdmin ? customerId : form.customer_id,
-        customer_name: isUser || isCustomerAdmin
-          ? (user?.customer_name || form.customer_name)
-          : form.customer_name,
-      };
-      const result = await base44.entities.SecurityDocument.create(newForm);
-      if (result?.id) notifyDocumentStatus(result.id, newForm.status, null);
-      await writeAuditLog({ action: 'document_created', entity_type: 'SecurityDocument', entity_id: result?.id, details: `Created document: ${form.title}` });
-      return result;
+      return { saved, before };
     },
-    onSuccess: (_, variables) => {
+    onSuccess: ({ saved, before }) => {
       queryClient.invalidateQueries({ queryKey: ['securityDocuments'] });
-      const isEdit = !!variables.id;
-      if (isUser) {
-        toast.success(isEdit ? t('docs_submitted_reapproval') : t('docs_submitted_approval'));
-      } else {
-        toast.success(isEdit ? t('docs_doc_updated') : t('docs_doc_created'));
-      }
+      queryClient.invalidateQueries({ queryKey: ['documentVersions', saved?.id] });
+      if (before?.status === 'approved' && saved?.status === 'under_review') toast.success(t('x_doc_back_to_review'));
+      else if (saved?.status === 'under_review' && before?.status !== 'under_review') toast.success(before ? t('docs_submitted_reapproval') : t('docs_submitted_approval'));
+      else toast.success(before ? t('docs_doc_updated') : t('docs_doc_created'));
     },
-    onError: (err) => toast.error(err?.message || t('docs_save_error')),
   });
 
   const approveMutation = useMutation({
     mutationFn: async ({ doc, comments, signature }) => {
-      const approverName = user?.display_name || user?.full_name || user?.email;
-      const approvedDate = new Date().toISOString().split('T')[0];
-
-      // Snapshot current state as a version before approving
-      await base44.entities.DocumentVersion.create({
-        document_id: doc.id,
-        ...(doc.customer_id ? { customer_id: doc.customer_id } : {}),
-        version_label: doc.version,
-        title: doc.title,
-        description: doc.description,
-        level: doc.level,
-        status: doc.status,
-        file_url: doc.file_url,
-        file_name: doc.file_name,
-        approved_by: doc.approved_by,
-        approved_date: doc.approved_date,
-        review_date: doc.review_date,
-        tags: doc.tags,
-        framework_codes: doc.framework_codes,
-        changed_by: user?.email,
-        change_note: `Pre-approval snapshot. Approved by ${approverName}${comments ? ` — ${comments}` : ''}`,
-      });
-
-      await base44.entities.SecurityDocument.update(doc.id, {
-        status: 'approved',
-        approved_by: approverName,
-        approved_date: approvedDate,
-      });
+      await approveDocument(doc.id, signature, comments);
       notifyDocumentStatus(doc.id, 'approved', doc);
-
-      await writeAuditLog({
-        action: 'document_approved',
-        entity_type: 'SecurityDocument',
-        entity_id: doc.id,
-        details: `Document formally approved by ${approverName} (signed as: "${signature}")${comments ? ` — ${comments}` : ''}: ${doc.title}`,
-      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['securityDocuments'] });
@@ -210,10 +159,7 @@ export default function SecurityDocuments() {
   };
 
   const deleteMutation = useMutation({
-    mutationFn: async (doc) => {
-      await base44.entities.SecurityDocument.delete(doc.id);
-      await writeAuditLog({ action: 'document_deleted', entity_type: 'SecurityDocument', entity_id: doc.id, details: `Deleted document: ${doc.title}` });
-    },
+    mutationFn: (doc) => deleteDocument(doc.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['securityDocuments'] });
       toast.success(t('docs_doc_deleted'));
@@ -226,12 +172,17 @@ export default function SecurityDocuments() {
   const handleSearch = async () => {
     if (!searchQuery.trim()) { setSearchResults(null); return; }
     setSearching(true);
-    const res = await base44.functions.invoke('searchDocuments', {
-      query: searchQuery,
-      customer_id: effectiveCustomerId || undefined,
-    });
-    setSearchResults(res.data?.results || []);
-    setSearching(false);
+    try {
+      const res = await base44.functions.invoke('searchDocuments', {
+        query: searchQuery,
+        customer_id: effectiveCustomerId || undefined,
+      });
+      setSearchResults(res.data?.results || []);
+    } catch (err) {
+      toast.error(err?.message || t('x_tool_error'));
+    } finally {
+      setSearching(false);
+    }
   };
 
   const handleNew = (level) => {
@@ -339,7 +290,7 @@ export default function SecurityDocuments() {
                   <div className="flex gap-1">
                     {doc.file_url && (
                       <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                        <a href={doc.file_url} target="_blank" rel="noreferrer"><ExternalLink className="w-3.5 h-3.5" /></a>
+                        <FileLink url={doc.file_url} target="_blank" rel="noreferrer"><ExternalLink className="w-3.5 h-3.5" /></FileLink>
                       </Button>
                     )}
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setHistoryDoc(doc); setHistoryOpen(true); }}>
@@ -358,7 +309,7 @@ export default function SecurityDocuments() {
       ) : (
         <>
       {/* Pending Reviews Panel */}
-      <PendingReviewsPanel docs={docs} onEdit={canApprove || isUser ? handleEdit : null} />
+      <PendingReviewsPanel docs={docs} onEdit={(doc) => (canEditDoc(doc) ? handleEdit(doc) : null)} canEdit={canEditDoc} />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -466,9 +417,9 @@ export default function SecurityDocuments() {
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {doc.file_url && (
                             <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                              <a href={doc.file_url} target="_blank" rel="noreferrer">
+                              <FileLink url={doc.file_url} target="_blank" rel="noreferrer">
                                 <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
+                              </FileLink>
                             </Button>
                           )}
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title={t('docs_version_history')}
@@ -513,7 +464,7 @@ export default function SecurityDocuments() {
         open={historyOpen}
         onOpenChange={setHistoryOpen}
         doc={historyDoc}
-        canRevert={historyDoc ? (isAdmin || isCustomerAdmin || historyDoc?.owner_email === user?.email) : false}
+        canRevert={historyDoc ? canDeleteDoc(historyDoc) : false}
       />
 
       <SecurityDocumentDialog
@@ -523,7 +474,7 @@ export default function SecurityDocuments() {
         customers={customers}
         isAdmin={isAdmin}
         isUser={isUser}
-        onSave={async (form) => { await saveMutation.mutateAsync(form); setDialogOpen(false); }}
+        onSave={async (form, changeNote) => { await saveMutation.mutateAsync({ form, changeNote }); setDialogOpen(false); }}
       />
     </div>
   );

@@ -57,7 +57,8 @@ function RoleGuard({ path, role, hasCustomer, children }) {
 
   // role === 'user'
   if (!hasCustomer) {
-    if (path !== '/') return <Navigate to="/" replace />;
+    // Sem cliente atribuído: só o painel e as definições (perfil, idioma, tema).
+    if (path !== '/' && path !== '/settings') return <Navigate to="/" replace />;
     return children;
   }
 

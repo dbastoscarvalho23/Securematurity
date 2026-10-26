@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, LicenseError } from '../../shared/license.ts';
+import { checkFile } from '../../shared/fileCheck.ts';
 import { resolveProvider, putFile, getFile, sha256Hex, fromBase64, toBase64, MAX_EXTERNAL_BYTES } from '../../shared/storage.ts';
 
 /**
@@ -23,7 +24,6 @@ import { resolveProvider, putFile, getFile, sha256Hex, fromBase64, toBase64, MAX
 const TYPES = ['screenshot', 'tool_report', 'contract_licence', 'policy_procedure', 'log_record', 'test_audit_report', 'other'];
 const METHODS = ['examine', 'interview', 'test'];
 const LINK_TYPES = ['measure', 'control', 'question', 'asset', 'component', 'incident', 'task', 'checklist', 'supplier', 'vulnerability'];
-const ALLOWED_MIME = /^(application\/pdf|image\/(png|jpeg|gif|webp)|text\/(plain|csv)|application\/(zip|json|xml|vnd\.openxmlformats-officedocument\.[\w.]+|vnd\.ms-excel|msword|vnd\.oasis\.opendocument\.[\w.]+)|message\/rfc822)$/i;
 
 // Entities a link may point to, checked to belong to the evidence's customer.
 const RESTRICTED_LINKS = ['asset', 'component'];
@@ -80,45 +80,6 @@ async function buildMeta(base44, body, customerId) {
   return meta;
 }
 
-const startsWith = (b, sig, off = 0) => sig.every((x, i) => b[off + i] === x);
-
-/** Família real do ficheiro, pelos primeiros bytes (não pelo que o browser diz). */
-function sniff(b) {
-  if (startsWith(b, [0x25, 0x50, 0x44, 0x46])) return 'pdf';
-  if (startsWith(b, [0x89, 0x50, 0x4e, 0x47])) return 'png';
-  if (startsWith(b, [0xff, 0xd8, 0xff])) return 'jpeg';
-  if (startsWith(b, [0x47, 0x49, 0x46, 0x38])) return 'gif';
-  if (startsWith(b, [0x52, 0x49, 0x46, 0x46]) && startsWith(b, [0x57, 0x45, 0x42, 0x50], 8)) return 'webp';
-  if (startsWith(b, [0x50, 0x4b, 0x03, 0x04]) || startsWith(b, [0x50, 0x4b, 0x05, 0x06])) return 'zip';
-  if (startsWith(b, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])) return 'ole';
-  try {
-    const text = new TextDecoder('utf-8', { fatal: true }).decode(b.subarray(0, Math.min(b.length, 65536)));
-    if (/<\s*(html|script|iframe|svg|object|embed)\b/i.test(text)) return 'active';
-    return 'text';
-  } catch { return 'binary'; }
-}
-
-// Família esperada para cada tipo declarado.
-function expectedFamily(mime) {
-  const m = mime.toLowerCase();
-  if (m === 'application/pdf') return ['pdf'];
-  if (m === 'image/png') return ['png'];
-  if (m === 'image/jpeg') return ['jpeg'];
-  if (m === 'image/gif') return ['gif'];
-  if (m === 'image/webp') return ['webp'];
-  if (m === 'application/zip' || m.includes('openxmlformats') || m.includes('opendocument')) return ['zip'];
-  if (m === 'application/vnd.ms-excel' || m === 'application/msword') return ['ole'];
-  if (m.startsWith('text/') || m === 'application/json' || m === 'application/xml' || m === 'message/rfc822') return ['text'];
-  return [];
-}
-
-function checkFile(name, mime, bytes, max) {
-  if (!name) throw new Error('Nome do ficheiro em falta');
-  if (!ALLOWED_MIME.test(String(mime || ''))) throw new Error('Tipo de ficheiro não permitido');
-  if (!bytes.byteLength || bytes.byteLength > max) throw new Error(`Ficheiro vazio ou maior do que ${Math.round(max / 1048576)} MB`);
-  if (!expectedFamily(mime).includes(sniff(bytes))) throw new Error('O conteúdo do ficheiro não corresponde ao tipo indicado');
-}
-
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -150,11 +111,23 @@ export default async function (req) {
       const provider = await resolveProvider(base44, customer);
       const meta = await buildMeta(base44, body, customerId);
       if (meta.restricted && !admin && user.role !== 'customer_admin') return json({ error: 'Só os administradores do cliente podem anexar evidências a ativos e ferramentas' }, 403);
-      const mime = str(body.mime_type, 120) || 'application/octet-stream';
       const fileName = str(body.file_name, 200);
       const bytes = fromBase64(body.content_base64);
-      checkFile(fileName, mime, bytes, MAX_EXTERNAL_BYTES);
-      const ref = (await putFile(base44, customer, provider, { bytes, fileName, mimeType: mime })).ref;
+      const mime = checkFile(fileName, str(body.mime_type, 120), bytes, MAX_EXTERNAL_BYTES);
+      // Nova versão: a anterior é marcada como substituída antes de gravar, para que dois envios em
+      // simultâneo não criem duas versões «atuais». Se a gravação falhar, a marca é desfeita.
+      if (meta.supersedes_id) {
+        const prevNow = await base44.asServiceRole.entities.Evidence.get(meta.supersedes_id).catch(() => null);
+        if (!prevNow || prevNow.superseded) return json({ error: 'Essa evidência já tem uma versão mais recente' }, 409);
+        await base44.asServiceRole.entities.Evidence.update(meta.supersedes_id, { superseded: true });
+      }
+      let ref;
+      try {
+        ref = (await putFile(base44, customer, provider, { bytes, fileName, mimeType: mime })).ref;
+      } catch (e) {
+        if (meta.supersedes_id) await base44.asServiceRole.entities.Evidence.update(meta.supersedes_id, { superseded: false }).catch(() => null);
+        throw e;
+      }
 
       const sha256 = await sha256Hex(bytes);
       const ev = await base44.asServiceRole.entities.Evidence.create({
@@ -167,7 +140,6 @@ export default async function (req) {
         storage_ref: ref,
         uploaded_by: user.email,
       });
-      if (meta.supersedes_id) await base44.asServiceRole.entities.Evidence.update(meta.supersedes_id, { superseded: true });
       await logAudit(base44, 'evidence_created', {
         user_email: user.email, customer_id: customerId, entity_type: 'Evidence', entity_id: ev.id,
         details: `Evidência «${meta.title}» (${provider}, SHA-256 ${sha256.slice(0, 12)}…) ligada a ${meta.link_keys.length} registo(s)`,

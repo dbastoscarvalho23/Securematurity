@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Send, FileIcon, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import FileLink from '@/components/shared/FileLink';
 
 export default function TaskComments({ taskId, customerId }) {
   const { user } = useAuth();
@@ -49,7 +50,7 @@ export default function TaskComments({ taskId, customerId }) {
     try {
       const uploaded = [];
       for (const file of files) {
-        const res = await uploadFile(file);
+        const res = await uploadFile(file, customerId, 'comment', taskId);
         uploaded.push({
           name: file.name,
           url: res.file_url,
@@ -121,16 +122,16 @@ export default function TaskComments({ taskId, customerId }) {
               {comment.attachments && comment.attachments.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {comment.attachments.map((att, i) => (
-                    <a
+                    <FileLink
                       key={i}
-                      href={att.url}
+                      url={att.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-primary hover:underline text-xs"
                     >
                       <FileIcon className="w-3 h-3" />
                       {att.name}
-                    </a>
+                    </FileLink>
                   ))}
                 </div>
               )}

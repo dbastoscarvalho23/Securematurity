@@ -178,18 +178,23 @@ Deno.serve(async (req) => {
         });
       }
 
-      if (doc.status === 'under_review' && prevStatus !== 'under_review' && doc.owner_email) {
-        notifications.push({
-          user_email: doc.owner_email,
-          type: 'document_review',
-          title: 'Documento enviado para revisão',
-          message: `O documento "${doc.title}" foi enviado para revisão.`,
-          entity_type: 'SecurityDocument',
-          entity_id: event.entity_id,
-          link: '/security-documents',
-          customer_id: doc.customer_id || null,
-          is_read: false,
-        });
+      if (doc.status === 'under_review' && prevStatus !== 'under_review' && doc.customer_id) {
+        // O aviso vai para quem aprova: os administradores do cliente.
+        const approvers = await base44.asServiceRole.entities.User.filter({ customer_id: doc.customer_id, role: 'customer_admin' });
+        for (const a of approvers) {
+          if (!a.email) continue;
+          notifications.push({
+            user_email: a.email,
+            type: 'document_review',
+            title: 'Documento para aprovar',
+            message: `O documento "${doc.title}" aguarda a sua revisão.`,
+            entity_type: 'SecurityDocument',
+            entity_id: event.entity_id,
+            link: '/security-documents',
+            customer_id: doc.customer_id,
+            is_read: false,
+          });
+        }
       }
     }
 

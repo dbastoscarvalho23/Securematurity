@@ -19,7 +19,7 @@ function UrgencyBadge({ days, t }) {
 
 const LEVEL_LABELS_KEY = { policy: 'prp_level_policy', standard: 'prp_level_standard', procedure: 'prp_level_procedure', playbook: 'prp_level_playbook' };
 
-export default function PendingReviewsPanel({ docs, onEdit }) {
+export default function PendingReviewsPanel({ docs, onEdit, canEdit }) {
   const { t } = useLanguage();
   const pending = useMemo(() => {
     const today = new Date();
@@ -75,7 +75,7 @@ export default function PendingReviewsPanel({ docs, onEdit }) {
                 </p>
               </div>
               <UrgencyBadge days={doc.daysUntil} t={t} />
-              {onEdit && (
+              {onEdit && (!canEdit || canEdit(doc)) && (
                 <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => onEdit(doc)}>
                   <Pencil className="w-3.5 h-3.5" />
                 </Button>

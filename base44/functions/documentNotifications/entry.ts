@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
   const STATUS_LABELS = { draft: 'Rascunho', under_review: 'Em revisão', approved: 'Aprovado', deprecated: 'Obsoleto' };
 
   const headerHtml = (title) => `
-    <div style="background:#1e3a5f;padding:20px 28px;border-radius:10px 10px 0 0;">
+    <div style="background:#070A13;padding:20px 28px;border-radius:10px 10px 0 0;">
       <h2 style="color:#fff;margin:0;font-size:18px;">${title}</h2>
       <p style="color:#94a3b8;margin:4px 0 0;font-size:13px;">AnkoraOne</p>
     </div>`;
@@ -99,7 +99,12 @@ Deno.serve(async (req) => {
       return json({ skipped: 'document review notifications disabled' });
     }
 
-    const recipients = buildRecipients(document.owner_email, settings);
+    // Quem aprova são os administradores do cliente: o aviso vai para eles (e para os destinatários adicionais),
+    // não para o autor do documento.
+    const approvers = document.customer_id
+      ? (await base44.asServiceRole.entities.User.filter({ customer_id: document.customer_id, role: 'customer_admin' })).map((u) => u.email).filter(Boolean)
+      : [];
+    const recipients = [...new Set([...approvers, ...buildRecipients(null, settings)])].filter((e) => e && e !== user.email);
     if (recipients.length === 0) return json({ skipped: 'no recipients' });
 
     const body = `
@@ -132,7 +137,7 @@ Deno.serve(async (req) => {
       user_email: user.email,
       entity_type: 'SecurityDocument',
       entity_id: document.id,
-      details: `Document review notification sent to ${recipients.join(', ')} for: ${document.title}`,
+      details: `Aviso de revisão do documento «${document.title}» enviado a ${recipients.join(', ')}`,
     });
     return json({ sent: 'sent_for_review', to: recipients });
   }
@@ -175,7 +180,7 @@ Deno.serve(async (req) => {
       user_email: user.email,
       entity_type: 'SecurityDocument',
       entity_id: document.id,
-      details: `Document approval notification sent to ${recipients.join(', ')} for: ${document.title}`,
+      details: `Aviso de aprovação do documento «${document.title}» enviado a ${recipients.join(', ')}`,
     });
     return json({ sent: 'approved', to: recipients });
   }

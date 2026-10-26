@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import NominationDocumentDialog from './NominationDocumentDialog';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
+import FileLink from '@/components/shared/FileLink';
 
 const STATUS_STYLES = {
   active: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
@@ -202,9 +203,9 @@ export default function NominationsPanel({ customers, selectedCustomerId }) {
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {n.file_url && (
                         <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                          <a href={n.file_url} target="_blank" rel="noreferrer">
+                          <FileLink url={n.file_url} target="_blank" rel="noreferrer">
                             <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
+                          </FileLink>
                         </Button>
                       )}
                       {canEdit(n) && (

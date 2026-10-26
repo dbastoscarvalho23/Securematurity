@@ -54,6 +54,11 @@ const PAGE_TITLE_KEYS = {
   '/vulnerabilities': 'page_vulnerabilities',
   '/compliance-metrics': 'page_compliance_metrics',
   '/suppliers': 'suppliers_title',
+  '/supply-chain': 'nav_supply_chain',
+  '/training': 'nav_training',
+  '/legal-library': 'nav_legal_library',
+  '/assets': 'nav_assets_tools',
+  '/framework-guide': 'nav_framework_guide',
 };
 
 export default function TopBar({ onMenuClick }) {

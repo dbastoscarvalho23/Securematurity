@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { json, getAuthenticatedUser, isPlatformAdmin } from '../../shared/http.ts';
 import { getAutomationSecret } from '../../shared/automationSecret.ts';
 import { buildPdf } from './pdf.ts';
+import { storePrivateFile } from '../../shared/storedFile.ts';
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
@@ -50,13 +51,11 @@ Deno.serve(async (req) => {
     // Build PDF
     const pdfBuffer = buildPdf(reportData, monthLabelPt, null);
 
-    // Upload file — write to /tmp then read as bytes for multipart upload
-    const fileName = `Annual_Cybersecurity_Report_${monthKey}.pdf`;
-    const tmpPath = `/tmp/${fileName}`;
-    await Deno.writeFile(tmpPath, new Uint8Array(pdfBuffer));
-    const fileBytes = await Deno.readFile(tmpPath);
-    const pdfFile = new File([fileBytes], fileName, { type: 'application/pdf' });
-    const { file_url } = await sr.integrations.Core.UploadFile({ file: pdfFile });
+    // Relatório com dados de todos os clientes: guardado de forma privada (só administradores o abrem).
+    const fileName = `Relatorio_Anual_Ciberseguranca_${monthKey}.pdf`;
+    const { url: file_url } = await storePrivateFile(base44, {
+      customer: null, bytes: new Uint8Array(pdfBuffer), fileName, mimeType: 'application/pdf', context: 'report', uploadedBy: 'system@automated',
+    });
 
     // Create SecurityDocument record
     const doc = await sr.entities.SecurityDocument.create({
