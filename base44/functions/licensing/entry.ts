@@ -265,3 +265,4 @@ async function syncTenantModules(db, sub, tierModules, actor) {
   }
   for (const [code, src] of want) await db.TenantModule.create({ customer_id: sub.customer_id, module_code: code, status: active ? 'active' : 'inactive', source: src, activated_at: now, reason: `${src === 'tier' ? 'Bundle' : 'Extra'} ${sub.tier_code}` });
 }
+

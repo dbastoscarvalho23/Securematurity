@@ -76,3 +76,4 @@ export async function consumeQuota(base44, customerId, feature, quota) {
   else await db.LicenseUsageRecord.create({ customer_id: customerId, month, feature, usage_count: 1 });
   return used + 1;
 }
+
