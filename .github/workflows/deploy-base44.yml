@@ -1,0 +1,83 @@
+# Publica o frontend da app Securematurity no Base44 sempre que o main recebe alterações.
+#
+# Usa o serviço "Deploy a prebuilt site" do Base44 (POST /api/apps/{app_id}/deploy-dist), que publica
+# a pasta dist já compilada. Só cobre o frontend: alterações a entidades (base44/entities), funções
+# (base44/functions) ou ao agente têm de ser aplicadas no Base44 por fusão de um ramo da app ou com
+# `npx base44 deploy` (ver docs/deploy-base44.md).
+#
+# Requer o segredo BASE44_API_KEY (token pessoal com acesso total, ou chave de workspace com a
+# permissão apps:deploy), em Settings → Secrets and variables → Actions.
+
+name: Publicar no Base44
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - 'tools/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-base44
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  BASE44_APP_ID: 6ab5373e7f8f586c80cb9ed8   # app "Securematurity" no Base44
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Compilar
+        env:
+          VITE_BASE44_APP_ID: ${{ env.BASE44_APP_ID }}
+        run: npm run build
+
+      - name: Verificar o resultado da compilação
+        run: |
+          test -f dist/index.html || { echo "::error::dist/index.html não existe"; exit 1; }
+          files=$(find dist -type f | wc -l)
+          size=$(du -sm dist | cut -f1)
+          echo "dist: ${files} ficheiros, ${size} MB"
+          # Limites do Base44: até 1000 ficheiros e 50 MB
+          [ "$files" -le 1000 ] || { echo "::error::Mais de 1000 ficheiros em dist"; exit 1; }
+          [ "$size" -lt 50 ] || { echo "::error::dist excede 50 MB"; exit 1; }
+
+      - name: Empacotar
+        run: tar -czf dist.tar.gz -C dist .
+
+      - name: Publicar no Base44
+        env:
+          BASE44_API_KEY: ${{ secrets.BASE44_API_KEY }}
+        run: |
+          if [ -z "$BASE44_API_KEY" ]; then
+            echo "::error::Falta o segredo BASE44_API_KEY"; exit 1
+          fi
+          status=$(curl -sS -o response.json -w '%{http_code}' -X POST \
+            "https://app.base44.com/api/apps/${BASE44_APP_ID}/deploy-dist" \
+            -H "Authorization: Bearer ${BASE44_API_KEY}" \
+            -F "file=@dist.tar.gz")
+          echo "HTTP ${status}"
+          cat response.json; echo
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::Publicação recusada pelo Base44 (HTTP ${status})"; exit 1
+          fi
+          url=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('response.json','utf8')).app_url||'')}catch{console.log('')}")
+          echo "### Publicado no Base44" >> "$GITHUB_STEP_SUMMARY"
+          echo "${url:-(sem URL na resposta)} — commit ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
