@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
-import { json, getAuthenticatedUser, hasAutomationSecret, canAccessRecord } from '../../shared/http.ts';
+import { json, getAuthenticatedUser, isPlatformAdmin, canAccessRecord } from '../../shared/http.ts';
 import { logEmailSent } from '../../shared/audit.ts';
 import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
 import { sendMail } from '../../shared/mail.ts';
@@ -14,10 +14,10 @@ Deno.serve(async (req) => {
   let type, document, previousDocument, user;
 
   if (body.event && body.data) {
-    // Entity automation branch: only platform automations — which carry the
-    // shared secret — may trigger this service-role email dispatch. Anonymous
-    // callers are rejected before any read/write.
-    if (!hasAutomationSecret(req, body)) {
+    // Entity automation branch: only a platform automation — which runs with the
+    // app owner's admin session — may trigger this service-role email dispatch.
+    // Anonymous callers are rejected before any read/write.
+    if (!isPlatformAdmin(await getAuthenticatedUser(base44))) {
       return json({ error: 'Unauthorized' }, 403);
     }
 
@@ -187,4 +187,3 @@ Deno.serve(async (req) => {
 
   return json({ skipped: 'unknown type' });
 });
-

@@ -1,6 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { json, getAuthenticatedUser, isPlatformAdmin } from '../../shared/http.ts';
-import { getAutomationSecret } from '../../shared/automationSecret.ts';
 import { buildPdf } from './pdf.ts';
 import { storePrivateFile } from '../../shared/storedFile.ts';
 
@@ -9,15 +8,13 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Allow both scheduled (via shared automation secret) and manual admin trigger.
-    // Anonymous callers are rejected — access is never granted merely because
+    // Scheduled workflows run with the app owner's session, so this admin check
+    // covers both the monthly automation and a manual admin trigger. Anonymous
+    // callers are rejected — access is never granted merely because
     // base44.auth.me() threw.
-    const isScheduled = !!(await getAutomationSecret(req));
-    if (!isScheduled) {
-      const user = await getAuthenticatedUser(base44);
-      if (!isPlatformAdmin(user)) {
-        return json({ error: 'Admin access required' }, 403);
-      }
+    const user = await getAuthenticatedUser(base44);
+    if (!isPlatformAdmin(user)) {
+      return json({ error: 'Admin access required' }, 403);
     }
 
     const sr = base44.asServiceRole;
@@ -99,5 +96,3 @@ Deno.serve(async (req) => {
     return json({ error: error.message }, 500);
   }
 });
-
-

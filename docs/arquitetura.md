@@ -33,7 +33,7 @@ flowchart TB
 | Entidades | `base44/entities/*.jsonc` | RLS por cliente (`customer_id`) e por papel; campos reservados com RLS de campo |
 | Funções | `base44/functions/*/entry.ts` | Deno; validam papel, cliente e módulo antes de ler ou gravar com *service role* |
 | Código partilhado | `base44/shared/` | `mail.ts`, `llm.ts`, `storage.ts`, `storedFile.ts`, `license.ts`, `http.ts`, `audit.ts` |
-| Agendamentos | workflows do Base44 | Definições na app (o valor do `AUTOMATION_SECRET` está nos argumentos); `base44/workflows/` é referência |
+| Agendamentos | workflows do Base44 | Definições na app; `base44/workflows/` é referência. Cada chamada leva a sessão do proprietário da app (administrador) — sem segredo nos argumentos |
 | Dados legais | `src/data/legal/` | Só fontes oficiais; ver `docs/legal/README.md` |
 
 ## Fluxos principais

@@ -18,8 +18,9 @@ Deno.serve(async (req) => {
   const now = new Date().toISOString();
   const results = { executed_at: now, purged: 0, archived: 0, errors: [] };
 
-  // Authorization: scheduled automation (shared secret) or manual platform admin.
-  // Anonymous external callers are rejected before any destructive service-role operation.
+  // Authorization: a platform admin — the identity a scheduled workflow runs as (app
+  // owner's session) — or a manual trigger by one. Anonymous external callers are
+  // rejected before any destructive service-role operation.
   const forbidden = await authorizeAutomationOrAdmin(req, base44);
   if (forbidden) return forbidden;
 

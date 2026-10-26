@@ -12,8 +12,9 @@ const RISK_STATUS_PT = { open: 'Aberto', in_treatment: 'Em tratamento', accepted
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
-  // Authorization: scheduled automation (shared secret) or manual platform admin.
-  // Anonymous external callers are rejected before any service-role query / email dispatch.
+  // Authorization: a platform admin — the identity a scheduled workflow runs as (app
+  // owner's session) — or a manual trigger by one. Anonymous external callers are
+  // rejected before any service-role query / email dispatch.
   const forbidden = await authorizeAutomationOrAdmin(req, base44);
   if (forbidden) return forbidden;
 
