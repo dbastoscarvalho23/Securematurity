@@ -73,8 +73,8 @@ export default function TrainingUserFormDialog({ open, onOpenChange, onSave, cus
             <Select value={form.status} onValueChange={v => set('status', v)}>
               <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="active">{t('common_active')}</SelectItem>
+                <SelectItem value="inactive">{t('common_inactive')}</SelectItem>
               </SelectContent>
             </Select>
           </div>

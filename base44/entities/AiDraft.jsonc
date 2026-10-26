@@ -1,0 +1,151 @@
+{
+  "name": "AiDraft",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "target_type": {
+      "type": "string",
+      "enum": [
+        "measure",
+        "incident",
+        "annual_report",
+        "evidence_review"
+      ]
+    },
+    "target_ref": {
+      "type": "string",
+      "description": "Medida (chave), incidente (id), ano ou evidência (id)"
+    },
+    "kind": {
+      "type": "string",
+      "description": "policy, procedure, record, evidence_plan, incident_initial, incident_update, incident_end, incident_interim, incident_final, annual, review"
+    },
+    "title": {
+      "type": "string"
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "[{id, heading, ref, body, citations[]}]"
+    },
+    "evidence_suggestions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "O que falta ou tem de ser confirmado por uma pessoa"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "covers",
+        "partial",
+        "does_not_cover",
+        ""
+      ],
+      "description": "Só na análise de evidências"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Textos oficiais enviados ao modelo [{id, label}]"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Avisos da validação automática (citações recusadas, secções vazias)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "approved",
+        "discarded"
+      ],
+      "default": "draft"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    },
+    "created_by_email": {
+      "type": "string"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "security_document_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "target_type",
+    "kind"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

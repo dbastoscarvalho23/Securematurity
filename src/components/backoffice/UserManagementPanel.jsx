@@ -74,7 +74,7 @@ export default function UserManagementPanel() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       if (result?.roleError) {
-        toast.warning(`Profile updated, but role could not be changed: ${result.roleError}`);
+        toast.warning(t('x_user_role_not_changed', { error: result.roleError }));
       } else {
         toast.success(t('settings_user_updated'));
       }
@@ -195,7 +195,7 @@ export default function UserManagementPanel() {
               <label className="text-sm font-medium">{t('settings_email')}</label>
               <Input
                 type="email"
-                placeholder="user@example.com"
+                placeholder={t('x_user_email_placeholder')}
                 value={inviteEmail}
                 onChange={e => setInviteEmail(e.target.value)}
                 required

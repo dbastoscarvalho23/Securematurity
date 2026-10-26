@@ -13,6 +13,7 @@ import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
 import ComplianceGapsSummary from '@/components/evidence/ComplianceGapsSummary';
 import EvidenceRegister from '@/components/evidence/EvidenceRegister';
+import AiWorkspace from '@/components/ai/AiWorkspace';
 
 function fileIcon(name = '') {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -132,6 +133,7 @@ export default function EvidenceOverview() {
   return (
     <div className="space-y-6">
       <EvidenceRegister />
+      <AiWorkspace />
 
       {/* Compliance Gaps Summary */}
       <div className="space-y-3">
@@ -178,7 +180,7 @@ export default function EvidenceOverview() {
           />
         </div>
         <Select value={filterAssessment} onValueChange={setFilterAssessment}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Assessment" /></SelectTrigger>
+          <SelectTrigger className="w-48"><SelectValue placeholder={t('x_evidence_ph_assessment')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('evidence_all_assessments')}</SelectItem>
             {assessments.map(a => (
@@ -188,7 +190,7 @@ export default function EvidenceOverview() {
         </Select>
         {frameworks.length > 0 && (
           <Select value={filterFramework} onValueChange={setFilterFramework}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="Framework" /></SelectTrigger>
+            <SelectTrigger className="w-40"><SelectValue placeholder={t('x_evidence_ph_framework')} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('evidence_all_frameworks')}</SelectItem>
               {frameworks.map(fw => <SelectItem key={fw} value={fw}>{fw}</SelectItem>)}
@@ -197,7 +199,7 @@ export default function EvidenceOverview() {
         )}
         {domains.length > 0 && (
           <Select value={filterDomain} onValueChange={setFilterDomain}>
-            <SelectTrigger className="w-44"><SelectValue placeholder="Domain" /></SelectTrigger>
+            <SelectTrigger className="w-44"><SelectValue placeholder={t('x_evidence_ph_domain')} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('evidence_all_domains')}</SelectItem>
               {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}

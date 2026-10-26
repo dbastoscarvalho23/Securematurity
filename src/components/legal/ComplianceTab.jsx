@@ -17,6 +17,10 @@ import { loadLegal, applicableMeasures, applicableEprMeasures } from '@/lib/lega
 import { LevelBadge, Loading, downloadCsv, useLegalData } from './shared';
 import EvidencePanel, { useCustomerEvidence, evidenceSummary } from '@/components/evidence/EvidencePanel';
 import { linkKey } from '@/lib/evidence';
+import { useLicense, hasModule } from '@/lib/licensing';
+import { MEASURE_KINDS } from '@/lib/ai';
+import AiDraftDialog from '@/components/ai/AiDraftDialog';
+import { Sparkles } from 'lucide-react';
 
 export const CHECKLIST_FRAMEWORK = 'RJC_MEDIDAS_MINIMAS';
 const STATUSES = ['pending', 'in_progress', 'done', 'not_applicable'];
@@ -34,7 +38,7 @@ const EV_BADGE = {
   rejected: 'bg-muted text-muted-foreground',
 };
 
-function MeasureRow({ m, record, onSave, canEdit, evState, tools = [], customerId, provider }) {
+function MeasureRow({ m, record, onSave, canEdit, evState, tools = [], customerId, provider, onAi }) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({ owner: record?.owner || '', due_date: record?.due_date || '', notes: record?.notes || '' });
@@ -70,7 +74,10 @@ function MeasureRow({ m, record, onSave, canEdit, evState, tools = [], customerI
             <Input type="date" value={draft.due_date} disabled={!canEdit} onChange={(e) => setDraft({ ...draft, due_date: e.target.value })} />
           </div>
           <Textarea rows={2} value={draft.notes} disabled={!canEdit} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} placeholder={t('legal_comp_notes')} />
-          {canEdit && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onSave(draft)}>{t('common_save')}</Button>}
+          <div className="flex gap-2">
+            {canEdit && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onSave(draft)}>{t('common_save')}</Button>}
+            {onAi && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onAi(m)}><Sparkles className="w-3.5 h-3.5 mr-1" />{t('ai_measure_button')}</Button>}
+          </div>
           {tools.length > 0 && (
             <p className="text-xs"><span className="font-medium">{t('tl_covering')}:</span> {tools.map((c) => `${c.product}${c.vendor ? ` (${c.vendor})` : ''}`).join(' · ')}</p>
           )}
@@ -107,6 +114,9 @@ export default function ComplianceTab() {
     enabled: Boolean(customerId),
   });
   const { data: evidence = [] } = useCustomerEvidence(customerId);
+  const { data: license } = useLicense(isAdmin ? customerId : undefined);
+  const aiAllowed = canEdit && hasModule(license, user, 'ai_assistant');
+  const [aiMeasure, setAiMeasure] = useState(null);
   const evByKey = useMemo(() => evidenceSummary(evidence), [evidence]);
   const { data: components = [] } = useQuery({
     queryKey: ['components', customerId],
@@ -234,11 +244,14 @@ export default function ComplianceTab() {
             {measures.map((m, i) => (
               <MeasureRow key={m.key} m={m} record={byKey[m.key]} canEdit={canEdit} onSave={(patch) => save(m, i, patch)}
                 evState={evByKey[linkKey('measure', m.key)]} tools={m.control ? toolsByControl[m.control.id] || [] : []}
-                customerId={customerId} provider={customer?.storage_provider} />
+                customerId={customerId} provider={customer?.storage_provider} onAi={aiAllowed ? setAiMeasure : undefined} />
             ))}
           </div>
         </>
       )}
+      <AiDraftDialog open={aiMeasure !== null} onOpenChange={(v) => !v && setAiMeasure(null)} customerId={customerId}
+        target={aiMeasure ? { type: 'measure', key: aiMeasure.key } : null} kinds={MEASURE_KINDS}
+        title={aiMeasure ? `${t('ai_title')} — ${aiMeasure.control ? aiMeasure.control.id : aiMeasure.code}` : ''} />
     </div>
   );
 }

@@ -129,7 +129,7 @@ export default function VersionHistoryDialog({ open, onOpenChange, doc, canRever
                       <span className="text-xs text-muted-foreground">{formatLocalTimestamp(v.created_date)}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      by <span className="font-medium">{v.changed_by}</span>
+                      {t('x_version_by')} <span className="font-medium">{v.changed_by}</span>
                       {v.change_note && <span> · {v.change_note}</span>}
                     </p>
                   </div>

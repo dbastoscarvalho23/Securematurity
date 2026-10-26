@@ -10,8 +10,10 @@ import GoogleIcon from "@/components/GoogleIcon";
 import MicrosoftIcon from "@/components/MicrosoftIcon";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { useAuth } from "@/lib/AuthContext";
+import { useLanguage } from "@/lib/LanguageContext";
 
 export default function Register() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { checkAppState } = useAuth();
   const returnTo = safeReturnTo();
@@ -28,15 +30,15 @@ export default function Register() {
     e.preventDefault();
     setError("");
     if (!email.trim() || !password || !confirm) {
-      setError("Please fill in all fields.");
+      setError(t("register_err_fields"));
       return;
     }
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("register_err_weak_password"));
       return;
     }
     if (password !== confirm) {
-      setError("Passwords do not match.");
+      setError(t("register_err_password_mismatch"));
       return;
     }
     setLoading(true);
@@ -44,7 +46,7 @@ export default function Register() {
       await base44.auth.register({ email: email.trim(), password });
       setStep("otp");
     } catch (err) {
-      setError(err.message || "Unable to register with that email.");
+      setError(err.message || t("register_err_email"));
     } finally {
       setLoading(false);
     }
@@ -54,7 +56,7 @@ export default function Register() {
     e.preventDefault();
     setError("");
     if (!otp.trim()) {
-      setError("Please enter the verification code.");
+      setError(t("register_err_fields"));
       return;
     }
     setLoading(true);
@@ -64,7 +66,7 @@ export default function Register() {
       await checkAppState();
       window.location.href = returnTo;
     } catch (err) {
-      setError(err.message || "Invalid verification code.");
+      setError(err.message || t("register_err_otp"));
     } finally {
       setLoading(false);
     }
@@ -82,11 +84,11 @@ export default function Register() {
     return (
       <AuthLayout
         icon={Mail}
-        title="Verify your email"
-        subtitle={`Enter the code sent to ${email}`}
+        title={t("x_register_verify_title")}
+        subtitle={t("x_register_verify_subtitle", { email })}
         footer={
           <Link to="/login" className="text-primary font-medium hover:underline">
-            Back to log in
+            {t("x_forgot_back")}
           </Link>
         }
       >
@@ -97,7 +99,7 @@ export default function Register() {
         )}
         <form onSubmit={handleVerify} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="otp">Verification code</Label>
+            <Label htmlFor="otp">{t("register_otp_label")}</Label>
             <Input
               id="otp"
               value={otp}
@@ -112,10 +114,10 @@ export default function Register() {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Verifying...
+                {t("x_register_verifying")}
               </>
             ) : (
-              "Verify and continue"
+              t("x_register_verify_button")
             )}
           </Button>
         </form>
@@ -126,16 +128,16 @@ export default function Register() {
   return (
     <AuthLayout
       icon={UserPlus}
-      title="Create your account"
-      subtitle="Get started with AnkoraOne"
+      title={t("register_title")}
+      subtitle={t("x_register_subtitle")}
       footer={
         <>
-          Already have an account?{" "}
+          {t("x_register_have_account")}{" "}
           <Link
             to={"/login" + (returnTo !== "/" ? "?returnTo=" + encodeURIComponent(returnTo) : "")}
             className="text-primary font-medium hover:underline"
           >
-            Log in
+            {t("x_login_button")}
           </Link>
         </>
       }
@@ -146,7 +148,7 @@ export default function Register() {
         onClick={handleGoogle}
       >
         <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
+        {t("x_login_google")}
       </Button>
 
       <Button
@@ -155,7 +157,7 @@ export default function Register() {
         onClick={handleMicrosoft}
       >
         <MicrosoftIcon className="w-5 h-5 mr-2" />
-        Continue with Microsoft
+        {t("x_login_microsoft")}
       </Button>
 
       <div className="relative mb-6">
@@ -163,7 +165,7 @@ export default function Register() {
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">or</span>
+          <span className="bg-card px-3 text-muted-foreground">{t("x_login_or")}</span>
         </div>
       </div>
 
@@ -175,7 +177,7 @@ export default function Register() {
 
       <form onSubmit={handleRegister} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("x_auth_email")}</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
@@ -183,7 +185,7 @@ export default function Register() {
               type="email"
               autoComplete="email"
               autoFocus
-              placeholder="you@example.com"
+              placeholder={t("x_auth_email_placeholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="pl-10 h-12"
@@ -192,14 +194,14 @@ export default function Register() {
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t("register_password")}</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               id="password"
               type="password"
               autoComplete="new-password"
-              placeholder="Min. 8 characters"
+              placeholder={t("x_register_password_placeholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="pl-10 h-12"
@@ -208,14 +210,14 @@ export default function Register() {
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="confirm">Confirm Password</Label>
+          <Label htmlFor="confirm">{t("register_confirm_password")}</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               id="confirm"
               type="password"
               autoComplete="new-password"
-              placeholder="Re-enter password"
+              placeholder={t("x_register_confirm_placeholder")}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               className="pl-10 h-12"
@@ -227,10 +229,10 @@ export default function Register() {
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Creating account...
+              {t("x_register_creating")}
             </>
           ) : (
-            "Create account"
+            t("register_button")
           )}
         </Button>
       </form>

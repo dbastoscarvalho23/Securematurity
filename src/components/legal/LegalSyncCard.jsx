@@ -28,7 +28,7 @@ export default function LegalSyncCard() {
       toast.success(t('legal_sync_done', stats));
       refresh();
     } catch (e) {
-      toast.error(e?.message || 'Erro');
+      toast.error(e?.message || t('x_error_generic'));
     } finally {
       setRunning(false);
       setStep('');
@@ -46,7 +46,7 @@ export default function LegalSyncCard() {
       toast.success(t('legal_cis_imported', { count: r.safeguards }));
       refresh();
     } catch (err) {
-      toast.error(err?.message || 'Erro');
+      toast.error(err?.message || t('x_error_generic'));
     } finally {
       setImporting(false);
     }

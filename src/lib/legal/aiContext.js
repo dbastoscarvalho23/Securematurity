@@ -10,4 +10,5 @@ export const LEGAL_AI_CONTEXT = `Legal context (Portugal) — use ONLY these ref
 - Financial entities: Regulation (EU) 2022/2554 (DORA). Digital providers: Implementing Regulation (EU) 2024/2690.
 - ISO/IEC 27001:2022 Annex A themes: A.5 Organizational, A.6 People, A.7 Physical, A.8 Technological controls.
 - The ENISA framework code is deprecated: do not produce new content for it.
-Write any Portuguese text in European Portuguese (Portugal).`;
+Write any Portuguese text in European Portuguese (Portugal, 1990 spelling agreement): never Brazilian forms (usuário, tela, salvar, registrar, contato, você).
+Use a plain professional register: no marketing language or filler (desbloqueie, potencie, solução robusta, abordagem holística, no mundo atual, é importante notar), no emojis, no exclamation marks.`;

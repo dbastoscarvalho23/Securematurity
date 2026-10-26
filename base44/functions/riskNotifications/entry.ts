@@ -5,6 +5,9 @@ import { logEmailSent } from '../../shared/audit.ts';
 import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
 import { riskScore, scoreLevel, RISK_STATUS_LABELS as STATUS_LABELS } from '../../shared/riskLevel.ts';
 
+const LEVEL_PT = { Critical: 'Crítico', High: 'Alto', Medium: 'Médio', Low: 'Baixo' };
+const STATUS_PT = { open: 'Aberto', in_treatment: 'Em tratamento', accepted: 'Aceite', closed: 'Fechado' };
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const user = await getAuthenticatedUser(base44);
@@ -54,22 +57,22 @@ Deno.serve(async (req) => {
 
     const recipients = buildRecipients(ownerEmail, settings);
     const body = `
-<p>Hello,</p>
-<p>You have been assigned as the owner of the following risk:</p>
+<p>Olá,</p>
+<p>Foi designado responsável pelo seguinte risco:</p>
 <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:sans-serif;font-size:14px;">
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Risk ID</td><td style="padding:6px 12px;">${esc(risk.risk_id || '—')}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Title</td><td style="padding:6px 12px;">${esc(risk.title)}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Level</td><td style="padding:6px 12px;">${esc(level)} (score ${esc(score)})</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Status</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[risk.status] || risk.status)}</td></tr>
-  ${risk.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;">${esc(risk.due_date)}</td></tr>` : ''}
-  ${risk.description ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Description</td><td style="padding:6px 12px;">${esc(risk.description)}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">ID do risco</td><td style="padding:6px 12px;">${esc(risk.risk_id || '—')}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Título</td><td style="padding:6px 12px;">${esc(risk.title)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Nível</td><td style="padding:6px 12px;">${esc(LEVEL_PT[level] || level)} (pontuação ${esc(score)})</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Estado</td><td style="padding:6px 12px;">${esc(STATUS_PT[risk.status] || STATUS_LABELS[risk.status] || risk.status)}</td></tr>
+  ${risk.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Data-limite</td><td style="padding:6px 12px;">${esc(risk.due_date)}</td></tr>` : ''}
+  ${risk.description ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Descrição</td><td style="padding:6px 12px;">${esc(risk.description)}</td></tr>` : ''}
 </table>
-<p>Please review this risk and take appropriate action.</p>
-<p style="color:#6b7280;font-size:12px;">Assigned by: ${esc(user.full_name || user.email)}</p>
+<p>Analise o risco e defina o tratamento adequado.</p>
+<p style="color:#6b7280;font-size:12px;">Atribuído por: ${esc(user.full_name || user.email)}</p>
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Risk Assigned] ${esc(risk.title)}`, body });
+      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Risco atribuído] ${esc(risk.title)}`, body });
     }
     await logEmailSent(base44, {
       user_email: user.email,
@@ -90,21 +93,21 @@ Deno.serve(async (req) => {
 
     const recipients = buildRecipients(ownerEmail, settings);
     const body = `
-<p>Hello,</p>
-<p>The status of a risk you own has been updated:</p>
+<p>Olá,</p>
+<p>O estado de um risco pelo qual é responsável foi alterado:</p>
 <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:sans-serif;font-size:14px;">
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Risk ID</td><td style="padding:6px 12px;">${esc(risk.risk_id || '—')}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Title</td><td style="padding:6px 12px;">${esc(risk.title)}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Old Status</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[oldStatus] || oldStatus)}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">New Status</td><td style="padding:6px 12px;"><strong>${esc(STATUS_LABELS[newStatus] || newStatus)}</strong></td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Risk Level</td><td style="padding:6px 12px;">${esc(level)} (score ${esc(score)})</td></tr>
-  ${risk.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;">${esc(risk.due_date)}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">ID do risco</td><td style="padding:6px 12px;">${esc(risk.risk_id || '—')}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Título</td><td style="padding:6px 12px;">${esc(risk.title)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Estado anterior</td><td style="padding:6px 12px;">${esc(STATUS_PT[oldStatus] || STATUS_LABELS[oldStatus] || oldStatus)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Novo estado</td><td style="padding:6px 12px;"><strong>${esc(STATUS_PT[newStatus] || STATUS_LABELS[newStatus] || newStatus)}</strong></td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Nível de risco</td><td style="padding:6px 12px;">${esc(LEVEL_PT[level] || level)} (pontuação ${esc(score)})</td></tr>
+  ${risk.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Data-limite</td><td style="padding:6px 12px;">${esc(risk.due_date)}</td></tr>` : ''}
 </table>
-<p style="color:#6b7280;font-size:12px;">Updated by: ${esc(user.full_name || user.email)}</p>
+<p style="color:#6b7280;font-size:12px;">Atualizado por: ${esc(user.full_name || user.email)}</p>
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Risk Update] Status changed — ${esc(risk.title)}`, body });
+      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Risco] Estado alterado: ${esc(risk.title)}`, body });
     }
     await logEmailSent(base44, {
       user_email: user.email,

@@ -35,10 +35,10 @@ function buildSummonEmail({ training, customer, isPt }) {
   const description = escapeHtml(training.description || '');
   const duration = training.duration_minutes ? `${training.duration_minutes} min` : '—';
 
-  const greeting = isPt ? 'Caro/a colaborador/a,' : 'Dear collaborator,';
+  const greeting = isPt ? 'Caro/a colaborador/a,' : 'Dear colleague,';
   const intro = isPt
-    ? `É comeste e-mail que o/a convocamos para a sessão de formação em cibersegurança abaixo, no âmbito do programa de <strong>${customerName}</strong>.`
-    : `You are hereby summoned to the cybersecurity training session below, as part of the <strong>${customerName}</strong> training program.`;
+    ? `Fica convocado/a para a sessão de formação em cibersegurança indicada abaixo, integrada no programa de formação de <strong>${customerName}</strong>.`
+    : `You are invited to the cybersecurity training session below, part of the <strong>${customerName}</strong> training programme.`;
   const rows = [
     [isPt ? 'Formação' : 'Training', title],
     [isPt ? 'Tema' : 'Topic', topicLabel],
@@ -60,7 +60,7 @@ function buildSummonEmail({ training, customer, isPt }) {
     <tr><td align="center">
       <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
         <tr><td style="background:#1e3a5f;padding:24px 28px;">
-          <div style="color:#ffffff;font-size:18px;font-weight:700;">${isPt ? 'Convocatória de Formação' : 'Training Summon'} — ${customerName}</div>
+          <div style="color:#ffffff;font-size:18px;font-weight:700;">${isPt ? 'Convocatória de formação' : 'Training invitation'} — ${customerName}</div>
         </td></tr>
         <tr><td style="padding:24px 28px;border-bottom:1px solid #e2e8f0;">
           <p style="margin:0 0 8px;font-size:14px;color:#334155;">${greeting}</p>
@@ -71,7 +71,7 @@ function buildSummonEmail({ training, customer, isPt }) {
         </td></tr>
         ${description ? `<tr><td style="padding:16px 28px;border-top:1px solid #e2e8f0;"><p style="margin:0;font-size:13px;color:#334155;line-height:1.6;">${description}</p></td></tr>` : ''}
         <tr><td style="padding:20px 28px;background:#f8fafc;border-top:1px solid #e2e8f0;">
-          <p style="margin:0;font-size:12px;color:#64748b;">${isPt ? 'Agradecemos a sua presença.' : 'We look forward to your attendance.'}<br><strong>${customerName}</strong></p>
+          <p style="margin:0;font-size:12px;color:#64748b;">${isPt ? 'Contamos com a sua presença.' : 'We look forward to your attendance.'}<br><strong>${customerName}</strong></p>
         </td></tr>
       </table>
     </td></tr>

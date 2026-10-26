@@ -35,7 +35,7 @@ export const genReportsEn = {
 
 export const genReportsPt = {
   nav_generated_reports: 'Relatórios Gerados',
-  genreports_subtitle: 'Relatórios de conformidade gerados pela plataforma — ver, editar e gerir os relatórios gerados.',
+  genreports_subtitle: 'Relatórios de conformidade gerados pela plataforma: consultar, editar e gerir.',
   genreports_search_placeholder: 'Pesquisar relatórios...',
   genreports_filter_all: 'Todos os estados',
   genreports_col_title: 'Relatório',

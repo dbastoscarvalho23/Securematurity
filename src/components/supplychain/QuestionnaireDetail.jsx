@@ -1,3 +1,4 @@
+import { LEGAL_AI_CONTEXT } from '@/lib/legal/aiContext';
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -253,7 +254,8 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
 The questionnaire should ${areaContext}.
 For EACH subject/area, generate EXACTLY ${count} practical, auditable questions.
 For EVERY question provide both the English version (question_text) and the European Portuguese translation (question_text_pt).
-Return a JSON object with this schema: { "questions": [{ "area": string, "question_text": string, "question_text_pt": string, "answer_type": "yes_no" | "scale_1_5" | "text" }] }`,
+Return a JSON object with this schema: { "questions": [{ "area": string, "question_text": string, "question_text_pt": string, "answer_type": "yes_no" | "scale_1_5" | "text" }] }
+${LEGAL_AI_CONTEXT}`,
         response_json_schema: {
           type: 'object',
           properties: {
@@ -329,7 +331,7 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
         options: q.options || [],
       }));
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a professional translator. Translate the following cybersecurity questionnaire questions to European Portuguese (Portugal).
+        prompt: `You are a professional translator. Translate the following cybersecurity questionnaire questions to European Portuguese (Portugal, 1990 spelling agreement, never Brazilian forms), in a plain professional register.
 For each question, translate:
 - question_text → question_text_pt (the full question in Portuguese)
 - options → options_pt (translate each option string to Portuguese, keep same array length; empty array if no options)

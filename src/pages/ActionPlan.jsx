@@ -263,7 +263,7 @@ export default function ActionPlan() {
     for (let i = 0; i < untranslated.length; i += BATCH_SIZE) {
       const batch = untranslated.slice(i, i + BATCH_SIZE);
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a professional translator specialising in European Portuguese (Portugal), not Brazilian Portuguese.
+        prompt: `You are a professional translator specialising in European Portuguese (Portugal, 1990 spelling agreement), not Brazilian Portuguese. Use a plain professional register, without marketing filler, emojis or exclamation marks.
 Translate the following cybersecurity recommendation titles and descriptions to European Portuguese (Portugal).
 Use formal register ("a organização"), European vocabulary and spelling.
 

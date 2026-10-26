@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     else return json({ skipped: `status ${newStatus} not actionable` });
 
     // Use service role for automated calls (no user context)
-    user = { full_name: 'System', email: 'system' };
+    user = { full_name: 'Sistema', email: 'system' };
   } else {
     // Direct API call from frontend
     user = await getAuthenticatedUser(base44);
@@ -80,13 +80,13 @@ Deno.serve(async (req) => {
 
   const settings = await getReminderSettings(base44.asServiceRole, document.customer_id);
 
-  const LEVEL_LABELS = { policy: 'Policy', standard: 'Standard', procedure: 'Procedure', playbook: 'Playbook' };
-  const STATUS_LABELS = { draft: 'Draft', under_review: 'Under Review', approved: 'Approved', deprecated: 'Deprecated' };
+  const LEVEL_LABELS = { policy: 'Política', standard: 'Norma', procedure: 'Procedimento', playbook: 'Playbook' };
+  const STATUS_LABELS = { draft: 'Rascunho', under_review: 'Em revisão', approved: 'Aprovado', deprecated: 'Obsoleto' };
 
   const headerHtml = (title) => `
     <div style="background:#1e3a5f;padding:20px 28px;border-radius:10px 10px 0 0;">
-      <h2 style="color:#fff;margin:0;font-size:18px;">📄 ${title}</h2>
-      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px;">AnkoraOne Security Platform</p>
+      <h2 style="color:#fff;margin:0;font-size:18px;">${title}</h2>
+      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px;">AnkoraOne</p>
     </div>`;
 
   const tableRow = (label, value) =>
@@ -103,27 +103,27 @@ Deno.serve(async (req) => {
 
     const body = `
       <div style="font-family:sans-serif;max-width:580px;margin:0 auto;color:#1e293b;">
-        ${headerHtml('Document Sent for Review')}
+        ${headerHtml('Documento enviado para revisão')}
         <div style="background:#fff;padding:24px 28px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px;">
-          <p>Hello,</p>
-          <p>The following security document has been submitted for review and requires your attention:</p>
+          <p>Olá,</p>
+          <p>O documento de segurança abaixo foi enviado para revisão e aguarda a sua análise:</p>
           <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px;margin:12px 0;">
-            ${tableRow('Title', esc(document.title))}
-            ${tableRow('Level', LEVEL_LABELS[document.level] || esc(document.level) || '—')}
-            ${tableRow('Status', '<strong>Under Review</strong>')}
-            ${document.customer_name ? tableRow('Customer', esc(document.customer_name)) : ''}
-            ${document.review_date ? tableRow('Review Date', esc(document.review_date)) : ''}
-            ${document.description ? tableRow('Description', esc(document.description)) : ''}
+            ${tableRow('Título', esc(document.title))}
+            ${tableRow('Nível', LEVEL_LABELS[document.level] || esc(document.level) || '—')}
+            ${tableRow('Estado', '<strong>Em revisão</strong>')}
+            ${document.customer_name ? tableRow('Cliente', esc(document.customer_name)) : ''}
+            ${document.review_date ? tableRow('Data de revisão', esc(document.review_date)) : ''}
+            ${document.description ? tableRow('Descrição', esc(document.description)) : ''}
           </table>
-          <p>Please log in to the platform to review and approve or request changes.</p>
-          <p style="color:#6b7280;font-size:12px;">Submitted by: ${esc(user.full_name || user.email)}</p>
+          <p>Inicie sessão na plataforma para aprovar o documento ou pedir alterações.</p>
+          <p style="color:#6b7280;font-size:12px;">Enviado por: ${esc(user.full_name || user.email)}</p>
         </div>
       </div>`.trim();
 
     for (const to of recipients) {
       await base44.asServiceRole.integrations.Core.SendEmail({
         to,
-        subject: `[Review Required] ${esc(document.title)}`,
+        subject: `[Revisão pendente] ${esc(document.title)}`,
         body,
       });
     }
@@ -147,26 +147,26 @@ Deno.serve(async (req) => {
 
     const body = `
       <div style="font-family:sans-serif;max-width:580px;margin:0 auto;color:#1e293b;">
-        ${headerHtml('Document Approved')}
+        ${headerHtml('Documento aprovado')}
         <div style="background:#fff;padding:24px 28px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px;">
-          <p>Hello,</p>
-          <p>The following security document has been <strong style="color:#16a34a;">approved</strong>:</p>
+          <p>Olá,</p>
+          <p>O documento de segurança abaixo foi <strong style="color:#16a34a;">aprovado</strong>:</p>
           <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px;margin:12px 0;">
-            ${tableRow('Title', esc(document.title))}
-            ${tableRow('Level', LEVEL_LABELS[document.level] || esc(document.level) || '—')}
-            ${tableRow('Status', '<strong style="color:#16a34a;">Approved</strong>')}
-            ${document.approved_by ? tableRow('Approved By', esc(document.approved_by)) : ''}
-            ${document.approved_date ? tableRow('Approval Date', esc(document.approved_date)) : ''}
-            ${document.customer_name ? tableRow('Customer', esc(document.customer_name)) : ''}
+            ${tableRow('Título', esc(document.title))}
+            ${tableRow('Nível', LEVEL_LABELS[document.level] || esc(document.level) || '—')}
+            ${tableRow('Estado', '<strong style="color:#16a34a;">Aprovado</strong>')}
+            ${document.approved_by ? tableRow('Aprovado por', esc(document.approved_by)) : ''}
+            ${document.approved_date ? tableRow('Data de aprovação', esc(document.approved_date)) : ''}
+            ${document.customer_name ? tableRow('Cliente', esc(document.customer_name)) : ''}
           </table>
-          <p style="color:#6b7280;font-size:12px;">Approved by: ${esc(user.full_name || user.email)}</p>
+          <p style="color:#6b7280;font-size:12px;">Aprovado por: ${esc(user.full_name || user.email)}</p>
         </div>
       </div>`.trim();
 
     for (const to of recipients) {
       await base44.asServiceRole.integrations.Core.SendEmail({
         to,
-        subject: `[Document Approved] ${esc(document.title)}`,
+        subject: `[Documento aprovado] ${esc(document.title)}`,
         body,
       });
     }

@@ -65,8 +65,8 @@ Deno.serve(async (req) => {
           notifications.push({
             user_email: task.assigned_to,
             type: 'task_completed',
-            title: 'Task Completed',
-            message: `Task "${task.title}" has been marked as done.`,
+            title: 'Tarefa concluída',
+            message: `A tarefa "${task.title}" foi marcada como concluída.`,
             entity_type: 'Task',
             entity_id: event.entity_id,
             link: '/tasks',
@@ -81,8 +81,8 @@ Deno.serve(async (req) => {
         notifications.push({
           user_email: task.assigned_to,
           type: 'task_assigned',
-          title: 'Task Assigned to You',
-          message: `You have been assigned to task "${task.title}".`,
+          title: 'Tarefa atribuída',
+          message: `Foi-lhe atribuída a tarefa "${task.title}".`,
           entity_type: 'Task',
           entity_id: event.entity_id,
           link: '/tasks',
@@ -98,12 +98,12 @@ Deno.serve(async (req) => {
         task.status !== previous?.status &&
         task.status !== 'done'
       ) {
-        const statusLabels = { todo: 'To Do', in_progress: 'In Progress', blocked: 'Blocked' };
+        const statusLabels = { todo: 'Por fazer', in_progress: 'Em curso', blocked: 'Bloqueada' };
         notifications.push({
           user_email: task.assigned_to,
           type: 'general',
-          title: 'Task Status Updated',
-          message: `Task "${task.title}" status changed to ${statusLabels[task.status] || task.status}.`,
+          title: 'Estado da tarefa alterado',
+          message: `A tarefa "${task.title}" passou para o estado ${statusLabels[task.status] || task.status}.`,
           entity_type: 'Task',
           entity_id: event.entity_id,
           link: '/tasks',
@@ -120,12 +120,12 @@ Deno.serve(async (req) => {
 
       // Risk status changed
       if (prevStatus && risk.status !== prevStatus && risk.owner_email) {
-        const statusLabels = { open: 'Open', in_treatment: 'In Treatment', accepted: 'Accepted', closed: 'Closed' };
+        const statusLabels = { open: 'Aberto', in_treatment: 'Em tratamento', accepted: 'Aceite', closed: 'Fechado' };
         notifications.push({
           user_email: risk.owner_email,
           type: 'risk_status',
-          title: 'Risk Status Updated',
-          message: `Risk "${risk.title}" status changed to ${statusLabels[risk.status] || risk.status}.`,
+          title: 'Estado do risco alterado',
+          message: `O risco "${risk.title}" passou para o estado ${statusLabels[risk.status] || risk.status}.`,
           entity_type: 'RiskItem',
           entity_id: event.entity_id,
           link: '/risk-assessment',
@@ -139,8 +139,8 @@ Deno.serve(async (req) => {
         notifications.push({
           user_email: risk.owner_email,
           type: 'risk_status',
-          title: 'Risk Assigned to You',
-          message: `You are now the owner of risk "${risk.title}".`,
+          title: 'Risco atribuído',
+          message: `Passou a ser o responsável pelo risco "${risk.title}".`,
           entity_type: 'RiskItem',
           entity_id: event.entity_id,
           link: '/risk-assessment',
@@ -159,8 +159,8 @@ Deno.serve(async (req) => {
         notifications.push({
           user_email: doc.owner_email,
           type: 'document_approved',
-          title: 'Document Approved',
-          message: `Document "${doc.title}" has been approved.`,
+          title: 'Documento aprovado',
+          message: `O documento "${doc.title}" foi aprovado.`,
           entity_type: 'SecurityDocument',
           entity_id: event.entity_id,
           link: '/security-documents',
@@ -173,8 +173,8 @@ Deno.serve(async (req) => {
         notifications.push({
           user_email: doc.owner_email,
           type: 'document_review',
-          title: 'Document Submitted for Review',
-          message: `Document "${doc.title}" has been submitted for review.`,
+          title: 'Documento enviado para revisão',
+          message: `O documento "${doc.title}" foi enviado para revisão.`,
           entity_type: 'SecurityDocument',
           entity_id: event.entity_id,
           link: '/security-documents',

@@ -89,7 +89,7 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>NIF *</Label>
-              <Input value={form.nif} onChange={e => set('nif', e.target.value)} required placeholder="Tax ID" />
+              <Input value={form.nif} onChange={e => set('nif', e.target.value)} required placeholder={t('x_customer_nif_placeholder')} />
             </div>
             <div className="space-y-1.5 md:col-span-2">
               <Label>{t('customers_form_org_name')} *</Label>
@@ -103,7 +103,7 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
               <Select value={form.sector} onValueChange={v => set('sector', v)}>
                 <SelectTrigger><SelectValue placeholder={t('customers_form_select_sector')} /></SelectTrigger>
                 <SelectContent>
-                  {SECTORS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  {SECTORS.map(s => <SelectItem key={s.value} value={s.value}>{t(`sector_${s.value}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -144,7 +144,7 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
             </div>
             <div className="space-y-1.5">
               <Label>{t('customers_detail_csm_email')}</Label>
-              <Input type="email" value={form.cybersecurity_manager_email} onChange={e => set('cybersecurity_manager_email', e.target.value)} placeholder="manager@company.com" />
+              <Input type="email" value={form.cybersecurity_manager_email} onChange={e => set('cybersecurity_manager_email', e.target.value)} placeholder={t('x_customer_manager_placeholder')} />
             </div>
             <div className="space-y-1.5">
               <Label>{t('customers_detail_csm_phone')}</Label>
@@ -205,7 +205,7 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>User Seat Limit (min. 5)</Label>
+              <Label>{t('x_customer_seat_limit')}</Label>
               <Input
                 type="number"
                 min={5}

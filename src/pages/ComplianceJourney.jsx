@@ -316,7 +316,7 @@ export default function ComplianceJourney() {
       setInitializing(false);
       toast.success(t('compliance_init_success'));
     },
-    onError: (e) => { setInitializing(false); toast.error(e?.message || 'Erro'); },
+    onError: (e) => { setInitializing(false); toast.error(e?.message || t('x_error_generic')); },
   });
 
   const grouped = items.reduce((acc, item) => {

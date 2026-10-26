@@ -110,8 +110,8 @@ export default function CustomerUsersPanel({ customer }) {
       await Promise.all(adminEmails.map(adminEmail =>
         base44.integrations.Core.SendEmail({
           to: adminEmail,
-          subject: `[Seat Request] ${customer.name} needs more user seats`,
-          body: `Hello,\n\nThe customer "${customer.name}" (ID: ${customer.id}) has reached their user seat limit.\n\nCurrent usage: ${usedSeats} / ${seatLimit} seats used.\n\nThey are requesting additional seats to onboard more users.\n\nPlease review and adjust the seat limit in the Admin panel > Seat Management section.\n\nThis request was triggered by: ${currentUser?.email || 'unknown'}\n\nBest regards,\nCyberGovern Platform`,
+          subject: `[Pedido de licenças] ${customer.name} precisa de mais licenças de utilizador`,
+          body: `Olá,\n\nO cliente "${customer.name}" (ID: ${customer.id}) atingiu o limite de licenças de utilizador.\n\nUtilização atual: ${usedSeats} de ${seatLimit} licenças.\n\nO cliente pede licenças adicionais para registar mais utilizadores.\n\nReveja e ajuste o limite em Administração > Gestão de Licenças.\n\nPedido feito por: ${currentUser?.email || 'desconhecido'}\n\nCom os melhores cumprimentos,\nAnkoraOne`,
         })
       ));
 
@@ -170,7 +170,7 @@ export default function CustomerUsersPanel({ customer }) {
           <div className="flex-1 min-w-[160px]">
             <Input
               type="email"
-              placeholder="user@company.com"
+              placeholder={t('x_user_email_placeholder')}
               value={email}
               onChange={e => setEmail(e.target.value)}
               className="h-8 text-xs"
