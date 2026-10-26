@@ -22,7 +22,7 @@ export default function AppLayout() {
       />
       <div className={cn("flex-1 flex flex-col transition-all duration-300 min-h-screen", collapsed ? "md:ml-16" : "md:ml-60")}>
         <TopBar onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
+        <main className="flex-1 px-4 py-6 md:px-8 md:py-6 overflow-auto">
           <Outlet />
         </main>
       </div>

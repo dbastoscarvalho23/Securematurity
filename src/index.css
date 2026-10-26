@@ -1,80 +1,89 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Tema AnkoraOne — Figma «AnkoraOne — Revised Theme»: fundamentos reconciliados (Claro/Escuro)
+   e Executive Dashboard (superfícies navy). Dourado = ação principal; teal = acento/positivo. */
 @layer base {
   :root {
-    --font-sans: 'Inter', sans-serif;
-    --background: 220 20% 97%;
+    --font-sans: 'Work Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Space Mono', ui-monospace, monospace;
+    --background: 0 0% 100%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 20% 95%;
+    --primary: 39 58% 56%;
+    --primary-foreground: 225 46% 5%;
+    --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 173 58% 39%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 174 63% 40%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 43 74% 66%;
-    --chart-4: 27 87% 67%;
-    --chart-5: 262 52% 56%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 39 58% 56%;
+    --chart-1: 39 58% 56%;
+    --chart-2: 174 63% 40%;
+    --chart-3: 44 73% 55%;
+    --chart-4: 26 89% 60%;
+    --chart-5: 189 94% 43%;
+    --risk-low: 174 63% 40%;
+    --risk-medium: 44 73% 65%;
+    --risk-high: 26 89% 67%;
+    --risk-critical: 0 84% 60%;
     --radius: 0.625rem;
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 220 14% 96%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 40% 16%;
-    --sidebar-accent-foreground: 220 14% 96%;
-    --sidebar-border: 222 40% 18%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 39 58% 56%;
+    --sidebar-primary-foreground: 225 46% 5%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 39 58% 56%;
+    --sidebar-muted: 215 16% 47%;
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 220 14% 96%;
-    --card: 222 47% 9%;
-    --card-foreground: 220 14% 96%;
-    --popover: 222 47% 9%;
-    --popover-foreground: 220 14% 96%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 222 40% 14%;
-    --secondary-foreground: 220 14% 96%;
-    --muted: 222 40% 14%;
-    --muted-foreground: 220 9% 56%;
-    --accent: 173 58% 39%;
+    --background: 225 46% 5%;
+    --foreground: 210 40% 98%;
+    --card: 222 42% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 42% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 39 58% 55%;
+    --primary-foreground: 225 46% 5%;
+    --secondary: 222 30% 12%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 30% 12%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 174 63% 40%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 62% 30%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 222 40% 16%;
-    --input: 222 40% 16%;
-    --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 43 74% 66%;
-    --chart-4: 27 87% 67%;
-    --chart-5: 262 52% 56%;
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 220 14% 96%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 40% 12%;
-    --sidebar-accent-foreground: 220 14% 96%;
-    --sidebar-border: 222 40% 14%;
-    --sidebar-ring: 217 91% 60%;
+    --border: 222 25% 18%;
+    --input: 222 25% 18%;
+    --ring: 39 58% 55%;
+    --chart-1: 39 58% 55%;
+    --chart-2: 174 63% 40%;
+    --chart-3: 44 73% 65%;
+    --chart-4: 26 89% 67%;
+    --chart-5: 189 94% 55%;
+    --sidebar-background: 225 46% 5%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 39 58% 55%;
+    --sidebar-primary-foreground: 225 46% 5%;
+    --sidebar-accent: 222 30% 11%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 25% 18%;
+    --sidebar-ring: 39 58% 55%;
+    --sidebar-muted: 215 20% 65%;
   }
 }
 
@@ -86,6 +95,13 @@
     @apply bg-background text-foreground font-sans;
     font-family: var(--font-sans);
   }
+}
+
+@layer components {
+  /* Números de destaque (pontuações, contadores) — Space Mono, como no Figma */
+  .font-display { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; }
+  /* Rótulo de grupo (barra lateral, secções) */
+  .label-caps { @apply text-[10px] font-semibold uppercase leading-[14px] tracking-wide text-muted-foreground; }
 }
 
 /* Custom scrollbar */

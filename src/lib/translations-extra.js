@@ -3,6 +3,14 @@
 // Os parâmetros usam a sintaxe {nome} do t() de LanguageContext.
 
 export const extraPt = {
+  nav_grp_overview: 'Visão geral',
+  nav_grp_assess: 'Avaliar e comprovar',
+  nav_grp_improve: 'Melhorar e gerir',
+  nav_grp_govern: 'Governar',
+  nav_grp_analyse: 'Analisar',
+  x_sidebar_expand: 'Expandir menu',
+  x_sidebar_collapse: 'Recolher menu',
+  x_topbar_search: 'Pesquisar...',
   nav_framework_guide: 'Guia de referenciais',
   common_select: 'Selecionar…',
   dsr_ph_description: 'Descreva o pedido do titular dos dados',
@@ -172,6 +180,14 @@ export const extraPt = {
 };
 
 export const extraEn = {
+  nav_grp_overview: 'Overview',
+  nav_grp_assess: 'Assess and evidence',
+  nav_grp_improve: 'Improve and manage',
+  nav_grp_govern: 'Govern',
+  nav_grp_analyse: 'Analyse',
+  x_sidebar_expand: 'Expand menu',
+  x_sidebar_collapse: 'Collapse menu',
+  x_topbar_search: 'Search...',
   nav_framework_guide: 'Framework guide',
   common_select: 'Select…',
   dsr_ph_description: "Describe the data subject's request",

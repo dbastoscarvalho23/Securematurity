@@ -5,11 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 
+// Cores por referencial, como no Figma (Executive Dashboard): NIS2 dourado, ISO teal, NIST amarelo, CIS laranja.
 const frameworkColors = {
-  NIS2: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
-  ISO27001: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
-  NIST_CSF: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
-  CIS_V8: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
+  NIS2: { badge: 'bg-chart-1/10 text-chart-1 border-chart-1', bar: 'bg-chart-1' },
+  ISO27001: { badge: 'bg-chart-2/10 text-chart-2 border-chart-2', bar: 'bg-chart-2' },
+  NIST_CSF: { badge: 'bg-chart-3/10 text-chart-3 border-chart-3', bar: 'bg-chart-3' },
+  CIS_V8: { badge: 'bg-chart-4/10 text-chart-4 border-chart-4', bar: 'bg-chart-4' },
 };
 
 export default function FrameworkScoreCard({ framework_code, name, score, previousScore }) {
@@ -29,25 +30,27 @@ export default function FrameworkScoreCard({ framework_code, name, score, previo
   const label = getMaturityLabel(score);
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-3">
-          <Badge variant="outline" className={cn("text-xs font-semibold border", colorClass)}>
+    <Card className="rounded-[10px] shadow-none hover:border-primary/40 transition-colors">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <Badge variant="outline" className={cn("rounded-md px-2 py-0.5 text-[9px] font-semibold leading-none border", colorClass.badge)}>
             {framework_code.replace('_', ' ')}
           </Badge>
           {delta != null && (
-            <span className={cn("text-xs font-medium", delta >= 0 ? "text-accent" : "text-destructive")}>
+            <span className={cn("text-[10px] font-semibold leading-[14px]", delta >= 0 ? "text-risk-low" : "text-destructive")}>
               {delta >= 0 ? '+' : ''}{delta.toFixed(1)}
             </span>
           )}
         </div>
-        <p className="text-sm text-muted-foreground mb-1">{name}</p>
-        <div className="flex items-end gap-2 mb-2">
-          <span className="text-2xl font-bold">{score.toFixed(1)}</span>
-          <span className="text-sm text-muted-foreground mb-0.5">/ 5.0</span>
+        <p className="text-[11px] font-medium text-muted-foreground truncate">{name}</p>
+        <div className="flex items-baseline gap-1">
+          <span className="font-display text-[22px] leading-none text-foreground">{score.toFixed(1)}</span>
+          <span className="text-[11px] text-muted-foreground">/ 5.0</span>
         </div>
-        <Progress value={pct} className="h-2 mb-2" />
-        <p className="text-xs text-muted-foreground">{t('maturity_level')}: <span className="font-medium text-foreground">{label}</span></p>
+        <div className="space-y-1">
+          <Progress value={pct} className="h-1.5" indicatorClassName={colorClass.bar} />
+          <p className="text-[9px] text-muted-foreground">{t('maturity_level')}: <span className="font-semibold text-foreground">{label}</span></p>
+        </div>
       </CardContent>
     </Card>
   );
