@@ -200,9 +200,12 @@ export default async function (req) {
     const customer = await db.Customer.get(customerId).catch(() => null);
     if (!customer) return json({ error: 'Cliente inexistente' }, 404);
     await requireModule(base44, user, customerId, 'ai_assistant');
-    // Ponto de uso «documents» (Definições → Aplicação → Assistente de IA): abrange todas as ações desta função.
-    if (!aiPurposeEnabled(await getAiSettings(base44), 'documents')) return json({ error: AI_DISABLED_MESSAGE }, 403);
     const action = body.action;
+    // Ponto de uso «documents» (Definições → Aplicação → Assistente de IA): desligado, recusa só as ações que chamam
+    // o modelo (generate, review). Fontes, aprovar e descartar continuam disponíveis.
+    if ((action === 'generate' || action === 'review') && !aiPurposeEnabled(await getAiSettings(base44), 'documents')) {
+      return json({ error: AI_DISABLED_MESSAGE }, 403);
+    }
 
     if (action === 'approve' || action === 'discard') {
       const d = await db.AiDraft.get(String(body.id || '')).catch(() => null);
