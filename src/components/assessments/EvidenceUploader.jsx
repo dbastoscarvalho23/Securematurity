@@ -6,7 +6,8 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { toast } from 'sonner';
 import FileLink from '@/components/shared/FileLink';
 
-export default function EvidenceUploader({ attachments = [], onAttachmentsChange, customerId }) {
+// contextId = id da avaliação: o servidor usa-o para gravar no repositório do cliente da avaliação.
+export default function EvidenceUploader({ attachments = [], onAttachmentsChange, customerId, contextId }) {
   const { t } = useLanguage();
   const inputRef = useRef();
   const [uploading, setUploading] = useState(false);
@@ -16,7 +17,7 @@ export default function EvidenceUploader({ attachments = [], onAttachmentsChange
     if (!file) return;
     setUploading(true);
     try {
-      const { file_url } = await uploadFile(file, customerId, 'assessment');
+      const { file_url } = await uploadFile(file, customerId, 'assessment', contextId);
       onAttachmentsChange([...attachments, { name: file.name, url: file_url }]);
     } catch (err) {
       toast.error(err?.message || t('x_tool_error'));

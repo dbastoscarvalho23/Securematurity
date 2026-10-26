@@ -17,7 +17,7 @@ import { Lock } from 'lucide-react';
 // Routes accessible by 'user' role (with a customer assigned)
 const USER_ALLOWED = [
   '/', '/compliance-journey', '/legal-library', '/assessments', '/evidence',
-  '/tasks', '/task-analytics', '/risk-assessment', '/security-documents',
+  '/tasks', '/task-analytics', '/risk-assessment', '/security-documents', '/repository',
   '/document-audit-trail', '/supply-chain', '/suppliers', '/reports', '/settings',
 ];
 

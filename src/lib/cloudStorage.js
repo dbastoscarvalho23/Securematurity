@@ -19,8 +19,9 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
  *
  * @param {File} file
  * @param {string} [customerId] cliente do ficheiro (só o administrador da plataforma pode indicar outro)
- * @param {string} [context] security_document | document_version | nomination | task | comment | assessment | training | report | framework | other
- * @param {string} [contextId] registo a que o ficheiro fica associado
+ * @param {string} [context] contexto (ver CONTEXT_FOLDER em src/lib/repository.js); define a pasta do repositório
+ * @param {string} [contextId] registo a que o ficheiro fica associado; quando existe, o servidor grava no repositório
+ *   do cliente desse registo (mesmo que quem carrega seja o administrador da plataforma)
  */
 export async function uploadFile(file, customerId, context = 'other', contextId) {
   if (file.size > FILE_MAX_BYTES) throw new Error('O ficheiro excede 8 MB');

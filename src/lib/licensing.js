@@ -10,6 +10,7 @@ export const ROUTE_MODULES = {
   '/recommendations': 'assessments_action_plan',
   '/evidence': 'documents_evidence',
   '/security-documents': 'documents_evidence',
+  '/repository': 'documents_evidence',
   '/document-audit-trail': 'documents_evidence',
   '/legal-library': 'knowledge_guidance',
   '/framework-guide': 'knowledge_guidance',

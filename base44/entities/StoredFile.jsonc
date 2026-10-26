@@ -49,17 +49,31 @@
         }
       }
     },
+    "folder": {
+      "type": "string",
+      "description": "Pasta do repositório documental (ex.: «02 Documentos de segurança»); no armazenamento da plataforma não há pastas reais e é este campo que agrupa os ficheiros"
+    },
+    "storage_location": {
+      "type": "string",
+      "description": "Caminho da pasta no repositório externo no momento da gravação (vazio no armazenamento da plataforma)"
+    },
     "context": {
       "type": "string",
       "enum": [
+        "qualification",
         "security_document",
         "document_version",
         "nomination",
         "task",
         "comment",
         "assessment",
+        "risk",
+        "incident",
+        "supplier",
+        "asset",
         "training",
         "report",
+        "ai_draft",
         "framework",
         "other"
       ],
@@ -73,7 +87,7 @@
     "restricted": {
       "type": "boolean",
       "default": false,
-      "description": "Só administradores do cliente o podem abrir (dados pessoais, relatórios)"
+      "description": "Só administradores do cliente o podem abrir (dados pessoais, relatórios, ativos)"
     },
     "uploaded_by": {
       "type": "string"

@@ -82,12 +82,26 @@ docker compose -f docker-compose.base44.yml up -d
   referências de ficheiros vindas do browser. `storage_ref` não é legível por ninguém (FLS read false). Versões por
   `supersedes_id` (a anterior fica `superseded`). Evidências ligadas a ativos/ferramentas ficam `restricted` (só
   customer_admin e admin). Downloads por `action: 'download'` (URL assinado de 300 s ou base64), sempre auditados.
-- Repositório efetivo por cliente: `resolveProvider()` em `base44/shared/storage.ts` (respeita
-  `StorageSettings.enabled_providers`). Nativo = `UploadPrivateFile` no servidor; Google Drive/OneDrive = conta da
-  plataforma, pasta `AnkoraOne/<cliente>/evidencias`, sem partilhas; `webdav` = NAS do cliente (HTTPS, nome DNS com
-  IPs públicos, portas 443/5006/8443, sem redirecionamentos; credenciais em `StorageConnection` cifradas com o segredo
-  `STORAGE_ENCRYPTION_KEY`; `updateCustomerStorage` só aceita `webdav` com o NAS testado). FTP não é suportado de
-  propósito. Os anexos antigos (`uploadFile`) continuam no nativo para clientes `webdav`.
+- Repositório documental (detalhe em `docs/repositorio-documental.md`): repositório efetivo por cliente em
+  `resolveProvider()` (`base44/shared/storage.ts`, respeita `StorageSettings.enabled_providers`). Nativo =
+  `UploadPrivateFile` no servidor; Google Drive/OneDrive = uma ligação da plataforma (conta da empresa), sem
+  partilhas; `webdav` = NAS do cliente (HTTPS, nome DNS com IPs públicos, portas 443/5006/8443, sem
+  redirecionamentos; credenciais em `StorageConnection` cifradas com o segredo `STORAGE_ENCRYPTION_KEY`; só o admin
+  grava/testa; `updateCustomerStorage` só aceita `webdav` com o NAS testado). FTP não é suportado de propósito.
+- Localização: `Customer.storage_root` (vazio = `AnkoraOne/<folderFor(cliente)>`), validada por
+  `normalizeStorageRoot` (≤ 6 pastas, ≤ 200 caracteres, sem `.`/`..`/vazias) e única entre clientes; só gravada pela
+  função `updateCustomerStorage` (admin: qualquer cliente; customer_admin: o seu), que também grava
+  `storage_configured_at`. UI: `src/components/storage/RepositorySettings.jsx` (ficha do cliente e Definições).
+- Estrutura única de 12 pastas: `REPOSITORY_FOLDERS`/`CONTEXT_FOLDER`/`evidenceFolderKey` em `storage.ts`, cópia em
+  `src/lib/repository.js` (o teste `repository.test.js` compara). `putFile(..., { folder })` grava em
+  `<localização>/<pasta>` e devolve `folder` e `location`, guardados em `StoredFile`/`Evidence` (`folder`,
+  `storage_location`); no nativo não há pastas reais e é o campo `folder` que agrupa.
+- Cliente do ficheiro = cliente do registo, nunca o de quem carrega: `resolveFileTenant()` em
+  `base44/shared/storedFile.ts` (função `files`, por `context_id`); na função `evidence` o admin indica o cliente ou
+  este sai das ligações (sem fallback para o cliente do admin). Mudar repositório/localização só afeta ficheiros
+  novos: as refs guardadas são absolutas.
+- Vista consolidada: `/repository` (`src/pages/Repository.jsx`, menu Governar, módulo `documents_evidence`), abre só
+  por `openFile`/`openEvidence`.
 - `Asset`/`AssetHistory`/`Component`: leitura só admin e customer_admin do tenant (lista do art. 32.º é «reservado»);
   escritas só pela função `assets` (tenant, validação e histórico escritos no servidor).
   Importação no browser (`src/lib/assets.js`, SheetJS) com os cabeçalhos do modelo em `public/templates/`; upsert por

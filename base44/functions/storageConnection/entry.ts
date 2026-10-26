@@ -1,20 +1,24 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, readJson, getAuthenticatedUser, isPlatformAdmin } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { encryptSecret, assertPublicHttpsUrl, testWebdav } from '../../shared/storage.ts';
 
 /**
- * Configuração do repositório NAS (WebDAV sobre HTTPS) de um cliente. Só administrador da plataforma.
+ * Configuração do repositório NAS (WebDAV sobre HTTPS) de um cliente.
  *  - get  { customer_id }                                         → configuração sem a palavra-passe
- *  - save { customer_id, base_url, base_path, username, password? } → guarda (palavra-passe cifrada)
- *  - test { customer_id }                                         → testa a ligação (PROPFIND)
+ *                                                                   (admin da plataforma; admin do próprio cliente)
+ *  - save { customer_id, base_url, base_path, username, password? } → guarda (palavra-passe cifrada). Só admin.
+ *  - test { customer_id }                                         → testa a ligação (PROPFIND). Só admin.
+ * O endereço do NAS só é configurado pelo administrador da plataforma (risco de DNS rebinding, ver storage.ts).
  */
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
     const user = await getAuthenticatedUser(base44);
-    if (!isPlatformAdmin(user)) return json({ error: 'Forbidden' }, 403);
+    if (!user) return json({ error: 'Unauthorized' }, 401);
     const body = await readJson(req);
+    const ownTenantRead = body.action === 'get' && user.role === 'customer_admin' && userCustomerId(user) && String(body.customer_id || '') === userCustomerId(user);
+    if (!isPlatformAdmin(user) && !ownTenantRead) return json({ error: 'Forbidden' }, 403);
     const customerId = String(body.customer_id || '');
     const customer = customerId ? await base44.asServiceRole.entities.Customer.get(customerId).catch(() => null) : null;
     if (!customer) return json({ error: 'Cliente inexistente' }, 404);
