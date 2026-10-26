@@ -287,3 +287,4 @@ export default async function (req) {
     return json({ error: msg }, msg === 'Forbidden' ? 403 : 400);
   }
 }
+
