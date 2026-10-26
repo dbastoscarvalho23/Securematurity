@@ -13,7 +13,9 @@ O workflow `deploy-base44.yml` só publica o que já está na app; não envia c�
 
 ## Agendamentos
 
-Os agendamentos (alertas CVE, lembretes de revisão e de prazos, relatório mensal, purga de retenção) correm nos workflows do próprio Base44 e chamam as funções com o segredo `AUTOMATION_SECRET`. O workflow `scheduler-base44.yml` corre uma função à mão, como recurso; usa o segredo `AUTOMATION_SECRET` do repositório, que tem de ter o mesmo valor do da app.
+Os agendamentos (alertas CVE, lembretes de revisão e de prazos, relatório mensal, purga de retenção) e as notificações por evento correm nos workflows do próprio Base44 e chamam as funções com o valor de `AUTOMATION_SECRET` nos argumentos. Os workflows do Base44 não leem segredos, por isso o valor fica escrito na definição de cada workflow (editor → Workflows) e não neste repositório: os ficheiros de `base44/workflows/` são só referência. Se rodar o segredo, atualize-o na app, em cada workflow e no GitHub.
+
+A purga de retenção (`Data Retention Purge`) fica pausada até os prazos de conservação estarem revistos. O workflow `scheduler-base44.yml` corre uma função à mão, como recurso; usa o segredo `AUTOMATION_SECRET` do repositório, que tem de ter o mesmo valor do da app.
 
 ## Segredos da app
 
