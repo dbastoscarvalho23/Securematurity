@@ -5,8 +5,9 @@ import { defineConfig } from 'vitest/config';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Standalone Vitest config — intentionally excludes the @base44 vite-plugin so
-// tests run offline against mocked backend clients (no env vars required).
+// Standalone Vitest config — intentionally WITHOUT the base44 vite-plugin:
+// no injected session, no backend, no env vars needed. Tests mock AuthContext
+// and the base44 client directly; setup.js polyfills jsdom's matchMedia.
 export default defineConfig({
   plugins: [react()],
   resolve: {
