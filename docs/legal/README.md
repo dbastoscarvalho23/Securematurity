@@ -45,7 +45,20 @@ Algumas referências cruzadas do Anexo I do Regulamento n.º 756/2026 contêm gr
 
 ## Não validado
 
-ISO/IEC 27001:2022 e NIST CSF 2.0 não foram validados, porque os documentos oficiais não foram fornecidos (são normas pagas ou não incluídas). As correspondências com estes referenciais vêm apenas das referências oficiais do próprio QNRCS (Anexo I).
+ISO/IEC 27001:2022 e NIST CSF 2.0 não foram validados, porque os documentos oficiais não foram fornecidos (são normas pagas ou não incluídas). As correspondências com estes referenciais vêm apenas das referências oficiais do próprio QNRCS (Anexo I). O guia ISO/IEC 27001 (secção seguinte) está marcado como «por validar».
+
+## ISO/IEC 27001:2022
+
+A Biblioteca Legal tem um guia de preparação para a ISO/IEC 27001:2022 (separador «ISO/IEC 27001»), em `src/data/legal/iso27001.json`.
+
+- **Estrutura:** segue a numeração da ISO/IEC 27001:2022 com a emenda 1:2024 — 25 requisitos das cláusulas 4 a 10 (ids `C.4.1` …) e os 93 controlos do Anexo A (ids `A.5.1` …), agrupados nos quatro temas (organizacionais, pessoas, físicos, tecnológicos).
+- **Textos próprios:** títulos, descrições e «o que guardar como evidência» foram escritos pela AnkoraOne. A norma é protegida por direitos de autor e não está reproduzida. Para certificação, a entidade usa o texto oficial e uma entidade certificadora acreditada.
+- **Ligações ao QNRCS:** vêm das referências oficiais à ISO/IEC 27001 e 27002 no Regulamento n.º 756/2026, Anexo I (`src/data/legal/qnrcs.json`). No detalhe de cada item, a aplicação mostra o critério de verificação oficial (Anexo III) das medidas dos controlos ligados.
+- **Validação pendente:** a estrutura e os textos ainda não foram conferidos com uma cópia licenciada da norma (`source.validation = "por_validar"`). Depois dessa conferência, mudar o estado no script e regenerar.
+- **Acompanhamento por cliente:** registos em `ComplianceChecklist` com `framework = "ISO27001_2022"`, `requirement_id` = id do item, e os campos `applicable` e `justification` para a Declaração de Aplicabilidade (só nos controlos do Anexo A; as cláusulas são sempre aplicáveis). As evidências ligam-se com o tipo `iso27001`.
+- **Avaliações:** a sincronização da Biblioteca Legal cria ou atualiza uma pergunta por controlo do Anexo A no referencial `ISO27001` (código `A.n.m`, domínio = tema), com `source_ref` a indicar «AnkoraOne (descrição própria; validação com a norma pendente)». Só são desativadas perguntas ISO criadas pela sincronização; as criadas pelos utilizadores ficam como estão.
+
+Regenerar: `python3 tools/legal/build_iso27001.py` (lê `src/data/legal/qnrcs.json` e escreve `src/data/legal/iso27001.json`).
 
 ## Regenerar os dados
 

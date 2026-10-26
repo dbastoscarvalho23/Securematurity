@@ -12,7 +12,7 @@
     },
     "framework": {
       "type": "string",
-      "description": "Checklist a que pertence: RJC_2026 (jornada RJC/Reg. 756/2026), RJCS (jornada anterior, só consulta) ou RJC_MEDIDAS_MINIMAS (Anexos III/IV do Reg. 756/2026)",
+      "description": "Checklist a que pertence: RJC_2026 (jornada RJC/Reg. 756/2026), RJCS (jornada anterior, só consulta), RJC_MEDIDAS_MINIMAS (Anexos III/IV do Reg. 756/2026) ou ISO27001_2022 (guia ISO/IEC 27001:2022: cláusulas 4 a 10 e controlos do Anexo A)",
       "default": "RJCS"
     },
     "section": {
@@ -66,6 +66,15 @@
     "level": {
       "type": "string",
       "description": "Nível de conformidade ou grupo a que a medida pertence"
+    },
+    "applicable": {
+      "type": "boolean",
+      "default": true,
+      "description": "Aplicabilidade do controlo na Declaração de Aplicabilidade (ISO/IEC 27001). As cláusulas 4 a 10 são sempre aplicáveis."
+    },
+    "justification": {
+      "type": "string",
+      "description": "Justificação de inclusão ou exclusão na Declaração de Aplicabilidade"
     }
   },
   "required": [

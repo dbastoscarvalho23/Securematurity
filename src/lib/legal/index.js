@@ -25,6 +25,8 @@ const loaders = {
   tisax: () => import('@/data/legal/tisax.json'),
   cisIds: () => import('@/data/legal/cis-ids.json'),
   obligations: () => import('@/data/legal/obligations.json'),
+  // Guia ISO/IEC 27001:2022 — estrutura da norma, textos próprios da AnkoraOne (ver docs/legal/README.md).
+  iso27001: () => import('@/data/legal/iso27001.json'),
 };
 
 const cache = new Map();
