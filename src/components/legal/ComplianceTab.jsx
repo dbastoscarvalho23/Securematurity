@@ -18,7 +18,7 @@ import { LevelBadge, Loading, downloadCsv, useLegalData } from './shared';
 import EvidencePanel, { useCustomerEvidence, evidenceSummary } from '@/components/evidence/EvidencePanel';
 import { linkKey } from '@/lib/evidence';
 import { useLicense, hasModule } from '@/lib/licensing';
-import { MEASURE_KINDS } from '@/lib/ai';
+import { MEASURE_KINDS, useAiEnabled } from '@/lib/ai';
 import AiDraftDialog from '@/components/ai/AiDraftDialog';
 import { Sparkles } from 'lucide-react';
 
@@ -120,7 +120,9 @@ export default function ComplianceTab() {
   });
   const { data: evidence = [] } = useCustomerEvidence(customerId);
   const { data: license } = useLicense(isAdmin ? customerId : undefined);
-  const aiAllowed = canEdit && hasModule(license, user, 'ai_assistant');
+  // Ponto de uso «documents» (Definições → Aplicação → Assistente de IA); a licença continua a ser verificada à parte.
+  const aiDocs = useAiEnabled('documents');
+  const aiAllowed = canEdit && hasModule(license, user, 'ai_assistant') && aiDocs;
   const [aiMeasure, setAiMeasure] = useState(null);
   const evByKey = useMemo(() => evidenceSummary(evidence), [evidence]);
   const { data: components = [] } = useQuery({

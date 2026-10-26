@@ -15,7 +15,7 @@ import SendQuestionnaireEmailDialog from './SendQuestionnaireEmailDialog';
 import EmailAnswerImportDialog from './EmailAnswerImportDialog';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
-import { aiAssist } from '@/lib/ai';
+import { aiAssist, useAiSettings, aiEnabled } from '@/lib/ai';
 
 const ANSWER_TYPES = ['yes_no', 'scale_1_5', 'text', 'multiple_choice'];
 
@@ -192,6 +192,11 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [showEmailImport, setShowEmailImport] = useState(false);
   const [translating, setTranslating] = useState(false);
+  // Botões de IA só nos pontos ativos (Definições → Aplicação → Assistente de IA).
+  const { data: aiSettings, isSuccess: aiLoaded } = useAiSettings();
+  const aiGenerate = aiLoaded && aiEnabled(aiSettings, 'supplier_questionnaire_generation');
+  const aiTranslate = aiLoaded && aiEnabled(aiSettings, 'supplier_questionnaire_translation');
+  const aiEmailImport = aiLoaded && aiEnabled(aiSettings, 'supplier_email_answer_extraction');
 
   // Always fetch fresh questionnaire data
   const { data: questionnaire = initialQuestionnaire } = useQuery({
@@ -416,16 +421,20 @@ ${JSON.stringify(questionsPayload, null, 2)}`,
         }>
           {questionnaire.status?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
         </Badge>
-        <Button variant="outline" size="sm" onClick={handleTranslate} disabled={translating || questions.length === 0} className="gap-2">
-          <Languages className="w-4 h-4" />
-          {translating ? t('sc_translating') : `${t('sc_translate_to')} ${targetLang.toUpperCase()}`}
-        </Button>
+        {aiTranslate && (
+          <Button variant="outline" size="sm" onClick={handleTranslate} disabled={translating || questions.length === 0} className="gap-2">
+            <Languages className="w-4 h-4" />
+            {translating ? t('sc_translating') : `${t('sc_translate_to')} ${targetLang.toUpperCase()}`}
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={() => setShowSendEmail(true)} className="gap-2">
           <Send className="w-4 h-4" />{t('sc_send_to_supplier')}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setShowEmailImport(true)} className="gap-2">
-          <Mail className="w-4 h-4" />{t('sc_import_email_reply')}
-        </Button>
+        {aiEmailImport && (
+          <Button variant="outline" size="sm" onClick={() => setShowEmailImport(true)} className="gap-2">
+            <Mail className="w-4 h-4" />{t('sc_import_email_reply')}
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -452,10 +461,12 @@ ${JSON.stringify(questionsPayload, null, 2)}`,
 
       {/* AI Generate + Add Question */}
       <div className="flex gap-2 items-end">
-        <Button variant="outline" onClick={() => setShowOptionsDialog(true)} disabled={generating} className="gap-2">
-          <Sparkles className="w-4 h-4" />
-          {generating ? t('sc_generating') : t('sc_ai_generate')}
-        </Button>
+        {aiGenerate && (
+          <Button variant="outline" onClick={() => setShowOptionsDialog(true)} disabled={generating} className="gap-2">
+            <Sparkles className="w-4 h-4" />
+            {generating ? t('sc_generating') : t('sc_ai_generate')}
+          </Button>
+        )}
         <div className="flex gap-2 flex-1">
           {questionnaire.areas?.length > 0 && (
             <Select value={newArea} onValueChange={setNewArea}>
@@ -509,7 +520,7 @@ ${JSON.stringify(questionsPayload, null, 2)}`,
       />
 
       <EmailAnswerImportDialog
-        open={showEmailImport}
+        open={showEmailImport && aiEmailImport}
         onClose={() => setShowEmailImport(false)}
         questions={questions}
         customerId={questionnaire?.customer_id}
@@ -517,7 +528,7 @@ ${JSON.stringify(questionsPayload, null, 2)}`,
       />
 
       <AIGenerateOptionsDialog
-        open={showOptionsDialog}
+        open={showOptionsDialog && aiGenerate}
         onClose={() => setShowOptionsDialog(false)}
         onGenerate={handleAIGenerate}
         preselectedAreas={questionnaire.areas || []}

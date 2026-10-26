@@ -7,6 +7,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useLicense, hasModule } from '@/lib/licensing';
+import { useAiEnabled } from '@/lib/ai';
 import AiDraftsList from './AiDraftsList';
 import AiDraftDialog from './AiDraftDialog';
 
@@ -22,7 +23,9 @@ export default function AiWorkspace() {
   const [year, setYear] = useState(String(lastYear));
   const [open, setOpen] = useState(false);
   const { data: customers = [] } = useQuery({ queryKey: ['ai-customers'], queryFn: () => base44.entities.Customer.list('name', 500), enabled: isAdmin });
-  if (!(isAdmin || user?.role === 'customer_admin') || !hasModule(license, user, 'ai_assistant')) return null;
+  // Ponto de uso «documents» (Definições → Aplicação → Assistente de IA).
+  const aiOn = useAiEnabled('documents');
+  if (!(isAdmin || user?.role === 'customer_admin') || !hasModule(license, user, 'ai_assistant') || !aiOn) return null;
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2 items-center">

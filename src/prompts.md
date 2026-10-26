@@ -118,4 +118,4 @@ The `framework_guide` agent (`base44/agents/framework_guide.jsonc`) carries the 
 
 - All prompts go through `aiAssist(purpose, { prompt, schema, customerId })` (`src/lib/ai.js`), which calls the `aiAssist` backend function (auth, `ai_assistant` licence, `ai` quota, audit log, art. 32.º asset check) and gets structured JSON back. The browser never calls the LLM directly.
 - Prompts 1–4 use the default model. Prompt 5 (translation) also uses the default model but runs in batches to keep prompt size manageable.
-- The model is chosen in `base44/shared/llm.ts` (secret `AI_PROVIDER`: Claude or the Base44 LLM), shared with `aiDraft`.
+- The model is chosen in `base44/shared/llm.ts`, shared with `aiDraft`: the `AiSettings` record (Settings → Application → AI assistant: Claude with Base44 fallback, Claude only, or Base44 only), or the secret `AI_PROVIDER` when there is no record. The same record lists the purposes where the assistant is active; a disabled purpose is refused by the server (403) and its button is hidden.

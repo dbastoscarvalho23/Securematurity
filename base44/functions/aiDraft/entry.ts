@@ -5,7 +5,7 @@ import { requireModule, getEntitlements, consumeQuota, checkQuota, LicenseError 
 import { getFile } from '../../shared/storage.ts';
 import { LEGAL_PACK } from '../../shared/legalPack.ts';
 import { MEASURE_TEMPLATES, REPORT_TEMPLATES, BANNED_PHRASES } from '../../shared/aiTemplates.ts';
-import { callLLM } from '../../shared/llm.ts';
+import { callLLM, getAiSettings, aiPurposeEnabled, AI_DISABLED_MESSAGE } from '../../shared/llm.ts';
 
 /**
  * Assistente de IA para evidências documentais e relatórios (módulo «ai_assistant»).
@@ -123,7 +123,7 @@ function sourcesBlock(sources) {
   return sources.map((s) => `[${s.id}] ${s.label}${s.related ? ' (relacionado por semelhança)' : ''}\n${s.text}`).join('\n\n');
 }
 
-// Fornecedor e chamada ao modelo: base44/shared/llm.ts (AI_PROVIDER, ANTHROPIC_API_KEY, ANTHROPIC_MODEL).
+// Fornecedor e chamada ao modelo: base44/shared/llm.ts (registo AiSettings ou AI_PROVIDER, ANTHROPIC_API_KEY, ANTHROPIC_MODEL).
 
 /** Normaliza a resposta: secções na ordem do modelo, citações só das fontes enviadas, avisos de validação. */
 function validate(result, sectionsDef, sources, fixedBodies = {}, facts = '') {
@@ -200,6 +200,8 @@ export default async function (req) {
     const customer = await db.Customer.get(customerId).catch(() => null);
     if (!customer) return json({ error: 'Cliente inexistente' }, 404);
     await requireModule(base44, user, customerId, 'ai_assistant');
+    // Ponto de uso «documents» (Definições → Aplicação → Assistente de IA): abrange todas as ações desta função.
+    if (!aiPurposeEnabled(await getAiSettings(base44), 'documents')) return json({ error: AI_DISABLED_MESSAGE }, 403);
     const action = body.action;
 
     if (action === 'approve' || action === 'discard') {

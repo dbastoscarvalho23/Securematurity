@@ -6,6 +6,7 @@ import { Sparkles, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAiEnabled } from '@/lib/ai';
 import AssessmentWizardMeta from './AssessmentWizardMeta';
 import AssessmentWizardAI from './AssessmentWizardAI';
 import AssessmentWizardManual from './AssessmentWizardManual';
@@ -26,6 +27,8 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
   const [meta, setMeta] = useState(DEFAULT_META);
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
+  // Escolha de perguntas por IA: só quando o administrador a ativou (Definições → Aplicação → Assistente de IA).
+  const aiOn = useAiEnabled('assessment_question_selection');
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -122,8 +125,8 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
         {step === 'mode' && (
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">{t('assessment_wizard_how_build')}</p>
-            <div className="grid grid-cols-2 gap-4">
-              <button
+            <div className={cn('grid gap-4', aiOn ? 'grid-cols-2' : 'grid-cols-1')}>
+              {aiOn && <button
                 onClick={() => handleSelectMode('ai')}
                 className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-left"
               >
@@ -132,7 +135,7 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
                   <p className="font-semibold text-sm">{t('assessment_wizard_ai_gen')}</p>
                   <p className="text-xs text-muted-foreground mt-1">{t('assessment_wizard_ai_gen_desc')}</p>
                 </div>
-              </button>
+              </button>}
               <button
                 onClick={() => handleSelectMode('manual')}
                 className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-left"
@@ -159,7 +162,7 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
         )}
 
         {/* Step: Build */}
-        {step === 'build' && mode === 'ai' && (
+        {step === 'build' && mode === 'ai' && aiOn && (
           <AssessmentWizardAI
             meta={meta}
             selectedCustomer={selectedCustomer}

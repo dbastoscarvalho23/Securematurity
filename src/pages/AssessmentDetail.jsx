@@ -15,7 +15,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { translateDomain } from '@/lib/domainTranslations';
 import LoadingState from '@/components/shared/LoadingState';
 import { LEGAL_AI_CONTEXT } from '@/lib/legal/aiContext';
-import { aiAssist } from '@/lib/ai';
+import { aiAssist, useAiEnabled } from '@/lib/ai';
 
 export default function AssessmentDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -89,6 +89,9 @@ export default function AssessmentDetail() {
     },
   });
 
+  // Recomendações por IA ao concluir: só quando o administrador as ativou (Definições → Aplicação → Assistente de IA).
+  const aiRecommendations = useAiEnabled('assessment_recommendations');
+
   const completeMutation = useMutation({
     mutationFn: async () => {
       setIsAnalyzing(true);
@@ -132,7 +135,7 @@ export default function AssessmentDetail() {
         target: r.target_level || 4,
       }));
 
-      const aiResult = await aiAssist('assessment_recommendations', {
+      const aiResult = !aiRecommendations ? null : await aiAssist('assessment_recommendations', {
         customerId: assessment?.customer_id,
         prompt: `You are a cybersecurity compliance expert. Analyze these assessment responses and generate actionable recommendations.
 
@@ -275,7 +278,7 @@ ${LEGAL_AI_CONTEXT}`,
             disabled={completeMutation.isPending || isAnalyzing || answeredQuestions === 0}
             className="gap-2"
           >
-            {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : aiRecommendations ? <Sparkles className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
             {isAnalyzing ? t('assessment_detail_analyzing') : t('assessment_detail_complete')}
           </Button>
         </div>

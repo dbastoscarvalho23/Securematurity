@@ -1,0 +1,48 @@
+{
+  "name": "AiSettings",
+  "type": "object",
+  "properties": {
+    "provider": {
+      "type": "string",
+      "enum": [
+        "claude",
+        "claude_only",
+        "base44"
+      ],
+      "default": "claude",
+      "description": "AI engine for the whole application: claude (Claude with fallback to the Base44 LLM), claude_only (Claude, no fallback) or base44 (Base44 LLM only)"
+    },
+    "enabled_purposes": {
+      "type": "array",
+      "description": "Points of the application where the AI assistant is active (purpose keys, e.g. documents, supplier_questionnaire_generation). Keys not listed are off.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "updated_by_email": {
+      "type": "string",
+      "description": "Email of the admin who last updated the configuration"
+    }
+  },
+  "required": [
+    "provider"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

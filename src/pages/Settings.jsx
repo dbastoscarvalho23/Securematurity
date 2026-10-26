@@ -25,6 +25,7 @@ import LicenseSettingsPanel from '@/components/licensing/LicenseSettingsPanel';
 import GeneratedReportsPanel from '@/components/genreports/GeneratedReportsPanel';
 import TrainingReportsPanel from '@/components/genreports/TrainingReportsPanel';
 import EmailSettingsPanel from '@/components/settings/EmailSettingsPanel';
+import AiSettingsPanel from '@/components/settings/AiSettingsPanel';
 
 export default function Settings() {
   const { user: currentUser, checkAppState, refreshUser } = useAuth();
@@ -258,11 +259,12 @@ export default function Settings() {
           </TabsContent>
         )}
 
-        {/* App Tab — maintenance window configuration */}
+        {/* App Tab — janela de manutenção, email e assistente de IA */}
         {isAdmin && (
           <TabsContent value="app" className="space-y-4 mt-4">
             <MaintenanceWindowPanel isAdmin={isAdmin} />
             <EmailSettingsPanel />
+            <AiSettingsPanel />
           </TabsContent>
         )}
 

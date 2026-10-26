@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useLicense, hasModule } from '@/lib/licensing';
-import { MEASURE_KINDS } from '@/lib/ai';
+import { MEASURE_KINDS, useAiEnabled } from '@/lib/ai';
 import EvidencePanel from '@/components/evidence/EvidencePanel';
 import AiDraftDialog from '@/components/ai/AiDraftDialog';
 import { Sparkles, Paperclip } from 'lucide-react';
@@ -29,7 +29,9 @@ export default function ChecklistItemRow({ item, queryKey, displayText, basis, f
   const isAdmin = user?.role === 'admin';
   const { data: license } = useLicense(isAdmin ? item.customer_id : undefined);
   const canManage = isAdmin || user?.role === 'customer_admin';
-  const aiAllowed = canManage && hasModule(license, user, 'ai_assistant');
+  // Ponto de uso «documents» (Definições → Aplicação → Assistente de IA); a licença continua a ser verificada à parte.
+  const aiDocs = useAiEnabled('documents');
+  const aiAllowed = canManage && hasModule(license, user, 'ai_assistant') && aiDocs;
   const [showEvidence, setShowEvidence] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
 

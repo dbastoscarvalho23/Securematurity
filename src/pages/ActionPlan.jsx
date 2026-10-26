@@ -25,7 +25,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
-import { aiAssist } from '@/lib/ai';
+import { aiAssist, useAiSettings, aiEnabled } from '@/lib/ai';
 
 const STATUS_ICONS = {
   todo: <Circle className="w-4 h-4 text-muted-foreground" />,
@@ -160,6 +160,10 @@ export default function ActionPlan() {
   const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateProgress, setTranslateProgress] = useState({ done: 0, total: 0 });
+  // Botões de IA só nos pontos ativos (Definições → Aplicação → Assistente de IA).
+  const { data: aiSettings, isSuccess: aiLoaded } = useAiSettings();
+  const aiTranslate = aiLoaded && aiEnabled(aiSettings, 'recommendation_translation');
+  const aiGenerate = aiLoaded && aiEnabled(aiSettings, 'recommendation_generation');
   const [newRecForm, setNewRecForm] = useState({
     title: '', description: '', priority: 'medium', framework_code: '',
     domain: '', control_id: '', effort: 'medium', timeline: 'short_term',
@@ -359,19 +363,23 @@ Return only valid JSON with the translations.`,
         description={<>{t('action_plan_subtitle')} · <span className="text-foreground font-medium">{recommendations.length}</span> {t('action_plan_recommendations')}</>}
         actions={
           <div className="flex gap-2 items-center flex-wrap">
-            <Button onClick={handleTranslate} variant="outline" disabled={isTranslating} className="gap-2">
-              {isTranslating
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('action_plan_translating')} {translateProgress.done}/{translateProgress.total}</>
-                : <><Languages className="w-4 h-4" /> {t('action_plan_translate_pt')}</>
-              }
-            </Button>
+            {aiTranslate && (
+              <Button onClick={handleTranslate} variant="outline" disabled={isTranslating} className="gap-2">
+                {isTranslating
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('action_plan_translating')} {translateProgress.done}/{translateProgress.total}</>
+                  : <><Languages className="w-4 h-4" /> {t('action_plan_translate_pt')}</>
+                }
+              </Button>
+            )}
             <Button onClick={handleCheckDuplicates} variant="outline" disabled={isCheckingDuplicates} className="gap-2">
               {isCheckingDuplicates ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
               {t('action_plan_check_duplicates')}
             </Button>
-            <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
-              <Sparkles className="w-4 h-4" /> {t('action_plan_ai_generate')}
-            </Button>
+            {aiGenerate && (
+              <Button onClick={() => setAiDialogOpen(true)} variant="outline" className="gap-2">
+                <Sparkles className="w-4 h-4" /> {t('action_plan_ai_generate')}
+              </Button>
+            )}
             <Button onClick={() => setNewRecDialog(true)} className="gap-2">
               <Plus className="w-4 h-4" /> {t('action_plan_new_rec')}
             </Button>
@@ -486,7 +494,7 @@ Return only valid JSON with the translations.`,
 
       {/* AI Generate dialog */}
       <AIRecommendationDialog
-        open={aiDialogOpen}
+        open={aiDialogOpen && aiGenerate}
         onOpenChange={setAiDialogOpen}
         customers={customers}
         onSave={async (recs) => {
