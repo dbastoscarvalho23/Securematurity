@@ -16,10 +16,11 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/shared/PageHeader';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
+import IntakePanel from '@/components/repository/IntakePanel';
 import { openFile, isPrivateFile, FILE_SCHEME } from '@/lib/cloudStorage';
 import { openEvidence, evidenceProvider } from '@/lib/evidence';
 import {
-  REPOSITORY_FOLDERS, storedFileFolderKey, evidenceFileFolderKey, storageProvidersStatus,
+  REPOSITORY_FOLDERS, storedFileFolderKey, evidenceFileFolderKey, storageProvidersStatus, folderLabel,
 } from '@/lib/repository';
 
 const PERIODS = ['all', '30', '90', '365'];
@@ -36,7 +37,8 @@ const fmtDate = (d) => (d ? String(d).slice(0, 10) : '—');
 const safeList = async (fn) => { try { return (await fn()) || []; } catch { return []; } };
 
 /**
- * Repositório documental: todos os ficheiros de um cliente, agrupados pelas 12 pastas da estrutura comum.
+ * Repositório documental: todos os ficheiros de um cliente, agrupados pelas 13 pastas da estrutura comum.
+ * No topo, «Por classificar» (administradores): documentos que a plataforma propõe indexar como evidência.
  * Abre sempre pelas funções seguras (files / evidence), com URL temporário e registo na auditoria.
  * Os itens restritos só chegam a quem os pode ler (RLS das entidades: admin e administrador do cliente).
  */
@@ -94,6 +96,8 @@ export default function Repository() {
     const out = [];
     const privateIds = new Set();
     storedFiles.forEach((f) => {
+      // Documento por classificar já indexado: aparece como evidência (o mesmo ficheiro), não duas vezes.
+      if (f.context === 'intake' && f.folder && f.folder !== folderLabel('inbox')) return;
       privateIds.add(f.id);
       out.push({
         id: `sf:${f.id}`, kind: 'stored', name: f.file_name, folderKey: storedFileFolderKey(f),
@@ -187,6 +191,8 @@ export default function Repository() {
         <EmptyState icon={FolderOpen} title={t('repo_no_customer')} description={t('repo_no_customer_desc')} />
       ) : (
         <>
+          {isStaff && <IntakePanel customerId={customerId} />}
+
           <Card>
             <CardContent className="p-4 grid gap-4 md:grid-cols-4">
               <div className="space-y-1">

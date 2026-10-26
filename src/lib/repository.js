@@ -10,6 +10,7 @@ export const ROOT = 'AnkoraOne';
 export const PROVIDERS = ['base44', 'google_drive', 'one_drive', 'webdav'];
 
 export const REPOSITORY_FOLDERS = [
+  { key: 'inbox', label: '00 Por classificar' },
   { key: 'framing', label: '01 Enquadramento' },
   { key: 'security_docs', label: '02 Documentos de segurança' },
   { key: 'evidence', label: '03 Evidências' },
@@ -37,6 +38,7 @@ export const CONTEXT_FOLDER = {
   training: 'training',
   report: 'reports',
   ai_draft: 'ai_drafts',
+  intake: 'inbox',
   task: 'other',
   comment: 'other',
   framework: 'other',

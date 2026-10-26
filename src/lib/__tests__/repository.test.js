@@ -13,10 +13,10 @@ const block = (name, end) => {
 };
 
 describe('cópia do servidor (base44/shared/storage.ts)', () => {
-  it('as 12 pastas são iguais', () => {
+  it('as 13 pastas são iguais', () => {
     const server = [...block('REPOSITORY_FOLDERS', '];').matchAll(/\{ key: "([^"]+)", label: "([^"]+)" \}/g)].map((m) => ({ key: m[1], label: m[2] }));
     expect(server).toEqual(REPOSITORY_FOLDERS);
-    expect(server).toHaveLength(12);
+    expect(server).toHaveLength(13);
   });
   it('o mapa contexto → pasta é igual', () => {
     const server = Object.fromEntries([...block('CONTEXT_FOLDER', '};').matchAll(/^\s+(\w+): "(\w+)",$/gm)].map((m) => [m[1], m[2]]));
@@ -81,5 +81,7 @@ describe('pastas de ficheiros e evidências', () => {
     expect(evidenceFileFolderKey({ links: [{ type: 'component' }] })).toBe('assets');
     expect(evidenceFileFolderKey({ folder: '01 Enquadramento', links: [] })).toBe('framing');
     expect(folderKeyFromLabel('desconhecida')).toBe(null);
+    expect(storedFileFolderKey({ context: 'intake' })).toBe('inbox');
+    expect(folderKeyFromLabel('00 Por classificar')).toBe('inbox');
   });
 });

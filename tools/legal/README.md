@@ -20,6 +20,14 @@ Requisitos: Python 3.11+, `pdfplumber` e `openpyxl` (`pip install pdfplumber ope
 
 Os scripts de `extract/` foram usados uma vez para a versão atual e esperam a estrutura de pastas descrita acima. Reveja sempre o resultado contra o PDF (página indicada em cada elemento, campo `page`) antes de publicar.
 
+## Pacotes do servidor
+
+Depois de mudar `src/data/legal/` ou `src/lib/legal/journeyTemplate.js`, voltar a gerar os dados que as funções usam:
+
+- `python3 tools/legal/build_ai_pack.py` → `base44/shared/legalPack.ts` (textos oficiais citáveis pela IA)
+- `node tools/legal/build_classify_catalog.mjs` → `base44/shared/classifyCatalog.ts` (nível mínimo dos controlos,
+  guia ISO/IEC 27001 e tarefas da jornada, para a classificação de documentos)
+
 ## Depois de publicar
 
 Um administrador deve abrir **Definições → Frameworks** e carregar em **Sincronizar com a Biblioteca Legal**. A sincronização:

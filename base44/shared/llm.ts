@@ -31,11 +31,14 @@ export const parseJson = (text) => {
  * Pontos de uso do assistente e valor por omissão (sem registo AiSettings ou sem lista guardada).
  * Manter igual a AI_PURPOSES em src/lib/ai.js.
  *  - documents: tudo o que passa por aiDraft (rascunhos de documentos, análise de evidências, notificações de incidentes).
+ *  - document_classification: classificação de documentos em «00 Por classificar» (função documentIntake); contexto
+ *    documental, ativo por omissão.
  *  - Desligados por omissão: escolha de perguntas (segue as medidas oficiais e a qualificação, não o modelo),
  *    lacunas do banco de perguntas e traduções de texto oficial/legal (existe o texto de origem em PT-PT).
  */
 export const AI_PURPOSE_DEFAULTS = {
   documents: true,
+  document_classification: true,
   supplier_questionnaire_generation: true,
   supplier_email_answer_extraction: true,
   assessment_recommendations: true,

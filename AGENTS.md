@@ -92,7 +92,7 @@ docker compose -f docker-compose.base44.yml up -d
   `normalizeStorageRoot` (≤ 6 pastas, ≤ 200 caracteres, sem `.`/`..`/vazias) e única entre clientes; só gravada pela
   função `updateCustomerStorage` (admin: qualquer cliente; customer_admin: o seu), que também grava
   `storage_configured_at`. UI: `src/components/storage/RepositorySettings.jsx` (ficha do cliente e Definições).
-- Estrutura única de 12 pastas: `REPOSITORY_FOLDERS`/`CONTEXT_FOLDER`/`evidenceFolderKey` em `storage.ts`, cópia em
+- Estrutura única de 13 pastas («00 Por classificar» incluída): `REPOSITORY_FOLDERS`/`CONTEXT_FOLDER`/`evidenceFolderKey` em `storage.ts`, cópia em
   `src/lib/repository.js` (o teste `repository.test.js` compara). `putFile(..., { folder })` grava em
   `<localização>/<pasta>` e devolve `folder` e `location`, guardados em `StoredFile`/`Evidence` (`folder`,
   `storage_location`); no nativo não há pastas reais e é o campo `folder` que agrupa.
@@ -142,6 +142,19 @@ docker compose -f docker-compose.base44.yml up -d
 - Pedidos de IA da interface: só por `aiAssist(purpose, { prompt, schema, customerId })` em `src/lib/ai.js` (função
   `aiAssist`: sessão, módulo `ai_assistant`, quota `ai`, auditoria `ai_assist`, `purpose` numa lista fechada, recusa 422
   se o pedido contiver IP/FQDN de um `Asset` com `internet_exposed`). Nunca usar `InvokeLLM` no browser.
+
+## Classificação de documentos (função `documentIntake`, entidade `DocumentIntake`)
+- Repositório → «Por classificar» (`src/components/repository/IntakePanel.jsx`, `IntakeReviewDialog.jsx`): carregar
+  para «00 Por classificar» (`StoredFile` contexto `intake`), pré-seleção sem IA, proposta do modelo (ponto de uso
+  `document_classification`, ativo por omissão) e indexação confirmada por uma pessoa. Detalhe em
+  `docs/repositorio-documental.md`.
+- Lógica pura em `base44/shared/classify.ts` (candidatos, pontuação, validação, ligações) e
+  `base44/shared/textExtract.ts` (o ZIP chega por `unzip` injetado: fflate na função); ambos testados diretamente em
+  `src/lib/__tests__/classify.test.js`. Dados extra da Biblioteca Legal em `base44/shared/classifyCatalog.ts`, gerado por
+  `node tools/legal/build_classify_catalog.mjs` (voltar a gerar quando a jornada, o QNRCS ou o guia ISO mudarem).
+- Regras partilhadas com outras funções: `buildMeta` em `base44/shared/evidenceMeta.ts` (também usada pela função
+  `evidence`) e `containsExposedAsset` em `base44/shared/exposedAssets.ts` (também usada por `aiAssist`).
+- Indexar cria `Evidence` «Por rever» com o mesmo ficheiro e nunca altera o estado de medidas ou tarefas.
 
 ## Escrita
 - Todo o texto visível segue `docs/style/pt-pt.md` (PT-PT, AO90, sem chavões). Chaves novas sem ficheiro próprio:
