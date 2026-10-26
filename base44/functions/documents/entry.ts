@@ -38,6 +38,20 @@ function snapshotOf(doc: any, user: any, note: string) {
   };
 }
 
+/**
+ * Atualiza o documento. Limpar a data de aprovação usa null; se a validação do esquema recusar null num campo
+ * de data, repete a gravação sem esse campo (o aprovador fica vazio e o estado deixa de ser «Aprovado»).
+ */
+async function updateDoc(db: any, id: string, data: Record<string, unknown>) {
+  try {
+    return await db.SecurityDocument.update(id, data);
+  } catch (e) {
+    if (!('approved_date' in data) || data.approved_date !== null) throw e;
+    const { approved_date: _drop, ...rest } = data;
+    return await db.SecurityDocument.update(id, rest);
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -102,7 +116,7 @@ Deno.serve(async (req) => {
       const update: Record<string, unknown> = { ...fields, status };
       if (status !== 'approved') { update.approved_by = ''; update.approved_date = null; }
       await db.DocumentVersion.create(snapshotOf(prev, user, str(body.change_note, 300) || 'Alteração do documento'));
-      const doc = await db.SecurityDocument.update(prev.id, update);
+      const doc = await updateDoc(db, prev.id, update);
       await logAudit(base44, 'document_updated', { user_email: user.email, customer_id: prev.customer_id, entity_type: 'SecurityDocument', entity_id: prev.id, details: `Documento alterado: ${fields.title}${status !== prev.status ? ` (estado: ${prev.status} → ${status})` : ''}` });
       return json({ document: doc, status_changed: status !== prev.status, previous_status: prev.status });
     }
@@ -127,9 +141,9 @@ Deno.serve(async (req) => {
       const v = await db.DocumentVersion.get(str(body.version_id, 64)).catch(() => null);
       if (!v || v.document_id !== doc.id) return json({ error: 'Versão inexistente' }, 404);
       await db.DocumentVersion.create(snapshotOf(doc, user, `Estado antes de repor a versão ${v.version_label || v.id}`));
-      const updated = await db.SecurityDocument.update(doc.id, {
+      const updated = await updateDoc(db, doc.id, {
         title: v.title, description: v.description, level: v.level, file_url: v.file_url, file_name: v.file_name,
-        review_date: v.review_date || null, tags: v.tags || [], framework_codes: v.framework_codes || [], version: v.version_label,
+        ...(v.review_date ? { review_date: v.review_date } : {}), tags: v.tags || [], framework_codes: v.framework_codes || [], version: v.version_label,
         status: 'under_review', approved_by: '', approved_date: null,
       });
       await logAudit(base44, 'document_version_reverted', { user_email: user.email, customer_id: doc.customer_id, entity_type: 'SecurityDocument', entity_id: doc.id, details: `«${doc.title}» reposto na versão ${v.version_label || v.id}; volta a revisão` });
