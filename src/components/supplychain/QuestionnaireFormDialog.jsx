@@ -151,7 +151,7 @@ export default function QuestionnaireFormDialog({ open, onClose, questionnaire, 
             </div>
             <div>
               <Label>{t('sc_form_supplier_email')}</Label>
-              <Input value={form.supplier_email} onChange={e => setForm(f => ({ ...f, supplier_email: e.target.value }))} placeholder="supplier@company.com" />
+              <Input value={form.supplier_email} onChange={e => setForm(f => ({ ...f, supplier_email: e.target.value }))} placeholder={t('x_supplier_email_placeholder')} />
             </div>
             <div>
               <Label>{t('sc_form_due_date')}</Label>

@@ -24,6 +24,7 @@ Deno.serve(async (req) => {
     // Determine month label (current month being snapshotted)
     const now = new Date();
     const monthLabel = now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    const monthLabelPt = now.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' });
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     // Check for duplicate snapshot this month to avoid re-runs
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
     });
     if (existing.length > 0) {
       return json({
-        message: `Monthly snapshot for ${monthLabel} already exists.`,
+        message: `Já existe o retrato mensal de ${monthLabelPt}.`,
         document_id: existing[0].id,
       });
     }
@@ -60,15 +61,15 @@ Deno.serve(async (req) => {
 
     // Create SecurityDocument record
     const doc = await sr.entities.SecurityDocument.create({
-      title: `Annual Cybersecurity Report — ${monthLabel}`,
+      title: `Relatório Anual de Cibersegurança: ${monthLabelPt}`,
       level: 'policy',
       status: 'approved',
-      description: `Automatically generated monthly snapshot of the Annual Cybersecurity Report for ${monthLabel}. Covers all customers.`,
+      description: `Retrato mensal do Relatório Anual de Cibersegurança de ${monthLabelPt}, gerado automaticamente. Inclui todos os clientes.`,
       version: '1.0',
       file_url,
       file_name: fileName,
       tags: ['monthly_snapshot', `monthly_snapshot_${monthKey}`, 'annual_report', 'automated'],
-      approved_by: 'AnkoraOne Platform (Automated)',
+      approved_by: 'AnkoraOne (automático)',
       approved_date: new Date().toISOString().split('T')[0],
     });
 
@@ -86,12 +87,12 @@ Deno.serve(async (req) => {
       approved_by: doc.approved_by,
       approved_date: doc.approved_date,
       changed_by: isScheduled ? 'system@automated' : 'admin',
-      change_note: `Monthly snapshot automatically generated for ${monthLabel}.`,
+      change_note: `Retrato mensal de ${monthLabelPt} gerado automaticamente.`,
     });
 
     return json({
       success: true,
-      message: `Monthly snapshot created for ${monthLabel}.`,
+      message: `Retrato mensal de ${monthLabelPt} criado.`,
       document_id: doc.id,
       file_url,
     });

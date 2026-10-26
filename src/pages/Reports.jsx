@@ -56,8 +56,8 @@ function AssessmentAnswersPanel({ assessmentId }) {
   // Group by framework then domain
   const grouped = {};
   responses.forEach(r => {
-    const fw = r.framework_code || 'Other';
-    const domain = r.domain || 'General';
+    const fw = r.framework_code || t('x_group_other');
+    const domain = r.domain || t('common_general');
     if (!grouped[fw]) grouped[fw] = {};
     if (!grouped[fw][domain]) grouped[fw][domain] = [];
     grouped[fw][domain].push(r);

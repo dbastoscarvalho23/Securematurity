@@ -98,10 +98,10 @@ export default function QuestionBank() {
   const handleTranslate = async () => {
     const untranslated = questions.filter(q => !q.question_text_pt);
     if (untranslated.length === 0) {
-      toast.success('All questions already have a Portuguese translation!');
+      toast.success(t('x_qb_all_translated'));
       return;
     }
-    if (!confirm(`Translate ${untranslated.length} question${untranslated.length !== 1 ? 's' : ''} to European Portuguese?`)) return;
+    if (!confirm(t('x_qb_translate_confirm', { count: untranslated.length }))) return;
 
     setIsTranslating(true);
     setTranslateProgress({ done: 0, total: untranslated.length });
@@ -152,7 +152,7 @@ Return only valid JSON with the translations.`,
     queryClient.invalidateQueries({ queryKey: ['questions'] });
     setIsTranslating(false);
     await writeAuditLog({ action: 'questions_translated', entity_type: 'Question', details: `AI translated ${untranslated.length} question${untranslated.length !== 1 ? 's' : ''} to European Portuguese` });
-    toast.success(`Translated ${untranslated.length} question${untranslated.length !== 1 ? 's' : ''} to European Portuguese.`);
+    toast.success(t('x_qb_translated', { count: untranslated.length }));
   };
 
   const handleRemoveDuplicates = async () => {
@@ -170,22 +170,22 @@ Return only valid JSON with the translations.`,
     }
 
     if (toDelete.length === 0) {
-      toast.success('No duplicates found — your question bank is clean!');
+      toast.success(t('x_qb_no_duplicates'));
       return;
     }
 
-    if (!confirm(`Found ${toDelete.length} duplicate question${toDelete.length !== 1 ? 's' : ''}. Delete them now?`)) return;
+    if (!confirm(t('x_qb_dupes_confirm', { count: toDelete.length }))) return;
 
     setIsDeduplicating(true);
     await Promise.all(toDelete.map(id => base44.entities.Question.delete(id)));
     queryClient.invalidateQueries({ queryKey: ['questions'] });
     setIsDeduplicating(false);
     await writeAuditLog({ action: 'questions_deduplicated', entity_type: 'Question', details: `Removed ${toDelete.length} duplicate question${toDelete.length !== 1 ? 's' : ''}` });
-    toast.success(`Removed ${toDelete.length} duplicate question${toDelete.length !== 1 ? 's' : ''}.`);
+    toast.success(t('x_qb_dupes_removed', { count: toDelete.length }));
   };
 
   const handleDelete = (q) => {
-    if (confirm(`Delete question "${q.question_text.substring(0, 60)}..."?`)) {
+    if (confirm(t('x_qb_delete_confirm', { text: q.question_text.substring(0, 60) }))) {
       deleteMutation.mutate(q);
     }
   };
@@ -253,16 +253,16 @@ Return only valid JSON with the translations.`,
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
-                  <TableHead>Question</TableHead>
+                  <TableHead>{t('x_qb_col_question')}</TableHead>
                   <TableHead className="w-36">
                     <div className="space-y-1">
                       <span>{t('qb_col_framework')}</span>
                       <Select value={filterFramework} onValueChange={v => { setFilterFramework(v); setFilterDomain('all'); }}>
                         <SelectTrigger className="h-7 text-xs w-full">
-                          <SelectValue placeholder="All" />
+                          <SelectValue placeholder={t('x_filter_all')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="all">{t('x_filter_all')}</SelectItem>
                           {allFrameworks.filter(fw => fw.status === 'active').map(fw => <SelectItem key={fw.code} value={fw.code}>{fw.code}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -273,10 +273,10 @@ Return only valid JSON with the translations.`,
                       <span>{t('qb_col_domain')}</span>
                       <Select value={filterDomain} onValueChange={setFilterDomain}>
                         <SelectTrigger className="h-7 text-xs w-full">
-                          <SelectValue placeholder="All" />
+                          <SelectValue placeholder={t('x_filter_all')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="all">{t('x_filter_all')}</SelectItem>
                           {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -288,7 +288,7 @@ Return only valid JSON with the translations.`,
                       <Input
                         value={filterControlId}
                         onChange={e => setFilterControlId(e.target.value)}
-                        placeholder="Filter..."
+                        placeholder={t('x_filter_placeholder')}
                         className="h-7 text-xs"
                       />
                     </div>
@@ -298,10 +298,10 @@ Return only valid JSON with the translations.`,
                       <span>{t('qb_col_weight')}</span>
                       <Select value={filterWeight} onValueChange={setFilterWeight}>
                         <SelectTrigger className="h-7 text-xs w-full">
-                          <SelectValue placeholder="All" />
+                          <SelectValue placeholder={t('x_filter_all')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="all">{t('x_filter_all')}</SelectItem>
                           {[1, 2, 3, 4, 5].map(w => <SelectItem key={w} value={String(w)}>{w}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -312,12 +312,12 @@ Return only valid JSON with the translations.`,
                       <span>{t('qb_col_language')}</span>
                       <Select value={filterLang} onValueChange={setFilterLang}>
                         <SelectTrigger className="h-7 text-xs w-full">
-                          <SelectValue placeholder="All" />
+                          <SelectValue placeholder={t('x_filter_all')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="all">{t('x_filter_all')}</SelectItem>
                           <SelectItem value="PT">PT ✓</SelectItem>
-                          <SelectItem value="EN">EN only</SelectItem>
+                          <SelectItem value="EN">{t('x_qb_lang_en_only')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

@@ -6,7 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Paperclip, Upload, Download, Check, X, Loader2, ShieldCheck, Trash2, RefreshCw } from 'lucide-react';
+import { Paperclip, Upload, Download, Check, X, Loader2, ShieldCheck, Trash2, RefreshCw, Sparkles } from 'lucide-react';
+import { useLicense, hasModule } from '@/lib/licensing';
+import { aiReview } from '@/lib/ai';
+import AiDraftDialog from '@/components/ai/AiDraftDialog';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
@@ -76,6 +79,14 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
   const [busy, setBusy] = useState(false);
   const [file, setFile] = useState(null);
   const [replacing, setReplacing] = useState(null); // evidência de que se carrega uma nova versão
+  const { data: license } = useLicense(isAdmin ? customerId : undefined);
+  const aiAllowed = (isAdmin || user?.role === 'customer_admin') && hasModule(license, user, 'ai_assistant');
+  const [review, setReview] = useState(null);
+  const [reviewing, setReviewing] = useState(null);
+  const runReview = async (ev) => {
+    setReviewing(ev.id);
+    try { const r = await aiReview(customerId, ev.id); setReview(r.draft); } catch (e) { toast.error(e?.message || t('ev_error')); } finally { setReviewing(null); }
+  };
   const [form, setForm] = useState({ title: '', description: '', evidence_type: 'other', method: 'examine', collected_at: new Date().toISOString().slice(0, 10), valid_until: '' });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const refresh = () => qc.invalidateQueries({ queryKey: ['evidence', customerId] });
@@ -166,6 +177,11 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
                 <span className="text-muted-foreground font-mono" title={ev.sha256}>SHA-256 {ev.sha256?.slice(0, 10)}…</span>
                 <div className="ml-auto flex gap-1">
                   <Button type="button" size="icon" variant="ghost" className="h-7 w-7" title={t('ev_open')} onClick={() => act(() => openEvidence(ev))}><Download className="w-3.5 h-3.5" /></Button>
+                  {aiAllowed && !ev.restricted && (ev.link_keys || []).some((k) => k.startsWith('measure:')) && /^(application\/pdf|image\/|text\/)/.test(ev.mime_type || '') && (
+                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7" title={t('ai_review_button')} disabled={reviewing === ev.id} onClick={() => runReview(ev)}>
+                      {reviewing === ev.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                    </Button>
+                  )}
                   {canUpload && st !== 'superseded' && <Button type="button" size="icon" variant="ghost" className="h-7 w-7" title={t('ev_new_version')} onClick={() => { setReplacing(ev); setForm((f) => ({ ...f, title: ev.title, evidence_type: ev.evidence_type || 'other', method: ev.method || 'examine', description: ev.description || '' })); setOpen(true); }}><RefreshCw className="w-3.5 h-3.5" /></Button>}
                   {isAdmin && ev.status !== 'accepted' && <Button type="button" size="icon" variant="ghost" className="h-7 w-7" title={t('ev_accept')} onClick={() => act(() => reviewEvidence(ev, 'accepted', ''), t('ev_reviewed'))}><Check className="w-3.5 h-3.5 text-chart-2" /></Button>}
                   {isAdmin && ev.status !== 'rejected' && <Button type="button" size="icon" variant="ghost" className="h-7 w-7" title={t('ev_reject')} onClick={() => act(() => reviewEvidence(ev, 'rejected', ''), t('ev_reviewed'))}><X className="w-3.5 h-3.5 text-destructive" /></Button>}
@@ -177,6 +193,7 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
           })}
         </ul>
       )}
+      <AiDraftDialog open={review !== null} onOpenChange={(v) => !v && setReview(null)} customerId={customerId} initialDraft={review} title={t('ai_review_title')} />
     </div>
   );
 }

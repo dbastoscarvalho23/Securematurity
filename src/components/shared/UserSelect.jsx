@@ -1,12 +1,15 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * A user picker that shows a dropdown when users are available,
  * or falls back to a plain email text input.
  */
-export default function UserSelect({ value, onChange, users = [], placeholder = 'Select user...', disabled = false, className = '', inputClassName = '' }) {
+export default function UserSelect({ value, onChange, users = [], placeholder, disabled = false, className = '', inputClassName = '' }) {
+  const { t } = useLanguage();
+  placeholder = placeholder ?? t('x_user_select_placeholder');
   if (users.length > 0) {
     return (
       <Select value={value || ''} onValueChange={v => onChange(v === '__none__' ? '' : v)} disabled={disabled}>
@@ -29,7 +32,7 @@ export default function UserSelect({ value, onChange, users = [], placeholder = 
     <Input
       value={value || ''}
       onChange={e => onChange(e.target.value)}
-      placeholder="email@company.com"
+      placeholder={t('x_generic_email_placeholder')}
       disabled={disabled}
       className={inputClassName}
     />

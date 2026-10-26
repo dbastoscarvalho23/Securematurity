@@ -72,7 +72,7 @@ export default function TopBar({ onMenuClick }) {
   )?.[1];
   const pageTitle = pageTitleKey ? t(pageTitleKey) : 'AnkoraOne';
 
-  const displayName = user?.display_name || user?.full_name || user?.email || 'User';
+  const displayName = user?.display_name || user?.full_name || user?.email || t('x_topbar_user_fallback');
   const initials = displayName
     ? displayName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : 'U';
@@ -124,7 +124,7 @@ export default function TopBar({ onMenuClick }) {
             size="icon"
             className="md:hidden h-9 w-9"
             onClick={onMenuClick}
-            aria-label="Menu"
+            aria-label={t('x_topbar_menu')}
           >
             <Menu className="w-5 h-5" />
           </Button>

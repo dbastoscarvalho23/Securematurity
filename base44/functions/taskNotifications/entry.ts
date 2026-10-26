@@ -5,17 +5,17 @@ import { logEmailSent } from '../../shared/audit.ts';
 import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
 
 const STATUS_LABELS = {
-  todo: 'To-Do',
-  in_progress: 'In Progress',
-  done: 'Done',
-  blocked: 'Blocked',
+  todo: 'Por fazer',
+  in_progress: 'Em curso',
+  done: 'Concluída',
+  blocked: 'Bloqueada',
 };
 
 const PRIORITY_LABELS = {
-  critical: 'Critical',
-  high: 'High',
-  medium: 'Medium',
-  low: 'Low',
+  critical: 'Crítica',
+  high: 'Alta',
+  medium: 'Média',
+  low: 'Baixa',
 };
 
 Deno.serve(async (req) => {
@@ -65,22 +65,22 @@ Deno.serve(async (req) => {
 
     const recipients = buildRecipients(assignedTo, settings);
     const body = `
-<p>Hello,</p>
-<p>You have been assigned to the following task:</p>
+<p>Olá,</p>
+<p>Foi-lhe atribuída a seguinte tarefa:</p>
 <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:sans-serif;font-size:14px;">
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Title</td><td style="padding:6px 12px;">${esc(task.title)}</td></tr>
-  ${task.description ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Description</td><td style="padding:6px 12px;">${esc(task.description)}</td></tr>` : ''}
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Status</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[task.status] || task.status)}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Priority</td><td style="padding:6px 12px;">${esc(PRIORITY_LABELS[task.priority] || task.priority || '—')}</td></tr>
-  ${task.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;">${esc(task.due_date)}</td></tr>` : ''}
-  ${task.customer_name ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Customer</td><td style="padding:6px 12px;">${esc(task.customer_name)}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Título</td><td style="padding:6px 12px;">${esc(task.title)}</td></tr>
+  ${task.description ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Descrição</td><td style="padding:6px 12px;">${esc(task.description)}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Estado</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[task.status] || task.status)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Prioridade</td><td style="padding:6px 12px;">${esc(PRIORITY_LABELS[task.priority] || task.priority || '—')}</td></tr>
+  ${task.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Data-limite</td><td style="padding:6px 12px;">${esc(task.due_date)}</td></tr>` : ''}
+  ${task.customer_name ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Cliente</td><td style="padding:6px 12px;">${esc(task.customer_name)}</td></tr>` : ''}
 </table>
-<p>Please review this task and take appropriate action.</p>
-<p style="color:#6b7280;font-size:12px;">Assigned by: ${esc(user.full_name || user.email)}</p>
+<p>Analise a tarefa e dê-lhe seguimento.</p>
+<p style="color:#6b7280;font-size:12px;">Atribuído por: ${esc(user.full_name || user.email)}</p>
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Task Assigned] ${esc(task.title)}`, body });
+      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Tarefa atribuída] ${esc(task.title)}`, body });
     }
     await logEmailSent(base44, {
       user_email: user.email,
@@ -101,21 +101,21 @@ Deno.serve(async (req) => {
 
     const recipients = buildRecipients(assignedTo, settings);
     const body = `
-<p>Hello,</p>
-<p>The status of a task assigned to you has been updated:</p>
+<p>Olá,</p>
+<p>O estado de uma tarefa que lhe está atribuída foi alterado:</p>
 <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:sans-serif;font-size:14px;">
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Title</td><td style="padding:6px 12px;">${esc(task.title)}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Old Status</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[oldStatus] || oldStatus)}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">New Status</td><td style="padding:6px 12px;"><strong>${esc(STATUS_LABELS[newStatus] || newStatus)}</strong></td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Priority</td><td style="padding:6px 12px;">${esc(PRIORITY_LABELS[task.priority] || task.priority || '—')}</td></tr>
-  ${task.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;">${esc(task.due_date)}</td></tr>` : ''}
-  ${task.customer_name ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Customer</td><td style="padding:6px 12px;">${esc(task.customer_name)}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Título</td><td style="padding:6px 12px;">${esc(task.title)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Estado anterior</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[oldStatus] || oldStatus)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Novo estado</td><td style="padding:6px 12px;"><strong>${esc(STATUS_LABELS[newStatus] || newStatus)}</strong></td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Prioridade</td><td style="padding:6px 12px;">${esc(PRIORITY_LABELS[task.priority] || task.priority || '—')}</td></tr>
+  ${task.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Data-limite</td><td style="padding:6px 12px;">${esc(task.due_date)}</td></tr>` : ''}
+  ${task.customer_name ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Cliente</td><td style="padding:6px 12px;">${esc(task.customer_name)}</td></tr>` : ''}
 </table>
-<p style="color:#6b7280;font-size:12px;">Updated by: ${esc(user.full_name || user.email)}</p>
+<p style="color:#6b7280;font-size:12px;">Atualizado por: ${esc(user.full_name || user.email)}</p>
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Task Update] Status changed — ${esc(task.title)}`, body });
+      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Tarefa] Estado alterado: ${esc(task.title)}`, body });
     }
     await logEmailSent(base44, {
       user_email: user.email,

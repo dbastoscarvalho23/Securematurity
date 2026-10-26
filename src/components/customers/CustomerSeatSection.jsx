@@ -256,7 +256,7 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
             <p className="text-xs text-muted-foreground">{t('seat_email_address')}</p>
             <Input
               type="email"
-              placeholder="user@company.com"
+              placeholder={t('x_user_email_placeholder')}
               value={inviteEmail}
               onChange={e => setInviteEmail(e.target.value)}
               className="h-8 text-xs"
@@ -323,7 +323,7 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
                   </div>
                 ) : (
                   <Badge variant="outline" className={`text-[10px] px-1.5 capitalize ${ROLE_STYLES[u.role] || ''}`}>
-                    {ROLE_LABELS[u.role] || u.role}
+                    {ROLE_LABELS[u.role] ? t(`settings_role_${u.role}`) : u.role}
                   </Badge>
                 )}
                 {canManage && (

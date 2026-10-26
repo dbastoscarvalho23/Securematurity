@@ -185,7 +185,7 @@ export default function Recommendations() {
 
   const groupedByFramework = {};
   filtered.forEach(r => {
-    const key = r.framework_code || 'General';
+    const key = r.framework_code || t('common_general');
     if (!groupedByFramework[key]) groupedByFramework[key] = [];
     groupedByFramework[key].push(r);
   });

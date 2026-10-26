@@ -5,6 +5,9 @@ import { logEmailSent } from '../../shared/audit.ts';
 import { riskScore, scoreLevel } from '../../shared/riskLevel.ts';
 import { buildRecipients } from '../../shared/reminderSettings.ts';
 
+const LEVEL_PT = { Critical: 'Crítico', High: 'Elevado', Medium: 'Médio', Low: 'Baixo' };
+const RISK_STATUS_PT = { open: 'Aberto', in_treatment: 'Em tratamento', accepted: 'Aceite', closed: 'Fechado' };
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
@@ -55,28 +58,28 @@ Deno.serve(async (req) => {
 
     const score = riskScore(risk.impact, risk.likelihood);
     const level = scoreLevel(score);
-    const urgencyLabel = daysLeft === 1 ? 'tomorrow' : `in ${daysLeft} days`;
+    const urgencyLabel = daysLeft === 1 ? 'amanhã' : `daqui a ${daysLeft} dias`;
 
     const recipients = buildRecipients(risk.owner_email, settings);
 
     const body = `
-<p>Hello,</p>
-<p>This is a reminder that a risk you own is due <strong>${urgencyLabel}</strong>:</p>
+<p>Olá,</p>
+<p>O prazo de um risco pelo qual é responsável termina <strong>${urgencyLabel}</strong>:</p>
 <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:sans-serif;font-size:14px;">
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Risk ID</td><td style="padding:6px 12px;">${escapeHtml(risk.risk_id || '—')}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Title</td><td style="padding:6px 12px;">${escapeHtml(risk.title || '')}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;"><strong>${escapeHtml(risk.due_date || '')}</strong></td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Status</td><td style="padding:6px 12px;">${escapeHtml(risk.status?.replace(/_/g, ' ') || '')}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Risk Level</td><td style="padding:6px 12px;">${escapeHtml(level)} (score ${escapeHtml(String(score))})</td></tr>
-  ${risk.treatment_notes ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Treatment</td><td style="padding:6px 12px;">${escapeHtml(risk.treatment_notes)}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">ID do risco</td><td style="padding:6px 12px;">${escapeHtml(risk.risk_id || '—')}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Título</td><td style="padding:6px 12px;">${escapeHtml(risk.title || '')}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Data-limite</td><td style="padding:6px 12px;"><strong>${escapeHtml(risk.due_date || '')}</strong></td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Estado</td><td style="padding:6px 12px;">${escapeHtml(RISK_STATUS_PT[risk.status] || risk.status?.replace(/_/g, ' ') || '')}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Nível de risco</td><td style="padding:6px 12px;">${escapeHtml(LEVEL_PT[level] || level)} (pontuação ${escapeHtml(String(score))})</td></tr>
+  ${risk.treatment_notes ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Tratamento</td><td style="padding:6px 12px;">${escapeHtml(risk.treatment_notes)}</td></tr>` : ''}
 </table>
-<p>Please ensure this risk is addressed before the deadline.</p>
+<p>Trate este risco antes do fim do prazo.</p>
     `.trim();
 
     for (const to of recipients) {
       await base44.asServiceRole.integrations.Core.SendEmail({
         to,
-        subject: `[Risk Due ${daysLeft === 1 ? 'Tomorrow' : `in ${daysLeft} days`}] ${risk.title}`,
+        subject: `[Prazo do risco: ${daysLeft === 1 ? 'amanhã' : `${daysLeft} dias`}] ${risk.title}`,
         body,
       });
     }

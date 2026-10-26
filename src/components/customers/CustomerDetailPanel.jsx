@@ -129,7 +129,7 @@ export default function CustomerDetailPanel({ customer, onEdit, onCustomerUpdate
         )}
 
         {canManageUsers && (
-          <Section title="User Seats & Access" defaultOpen={true}>
+          <Section title={t('x_customer_seats_access')} defaultOpen={true}>
             <CustomerSeatSection customer={customer} onCustomerUpdated={onCustomerUpdated} />
           </Section>
         )}

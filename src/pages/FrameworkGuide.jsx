@@ -19,7 +19,7 @@ const saveHidden = (set) => {
 
 const STR = {
   en: { title: "Framework Guidance", subtitle: "Walk through a framework's controls with an AI guide and record your maturity answers.", createErr: "Could not start a new session.", loadErr: "Could not load sessions.", deleteErr: "Could not delete the session.", deleteTitle: "Delete session?", deleteDesc: "This will permanently delete the session and its messages.", deleteConfirm: "Delete", deleteCancel: "Cancel" },
-  pt: { title: "Orientação de Framework", subtitle: "Percorra os controlos de um framework com um guia de IA e registe as suas respostas de maturidade.", createErr: "Não foi possível iniciar uma nova sessão.", loadErr: "Não foi possível carregar as sessões.", deleteErr: "Não foi possível eliminar a sessão.", deleteTitle: "Eliminar sessão?", deleteDesc: "Isto eliminará permanentemente a sessão e as suas mensagens.", deleteConfirm: "Eliminar", deleteCancel: "Cancelar" },
+  pt: { title: "Orientação de Framework", subtitle: "Percorra os controlos de um framework com um guia de IA e registe as respostas de maturidade.", createErr: "Não foi possível iniciar uma nova sessão.", loadErr: "Não foi possível carregar as sessões.", deleteErr: "Não foi possível eliminar a sessão.", deleteTitle: "Eliminar sessão?", deleteDesc: "A sessão e as respetivas mensagens serão eliminadas definitivamente.", deleteConfirm: "Eliminar", deleteCancel: "Cancelar" },
 };
 
 export default function FrameworkGuide() {

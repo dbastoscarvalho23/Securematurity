@@ -52,7 +52,7 @@ export default function ChecklistItemRow({ item, queryKey, displayText, customer
   return (
     <div className={cn('rounded-lg border p-3 transition-colors', cfg.bg)}>
       <div className="flex items-start gap-3">
-        <button onClick={cycleStatus} className="mt-0.5 flex-shrink-0" title="Click to change status">
+        <button onClick={cycleStatus} className="mt-0.5 flex-shrink-0" title={t('x_checklist_change_status')}>
           <StatusIcon className={cn('w-4 h-4', cfg.color)} />
         </button>
         <div className="flex-1 min-w-0">

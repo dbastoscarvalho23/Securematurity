@@ -94,7 +94,7 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
         tags: doc.tags,
         framework_codes: doc.framework_codes,
         changed_by: user?.email,
-        change_note: changeNote || 'Document updated',
+        change_note: changeNote || t('x_doc_updated_note'),
       });
     }
     await onSave({ ...form, tags, framework_codes });

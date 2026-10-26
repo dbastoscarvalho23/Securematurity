@@ -68,16 +68,16 @@ function buildHtmlEmail({ questionnaire, questions, isPt }) {
   }).join('');
 
   const greeting = isPt
-    ? `Caro/a <strong>${supplierName}</strong>,`
+    ? `À atenção de <strong>${supplierName}</strong>,`
     : `Dear <strong>${supplierName}</strong>,`;
 
   const introPara = isPt
-    ? `Agradecemos a sua colaboração. Solicitamos o preenchimento do questionário de segurança abaixo, no âmbito da avaliação de fornecedores de <strong>${customerName}</strong>.<br><br>Para cada pergunta, preencha a resposta e quaisquer notas ou evidências relevantes. <strong>Responda a este e-mail com o questionário preenchido.</strong>`
-    : `Thank you for your cooperation. Please complete the security questionnaire below as part of the supplier assessment for <strong>${customerName}</strong>.<br><br>For each question, fill in your answer and any relevant notes or evidence. <strong>Reply to this email with the completed questionnaire.</strong>`;
+    ? `No âmbito da avaliação de fornecedores de <strong>${customerName}</strong>, pedimos o preenchimento do questionário de segurança abaixo.<br><br>Para cada pergunta, indique a resposta e, se aplicável, notas ou evidências. <strong>Responda a este email com o questionário preenchido.</strong>`
+    : `As part of the supplier assessment for <strong>${customerName}</strong>, please complete the security questionnaire below.<br><br>For each question, fill in your answer and any relevant notes or evidence. <strong>Reply to this email with the completed questionnaire.</strong>`;
 
   const footerText = isPt
-    ? `Por favor responda a este e-mail com as suas respostas preenchidas.<br>Obrigado/a,<br><strong>${customerName}</strong>`
-    : `Please reply to this email with your answers filled in.<br>Thank you,<br><strong>${customerName}</strong>`;
+    ? `Agradecemos desde já a vossa colaboração.<br>Com os melhores cumprimentos,<br><strong>${customerName}</strong>`
+    : `Thank you for your cooperation.<br>Kind regards,<br><strong>${customerName}</strong>`;
 
   return `<!DOCTYPE html>
 <html>
@@ -184,7 +184,7 @@ export default function SendQuestionnaireEmailDialog({ open, onClose, questionna
         <div className="flex-1 overflow-y-auto space-y-4 py-2">
           <div>
             <Label className="text-xs">{t('sc_send_to')}</Label>
-            <Input value={to} onChange={e => setTo(e.target.value)} placeholder="supplier@company.com" className="mt-1" />
+            <Input value={to} onChange={e => setTo(e.target.value)} placeholder={t('x_supplier_email_placeholder')} className="mt-1" />
           </div>
           <div>
             <Label className="text-xs">{t('sc_send_subject')}</Label>

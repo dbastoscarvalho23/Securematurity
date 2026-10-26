@@ -47,7 +47,7 @@ export default function Customers() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setShowForm(false);
     },
-    onError: (err) => toast.error(err?.message || 'Failed to create customer'),
+    onError: (err) => toast.error(err?.message || t('x_customer_create_failed')),
   });
 
   const updateMutation = useMutation({
@@ -61,7 +61,7 @@ export default function Customers() {
       setShowForm(false);
       setEditingCustomer(null);
     },
-    onError: (err) => toast.error(err?.message || 'Failed to update customer'),
+    onError: (err) => toast.error(err?.message || t('x_customer_update_failed')),
   });
 
   const deleteMutation = useMutation({
@@ -73,7 +73,7 @@ export default function Customers() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setSelectedCustomer(null);
     },
-    onError: (err) => toast.error(err?.message || 'Failed to delete customer'),
+    onError: (err) => toast.error(err?.message || t('x_customer_delete_failed')),
   });
 
   const filtered = customers.filter(c =>
