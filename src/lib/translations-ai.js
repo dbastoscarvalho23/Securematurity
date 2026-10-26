@@ -1,6 +1,7 @@
 // Assistente de IA — PT-PT / EN.
 export const aiPt = {
   ai_title: 'Rascunho com IA',
+  ai_short: 'IA',
   ai_measure_button: 'Rascunho com IA',
   ai_review_button: 'Analisar com IA',
   ai_review_title: 'Análise da evidência com IA',
@@ -35,6 +36,7 @@ export const aiPt = {
 
 export const aiEn = {
   ai_title: 'AI draft',
+  ai_short: 'AI',
   ai_measure_button: 'AI draft',
   ai_review_button: 'Review with AI',
   ai_review_title: 'AI evidence review',

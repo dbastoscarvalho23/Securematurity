@@ -29,8 +29,9 @@ pack = {
     'levels': ['basico', 'substancial', 'elevado'],
     'controls': controls,
     'epr': {g: [{'code': m['code'], 'area': m['area'], 'measure': m['measure'], 'verification': m.get('verification', '')} for m in epr[f'group_{g}']] for g in ['A', 'B']},
-    'rjc': arts(rjc, ['25.º', '26.º', '27.º', '29.º', '30.º', '33.º', '40.º', '41.º', '42.º', '43.º', '44.º']),
-    'reg756': arts(reg756, ['20.º', '23.º', '26.º', '28.º', '29.º', '30.º', '31.º', '32.º']),
+    # Todos os artigos: a jornada de conformidade cita artigos variados do RJC e do Regulamento.
+    'rjc': {a['number']: {'title': a['title'], 'text': a['text']} for a in rjc['articles']},
+    'reg756': {a['number']: {'title': a['title'], 'text': a['text']} for a in reg756['articles']},
     'nis2_art21': [{'letter': m['letter'], 'text': m['text']} for m in nis2['art21_measures']],
     'r2690': [{'id': r['id'], 'section': r['section'], 'text': r['text']} for r in r2690['annex_requirements']],
     'r2690_letters': {s['id']: s.get('nis2_letters', []) for s in r2690['annex_sections']},

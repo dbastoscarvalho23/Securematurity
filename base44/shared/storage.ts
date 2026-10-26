@@ -147,7 +147,17 @@ export async function resolveProvider(base44, customer) {
   const wanted = customer?.storage_provider || "base44";
   if (wanted === "base44") return "base44";
   if (enabled && !enabled.includes(wanted)) return "base44";
-  return PROVIDERS.includes(wanted) ? wanted : "base44";
+  if (!PROVIDERS.includes(wanted)) return "base44";
+  // Google Drive/OneDrive são contas da plataforma: sem ligação autorizada, os ficheiros ficam no armazenamento
+  // nativo privado (em vez de falhar). O NAS do cliente nunca é substituído: sem configuração, o carregamento falha.
+  const connector = { google_drive: "googledrive", one_drive: "one_drive" }[wanted];
+  if (connector) {
+    try {
+      const c = await base44.asServiceRole.connectors.getConnection(connector);
+      if (!c?.accessToken) return "base44";
+    } catch { return "base44"; }
+  }
+  return wanted;
 }
 
 async function webdavConfig(base44, customerId) {

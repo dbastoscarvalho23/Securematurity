@@ -57,6 +57,7 @@ function MeasureRow({ m, record, onSave, canEdit, evState, tools = [], customerI
         {m.group && <Badge variant="outline" className="text-[11px]">{t('legal_epr_group')} {m.group}</Badge>}
         <p className="text-sm flex-1 min-w-[12rem]">{m.measure}</p>
         {evState && <Badge variant="outline" className={`text-[10px] ${EV_BADGE[evState]}`}>{t(`ev_badge_${evState}`)}</Badge>}
+        {onAi && <Button type="button" size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={() => onAi(m)} title={t('ai_measure_button')}><Sparkles className="w-3.5 h-3.5 mr-1" />{t('ai_short')}</Button>}
         <Select value={status} onValueChange={(v) => onSave({ status: v })} disabled={!canEdit}>
           <SelectTrigger className={`h-7 w-40 text-xs ${STATUS_STYLE[status]}`}><SelectValue /></SelectTrigger>
           <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{t(`legal_comp_status_${s}`)}</SelectItem>)}</SelectContent>

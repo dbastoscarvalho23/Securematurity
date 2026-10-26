@@ -16,6 +16,7 @@
       "type": "string",
       "enum": [
         "measure",
+        "checklist",
         "incident",
         "annual_report",
         "evidence_review"
@@ -149,4 +150,3 @@
     }
   }
 }
-

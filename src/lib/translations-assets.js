@@ -45,6 +45,10 @@ const lettersEn = {
 };
 
 export const assetsPt = {
+  ev_ai_prepare: 'Preparar com IA',
+  ev_ai_autoreview: 'Analisar o ficheiro com IA depois de carregar (critério de verificação da medida)',
+  ev_repo_fallback_short: 'nativo provisório',
+  ev_repo_fallback: 'O repositório escolhido ({wanted}) não está ligado à plataforma; os ficheiros ficam no armazenamento nativo privado até a ligação ser autorizada.',
   cve_tab: "Alertas CVE",
   cve_section_title: "Alertas CVE dos fabricantes dos ativos",
   cve_section_help: "CVE críticos ou elevados publicados para os fabricantes do inventário de ativos de cada cliente (fonte: NVD do NIST, verificado a cada 4 horas).",
@@ -281,6 +285,10 @@ export const assetsPt = {
 };
 
 export const assetsEn = {
+  ev_ai_prepare: 'Prepare with AI',
+  ev_ai_autoreview: 'Review the file with AI after upload (measure verification criterion)',
+  ev_repo_fallback_short: 'temporary native',
+  ev_repo_fallback: 'The chosen repository ({wanted}) is not connected to the platform; files are kept in private native storage until the connection is authorised.',
   cve_tab: "CVE alerts",
   cve_section_title: "CVE alerts for asset manufacturers",
   cve_section_help: "Critical or high CVEs published for the manufacturers in each customer's asset inventory (source: NIST NVD, checked every 4 hours).",
