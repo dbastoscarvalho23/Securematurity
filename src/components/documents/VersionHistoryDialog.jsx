@@ -42,6 +42,7 @@ export default function VersionHistoryDialog({ open, onOpenChange, doc, canRever
       // Snapshot current state first
       await base44.entities.DocumentVersion.create({
         document_id: doc.id,
+        ...(doc.customer_id ? { customer_id: doc.customer_id } : {}),
         version_label: doc.version,
         title: doc.title,
         description: doc.description,

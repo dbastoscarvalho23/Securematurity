@@ -166,7 +166,7 @@ export function exportTrainingReportPdf(user, enrollments, trainings, customer, 
   setColor(doc, [255, 255, 255]);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text('AnkoraOne Platform', 20, 14);
+  doc.text('Plataforma AnkoraOne', 20, 14);
 
   let py = 40;
   setColor(doc, BRAND_DARK);
@@ -222,9 +222,9 @@ export function exportTrainingReportPdf(user, enrollments, trainings, customer, 
     doc.line(20, ph - 14, pw - 20, ph - 14);
     setColor(doc, MID_GRAY);
     doc.setFontSize(8);
-    doc.text('AnkoraOne Platform · Confidential', 20, ph - 8);
+    doc.text('Plataforma AnkoraOne · Confidencial', 20, ph - 8);
     doc.text(`${fullName} · ${t('training_report_title')}`, pw / 2, ph - 8, { align: 'center' });
-    doc.text(`Page ${i} of ${totalPages}`, pw - 20, ph - 8, { align: 'right' });
+    doc.text(`Página ${i} de ${totalPages}`, pw - 20, ph - 8, { align: 'right' });
   }
 
   const filename = `${fullName.replace(/[^a-z0-9]/gi, '_')}_Training_Report.pdf`;

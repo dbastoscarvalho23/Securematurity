@@ -56,6 +56,10 @@
     "change_note": {
       "type": "string",
       "description": "Optional note about what changed"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Cliente (tenant): partilha o registo com os colegas do mesmo cliente"
     }
   },
   "required": [
@@ -72,6 +76,9 @@
         },
         {
           "data.changed_by": "{{user.email}}"
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
         }
       ]
     },
@@ -84,6 +91,9 @@
         },
         {
           "data.changed_by": "{{user.email}}"
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
         }
       ]
     },

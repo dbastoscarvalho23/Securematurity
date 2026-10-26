@@ -22,7 +22,7 @@ const USER_ALLOWED = [
 ];
 
 // Routes NOT accessible by customer_admin
-const CUSTOMER_ADMIN_BLOCKED = ['/admin', '/backoffice', '/backoffice/customers', '/backoffice/users', '/backoffice/audit', '/audit-log', '/customers', '/question-bank', '/ropa', '/incidents', '/dsr', '/vulnerabilities', '/compliance-metrics', '/training'];
+const CUSTOMER_ADMIN_BLOCKED = ['/admin', '/backoffice', '/backoffice/customers', '/backoffice/users', '/backoffice/audit', '/audit-log', '/customers', '/question-bank', '/ropa', '/dsr', '/compliance-metrics', '/training'];
 
 /** Bloqueia rotas de módulos que não estão na licença efetiva do cliente (o servidor também recusa). */
 function LicensedRoute({ path, children }) {

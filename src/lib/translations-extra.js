@@ -3,6 +3,7 @@
 // Os parâmetros usam a sintaxe {nome} do t() de LanguageContext.
 
 export const extraPt = {
+  nav_framework_guide: 'Guia de referenciais',
   common_select: 'Selecionar…',
   dsr_ph_description: 'Descreva o pedido do titular dos dados',
   maintenance_default_message: 'A plataforma está temporariamente indisponível por manutenção. Tente novamente mais tarde.',
@@ -26,6 +27,7 @@ export const extraPt = {
   x_customer_update_failed: 'Não foi possível atualizar o cliente.',
   x_doc_level_playbook: 'Playbook',
   x_doc_level_policy: 'Política',
+  x_doc_unknown: 'Documento desconhecido',
   x_doc_level_procedure: 'Procedimento',
   x_doc_level_standard: 'Norma',
   x_doc_updated_note: 'Documento atualizado',
@@ -170,6 +172,7 @@ export const extraPt = {
 };
 
 export const extraEn = {
+  nav_framework_guide: 'Framework guide',
   common_select: 'Select…',
   dsr_ph_description: "Describe the data subject's request",
   maintenance_default_message: 'The platform is temporarily unavailable for maintenance. Please try again later.',
@@ -193,6 +196,7 @@ export const extraEn = {
   x_customer_update_failed: 'Failed to update customer',
   x_doc_level_playbook: 'Playbook',
   x_doc_level_policy: 'Policy',
+  x_doc_unknown: 'Unknown document',
   x_doc_level_procedure: 'Procedure',
   x_doc_level_standard: 'Standard',
   x_doc_updated_note: 'Document updated',

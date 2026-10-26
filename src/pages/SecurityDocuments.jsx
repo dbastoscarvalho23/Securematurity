@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Search, FileText, Shield, BookOpen, Workflow, Zap, ExternalLink, Pencil, Trash2, ChevronDown, ChevronRight, CheckCircle, Clock, History, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
+import { notifyDocumentStatus, notifyEntityChange } from '@/lib/notifications';
 import { useLanguage } from '@/lib/LanguageContext';
 import SecurityDocumentDialog from '@/components/documents/SecurityDocumentDialog';
 import VersionHistoryDialog from '@/components/documents/VersionHistoryDialog';
@@ -120,7 +121,10 @@ export default function SecurityDocuments() {
       if (form.id) {
         // If a regular user edits, set back to under_review
         const updatedForm = isUser ? { ...form, status: 'under_review' } : form;
+        const before = allDocs.find((d) => d.id === form.id);
         const result = await base44.entities.SecurityDocument.update(form.id, updatedForm);
+        if (updatedForm.status !== before?.status) notifyDocumentStatus(form.id, updatedForm.status, before);
+        notifyEntityChange('SecurityDocument', form.id, 'update', before || null);
         await writeAuditLog({ action: 'document_updated', entity_type: 'SecurityDocument', entity_id: form.id, details: `Updated document: ${form.title}` });
         return result;
       }
@@ -135,6 +139,7 @@ export default function SecurityDocuments() {
           : form.customer_name,
       };
       const result = await base44.entities.SecurityDocument.create(newForm);
+      if (result?.id) notifyDocumentStatus(result.id, newForm.status, null);
       await writeAuditLog({ action: 'document_created', entity_type: 'SecurityDocument', entity_id: result?.id, details: `Created document: ${form.title}` });
       return result;
     },
@@ -158,6 +163,7 @@ export default function SecurityDocuments() {
       // Snapshot current state as a version before approving
       await base44.entities.DocumentVersion.create({
         document_id: doc.id,
+        ...(doc.customer_id ? { customer_id: doc.customer_id } : {}),
         version_label: doc.version,
         title: doc.title,
         description: doc.description,
@@ -179,6 +185,7 @@ export default function SecurityDocuments() {
         approved_by: approverName,
         approved_date: approvedDate,
       });
+      notifyDocumentStatus(doc.id, 'approved', doc);
 
       await writeAuditLog({
         action: 'document_approved',

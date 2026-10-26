@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 
 const ENTITY_CONFIG = [
   {
@@ -67,6 +68,9 @@ export default function GlobalSearch() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
+  // A página de clientes é só do admin: para os restantes, o resultado «cliente» levaria a um redirecionamento.
+  const sources = useMemo(() => ENTITY_CONFIG.filter((c) => c.key !== 'customers' || user?.role === 'admin'), [user?.role]);
   const [query, setQuery] = useState('');
   const [allData, setAllData] = useState({});
   const [loading, setLoading] = useState(false);
@@ -78,7 +82,7 @@ export default function GlobalSearch() {
   useEffect(() => {
     if (!open || Object.keys(allData).length > 0) return;
     setLoading(true);
-    Promise.allSettled(ENTITY_CONFIG.map(cfg => cfg.fetch().then(res => ({ key: cfg.key, data: res }))))
+    Promise.allSettled(sources.map(cfg => cfg.fetch().then(res => ({ key: cfg.key, data: res }))))
       .then(results => {
         const map = {};
         results.forEach(r => { if (r.status === 'fulfilled') map[r.value.key] = r.value.data; });
@@ -91,7 +95,7 @@ export default function GlobalSearch() {
     if (!query.trim() || query.length < 2) return [];
     const q = query.toLowerCase();
     const matches = [];
-    ENTITY_CONFIG.forEach(cfg => {
+    sources.forEach(cfg => {
       const items = allData[cfg.key] || [];
       items.forEach(item => {
         const title = cfg.getTitle(item) || '';
@@ -102,7 +106,7 @@ export default function GlobalSearch() {
       });
     });
     return matches.slice(0, 12);
-  }, [query, allData]);
+  }, [query, allData, sources]);
 
   useEffect(() => { setActiveIndex(0); }, [results]);
 

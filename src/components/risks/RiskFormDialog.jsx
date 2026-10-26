@@ -107,14 +107,14 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
     const riskId = savedRisk?.id || risk?.id;
     if (riskId) {
       const TRACKED_FIELDS = [
-        { key: 'title',           label: 'Title' },
-        { key: 'category',        label: 'Category' },
-        { key: 'impact',          label: 'Impact' },
-        { key: 'likelihood',      label: 'Likelihood' },
-        { key: 'status',          label: 'Status' },
-        { key: 'owner_email',     label: 'Owner Email' },
-        { key: 'due_date',        label: 'Due Date' },
-        { key: 'treatment_notes', label: 'Treatment Notes' },
+        { key: 'title',           label: 'Título' },
+        { key: 'category',        label: 'Categoria' },
+        { key: 'impact',          label: 'Impacto' },
+        { key: 'likelihood',      label: 'Probabilidade' },
+        { key: 'status',          label: 'Estado' },
+        { key: 'owner_email',     label: 'Email do responsável' },
+        { key: 'due_date',        label: 'Prazo' },
+        { key: 'treatment_notes', label: 'Notas de tratamento' },
       ];
 
       const changed_fields = isEdit
@@ -130,6 +130,7 @@ export default function RiskFormDialog({ open, onOpenChange, risk, documents, cu
 
       await base44.entities.RiskHistory.create({
         risk_id: riskId,
+        ...((savedRisk?.customer_id || data?.customer_id || risk?.customer_id) ? { customer_id: savedRisk?.customer_id || data?.customer_id || risk?.customer_id } : {}),
         changed_by: currentUser?.email || 'unknown',
         action: isEdit ? 'updated' : 'created',
         changed_fields,

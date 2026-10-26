@@ -6,8 +6,15 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const currentUser = await getAuthenticatedUser(base44);
 
+    if (!currentUser) return json({ error: 'Unauthorized' }, 401);
+    // Utilizadores comuns só recebem nome e email dos colegas do mesmo cliente (para escolher responsáveis).
     if (!isStaffRole(currentUser)) {
-      return json({ error: 'Forbidden' }, 403);
+      const own = userCustomerId(currentUser);
+      if (!own) return json({ error: 'Forbidden' }, 403);
+      const colleagues = (await base44.asServiceRole.entities.User.filter({ customer_id: own })).map((u) => ({
+        id: u.id, email: u.email, full_name: u.full_name, display_name: u.display_name, customer_id: own,
+      }));
+      return json({ users: colleagues });
     }
 
     const body = await readJson(req);

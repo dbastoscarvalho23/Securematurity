@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, hasAutomationSecret } from "../../shared/http.ts";
+import { json, hasAutomationSecret, getAuthenticatedUser, canAccessRecord } from "../../shared/http.ts";
 
 const ENTITY_MAP = {
   Task: 'Task',
@@ -12,13 +12,22 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const payload = await req.json();
 
-    const { event, data, old_data } = payload;
+    let { event, data, old_data } = payload;
 
-    // Authorization: this function writes with service role, so only the
-    // platform's automations — which carry the shared secret — may invoke it.
-    // Anonymous or user-authenticated callers are rejected before any read/write.
+    // Autorização: workflows do Base44 (segredo partilhado) ou, nesta app importada onde os workflows por evento
+    // não correm, chamada direta de um utilizador autenticado depois de gravar («direct»). No modo direto o
+    // registo é lido da base de dados e o utilizador tem de ter acesso a ele; os destinatários vêm do registo.
     if (!hasAutomationSecret(req, payload)) {
-      return json({ error: 'Unauthorized' }, 403);
+      if (!payload?.direct) return json({ error: 'Unauthorized' }, 403);
+      const user = await getAuthenticatedUser(base44);
+      if (!user) return json({ error: 'Unauthorized' }, 401);
+      const entityName = String(payload.entity || '');
+      if (!ENTITY_MAP[entityName] || !payload.id) return json({ skipped: true, reason: 'invalid direct call' });
+      const rec = await base44.asServiceRole.entities[ENTITY_MAP[entityName]].get(String(payload.id)).catch(() => null);
+      if (!rec || !canAccessRecord(user, rec)) return json({ error: 'Forbidden' }, 403);
+      event = { entity_name: entityName, entity_id: rec.id, type: payload.event === 'create' ? 'create' : 'update' };
+      data = rec;
+      old_data = payload.previous || null;
     }
 
     // Only process trusted entity-automation events (create/update/delete).
