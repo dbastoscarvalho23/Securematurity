@@ -1,0 +1,103 @@
+{
+  "name": "CveWatch",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Cliente (tenant)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "manufacturer": {
+      "type": "string",
+      "description": "Fabricante tal como está no inventário de ativos"
+    },
+    "cpe_vendor": {
+      "type": "string",
+      "description": "Fabricante no dicionário CPE do NVD (ex.: fortinet)"
+    },
+    "cpe_product": {
+      "type": "string",
+      "description": "Produto CPE (vazio = todos os produtos do fabricante)"
+    },
+    "min_severity": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high"
+      ],
+      "default": "critical",
+      "description": "critical = CVSS ≥ 9,0; high = CVSS ≥ 7,0"
+    },
+    "asset_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ativos abrangidos (IDs do inventário)"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "notify_email": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enviar email aos administradores do cliente"
+    },
+    "last_checked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_error": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "cpe_vendor"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
