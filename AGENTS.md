@@ -131,5 +131,7 @@ docker compose -f docker-compose.base44.yml up -d
 
 ## Agendamentos
 - App importada: o Base44 não aceita workflows («Workflows are not supported for this app type»), por isso os
-  ficheiros em `base44/workflows/` (lembretes, CVE Monitor) não correm nesta app. Alternativa: agendador externo
-  (ex.: GitHub Actions) a chamar a função com o cabeçalho `x-automation-secret`.
+  ficheiros em `base44/workflows/` (lembretes, CVE Monitor) não correm nesta app. Os agendados correm em
+  `.github/workflows/scheduler-base44.yml` (GitHub Actions, cabeçalho `x-automation-secret`; segredo do repositório
+  `AUTOMATION_SECRET` igual ao do Base44). A purga de dados é só manual. Os workflows por evento (notificações ao
+  alterar documentos, riscos e tarefas) continuam sem correr nesta app.
