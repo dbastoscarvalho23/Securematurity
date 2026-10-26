@@ -20,6 +20,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import EvidencePanel from '@/components/evidence/EvidencePanel';
 
 const CATEGORIES = ['malware_ransomware','data_breach','ddos','phishing','unauthorized_access','insider_threat','system_failure','physical_security','supply_chain','other'];
 
@@ -366,6 +367,11 @@ export default function IncidentManagement() {
                   <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+            )}
+            {editing?.customer_id && (
+              <EvidencePanel customerId={editing.customer_id}
+                provider={customers.find((c) => c.id === editing.customer_id)?.storage_provider}
+                links={[{ type: 'incident', id: editing.id, label: editing.title }]} />
             )}
           </div>
           <DialogFooter>

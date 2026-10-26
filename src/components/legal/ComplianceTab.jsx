@@ -15,6 +15,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { loadLegal, applicableMeasures, applicableEprMeasures } from '@/lib/legal';
 import { LevelBadge, Loading, downloadCsv, useLegalData } from './shared';
+import EvidencePanel, { useCustomerEvidence, evidenceSummary } from '@/components/evidence/EvidencePanel';
+import { linkKey } from '@/lib/evidence';
 
 export const CHECKLIST_FRAMEWORK = 'RJC_MEDIDAS_MINIMAS';
 const STATUSES = ['pending', 'in_progress', 'done', 'not_applicable'];
@@ -25,7 +27,14 @@ const STATUS_STYLE = {
   not_applicable: 'bg-muted text-muted-foreground line-through',
 };
 
-function MeasureRow({ m, record, onSave, canEdit }) {
+const EV_BADGE = {
+  valid: 'bg-chart-2/10 text-chart-2 border-chart-2/30',
+  pending: 'bg-chart-3/10 text-chart-3 border-chart-3/30',
+  expired: 'bg-destructive/10 text-destructive border-destructive/30',
+  rejected: 'bg-muted text-muted-foreground',
+};
+
+function MeasureRow({ m, record, onSave, canEdit, evState, tools = [], customerId, provider }) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({ owner: record?.owner || '', due_date: record?.due_date || '', notes: record?.notes || '' });
@@ -43,6 +52,7 @@ function MeasureRow({ m, record, onSave, canEdit }) {
         {m.level && <LevelBadge level={m.level} />}
         {m.group && <Badge variant="outline" className="text-[11px]">{t('legal_epr_group')} {m.group}</Badge>}
         <p className="text-sm flex-1 min-w-[12rem]">{m.measure}</p>
+        {evState && <Badge variant="outline" className={`text-[10px] ${EV_BADGE[evState]}`}>{t(`ev_badge_${evState}`)}</Badge>}
         <Select value={status} onValueChange={(v) => onSave({ status: v })} disabled={!canEdit}>
           <SelectTrigger className={`h-7 w-40 text-xs ${STATUS_STYLE[status]}`}><SelectValue /></SelectTrigger>
           <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{t(`legal_comp_status_${s}`)}</SelectItem>)}</SelectContent>
@@ -61,6 +71,11 @@ function MeasureRow({ m, record, onSave, canEdit }) {
           </div>
           <Textarea rows={2} value={draft.notes} disabled={!canEdit} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} placeholder={t('legal_comp_notes')} />
           {canEdit && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onSave(draft)}>{t('common_save')}</Button>}
+          {tools.length > 0 && (
+            <p className="text-xs"><span className="font-medium">{t('tl_covering')}:</span> {tools.map((c) => `${c.product}${c.vendor ? ` (${c.vendor})` : ''}`).join(' · ')}</p>
+          )}
+          <EvidencePanel customerId={customerId} provider={provider} canUpload={canEdit}
+            links={[{ type: 'measure', id: m.key, ref: code, label: `${code}${m.level ? ` · ${m.level}` : ''}` }]} />
         </div>
       )}
     </div>
@@ -91,6 +106,18 @@ export default function ComplianceTab() {
     queryFn: () => base44.entities.ComplianceChecklist.filter({ customer_id: customerId, framework: CHECKLIST_FRAMEWORK }, 'task_order', 2000),
     enabled: Boolean(customerId),
   });
+  const { data: evidence = [] } = useCustomerEvidence(customerId);
+  const evByKey = useMemo(() => evidenceSummary(evidence), [evidence]);
+  const { data: components = [] } = useQuery({
+    queryKey: ['components', customerId],
+    queryFn: () => base44.entities.Component.filter({ customer_id: customerId }, 'category', 500),
+    enabled: Boolean(customerId) && canEdit,
+  });
+  const toolsByControl = useMemo(() => {
+    const out = {};
+    for (const c of components) if (c.status !== 'retired') for (const id of c.qnrcs_controls || []) (out[id] ||= []).push(c);
+    return out;
+  }, [components]);
   const { data: qnrcs, loading: l1 } = useLegalData(loadLegal, 'qnrcs');
   const { data: epr, loading: l2 } = useLegalData(loadLegal, 'epr');
 
@@ -205,7 +232,9 @@ export default function ComplianceTab() {
           </Card>
           <div className="space-y-2">
             {measures.map((m, i) => (
-              <MeasureRow key={m.key} m={m} record={byKey[m.key]} canEdit={canEdit} onSave={(patch) => save(m, i, patch)} />
+              <MeasureRow key={m.key} m={m} record={byKey[m.key]} canEdit={canEdit} onSave={(patch) => save(m, i, patch)}
+                evState={evByKey[linkKey('measure', m.key)]} tools={m.control ? toolsByControl[m.control.id] || [] : []}
+                customerId={customerId} provider={customer?.storage_provider} />
             ))}
           </div>
         </>

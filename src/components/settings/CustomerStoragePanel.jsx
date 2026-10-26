@@ -10,7 +10,7 @@ import { HardDrive, Loader2, Save, Info, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 
-const ALL_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
+const ALL_PROVIDERS = ['base44', 'google_drive', 'one_drive', 'webdav'];
 
 export default function CustomerStoragePanel() {
   const { t } = useLanguage();
@@ -49,7 +49,8 @@ export default function CustomerStoragePanel() {
   const enabledProviders = config?.enabled_providers?.length ? config.enabled_providers : ALL_PROVIDERS;
   const providerOptions = Array.from(new Set([...enabledProviders, provider]));
 
-  const isConnected = (id) => id === 'base44' || Boolean(connections?.[id]);
+  // webdav: o servidor só o aceita se o NAS do cliente estiver configurado e testado.
+  const isConnected = (id) => id === 'base44' || id === 'webdav' || Boolean(connections?.[id]);
 
   useEffect(() => {
     setProvider(customer?.storage_provider || 'base44');
@@ -58,12 +59,14 @@ export default function CustomerStoragePanel() {
   const providerLabel = (id) => {
     if (id === 'google_drive') return t('storage_provider_google_drive');
     if (id === 'one_drive') return t('storage_provider_one_drive');
+    if (id === 'webdav') return t('storage_provider_webdav');
     return t('storage_provider_base44');
   };
 
   const providerDescription = (id) => {
     if (id === 'google_drive') return t('storage_providers_google_desc');
     if (id === 'one_drive') return t('storage_providers_one_drive_desc');
+    if (id === 'webdav') return t('storage_providers_webdav_desc');
     return t('storage_providers_base44_desc');
   };
 

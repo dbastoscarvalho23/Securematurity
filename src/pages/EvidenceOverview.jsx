@@ -12,6 +12,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
 import ComplianceGapsSummary from '@/components/evidence/ComplianceGapsSummary';
+import EvidenceRegister from '@/components/evidence/EvidenceRegister';
 
 function fileIcon(name = '') {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -130,6 +131,8 @@ export default function EvidenceOverview() {
 
   return (
     <div className="space-y-6">
+      <EvidenceRegister />
+
       {/* Compliance Gaps Summary */}
       <div className="space-y-3">
         <div>

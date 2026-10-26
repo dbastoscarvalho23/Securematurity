@@ -1,0 +1,327 @@
+{
+  "name": "Evidence",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Cliente (tenant) a que a evidência pertence",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "title": {
+      "type": "string",
+      "description": "Título da evidência"
+    },
+    "description": {
+      "type": "string",
+      "description": "O que a evidência comprova"
+    },
+    "evidence_type": {
+      "type": "string",
+      "enum": [
+        "screenshot",
+        "tool_report",
+        "contract_licence",
+        "policy_procedure",
+        "log_record",
+        "test_audit_report",
+        "other"
+      ],
+      "default": "other",
+      "description": "Tipo de evidência (captura de ecrã, relatório da ferramenta, contrato ou licença, política, registo, relatório de teste ou auditoria, outro)"
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "examine",
+        "interview",
+        "test"
+      ],
+      "default": "examine",
+      "description": "Método de avaliação (OSCAL: EXAMINE, INTERVIEW, TEST)"
+    },
+    "collected_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Data em que a evidência foi recolhida"
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date",
+      "description": "Último dia de validade (depois desta data a evidência expira e pede renovação)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "submitted",
+        "accepted",
+        "rejected"
+      ],
+      "default": "submitted",
+      "description": "Estado da revisão pelo consultor",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "reviewer_email": {
+      "type": "string",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "review_notes": {
+      "type": "string",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "file_name": {
+      "type": "string",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "mime_type": {
+      "type": "string",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "size_bytes": {
+      "type": "number",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "sha256": {
+      "type": "string",
+      "description": "Hash SHA-256 do ficheiro, calculado no servidor",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "storage_provider": {
+      "type": "string",
+      "enum": [
+        "base44",
+        "google_drive",
+        "one_drive",
+        "webdav"
+      ],
+      "description": "Repositório onde o ficheiro está guardado",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "storage_ref": {
+      "type": "string",
+      "description": "Referência privada do ficheiro no repositório (nunca um link público)",
+      "rls": {
+        "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "links": {
+      "type": "array",
+      "description": "Registos que esta evidência comprova",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "link_keys": {
+      "type": "array",
+      "description": "Chaves de pesquisa type:id (ex.: asset:abc, measure:ID.GA-1@basico)",
+      "items": {
+        "type": "string"
+      },
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "version": {
+      "type": "number",
+      "default": 1,
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "supersedes_id": {
+      "type": "string",
+      "description": "Evidência que esta versão substitui",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "uploaded_by": {
+      "type": "string",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "restricted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Ligada a ativos ou ferramentas (informação reservada): só administradores do cliente",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "superseded": {
+      "type": "boolean",
+      "default": false,
+      "description": "Substituída por uma versão mais recente",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "customer_id",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            },
+            {
+              "data.restricted": false
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

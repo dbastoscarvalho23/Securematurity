@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
 
-const ALL_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
+const ALL_PROVIDERS = ['base44', 'google_drive', 'one_drive', 'webdav'];
 const THIRD_PARTY_PROVIDERS = ['google_drive', 'one_drive'];
 
 export default function StorageProvidersPanel() {
@@ -79,12 +79,14 @@ export default function StorageProvidersPanel() {
   const providerLabel = (id) => {
     if (id === 'google_drive') return t('storage_provider_google_drive');
     if (id === 'one_drive') return t('storage_provider_one_drive');
+    if (id === 'webdav') return t('storage_provider_webdav');
     return t('storage_provider_base44');
   };
 
   const providerDescription = (id) => {
     if (id === 'google_drive') return t('storage_providers_google_desc');
     if (id === 'one_drive') return t('storage_providers_one_drive_desc');
+    if (id === 'webdav') return t('storage_providers_webdav_desc');
     return t('storage_providers_base44_desc');
   };
 

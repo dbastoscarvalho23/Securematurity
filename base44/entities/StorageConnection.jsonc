@@ -1,0 +1,71 @@
+{
+  "name": "StorageConnection",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "webdav"
+      ],
+      "default": "webdav"
+    },
+    "base_url": {
+      "type": "string",
+      "description": "URL HTTPS do servidor WebDAV do cliente (NAS, Nextcloud)"
+    },
+    "base_path": {
+      "type": "string",
+      "description": "Pasta de destino"
+    },
+    "username": {
+      "type": "string"
+    },
+    "password_enc": {
+      "type": "string",
+      "description": "Palavra-passe cifrada (AES-GCM, chave STORAGE_ENCRYPTION_KEY). Nunca devolvida ao browser.",
+      "rls": {
+        "read": false,
+        "write": false
+      }
+    },
+    "last_test_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_test_ok": {
+      "type": "boolean"
+    },
+    "last_test_message": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "base_url"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

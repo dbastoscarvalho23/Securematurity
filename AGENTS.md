@@ -75,3 +75,20 @@ docker compose -f docker-compose.base44.yml up -d
 - Incident deadlines (RJC 24 h / 72 h / 24 h after end of impact / 30 working days; DORA RTS 2025/301):
   `incidentDeadlines()` in `src/lib/complianceUtils.js`.
 - AI prompts append `LEGAL_AI_CONTEXT` (`src/lib/legal/aiContext.js`).
+
+## Evidências, ativos e ferramentas (`/assets`, `/evidence`)
+- `Evidence` só é criada pela função `evidence` (service role): o ficheiro (≤ 8 MB, base64) chega à função, que
+  confirma o tipo pelos primeiros bytes, calcula o SHA-256 e o guarda no repositório do cliente — nunca se aceitam
+  referências de ficheiros vindas do browser. `storage_ref` não é legível por ninguém (FLS read false). Versões por
+  `supersedes_id` (a anterior fica `superseded`). Evidências ligadas a ativos/ferramentas ficam `restricted` (só
+  customer_admin e admin). Downloads por `action: 'download'` (URL assinado de 300 s ou base64), sempre auditados.
+- Repositório efetivo por cliente: `resolveProvider()` em `base44/shared/storage.ts` (respeita
+  `StorageSettings.enabled_providers`). Nativo = `UploadPrivateFile` no servidor; Google Drive/OneDrive = conta da
+  plataforma, pasta `AnkoraOne/<cliente>/evidencias`, sem partilhas; `webdav` = NAS do cliente (HTTPS, nome DNS com
+  IPs públicos, portas 443/5006/8443, sem redirecionamentos; credenciais em `StorageConnection` cifradas com o segredo
+  `STORAGE_ENCRYPTION_KEY`; `updateCustomerStorage` só aceita `webdav` com o NAS testado). FTP não é suportado de
+  propósito. Os anexos antigos (`uploadFile`) continuam no nativo para clientes `webdav`.
+- `Asset`/`AssetHistory`/`Component`: leitura só admin e customer_admin do tenant (lista do art. 32.º é «reservado»);
+  escritas só pela função `assets` (tenant, validação e histórico escritos no servidor).
+  Importação no browser (`src/lib/assets.js`, SheetJS) com os cabeçalhos do modelo em `public/templates/`; upsert por
+  `asset_code`. Catálogo de ferramentas → alíneas NIS2: `src/lib/legal/toolCatalog.js`.

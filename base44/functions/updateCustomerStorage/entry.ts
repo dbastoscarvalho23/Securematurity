@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { json, readJson, getAuthenticatedUser, isStaffRole, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 
-const ALLOWED_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
+const ALLOWED_PROVIDERS = ['base44', 'google_drive', 'one_drive', 'webdav'];
 
 // Lets a customer admin change the storage provider of their own customer only.
 // Uses the service role so the Customer record itself stays locked down: this
@@ -28,6 +28,14 @@ export default async function (req) {
     }
     if (!isAdmin && body.customer_id && body.customer_id !== ownCustomerId) {
       return json({ error: 'Forbidden' }, 403);
+    }
+
+    if (provider === 'webdav') {
+      // O NAS tem de estar configurado (e testado com sucesso) antes de passar a ser o repositório do cliente.
+      const conn = (await base44.asServiceRole.entities.StorageConnection.filter({ customer_id: customerId, provider: 'webdav' }))[0];
+      if (!conn || !conn.last_test_ok) {
+        return json({ error: 'O NAS deste cliente ainda não está configurado ou o último teste falhou. Peça ao administrador da plataforma para o configurar.' }, 409);
+      }
     }
 
     await base44.asServiceRole.entities.Customer.update(customerId, { storage_provider: provider });
