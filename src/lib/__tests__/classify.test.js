@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import qnrcs from '@/data/legal/qnrcs.json';
 import epr from '@/data/legal/epr-measures.json';
 import iso from '@/data/legal/iso27001.json';
+import iso42 from '@/data/legal/iso42001.json';
 import { applicableMeasures, applicableEprMeasures, flattenQnrcs } from '@/lib/legal/index';
 import { JOURNEY_TEMPLATE_PT } from '@/lib/legal/journeyTemplate';
 import { AI_PURPOSES } from '@/lib/ai';
@@ -26,6 +27,9 @@ describe('catálogo gerado (base44/shared/classifyCatalog.ts)', () => {
   it('tarefas da jornada iguais a JOURNEY_TEMPLATE_PT (ordem 1, 2, … em cada secção)', () => {
     const expected = JOURNEY_TEMPLATE_PT.flatMap((s) => s.tasks.map((t, i) => ({ section: s.section, section_order: s.section_order, task_order: i + 1, title: t.title, basis: t.basis || '' })));
     expect(CLASSIFY_CATALOG.journey).toEqual(expected);
+  });
+  it('itens ISO/IEC 42001 iguais a iso42001.json', () => {
+    expect(CLASSIFY_CATALOG.iso42001.map((i) => i.id)).toEqual(iso42.items.map((i) => i.id));
   });
   it('itens ISO/IEC 27001 iguais a iso27001.json', () => {
     expect(CLASSIFY_CATALOG.iso27001.map((i) => i.id)).toEqual(iso.items.map((i) => i.id));
@@ -281,5 +285,17 @@ describe('WebDAV PROPFIND (parsePropfind)', () => {
   it('resposta vazia ou inválida não falha', () => {
     expect(parsePropfind('')).toEqual([]);
     expect(parsePropfind('<html>erro</html>')).toEqual([]);
+  });
+});
+
+describe('candidatos ISO/IEC 42001', () => {
+  it('só entram quando o cliente usa a norma; ligação do tipo iso42001', () => {
+    const base = { rjc_qualification: 'essencial', conformity_level: 'basico' };
+    expect(buildCandidates(base, []).some((c) => c.kind === 'iso42001')).toBe(false);
+    const withFw = buildCandidates({ ...base, allowed_frameworks: ['ISO42001'] }, []);
+    const c = withFw.find((x) => x.id === 'iso42001:A.6.2.4');
+    expect(c).toBeTruthy();
+    expect(candidateToLink(c)).toMatchObject({ type: 'iso42001', id: 'A.6.2.4' });
+    expect(buildCandidates(base, [{ framework: 'ISO42001_2023' }]).some((x) => x.kind === 'iso42001')).toBe(true);
   });
 });

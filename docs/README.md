@@ -25,7 +25,8 @@
 
 | Documento | Conteúdo |
 |---|---|
-| [legal/README.md](legal/README.md) | Fontes oficiais da Biblioteca Legal, licenças, datas e ISO/IEC 27001 (guia próprio, por validar com a norma) |
+| [legal/README.md](legal/README.md) | Fontes oficiais da Biblioteca Legal, licenças, datas e guias ISO/IEC 27001 e 42001 (estrutura conferida com os textos oficiais) |
+| [legal/referencias-iso.md](legal/referencias-iso.md) | Fontes usadas para conferir os guias ISO e o que se encontrou em cada uma (só metadados) |
 | [../tools/legal/README.md](../tools/legal/README.md) | Como regenerar os dados legais |
 
 ## Segurança

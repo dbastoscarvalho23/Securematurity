@@ -51,7 +51,7 @@ export const SEED_TIERS = [
 export const SEED_STANDARDS = [
   ['NIS2', 'NIS2 — Diretiva (UE) 2022/2555 / RJC (DL 125/2025)'], ['QNRC', 'QNRCS (Reg. 756/2026)'],
   ['EU_2024_2690', 'Regulamento de Execução (UE) 2024/2690'], ['DORA', 'DORA — Regulamento (UE) 2022/2554'],
-  ['ISO27001', 'ISO/IEC 27001:2022'], ['NIST_CSF', 'NIST CSF'], ['CIS_V8', 'CIS Controls v8.1.2'],
+  ['ISO27001', 'ISO/IEC 27001:2022'], ['ISO42001', 'ISO/IEC 42001:2023'], ['NIST_CSF', 'NIST CSF'], ['CIS_V8', 'CIS Controls v8.1.2'],
   ['TISAX_ISA6', 'TISAX — VDA ISA 6.0.3'], ['TISAX_ISA2027', 'TISAX — VDA ISA 2027'], ['GDPR', 'RGPD — Regulamento (UE) 2016/679'],
 ];
 

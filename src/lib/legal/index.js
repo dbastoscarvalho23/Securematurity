@@ -27,6 +27,10 @@ const loaders = {
   obligations: () => import('@/data/legal/obligations.json'),
   // Guia ISO/IEC 27001:2022 — estrutura da norma, textos próprios da AnkoraOne (ver docs/legal/README.md).
   iso27001: () => import('@/data/legal/iso27001.json'),
+  // Guia ISO/IEC 42001:2023 (sistema de gestão da IA) — mesma abordagem, ligado à 27001 (tools/legal/build_iso42001.py).
+  iso42001: () => import('@/data/legal/iso42001.json'),
+  // Registo das fontes usadas para conferir os guias ISO (só metadados; nada alojado).
+  isoReferences: () => import('@/data/legal/iso-references.json'),
 };
 
 const cache = new Map();

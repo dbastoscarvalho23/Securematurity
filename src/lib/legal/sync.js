@@ -8,16 +8,17 @@
  *  - Perguntas antigas de referenciais oficiais (sem `source_ref`) ou que deixaram de constar das fontes são
  *    DESATIVADAS (is_active = false), nunca apagadas — as respostas de avaliações anteriores mantêm-se.
  *  - Perguntas criadas para uma avaliação concreta (assessment_id) não são tocadas.
- *  - Exceção: o guia ISO/IEC 27001:2022 usa a estrutura da norma com textos próprios da AnkoraOne (a norma não é
- *    reproduzida). As perguntas do Anexo A levam essa indicação em `source_ref`. Neste referencial só são desativadas
- *    perguntas criadas pela sincronização (com `source_ref`); as perguntas criadas pelos utilizadores ficam como estão.
+ *  - Exceção: os guias ISO/IEC 27001:2022 e ISO/IEC 42001:2023 usam a estrutura da norma com textos próprios da
+ *    AnkoraOne (as normas não são reproduzidas). As perguntas do Anexo A levam essa indicação em `source_ref`. Nestes
+ *    referenciais só são desativadas perguntas criadas pela sincronização (com `source_ref`); as perguntas criadas
+ *    pelos utilizadores ficam como estão.
  */
 import { loadLegal, flattenQnrcs, LEVELS, catalog } from './index';
 import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
 
 const LEVEL_PT = { basico: 'Básico', substancial: 'Substancial', elevado: 'Elevado' };
 const REG_URL = 'https://files.diariodarepublica.pt/2s/2026/06/118000000/0003200120.pdf';
-export const ISO_SOURCE_NOTE = 'AnkoraOne (descrição própria; validação com a norma pendente)';
+export const ISO_SOURCE_NOTE = 'AnkoraOne (descrição própria; estrutura conferida com o texto oficial)';
 const CHUNK = 50;
 
 const inst = (id) => catalog.instruments.find((i) => i.id === id) || {};
@@ -39,6 +40,7 @@ const bullets = (arr) => (arr || []).join('\n');
 export async function buildOfficialSet() {
   const [qnrcs, nis2, rx, dora, isa6, isa27, iso] = await Promise.all(
     ['qnrcs', 'nis2', 'regexec2690', 'dora', 'isa6', 'isa2027', 'iso27001'].map((k) => loadLegal(k)));
+  const iso42 = await loadLegal('iso42001');
 
   const frameworks = [];
   const add = (fw) => { frameworks.push({ ...fw, controls: [], questions: [] }); return frameworks[frameworks.length - 1]; };
@@ -117,20 +119,27 @@ export async function buildOfficialSet() {
   // ISO/IEC 27001:2022 — Anexo A (guia AnkoraOne: estrutura da norma, descrições próprias).
   // Códigos «A.n.m»: src/lib/frameworkMappings.js liga-os aos controlos n.m da ISO/IEC 27002.
   frameworks.push(isoFramework(iso));
+  // ISO/IEC 42001:2023 — Anexo A (38 controlos), ligado aos requisitos da 27001 que lhe servem de base.
+  frameworks.push(isoFramework(iso42, ISO42001));
   return frameworks;
 }
 
-/** Referencial ISO27001 a partir de src/data/legal/iso27001.json (só os 93 controlos do Anexo A). */
-export function isoFramework(iso) {
-  const fw = { code: 'ISO27001', name: FRAMEWORK_NAMES.ISO27001, version: '2022', reference_url: iso.source.url,
+const ISO27001 = { code: 'ISO27001', version: '2022', standard: 'ISO/IEC 27001:2022' };
+const ISO42001 = { code: 'ISO42001', version: '2023', standard: 'ISO/IEC 42001:2023' };
+
+/** Referencial ISO a partir do guia (src/data/legal/iso27001.json ou iso42001.json): só os controlos do Anexo A. */
+export function isoFramework(iso, spec = ISO27001) {
+  const fw = { code: spec.code, name: FRAMEWORK_NAMES[spec.code], version: spec.version, reference_url: iso.source.url,
     description: `${iso.source.title}. ${iso.source.ref} ${iso.source.note}`,
     keepUnmanaged: true, controls: [], questions: [] };
   for (const it of iso.items.filter((x) => x.kind === 'control')) {
-    const ref = `ISO/IEC 27001:2022, Anexo A, ${it.ref} — ${ISO_SOURCE_NOTE}`;
+    const ref = `${spec.standard}, Anexo A, ${it.ref} — ${ISO_SOURCE_NOTE}`;
+    const basis = it.iso27001 || null;
     const guidance = [
       it.description,
       `O que guardar como evidência: ${it.evidence}`,
-      it.qnrcs.length && `Controlos QNRCS ligados (Reg. 756/2026, Anexo I): ${it.qnrcs.join(', ')}`,
+      it.qnrcs?.length && `Controlos QNRCS ligados (Reg. 756/2026, Anexo I): ${it.qnrcs.join(', ')}`,
+      basis && (basis.length ? `Base na ISO/IEC 27001:2022 (sistema integrado): ${basis.join(', ')}` : 'Próprio da IA: sem equivalente na ISO/IEC 27001.'),
     ].filter(Boolean).join('\n\n');
     const title = `${it.id} — ${it.title}`;
     fw.controls.push({ control_id: it.id, domain: it.group_name, title, description: guidance, source_ref: ref, source_url: iso.source.url });

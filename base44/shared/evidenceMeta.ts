@@ -5,7 +5,7 @@
 
 export const TYPES = ['screenshot', 'tool_report', 'contract_licence', 'policy_procedure', 'log_record', 'test_audit_report', 'other'];
 export const METHODS = ['examine', 'interview', 'test'];
-export const LINK_TYPES = ['measure', 'control', 'question', 'asset', 'component', 'incident', 'task', 'checklist', 'supplier', 'vulnerability', 'iso27001'];
+export const LINK_TYPES = ['measure', 'control', 'question', 'asset', 'component', 'incident', 'task', 'checklist', 'supplier', 'vulnerability', 'iso27001', 'iso42001'];
 
 // Entities a link may point to, checked to belong to the evidence's customer.
 export const RESTRICTED_LINKS = ['asset', 'component'];

@@ -4,7 +4,8 @@
  * estão em legalPack.ts (nível mínimo de cada controlo do QNRCS, itens do guia ISO/IEC 27001 e tarefas da jornada
  * RJC_2026 em PT-PT).
  *
- * Fonte única: src/data/legal/qnrcs.json, src/data/legal/iso27001.json e src/lib/legal/journeyTemplate.js.
+ * Fonte única: src/data/legal/qnrcs.json, src/data/legal/iso27001.json, src/data/legal/iso42001.json e
+ * src/lib/legal/journeyTemplate.js.
  * Volte a correr depois de os atualizar:
  *     node tools/legal/build_classify_catalog.mjs
  * O teste src/lib/__tests__/classify.test.js confirma que o ficheiro gerado corresponde às fontes.
@@ -18,6 +19,7 @@ const read = (p) => JSON.parse(fs.readFileSync(path.join(ROOT, p), 'utf8'));
 
 const qnrcs = read('src/data/legal/qnrcs.json');
 const iso = read('src/data/legal/iso27001.json');
+const iso42 = read('src/data/legal/iso42001.json');
 const { JOURNEY_TEMPLATE_PT } = await import(pathToFileURL(path.join(ROOT, 'src/lib/legal/journeyTemplate.js')).href);
 
 const minLevel = {};
@@ -30,6 +32,7 @@ for (const o of qnrcs.objectives) for (const c of o.categories) for (const k of 
 const catalog = {
   qnrcs_min_level: minLevel,
   iso27001: iso.items.map((i) => ({ id: i.id, kind: i.kind, ref: i.ref, title: i.title, description: i.description || '', evidence: i.evidence || '' })),
+  iso42001: iso42.items.map((i) => ({ id: i.id, kind: i.kind, ref: i.ref, title: i.title, description: i.description || '', evidence: i.evidence || '' })),
   journey: JOURNEY_TEMPLATE_PT.flatMap((s) => s.tasks.map((t, idx) => ({
     section: s.section, section_order: s.section_order, task_order: idx + 1, title: t.title, basis: t.basis || '',
   }))),
@@ -37,4 +40,4 @@ const catalog = {
 
 const out = path.join(ROOT, 'base44', 'shared', 'classifyCatalog.ts');
 fs.writeFileSync(out, `// GERADO por tools/legal/build_classify_catalog.mjs a partir de src/data/legal e src/lib/legal/journeyTemplate.js — não editar à mão.\nexport const CLASSIFY_CATALOG = ${JSON.stringify(catalog)};\n`);
-console.log(out, fs.statSync(out).size, 'bytes;', Object.keys(minLevel).length, 'controlos;', catalog.iso27001.length, 'itens ISO;', catalog.journey.length, 'tarefas');
+console.log(out, fs.statSync(out).size, 'bytes;', Object.keys(minLevel).length, 'controlos;', catalog.iso27001.length, 'itens ISO 27001;', catalog.iso42001.length, 'itens ISO 42001;', catalog.journey.length, 'tarefas');

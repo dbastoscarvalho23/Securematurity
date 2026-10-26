@@ -1,11 +1,13 @@
 {
  "source": {
   "title": "ISO/IEC 27001:2022 — guia AnkoraOne",
-  "edition": "ISO/IEC 27001:2022 com a emenda 1:2024 (EN ISO/IEC 27001:2023)",
+  "edition": "ISO/IEC 27001:2022 (EN ISO/IEC 27001:2023) e emenda 1:2024 (alterações climáticas)",
   "ref": "Estrutura das cláusulas 4 a 10 e do Anexo A. Títulos, descrições e evidências sugeridas escritos pela AnkoraOne; não reproduzem a norma.",
   "links_ref": "Ligações ao QNRCS: Regulamento do CNCS n.º 756/2026, Anexo I (referências oficiais à ISO/IEC 27001 e 27002)",
   "url": "https://www.iso.org/standard/27001",
-  "validation": "por_validar",
+  "validation": "estrutura_validada",
+  "validated_on": "2026-10-26",
+  "validation_note": "Cláusulas 4 a 10 e os 93 controlos do Anexo A conferidos com o texto oficial (EN ISO/IEC 27001:2023): numeração completa, sem falhas nem excedentes. Títulos e descrições são paráfrase da AnkoraOne.",
   "note": "A norma é protegida por direitos de autor e não está incluída. Para certificação, a entidade deve usar o texto oficial e uma entidade certificadora acreditada."
  },
  "groups": [
@@ -84,6 +86,7 @@
     "PR.RI-3",
     "RS.AI-4"
    ],
+   "documented": false,
    "order": 1
   },
   {
@@ -93,7 +96,7 @@
    "group_name": "Contexto da organização",
    "ref": "4.2",
    "title": "Partes interessadas e os seus requisitos",
-   "description": "Identificar as partes interessadas, os requisitos relevantes de cada uma e quais serão tratados pelo sistema de gestão.",
+   "description": "Identificar as partes interessadas, os requisitos relevantes de cada uma (podem incluir requisitos ligados às alterações climáticas, emenda de 2024) e quais serão tratados pelo sistema de gestão.",
    "evidence": "Lista de partes interessadas com os respetivos requisitos legais, contratuais e de negócio.",
    "qnrcs": [
     "GR.CO-3",
@@ -104,6 +107,7 @@
     "PR.RI-3",
     "RC.CO-2"
    ],
+   "documented": false,
    "order": 2
   },
   {
@@ -116,6 +120,7 @@
    "description": "Definir e documentar os limites do sistema de gestão: atividades, locais, sistemas e interfaces com terceiros.",
    "evidence": "Documento de âmbito do SGSI aprovado.",
    "qnrcs": [],
+   "documented": true,
    "order": 3
   },
   {
@@ -130,6 +135,7 @@
    "qnrcs": [
     "ID.AR-7"
    ],
+   "documented": false,
    "order": 4
   },
   {
@@ -152,6 +158,7 @@
     "RC.CO-1",
     "RC.CO-2"
    ],
+   "documented": false,
    "order": 5
   },
   {
@@ -166,6 +173,7 @@
    "qnrcs": [
     "GR.CO-1"
    ],
+   "documented": true,
    "order": 6
   },
   {
@@ -186,6 +194,7 @@
     "RC.CO-2",
     "RS.NC-1"
    ],
+   "documented": false,
    "order": 7
   },
   {
@@ -204,6 +213,7 @@
     "PR.GA-1",
     "PR.RI-3"
    ],
+   "documented": false,
    "order": 8
   },
   {
@@ -224,6 +234,7 @@
     "ID.AR-5",
     "PR.GA-3"
    ],
+   "documented": true,
    "order": 9
   },
   {
@@ -247,6 +258,7 @@
     "RS.MI-1",
     "RS.MI-2"
    ],
+   "documented": true,
    "order": 10
   },
   {
@@ -267,6 +279,7 @@
     "PR.RI-4",
     "PR.SD-5"
    ],
+   "documented": true,
    "order": 11
   },
   {
@@ -279,6 +292,7 @@
    "description": "Fazer alterações ao sistema de gestão de forma planeada.",
    "evidence": "Registo de alterações ao SGSI com análise de impacto.",
    "qnrcs": [],
+   "documented": false,
    "order": 12
   },
   {
@@ -298,6 +312,7 @@
     "PR.RI-3",
     "PR.RI-5"
    ],
+   "documented": false,
    "order": 13
   },
   {
@@ -316,6 +331,7 @@
     "PR.FC-1",
     "PR.FC-2"
    ],
+   "documented": true,
    "order": 14
   },
   {
@@ -335,6 +351,7 @@
     "RS.GI-4",
     "RS.NC-2"
    ],
+   "documented": false,
    "order": 15
   },
   {
@@ -360,6 +377,7 @@
     "RS.NC-1",
     "RS.NC-2"
    ],
+   "documented": false,
    "order": 16
   },
   {
@@ -404,6 +422,7 @@
     "RS.MI-1",
     "RS.MI-2"
    ],
+   "documented": true,
    "order": 17
   },
   {
@@ -463,6 +482,7 @@
     "RS.GI-1",
     "RS.GI-4"
    ],
+   "documented": true,
    "order": 18
   },
   {
@@ -481,6 +501,7 @@
     "ID.AR-1",
     "ID.AR-5"
    ],
+   "documented": true,
    "order": 19
   },
   {
@@ -508,6 +529,7 @@
     "RS.MI-1",
     "RS.MI-2"
    ],
+   "documented": true,
    "order": 20
   },
   {
@@ -546,6 +568,7 @@
     "RS.AI-4",
     "RS.GI-2"
    ],
+   "documented": true,
    "order": 21
   },
   {
@@ -566,6 +589,7 @@
     "PR.SP-2",
     "RS.AI-1"
    ],
+   "documented": true,
    "order": 22
   },
   {
@@ -587,6 +611,7 @@
     "ID.AR-5",
     "PR.RI-5"
    ],
+   "documented": true,
    "order": 23
   },
   {
@@ -604,6 +629,7 @@
     "RC.CO-1",
     "RS.NC-1"
    ],
+   "documented": false,
    "order": 24
   },
   {
@@ -628,6 +654,7 @@
     "RS.MI-1",
     "RS.MI-2"
    ],
+   "documented": true,
    "order": 25
   },
   {
@@ -2204,9 +2231,9 @@
    "group": "8",
    "group_name": "Controlos tecnológicos",
    "ref": "8.34",
-   "title": "Testes de auditoria",
-   "description": "Testes de auditoria planeados para não afetar a operação.",
-   "evidence": "Plano de auditoria técnica acordado.",
+   "title": "Proteção dos sistemas durante testes de auditoria",
+   "description": "Testes de auditoria e outras verificações aos sistemas em produção planeados e acordados para não afetar a operação.",
+   "evidence": "Plano de auditoria técnica acordado com o responsável dos sistemas.",
    "qnrcs": [
     "PR.SP-2"
    ],
