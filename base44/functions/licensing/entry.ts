@@ -3,7 +3,7 @@ import { secrets } from 'base44:runtime';
 import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { getEntitlements, subscriptionState } from '../../shared/license.ts';
-import { LICENSE_PUBLIC_KEY, LICENSE_KEY_ID, SEED_MODULES, SEED_ENTITLEMENTS, SEED_TIERS, SEED_STANDARDS } from '../../shared/licenseCatalog.ts';
+import { LICENSE_PUBLIC_KEYS, LICENSE_KEY_ID, SEED_MODULES, SEED_ENTITLEMENTS, SEED_TIERS, SEED_STANDARDS } from '../../shared/licenseCatalog.ts';
 
 /**
  * Consola de licenças (bundles, módulos, subscrições, certificados assinados).
@@ -113,7 +113,11 @@ async function signJws(payload) {
 async function verifyJws(jws) {
   const [h, p, s] = String(jws || '').trim().split('.');
   if (!h || !p || !s) return { valid: false, reason: 'Formato inválido' };
-  const key = await crypto.subtle.importKey('spki', fromB64(LICENSE_PUBLIC_KEY), { name: 'Ed25519' }, false, ['verify']);
+  let kid = LICENSE_KEY_ID;
+  try { kid = JSON.parse(new TextDecoder().decode(fromB64u(h))).kid || kid; } catch { return { valid: false, reason: 'Formato inválido' }; }
+  const pub = LICENSE_PUBLIC_KEYS[kid];
+  if (!pub) return { valid: false, reason: `Chave desconhecida (${kid})` };
+  const key = await crypto.subtle.importKey('spki', fromB64(pub), { name: 'Ed25519' }, false, ['verify']);
   const ok = await crypto.subtle.verify({ name: 'Ed25519' }, key, fromB64u(s), new TextEncoder().encode(`${h}.${p}`));
   if (!ok) return { valid: false, reason: 'Assinatura inválida' };
   return { valid: true, header: JSON.parse(new TextDecoder().decode(fromB64u(h))), payload: JSON.parse(new TextDecoder().decode(fromB64u(p))) };

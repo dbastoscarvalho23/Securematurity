@@ -1,24 +1,20 @@
-# Publica o frontend da app Securematurity no Base44 sempre que o main recebe alterações.
+# Publica a app AnkoraOne_DC_Repo no Base44 (POST /api/apps/{app_id}/deploy).
 #
-# 1) Frontend: serviço "Deploy a prebuilt site" do Base44 (POST /api/apps/{app_id}/deploy-dist).
-# 2) Funções: `base44 functions deploy` (CLI oficial). Nas apps importadas do GitHub o botão Publish não
-#    existe e a fusão de ramos não publica as funções em produção; sem este passo as chamadas a
-#    base44.functions.invoke() respondem «Function not found».
-# As entidades continuam a ser aplicadas por fusão de um ramo da app (ver docs/deploy-base44.md).
+# A app é nativa do Base44: o código é sincronizado deste repositório para a app (ver docs/deploy-base44.md)
+# e a publicação inclui frontend, funções, entidades e workflows agendados. Este workflow só publica a versão
+# que já está na app; não envia código. Corre à mão (Actions → Publicar no Base44 → Run workflow).
 #
-# Requer o segredo BASE44_API_KEY (token pessoal com acesso total, ou chave de workspace com a
-# permissão apps:deploy), em Settings → Secrets and variables → Actions.
+# Requer o segredo BASE44_API_KEY (token pessoal com acesso de edição à app).
 
 name: Publicar no Base44
 
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - 'tools/**'
-      - '**/*.md'
   workflow_dispatch:
+    inputs:
+      checkpoint_id:
+        description: 'Checkpoint a publicar (vazio = versão atual da app)'
+        required: false
+        default: ''
 
 concurrency:
   group: deploy-base44
@@ -28,78 +24,24 @@ permissions:
   contents: read
 
 env:
-  BASE44_APP_ID: 6ab5373e7f8f586c80cb9ed8   # app "Securematurity" no Base44
+  BASE44_APP_ID: 6adf8df867faaf60a171efa5   # app "AnkoraOne_DC_Repo" no Base44
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Instalar dependências
-        run: npm ci
-
-      - name: Compilar
-        env:
-          VITE_BASE44_APP_ID: ${{ env.BASE44_APP_ID }}
-        run: npm run build
-
-      - name: Verificar o resultado da compilação
-        run: |
-          test -f dist/index.html || { echo "::error::dist/index.html não existe"; exit 1; }
-          files=$(find dist -type f | wc -l)
-          size=$(du -sm dist | cut -f1)
-          echo "dist: ${files} ficheiros, ${size} MB"
-          # Limites do Base44: até 1000 ficheiros e 50 MB
-          [ "$files" -le 1000 ] || { echo "::error::Mais de 1000 ficheiros em dist"; exit 1; }
-          [ "$size" -lt 50 ] || { echo "::error::dist excede 50 MB"; exit 1; }
-
-      - name: Empacotar
-        run: tar -czf dist.tar.gz -C dist .
-
-      - name: Publicar no Base44
+      - name: Publicar
         env:
           BASE44_API_KEY: ${{ secrets.BASE44_API_KEY }}
+          CHECKPOINT_ID: ${{ inputs.checkpoint_id }}
         run: |
-          if [ -z "$BASE44_API_KEY" ]; then
-            echo "::error::Falta o segredo BASE44_API_KEY"; exit 1
-          fi
+          if [ -z "$BASE44_API_KEY" ]; then echo "::error::Falta o segredo BASE44_API_KEY"; exit 1; fi
+          if [ -n "$CHECKPOINT_ID" ]; then body="{\"checkpoint_id\":\"${CHECKPOINT_ID}\"}"; else body='{}'; fi
           status=$(curl -sS -o response.json -w '%{http_code}' -X POST \
-            "https://app.base44.com/api/apps/${BASE44_APP_ID}/deploy-dist" \
-            -H "Authorization: Bearer ${BASE44_API_KEY}" \
-            -F "file=@dist.tar.gz")
-          echo "HTTP ${status}"
-          cat response.json; echo
-          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
-            echo "::error::Publicação recusada pelo Base44 (HTTP ${status})"; exit 1
-          fi
-
-          url=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('response.json','utf8')).app_url||'')}catch{console.log('')}")
+            "https://app.base44.com/api/apps/${BASE44_APP_ID}/deploy" \
+            -H "Authorization: Bearer ${BASE44_API_KEY}" -H 'Content-Type: application/json' -d "$body")
+          echo "HTTP ${status}"; cat response.json; echo
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then echo "::error::Publicação recusada (HTTP ${status})"; exit 1; fi
           echo "### Publicado no Base44" >> "$GITHUB_STEP_SUMMARY"
-          echo "${url:-(sem URL na resposta)} — commit ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Publicar as funções no Base44
-        env:
-          # Chave de workspace (b44k_) com apps:deploy. Usa BASE44_CLI_KEY se existir; senão BASE44_API_KEY.
-          BASE44_API_KEY: ${{ secrets.BASE44_CLI_KEY || secrets.BASE44_API_KEY }}
-          BASE44_APP_ID: ${{ env.BASE44_APP_ID }}
-          CI: 'true'
-        run: |
-          # O CLI autentica-se com BASE44_API_KEY (chave de workspace b44k_ com apps:deploy, ou token pessoal).
-          # Sem TTY e com limite de tempo: se a chave não servir, falha em vez de ficar à espera de login.
-          echo "::notice::Chave do CLI: prefixo ${BASE44_API_KEY:0:5}…, ${#BASE44_API_KEY} caracteres"
-          npm i -g base44@0.2.3 >/dev/null 2>&1 || true
-          set +e
-          timeout 60 base44 whoami --app-id "${BASE44_APP_ID}" < /dev/null > whoami.txt 2>&1
-          rc=$?
-          set -e
-          # As primeiras linhas aparecem como anotação (o GitHub oculta o valor dos segredos).
-          head -c 600 whoami.txt | tr '\n' ' ' | sed 's/^/::notice::CLI whoami: /'; echo
-          if [ $rc -ne 0 ]; then echo "::error::A chave não serve ao CLI do Base44 (whoami saiu com ${rc}): use uma chave de workspace (b44k_) com a permissão apps:deploy"; exit 1; fi
-          timeout 900 base44 functions deploy --app-id "${BASE44_APP_ID}" < /dev/null
+          cat response.json >> "$GITHUB_STEP_SUMMARY"

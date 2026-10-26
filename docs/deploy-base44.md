@@ -1,28 +1,32 @@
 # Publicação no Base44
 
-A app **Securematurity** no Base44 (id `6ab5373e7f8f586c80cb9ed8`) está ligada a este repositório. Por ser uma app importada do GitHub, o Base44 protege sempre o ramo principal e o botão **Publish** não está disponível.
+A plataforma corre na app nativa **AnkoraOne_DC_Repo** (id `6adf8df867faaf60a171efa5`, plano Enterprise), servida em `https://app.ankoraone.com`. Substitui a app importada **Securematurity** (id `6ab5373e7f8f586c80cb9ed8`), onde as funções nunca ficaram ativas em produção. A antiga fica como cópia de segurança até a nova estar confirmada.
 
-## Frontend — automático
+## Fluxo de alterações
 
-O workflow `.github/workflows/deploy-base44.yml` corre em cada alteração ao `main` (também pode ser lançado à mão em **Actions → Publicar no Base44 → Run workflow**). Faz o seguinte:
+1. Alteração num ramo deste repositório e pull request revisto; integração no `main`.
+2. Sincronização para a app: no terminal da app (sandbox do Base44), `git fetch` deste repositório e `git checkout FETCH_HEAD -- <ficheiros>`; o Base44 grava as alterações e aplica as entidades.
+3. Checkpoint com o nome da alteração (permite repor a versão anterior).
+4. Publicação: botão **Publish** no editor, `POST /api/apps/{app_id}/deploy`, ou **Actions → Publicar no Base44 → Run workflow** neste repositório. A publicação inclui frontend, funções, entidades e os workflows agendados de `base44/workflows/`.
 
-1. instala as dependências (`npm ci`);
-2. compila a app (`npm run build`), com `VITE_BASE44_APP_ID` definido;
-3. empacota a pasta `dist`;
-4. envia-a para `POST https://app.base44.com/api/apps/{app_id}/deploy-dist`, que a publica.
+O workflow `deploy-base44.yml` só publica o que já está na app; não envia código. Requer o segredo `BASE44_API_KEY` (token pessoal com acesso de edição à app).
 
-Não corre quando só mudam `docs/`, `tools/` ou ficheiros `.md`.
+## Agendamentos
 
-Requer o segredo `BASE44_API_KEY` (token pessoal com acesso total, ou chave de workspace com a permissão `apps:deploy`).
+Os agendamentos (alertas CVE, lembretes de revisão e de prazos, relatório mensal, purga de retenção) correm nos workflows do próprio Base44 e chamam as funções com o segredo `AUTOMATION_SECRET`. O workflow `scheduler-base44.yml` corre uma função à mão, como recurso; usa o segredo `AUTOMATION_SECRET` do repositório, que tem de ter o mesmo valor do da app.
 
-Tudo o que entra no `main` é publicado logo para os utilizadores. Integre no `main` apenas por pull request revisto.
+## Segredos da app
 
-## Entidades, funções e agente — não são automáticos
+| Segredo | Uso |
+|---|---|
+| `AUTOMATION_SECRET` | Autoriza as chamadas dos agendamentos |
+| `STORAGE_ENCRYPTION_KEY` | Cifra as palavras-passe das ligações de armazenamento (WebDAV/NAS) |
+| `LICENSE_SIGNING_KEY` | Chave privada Ed25519 (PKCS8 base64) que assina os certificados de licença; a pública está em `base44/shared/licenseCatalog.ts` |
+| `MAIL_PROVIDER`, `MAIL_FROM`, `MAIL_REPLY_TO`, `RESEND_API_KEY` | Envio de email pelo domínio ankoraone.com (ver `docs/email-dominio.md`) |
+| `AI_PROVIDER`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | IA: `claude` usa o Claude e recorre ao LLM do Base44 se falhar; `base44` usa só o Base44 |
+| `NVD_API_KEY` | Opcional: limite mais alto na consulta de CVE |
 
-O `deploy-dist` só substitui o site. Alterações em `base44/entities`, `base44/functions` ou `base44/agents` têm de ser aplicadas no Base44 de uma destas formas:
-
-- **Fusão de um ramo na app:** criar um ramo no Base44 a partir do `main`, incluir os ficheiros alterados e fundi-lo. A fusão aplica as entidades e as funções ao ramo principal protegido.
-- **CLI, no computador:** `npx base44 login`, `npx base44 link` (escolher Securematurity) e `npx base44 deploy -y`. Se o CLI recusar as entidades por o ramo principal estar protegido, use a fusão de ramo e depois `npx base44 functions deploy`.
+Os valores não ficam neste repositório.
 
 ## Depois de alterar dados de referência
 
