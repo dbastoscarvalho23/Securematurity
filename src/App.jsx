@@ -48,6 +48,7 @@ import ComplianceMetrics from '@/pages/ComplianceMetrics';
 import Training from '@/pages/Training';
 import FrameworkGuide from '@/pages/FrameworkGuide';
 import LegalLibrary from '@/pages/LegalLibrary';
+import AssetsTools from '@/pages/AssetsTools';
 import RouteGuard from '@/components/layout/RouteGuard';
 
 // Suspense + ErrorBoundary wrapper for lazy-loaded backoffice routes.
@@ -125,6 +126,7 @@ const AuthenticatedApp = () => {
           <Route path="/compliance-metrics" element={<RouteGuard path="/compliance-metrics"><ComplianceMetrics /></RouteGuard>} />
           <Route path="/training" element={<RouteGuard path="/training"><Training /></RouteGuard>} />
           <Route path="/legal-library" element={<RouteGuard path="/legal-library"><LegalLibrary /></RouteGuard>} />
+          <Route path="/assets" element={<RouteGuard path="/assets"><AssetsTools /></RouteGuard>} />
           <Route path="/framework-guide" element={<RouteGuard path="/framework-guide"><FrameworkGuide /></RouteGuard>} />
           <Route path="/email-report" element={<RouteGuard path="/email-report"><EmailReport /></RouteGuard>} />
         </Route>

@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { json, readJson, getAuthenticatedUser, isStaffRole, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 
-const ALLOWED_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
+const ALLOWED_PROVIDERS = ['base44', 'google_drive', 'one_drive', 'webdav'];
 
 // Lets a customer admin change the storage provider of their own customer only.
 // Uses the service role so the Customer record itself stays locked down: this

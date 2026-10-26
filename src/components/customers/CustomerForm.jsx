@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useLanguage } from '@/lib/LanguageContext';
 import RegulatoryProfileFields, { REGULATORY_FIELDS } from '@/components/legal/RegulatoryProfileFields';
 import { FRAMEWORK_NAMES, DEFAULT_CUSTOMER_FRAMEWORKS, SELECTABLE_FRAMEWORKS } from '@/lib/frameworkConstants';
+import NasConnectionPanel from './NasConnectionPanel';
 
 
 const FRAMEWORKS = SELECTABLE_FRAMEWORKS.map((code) => ({ code, name: FRAMEWORK_NAMES[code] }));
@@ -168,11 +169,19 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
                   <SelectItem value="base44">{t('storage_provider_base44')}</SelectItem>
                   <SelectItem value="google_drive">{t('storage_provider_google_drive')}</SelectItem>
                   <SelectItem value="one_drive">{t('storage_provider_one_drive')}</SelectItem>
+                  <SelectItem value="webdav">{t('storage_provider_webdav')}</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">{t('storage_provider_help')}</p>
             </div>
+            <div className="md:col-span-2 text-xs text-muted-foreground space-y-1 pt-6">
+              <p>{t(`storage_provider_note_${form.storage_provider}`)}</p>
+              <p>{t('storage_provider_ftp_note')}</p>
+            </div>
           </div>
+          {form.storage_provider === 'webdav' && (customer?.id
+            ? <NasConnectionPanel customerId={customer.id} />
+            : <p className="text-xs text-chart-3">{t('nas_save_customer_first')}</p>)}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">

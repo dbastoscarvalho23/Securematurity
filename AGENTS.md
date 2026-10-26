@@ -75,3 +75,17 @@ docker compose -f docker-compose.base44.yml up -d
 - Incident deadlines (RJC 24 h / 72 h / 24 h after end of impact / 30 working days; DORA RTS 2025/301):
   `incidentDeadlines()` in `src/lib/complianceUtils.js`.
 - AI prompts append `LEGAL_AI_CONTEXT` (`src/lib/legal/aiContext.js`).
+
+## Evidências, ativos e ferramentas (`/assets`, `/evidence`)
+- `Evidence` só é criada pela função `evidence` (service role): valida o tenant, as ligações (`links`/`link_keys`
+  `tipo:id`), MIME e tamanho, calcula SHA-256 e versiona por `supersedes_id`. O browser nunca recebe `storage_ref`;
+  downloads por `action: 'download'` (URL assinado de 300 s ou base64) e ficam na auditoria.
+- Repositório efetivo por cliente: `resolveProvider()` em `base44/shared/storage.ts` (respeita
+  `StorageSettings.enabled_providers`); o frontend pergunta-o com `action: 'provider'`. Nativo = `UploadPrivateFile`;
+  Google Drive/OneDrive = conta da plataforma, pasta `AnkoraOne/<cliente>/evidencias`, sem partilhas; `webdav` = NAS do
+  cliente (HTTPS obrigatório, IPs públicos, credenciais em `StorageConnection` cifradas com o segredo
+  `STORAGE_ENCRYPTION_KEY`). FTP não é suportado de propósito. Os anexos antigos (`uploadFile`) continuam no nativo
+  para clientes `webdav`.
+- `Asset`/`AssetHistory`/`Component`: só admin e customer_admin do tenant (lista do art. 32.º é «reservado»).
+  Importação no browser (`src/lib/assets.js`, SheetJS) com os cabeçalhos do modelo em `public/templates/`; upsert por
+  `asset_code`. Catálogo de ferramentas → alíneas NIS2: `src/lib/legal/toolCatalog.js`.

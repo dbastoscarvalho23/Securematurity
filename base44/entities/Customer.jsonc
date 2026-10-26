@@ -103,7 +103,8 @@
       "enum": [
         "base44",
         "google_drive",
-        "one_drive"
+        "one_drive",
+        "webdav"
       ],
       "default": "base44",
       "description": "External cloud storage provider where this customer's uploaded and generated files are stored"
@@ -232,4 +233,3 @@
     }
   }
 }
-

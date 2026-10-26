@@ -28,7 +28,8 @@ import {
   Gauge,
   GraduationCap,
   Bot,
-  Scale
+  Scale,
+  Boxes
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/layout/Logo';
@@ -55,6 +56,8 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
     { path: '/legal-library', labelKey: 'nav_legal_library', icon: Scale },
     { path: '/assessments', labelKey: 'nav_assessments', icon: ClipboardCheck },
     { path: '/evidence', labelKey: 'nav_evidence', icon: Paperclip },
+    // Inventário de ativos e ferramentas: informação «reservada» (art. 32.º) — só administradores
+    ...((isAdmin || isCustomerAdmin) ? [{ path: '/assets', labelKey: 'nav_assets_tools', icon: Boxes }] : []),
     { path: '/tasks', labelKey: 'nav_tasks', icon: ListTodo },
     { path: '/task-analytics', labelKey: 'nav_task_analytics', icon: TrendingUp },
     { path: '/risk-assessment', labelKey: 'nav_risk_assessment', icon: TriangleAlert },
