@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { secrets } from 'base44:runtime';
 import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
-import { hasAutomationSecret } from '../../shared/automationSecret.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, getEntitlements, LicenseError } from '../../shared/license.ts';
 import { sendMail } from '../../shared/mail.ts';
@@ -17,7 +16,7 @@ import { sendMail } from '../../shared/mail.ts';
  *  - check        { customer_id? }          → verifica agora os fabricantes do cliente
  *  - set_alert    { id, status }            → acknowledged | dismissed | new
  *  - convert      { id }                    → cria o registo em Vulnerabilidades
- *  - run_all                                → todos os clientes (workflow agendado, com AUTOMATION_SECRET)
+ *  - run_all                                → todos os clientes (workflow agendado; a sessão do proprietário da app autoriza)
  */
 
 const NVD = 'https://services.nvd.nist.gov/rest/json';
@@ -187,14 +186,18 @@ export default async function (req) {
     const base44 = createClientFromRequest(req);
     const body = await readJson(req);
 
-    if (hasAutomationSecret(req, body)) {
-      const watches = await base44.asServiceRole.entities.CveWatch.filter({ enabled: true }, 'last_checked_at', 5000);
-      return json(await runWatches(base44, watches));
-    }
-
     const user = await getAuthenticatedUser(base44);
     if (!user) return json({ error: 'Unauthorized' }, 401);
     const admin = isPlatformAdmin(user);
+
+    // Sem ação indicada, o workflow agendado pede a verificação de todos os clientes.
+    // A identidade que ele traz (proprietário da app, administrador) é a autorização —
+    // nenhum segredo fica escrito no ficheiro do workflow.
+    if (!body.action) {
+      if (!admin) return json({ error: 'Forbidden' }, 403);
+      const watches = await base44.asServiceRole.entities.CveWatch.filter({ enabled: true }, 'last_checked_at', 5000);
+      return json(await runWatches(base44, watches));
+    }
     if (!admin && user.role !== 'customer_admin') return json({ error: 'Forbidden' }, 403);
     const action = body.action;
     const db = base44.asServiceRole.entities;
@@ -297,7 +300,3 @@ export default async function (req) {
     return json({ error: msg }, error instanceof LicenseError ? error.status : msg === 'Forbidden' ? 403 : 400);
   }
 }
-
-
-
-

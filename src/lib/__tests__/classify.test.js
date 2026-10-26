@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import qnrcs from '@/data/legal/qnrcs.json';
 import epr from '@/data/legal/epr-measures.json';
 import iso from '@/data/legal/iso27001.json';
@@ -57,7 +58,8 @@ describe('servidor e browser usam as mesmas chaves', () => {
     expect(new Set(keys.map((k) => k.split('@')[0])).size).toBe(keys.length);
   });
   it('ponto de uso «document_classification» ativo por omissão nos dois lados', () => {
-    const src = fs.readFileSync(path.resolve(__dirname, '../../../base44/shared/llm.ts'), 'utf8');
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const src = fs.readFileSync(path.resolve(here, '../../../base44/shared/llm.ts'), 'utf8');
     const start = src.indexOf('export const AI_PURPOSE_DEFAULTS = {');
     const server = Object.fromEntries([...src.slice(start, src.indexOf('};', start)).matchAll(/^\s+(\w+): (true|false),$/gm)].map((m) => [m[1], m[2] === 'true']));
     expect(server).toEqual(Object.fromEntries(AI_PURPOSES.map((p) => [p.key, p.default])));

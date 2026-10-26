@@ -1,5 +1,3 @@
-import { getAutomationSecret, hasAutomationSecret } from './automationSecret.ts';
-
 /**
  * Shared HTTP / authorization helpers for backend functions.
  *
@@ -64,20 +62,24 @@ export function canAccessRecord(user, record) {
 }
 
 /**
- * Gate for scheduled/system automations: accepts the shared automation secret
- * (x-automation-secret header, body.args.automation_secret or
- * body.automation_secret) or a manual trigger by a platform admin.
- * Returns the 403 response to send, or null when authorized.
+ * Gate for scheduled/system automations.
  *
- * Note: consumes the request body when checking the secret — use only in
- * functions that do not need the raw body afterwards. Functions that parse
- * the body themselves should use hasAutomationSecret(req, body) instead.
+ * A workflow invokes a backend function with the app owner's own session, so the
+ * platform-admin identity *is* the automation gate. That is why no shared secret
+ * lives in the workflow files any more: a secret written into the repository is a
+ * secret leaked, and it had to be rotated by hand. A manual trigger by a platform
+ * admin passes the same check; anonymous external callers fail `auth.me()` and are
+ * rejected before any service-role read or write.
+ *
+ * Returns the 403 response to send, or null when authorized.
  */
 export async function authorizeAutomationOrAdmin(req, base44) {
-  if (await getAutomationSecret(req)) return null;
   const user = await getAuthenticatedUser(base44);
   if (isPlatformAdmin(user)) return null;
   return json({ error: 'Forbidden' }, 403);
 }
 
-export { hasAutomationSecret };
+/** Sync variant for handlers that already read the caller with `auth.me()`. */
+export function isAutomationCaller(user) {
+  return isPlatformAdmin(user);
+}

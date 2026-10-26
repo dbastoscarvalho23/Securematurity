@@ -13,15 +13,14 @@ O workflow `deploy-base44.yml` só publica o que já está na app; não envia c�
 
 ## Agendamentos
 
-Os agendamentos (alertas CVE, lembretes de revisão e de prazos, relatório mensal, purga de retenção) e as notificações por evento correm nos workflows do próprio Base44 e chamam as funções com o valor de `AUTOMATION_SECRET` nos argumentos. Os workflows do Base44 não leem segredos, por isso o valor fica escrito na definição de cada workflow (editor → Workflows) e não neste repositório: os ficheiros de `base44/workflows/` são só referência. Se rodar o segredo, atualize-o na app, em cada workflow e no GitHub.
+Os agendamentos (alertas CVE, lembretes de revisão e de prazos, relatório mensal, purga de retenção) e as notificações por evento correm nos workflows do próprio Base44. Um workflow chama a função com a sessão do proprietário da app — que é administrador da plataforma — e é essa identidade que autoriza a chamada (`authorizeAutomationOrAdmin`). Não há segredo de automação escrito nas definições dos workflows nem neste repositório: um segredo em texto simples num ficheiro de workflow é um segredo exposto e obrigava a rodá-lo à mão em cada sítio.
 
-A purga de retenção (`Data Retention Purge`) fica pausada até os prazos de conservação estarem revistos. O workflow `scheduler-base44.yml` corre uma função à mão, como recurso; usa o segredo `AUTOMATION_SECRET` do repositório, que tem de ter o mesmo valor do da app.
+A purga de retenção (`Data Retention Purge`) fica pausada até os prazos de conservação estarem revistos. Uma chamada manual só é aceite com sessão de administrador da plataforma.
 
 ## Segredos da app
 
 | Segredo | Uso |
 |---|---|
-| `AUTOMATION_SECRET` | Autoriza as chamadas dos agendamentos |
 | `STORAGE_ENCRYPTION_KEY` | Cifra as palavras-passe das ligações de armazenamento (WebDAV/NAS) |
 | `LICENSE_SIGNING_KEY` | Chave privada Ed25519 (PKCS8 base64) que assina os certificados de licença; a pública está em `base44/shared/licenseCatalog.ts` |
 | `MAIL_PROVIDER`, `MAIL_FROM`, `MAIL_REPLY_TO`, `RESEND_API_KEY` | Envio de email pelo domínio ankoraone.com (ver `docs/email-dominio.md`) |

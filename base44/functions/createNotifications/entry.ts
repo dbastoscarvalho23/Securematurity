@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, hasAutomationSecret, getAuthenticatedUser, canAccessRecord } from "../../shared/http.ts";
+import { json, getAuthenticatedUser, isPlatformAdmin, canAccessRecord } from "../../shared/http.ts";
 
 const ENTITY_MAP = {
   Task: 'Task',
@@ -14,20 +14,23 @@ Deno.serve(async (req) => {
 
     let { event, data, old_data } = payload;
 
-    // Autorização: workflows do Base44 (segredo partilhado) ou, nesta app importada onde os workflows por evento
-    // não correm, chamada direta de um utilizador autenticado depois de gravar («direct»). No modo direto o
-    // registo é lido da base de dados e o utilizador tem de ter acesso a ele; os destinatários vêm do registo.
-    if (!hasAutomationSecret(req, payload)) {
-      if (!payload?.direct) return json({ error: 'Unauthorized' }, 403);
-      const user = await getAuthenticatedUser(base44);
-      if (!user) return json({ error: 'Unauthorized' }, 401);
+    const caller = await getAuthenticatedUser(base44);
+
+    // Autorização: workflows do Base44 (que correm com a sessão do proprietário da app, administrador) ou, nesta
+    // app importada onde os workflows por evento não correm, chamada direta de um utilizador autenticado depois de
+    // gravar («direct»). No modo direto o registo é lido da base de dados e o utilizador tem de ter acesso a ele;
+    // os destinatários vêm sempre do registo, nunca do pedido.
+    if (payload?.direct) {
+      if (!caller) return json({ error: 'Unauthorized' }, 401);
       const entityName = String(payload.entity || '');
       if (!ENTITY_MAP[entityName] || !payload.id) return json({ skipped: true, reason: 'invalid direct call' });
       const rec = await base44.asServiceRole.entities[ENTITY_MAP[entityName]].get(String(payload.id)).catch(() => null);
-      if (!rec || !canAccessRecord(user, rec)) return json({ error: 'Forbidden' }, 403);
+      if (!rec || !canAccessRecord(caller, rec)) return json({ error: 'Forbidden' }, 403);
       event = { entity_name: entityName, entity_id: rec.id, type: payload.event === 'create' ? 'create' : 'update' };
       data = rec;
       old_data = payload.previous || null;
+    } else if (!isPlatformAdmin(caller)) {
+      return json({ error: 'Unauthorized' }, 403);
     }
 
     // Only process trusted entity-automation events (create/update/delete).
@@ -208,5 +211,3 @@ Deno.serve(async (req) => {
     return json({ error: error.message }, 500);
   }
 });
-
-
