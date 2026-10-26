@@ -129,6 +129,18 @@ docker compose -f docker-compose.base44.yml up -d
 - Todo o texto visível segue `docs/style/pt-pt.md` (PT-PT, AO90, sem chavões). Chaves novas sem ficheiro próprio:
   `src/lib/translations-extra.js` (prefixo `x_`). Termo oficial: «cadeia de abastecimento».
 
+## Emails
+- Tema único em `base44/shared/emailTemplates.ts`: cabeçalho `#070A13` com «ANKORA» branco e «ONE» dourado `#D0A24C`,
+  botão dourado com texto escuro, rodapé «Email automático da plataforma AnkoraOne…». `shared/mail.ts` aplica esta
+  moldura a todos os envios (alertas, notificações, lembretes, questionários, formações).
+- Emails de acesso em PT-PT: função `accountEmails` (`invite`, `password_reset`, `access_approved`), chamada por
+  `src/lib/mail.js`. Disparos: convite em `UserManagementPanel` e `CustomerSeatSection`; instruções de redefinição
+  pelo botão da lista de utilizadores; aviso de acesso aprovado quando o administrador atribui o cliente.
+- A ligação de ativação do convite, o token de redefinição e o código de verificação continuam a ser enviados pela
+  autenticação do Base44 (não personalizáveis por código). Modelos prontos a colar no Dashboard → Emails:
+  `public/emails/` (`/emails/convite.html`, `/emails/redefinicao-palavra-passe.html`, `/emails/acesso-aprovado.html`);
+  instruções e regeração em `docs/emails/README.md`.
+
 ## Agendamentos
 - App importada: o Base44 não aceita workflows («Workflows are not supported for this app type»), por isso os
   ficheiros em `base44/workflows/` (lembretes, CVE Monitor) não correm nesta app. Os agendados correm em

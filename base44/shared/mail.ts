@@ -1,4 +1,5 @@
 import { secrets } from "base44:runtime";
+import { emailFrame } from "./emailTemplates.ts";
 
 /**
  * Envio de email da AnkoraOne — ponto único para todas as funções.
@@ -77,20 +78,14 @@ export function toHtmlFragment(body: string): string {
     .join("");
 }
 
-/** Moldura AnkoraOne (cores do tema: navy #070A13, dourado #D0A24C). */
+/**
+ * Moldura AnkoraOne de todos os emails da plataforma (alertas, notificações,
+ * questionários, convites, redefinição de palavra-passe e acesso aprovado).
+ * O desenho vive em `emailTemplates.ts`: cabeçalho #070A13 com «ANKORA» branco e
+ * «ONE» dourado #D0A24C, botão dourado com texto escuro e rodapé com o contacto.
+ */
 export function wrapHtml(fragment: string, heading?: string): string {
-  return `<!DOCTYPE html><html lang="pt-PT"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f4f5f7;font-family:'Work Sans',Arial,Helvetica,sans-serif;color:#0f172a;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f7;"><tr><td align="center" style="padding:24px 12px;">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
-<tr><td style="background:#070A13;padding:22px 28px;border-bottom:3px solid #D0A24C;">
-<span style="font-size:20px;font-weight:700;letter-spacing:1px;color:#ffffff;">ANKORA</span><span style="font-size:20px;font-weight:700;letter-spacing:1px;color:#D0A24C;">ONE</span>
-${heading ? `<div style="margin-top:6px;font-size:13px;color:#94a3b8;">${escapeText(heading)}</div>` : ""}
-</td></tr>
-<tr><td style="padding:28px;font-size:14px;line-height:1.55;">${fragment}</td></tr>
-<tr><td style="padding:16px 28px 22px;border-top:1px solid #e2e8f0;font-size:11px;line-height:1.5;color:#64748b;">
-Mensagem enviada pela plataforma AnkoraOne. Recebeu-a por ter uma conta ou uma tarefa associada na plataforma.
-</td></tr></table></td></tr></table></body></html>`;
+  return emailFrame({ heading, content: fragment });
 }
 
 async function sendViaBase44(base44: any, to: string, subject: string, html: string, fromName: string) {
@@ -125,7 +120,11 @@ export async function sendMail(base44: any, input: MailInput): Promise<MailResul
   const recipients = [...new Set((Array.isArray(input.to) ? input.to : [input.to]).map((x) => String(x || "").trim().toLowerCase()).filter((x) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)))];
   if (!recipients.length) return { sent: 0, provider: cfg.provider, errors: ["sem destinatários válidos"] };
   const subject = cleanSubject(input.subject);
-  const html = wrapHtml(toHtmlFragment(input.body), input.heading);
+  // Os modelos de `emailTemplates.ts` chegam já como documento completo (com o
+  // cabeçalho e o rodapé da marca): nesse caso não se aplica a moldura outra vez.
+  const html = /^\s*(<!DOCTYPE|<html[\s>])/i.test(input.body)
+    ? input.body
+    : wrapHtml(toHtmlFragment(input.body), input.heading);
   const errors: string[] = [];
 
   const own = cfg.provider === "resend" || cfg.provider === "smtp";

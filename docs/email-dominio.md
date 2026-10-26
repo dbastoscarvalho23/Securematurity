@@ -5,7 +5,12 @@
 | Tipo de email | Quem envia | Remetente atual |
 |---|---|---|
 | Alertas CVE, tarefas, riscos, documentos, lembretes, questionários, formações, licenças | Funções da app → `base44/shared/mail.ts` | «Daniel Carvalho · AnkoraOne» `<no-reply@base44-apps.com>` |
-| Convite, redefinição de palavra-passe, verificação de conta, acesso aprovado | Plataforma Base44 (autenticação) | «Securematurity» `<no-reply@base44-apps.com>`, em inglês |
+| Convites, instruções de redefinição de palavra-passe e aviso de acesso aprovado | Função `accountEmails` → `base44/shared/emailTemplates.ts` | «Daniel Carvalho · AnkoraOne» `<no-reply@base44-apps.com>` |
+| Ligação de ativação do convite, token de redefinição e código de verificação | Plataforma Base44 (autenticação) | `no-reply@base44-apps.com` |
+
+Os modelos PT-PT dos três emails de acesso estão em `docs/emails/` (ver o README da pasta). O tema visual de todos
+os emails — cabeçalho `#070A13` com «ANKORA» branco e «ONE» dourado `#D0A24C`, botão dourado com texto escuro e
+rodapé com o contacto de suporte — vive em `base44/shared/emailTemplates.ts`.
 
 Configuração nos segredos da app: `MAIL_PROVIDER`, `MAIL_FROM`, `MAIL_REPLY_TO` (já definidos), mais `RESEND_API_KEY` ou `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`.
 Teste: Definições → Aplicação → «Enviar email de teste».
@@ -32,6 +37,7 @@ Estes emails são enviados pela autenticação do Base44 e só mudam de endereç
 1. Concluir o domínio `app.ankoraone.com` (CNAME `app` → `base44.onrender.com`, «DNS only»).
 2. No Base44 (Dashboard → Domínios → Email), ativar o envio para o domínio ligado e publicar na Cloudflare os 3 CNAME indicados (`em…`, `s1._domainkey`, `s2._domainkey`).
    O endereço fica no domínio ligado à app (ex.: `no-reply@app.ankoraone.com`). Para usar `@ankoraone.com` nestes emails, a raiz `ankoraone.com` teria de apontar para a app, o que tira o site institucional do ar.
-3. Textos em PT-PT e com a marca AnkoraOne: Dashboard → Emails → «Application emails» → «Edit with AI» (plano Builder). A API não deixa alterar o ramo principal protegido.
+3. Textos em PT-PT e com a marca AnkoraOne: Dashboard → Emails → «Application emails» → «Edit with AI» (plano Builder). A API não deixa alterar o ramo principal protegido. Os modelos prontos a colar estão em `docs/emails/` (convite, redefinição de palavra-passe e acesso aprovado); manter as variáveis e a ligação de ação do painel.
+4. Os três emails de acesso enviados pela aplicação (`accountEmails`) usam o mesmo tema e já seguem em PT-PT: convite, instruções de redefinição (a partir de Utilizadores, no Backoffice) e aviso de acesso aprovado (quando um administrador atribui o cliente ao utilizador).
 
 Com o domínio de email ativo, a app também pode escrever a pessoas sem conta (ex.: fornecedores nos questionários) até 20 por dia; sem ele, esses envios pelo Base44 falham. Com a Resend esse limite não se aplica.

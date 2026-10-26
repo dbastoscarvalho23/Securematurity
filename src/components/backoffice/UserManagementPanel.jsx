@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import EditUserDialog from '@/components/settings/EditUserDialog';
 import { Loader2, UserPlus, Mail, Trash2, Pencil, Clock } from 'lucide-react';
+import { sendInviteEmail, sendPasswordResetEmail, sendAccessApprovedEmail } from '@/lib/mail';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { toast } from 'sonner';
@@ -31,6 +32,20 @@ export default function UserManagementPanel() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [invitedToDelete, setInvitedToDelete] = useState(null);
   const [userToEdit, setUserToEdit] = useState(null);
+  const [sendingResetTo, setSendingResetTo] = useState(null);
+
+  /** Instruções de redefinição de palavra-passe (email em PT-PT, tema AnkoraOne). */
+  const handleSendReset = async (targetUser) => {
+    setSendingResetTo(targetUser.id);
+    try {
+      await sendPasswordResetEmail({ email: targetUser.email, customerId: targetUser.customer_id });
+      toast.success(t('x_mail_reset_sent').replace('{email}', targetUser.email));
+    } catch (err) {
+      toast.error(err?.message || t('x_mail_reset_error'));
+    } finally {
+      setSendingResetTo(null);
+    }
+  };
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId) => {
@@ -71,12 +86,23 @@ export default function UserManagementPanel() {
       if (res.data?.error) throw new Error(res.data.error);
       return res.data;
     },
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       if (result?.roleError) {
         toast.warning(t('x_user_role_not_changed', { error: result.roleError }));
       } else {
         toast.success(t('settings_user_updated'));
+      }
+      // Atribuir um cliente é a aprovação do acesso: o utilizador recebe o aviso em PT-PT.
+      const target = users.find(u => u.id === variables.userId);
+      if (isAdmin && variables.data?.customer_id && target?.email) {
+        sendAccessApprovedEmail({
+          email: target.email,
+          role: variables.data.role || target.role,
+          customerId: variables.data.customer_id,
+          customerName: variables.data.customer_name,
+          approvedBy: currentUser?.email,
+        }).catch(() => {});
       }
       setUserToEdit(null);
     },
@@ -127,6 +153,19 @@ export default function UserManagementPanel() {
           invited_by: me?.email || '',
           ...(isCustomerAdmin && me?.customer_id ? { customer_id: me.customer_id, customer_name: me.customer_name || '' } : {}),
         });
+      }
+      // Email de convite no tema da plataforma (PT-PT). O acesso já foi criado pela
+      // plataforma; uma falha de envio não desfaz o convite.
+      try {
+        await sendInviteEmail({
+          email: inviteEmail,
+          role: trackedRole,
+          customerId: isCustomerAdmin ? me?.customer_id : undefined,
+          customerName: isCustomerAdmin ? me?.customer_name : undefined,
+          invitedBy: me?.email,
+        });
+      } catch {
+        toast.warning(t('x_mail_invite_error'));
       }
       toast.success(`${t('settings_invitation_sent')} ${inviteEmail}`);
       setInviteEmail('');
@@ -282,6 +321,15 @@ export default function UserManagementPanel() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title={t('x_mail_reset_send')}
+                        onClick={() => handleSendReset(u)}
+                        disabled={sendingResetTo === u.id}
+                      >
+                        {sendingResetTo === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"

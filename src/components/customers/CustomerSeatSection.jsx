@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { notifySeatChange, MIN_SEAT_LIMIT } from '@/lib/seatManagement';
+import { sendInviteEmail } from '@/lib/mail';
 
 const ROLE_STYLES = {
   admin:          'bg-red-100 text-red-700 border-red-200',
@@ -126,6 +127,18 @@ export default function CustomerSeatSection({ customer, onCustomerUpdated }) {
         customer_name: customer.name,
         status: 'inactive',
       });
+      // Email de convite no tema da plataforma (PT-PT); o acesso já foi criado.
+      try {
+        await sendInviteEmail({
+          email: inviteEmail.trim(),
+          role: inviteRole,
+          customerId: customer.id,
+          customerName: customer.name,
+          invitedBy: currentUser?.email,
+        });
+      } catch {
+        toast.warning(t('x_mail_invite_error'));
+      }
       toast.success(t('seat_invite_sent').replace('{email}', inviteEmail.trim()));
       setInviteEmail('');
       setInviteRole('user');
