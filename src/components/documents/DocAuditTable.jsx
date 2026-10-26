@@ -50,7 +50,7 @@ export default function DocAuditTable({ docs, versions, scopedDocIds, cutoff }) 
           id: `ver-${v.id}`,
           type: 'version_saved',
           date: v.created_date,
-          title: doc?.title || 'Unknown Document',
+          title: doc?.title || t('x_doc_unknown'),
           level: doc?.level || v.level,
           status: v.status,
           actor: v.changed_by,

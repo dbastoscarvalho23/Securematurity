@@ -35,9 +35,9 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setUser(null);
       if (error?.status === 403 && error?.data?.extra_data?.reason === 'user_not_registered') {
-        setAuthError({ type: 'user_not_registered', message: 'User not registered for this app' });
+        setAuthError({ type: 'user_not_registered', message: 'Utilizador não registado nesta aplicação' });
       } else if (error?.status === 401 || error?.status === 403) {
-        setAuthError({ type: 'auth_required', message: 'Authentication required' });
+        setAuthError({ type: 'auth_required', message: 'É necessário iniciar sessão' });
       }
     } finally {
       setIsLoadingAuth(false);

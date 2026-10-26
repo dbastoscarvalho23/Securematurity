@@ -49,6 +49,9 @@ export async function openEvidence(evidence) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+/** Repositório efetivo do cliente: { provider, wanted, fallback }. */
+export const evidenceProvider = (customerId) => invoke({ action: 'provider', customer_id: customerId });
+
 export const reviewEvidence = (evidence, status, notes) => invoke({ action: 'review', evidence_id: evidence.id, status, notes });
 export const deleteEvidence = (evidence) => invoke({ action: 'delete', evidence_id: evidence.id });
 

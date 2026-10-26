@@ -59,6 +59,12 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onClo
     { path: '/evidence', labelKey: 'nav_evidence', icon: Paperclip },
     // Inventário de ativos e ferramentas: informação «reservada» (art. 32.º) — só administradores
     ...((isAdmin || isCustomerAdmin) ? [{ path: '/assets', labelKey: 'nav_assets_tools', icon: Boxes }] : []),
+    // Incidentes e vulnerabilidades: administrador do cliente (o admin da plataforma tem-nos em «Desenvolvimento»).
+    ...(isCustomerAdmin ? [
+      { path: '/incidents', labelKey: 'nav_incidents', icon: Siren },
+      { path: '/vulnerabilities', labelKey: 'nav_vulnerabilities', icon: Bug },
+      { path: '/action-plan', labelKey: 'nav_action_plan', icon: Target },
+    ] : []),
     { path: '/tasks', labelKey: 'nav_tasks', icon: ListTodo },
     { path: '/task-analytics', labelKey: 'nav_task_analytics', icon: TrendingUp },
     { path: '/risk-assessment', labelKey: 'nav_risk_assessment', icon: TriangleAlert },

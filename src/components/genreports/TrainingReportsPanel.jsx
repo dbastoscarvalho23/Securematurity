@@ -61,7 +61,7 @@ export default function TrainingReportsPanel() {
       toast.success(t('treports_saved'));
       setEditing(null);
     },
-    onError: (e) => toast.error(e?.message || 'Error'),
+    onError: (e) => toast.error(e?.message || t('x_tool_error')),
   });
 
   const deleteMut = useMutation({
@@ -74,7 +74,7 @@ export default function TrainingReportsPanel() {
       toast.success(t('treports_deleted'));
       setDeleting(null);
     },
-    onError: (e) => toast.error(e?.message || 'Error'),
+    onError: (e) => toast.error(e?.message || t('x_tool_error')),
   });
 
   return (

@@ -23,7 +23,6 @@ Deno.serve(async (req) => {
 
     // Determine month label (current month being snapshotted)
     const now = new Date();
-    const monthLabel = now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
     const monthLabelPt = now.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' });
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -49,7 +48,7 @@ Deno.serve(async (req) => {
     const reportData = { risks, tasks, recommendations, assessments };
 
     // Build PDF
-    const pdfBuffer = buildPdf(reportData, monthLabel, null);
+    const pdfBuffer = buildPdf(reportData, monthLabelPt, null);
 
     // Upload file — write to /tmp then read as bytes for multipart upload
     const fileName = `Annual_Cybersecurity_Report_${monthKey}.pdf`;
@@ -76,6 +75,7 @@ Deno.serve(async (req) => {
     // Create DocumentVersion record for the audit trail
     await sr.entities.DocumentVersion.create({
       document_id: doc.id,
+      ...(doc.customer_id ? { customer_id: doc.customer_id } : {}),
       version_label: '1.0',
       title: doc.title,
       description: doc.description,

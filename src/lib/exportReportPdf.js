@@ -15,6 +15,15 @@ const PRIORITY_COLORS = {
   low: [100, 110, 130],
 };
 
+const PRIORITY_LABELS = { critical: 'Crítica', high: 'Alta', medium: 'Média', low: 'Baixa' };
+const EFFORT_LABELS = { low: 'baixo', medium: 'médio', high: 'elevado' };
+const TIMELINE_LABELS = { immediate: 'Imediato', short_term: 'Curto prazo', medium_term: 'Médio prazo', long_term: 'Longo prazo' };
+const TASK_STATUS_LABELS = { todo: 'Por fazer', in_progress: 'Em curso', done: 'Concluída', blocked: 'Bloqueada' };
+
+function fmtScore(n) {
+  return n.toFixed(1).replace('.', ',');
+}
+
 
 function setColor(doc, rgb, type = 'text') {
   if (type === 'fill') doc.setFillColor(...rgb);
@@ -28,11 +37,11 @@ function addPage(doc) {
 }
 
 function scoreLabel(score) {
-  if (score >= 4.5) return 'Optimizing';
-  if (score >= 3.5) return 'Managed';
-  if (score >= 2.5) return 'Defined';
-  if (score >= 1.5) return 'Developing';
-  return 'Initial';
+  if (score >= 4.5) return 'Otimizado';
+  if (score >= 3.5) return 'Gerido';
+  if (score >= 2.5) return 'Definido';
+  if (score >= 1.5) return 'Em desenvolvimento';
+  return 'Inicial';
 }
 
 export function exportReportPdf(assessment, recommendations, tasks = []) {
@@ -53,11 +62,11 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   setColor(doc, [200, 210, 255]);
-  doc.text('ANKORAONE PLATFORM', 20, 28);
+  doc.text('PLATAFORMA ANKORAONE', 20, 28);
 
   doc.setFontSize(24);
   setColor(doc, [255, 255, 255]);
-  doc.text('Security Assessment Report', 20, 44);
+  doc.text('Relatório de Avaliação de Segurança', 20, 44);
 
   doc.setFontSize(13);
   doc.setFont('helvetica', 'normal');
@@ -66,7 +75,7 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
   doc.text(`${assessment.customer_name}  ·  ${assessment.period}`, 20, 66);
 
   // Score badge
-  const score = assessment.overall_score?.toFixed(1) || '—';
+  const score = assessment.overall_score != null ? fmtScore(assessment.overall_score) : '—';
   setColor(doc, BRAND_BLUE, 'fill');
   doc.roundedRect(W - 60, 22, 42, 42, 4, 4, 'F');
   doc.setFontSize(28);
@@ -76,24 +85,24 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   setColor(doc, [200, 220, 255]);
-  doc.text('out of 5.0', W - 39, 52, { align: 'center' });
+  doc.text('em 5,0', W - 39, 52, { align: 'center' });
   doc.text(scoreLabel(assessment.overall_score), W - 39, 60, { align: 'center' });
 
   // Meta block
   let y = 98;
   const meta = [
-    ['Customer', assessment.customer_name],
-    ['Assessment Period', assessment.period],
-    ['Completed Date', assessment.completed_date || 'N/A'],
-    ['Frameworks', (assessment.frameworks || []).map(f => FRAMEWORK_NAMES[f] || f).join(', ')],
-    ['Overall Score', `${score} / 5.0  (${scoreLabel(assessment.overall_score)})`],
-    ['Total Recommendations', String(recommendations.length)],
+    ['Cliente', assessment.customer_name],
+    ['Período da avaliação', assessment.period],
+    ['Data de conclusão', assessment.completed_date || 'N/D'],
+    ['Referenciais', (assessment.frameworks || []).map(f => FRAMEWORK_NAMES[f] || f).join(', ')],
+    ['Pontuação global', `${score} / 5,0  (${scoreLabel(assessment.overall_score)})`],
+    ['Total de recomendações', String(recommendations.length)],
   ];
 
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   setColor(doc, BRAND_DARK);
-  doc.text('Executive Summary', 20, y);
+  doc.text('Resumo executivo', 20, y);
   y += 8;
 
   setColor(doc, BRAND_BLUE, 'draw');
@@ -122,7 +131,7 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   setColor(doc, BRAND_DARK);
-  doc.text('Framework Maturity Scores', 20, y);
+  doc.text('Pontuação de maturidade por referencial', 20, y);
   y += 10;
 
   const frameworkScores = assessment.framework_scores || [];
@@ -151,7 +160,7 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
     setColor(doc, BRAND_BLUE);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.text(fs.score.toFixed(1), W - 24, y + 10, { align: 'right' });
+    doc.text(fmtScore(fs.score), W - 24, y + 10, { align: 'right' });
 
     // Progress bar track
     const barX = 24;
@@ -174,7 +183,7 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
         doc.setFontSize(8);
         const truncated = ds.domain.length > 50 ? ds.domain.substring(0, 47) + '...' : ds.domain;
         doc.text(truncated, 28, y + 4);
-        doc.text(ds.score.toFixed(1), W - 24, y + 4, { align: 'right' });
+        doc.text(fmtScore(ds.score), W - 24, y + 4, { align: 'right' });
 
         setColor(doc, BORDER_GRAY, 'fill');
         doc.roundedRect(28, y + 6, barW - 8, 2, 0.5, 0.5, 'F');
@@ -204,13 +213,13 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     setColor(doc, BRAND_DARK);
-    doc.text('AI-Generated Recommendations', 20, y);
+    doc.text('Recomendações geradas por IA', 20, y);
     y += 4;
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     setColor(doc, MID_GRAY);
-    doc.text(`${recommendations.length} prioritized improvement actions`, 20, y + 6);
+    doc.text(`${recommendations.length} ações de melhoria por prioridade`, 20, y + 6);
     y += 14;
 
     // Priority summary counts
@@ -225,7 +234,7 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
       setColor(doc, [255, 255, 255]);
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text(`${count} ${priority}`, sx + 14, y + 6.5, { align: 'center' });
+      doc.text(`${PRIORITY_LABELS[priority]}: ${count}`, sx + 14, y + 6.5, { align: 'center' });
       sx += 32;
     });
     y += 18;
@@ -266,7 +275,7 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
       setColor(doc, [255, 255, 255]);
       doc.setFontSize(7);
       doc.setFont('helvetica', 'bold');
-      doc.text(rec.priority.toUpperCase(), 45, y + 8.5, { align: 'center' });
+      doc.text((PRIORITY_LABELS[rec.priority] || rec.priority).toUpperCase(), 45, y + 8.5, { align: 'center' });
 
       // Framework badge
       if (rec.framework_code) {
@@ -284,7 +293,7 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
       if (rec.effort || rec.timeline) {
         setColor(doc, MID_GRAY);
         doc.setFontSize(7);
-        const metaParts = [rec.effort && `Effort: ${rec.effort}`, rec.timeline && rec.timeline.replace(/_/g, ' ')].filter(Boolean);
+        const metaParts = [rec.effort && `Esforço: ${EFFORT_LABELS[rec.effort] || rec.effort}`, rec.timeline && (TIMELINE_LABELS[rec.timeline] || rec.timeline.replace(/_/g, ' '))].filter(Boolean);
         doc.text(metaParts.join('  ·  '), metaX, y + 8.5);
       }
 
@@ -316,13 +325,13 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     setColor(doc, BRAND_DARK);
-    doc.text('Implementation Roadmap', 20, y);
+    doc.text('Plano de implementação', 20, y);
     y += 6;
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     setColor(doc, MID_GRAY);
-    doc.text('Prioritized tasks for improving cybersecurity posture', 20, y);
+    doc.text('Tarefas por prioridade para melhorar a postura de cibersegurança', 20, y);
     y += 10;
 
     // Summary stats
@@ -334,9 +343,9 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
     // Stats row
     const statBoxes = [
       { label: 'Total', value: String(tasks.length), color: BRAND_BLUE },
-      { label: 'Completed', value: String(taskDone), color: BRAND_TEAL },
-      { label: 'In Progress', value: String(taskInProgress), color: [234, 179, 8] },
-      { label: 'To Do', value: String(taskTodo), color: MID_GRAY },
+      { label: 'Concluídas', value: String(taskDone), color: BRAND_TEAL },
+      { label: 'Em curso', value: String(taskInProgress), color: [234, 179, 8] },
+      { label: 'Por fazer', value: String(taskTodo), color: MID_GRAY },
     ];
     let sx = 20;
     statBoxes.forEach(({ label, value, color }) => {
@@ -366,7 +375,7 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
     setColor(doc, BRAND_DARK);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
-    doc.text(`${taskPct}% complete`, barX + fullBarW + 2, barY + 4);
+    doc.text(`${taskPct}% concluído`, barX + fullBarW + 2, barY + 4);
     y += 36;
 
     // Task list sorted by priority then status
@@ -384,10 +393,10 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
     setColor(doc, MID_GRAY);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
-    doc.text('Task', 24, y + 5);
-    doc.text('Priority', W - 90, y + 5);
-    doc.text('Status', W - 60, y + 5);
-    doc.text('Due Date', W - 30, y + 5, { align: 'right' });
+    doc.text('Tarefa', 24, y + 5);
+    doc.text('Prioridade', W - 90, y + 5);
+    doc.text('Estado', W - 60, y + 5);
+    doc.text('Prazo', W - 30, y + 5, { align: 'right' });
     y += 10;
 
     sortedTasks.forEach((task) => {
@@ -425,13 +434,13 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
       setColor(doc, [255, 255, 255]);
       doc.setFontSize(6.5);
       doc.setFont('helvetica', 'bold');
-      doc.text((task.priority || 'medium').toUpperCase(), W - 88, y + rowH / 2 + 1, { align: 'center' });
+      doc.text((PRIORITY_LABELS[task.priority || 'medium'] || task.priority).toUpperCase(), W - 88, y + rowH / 2 + 1, { align: 'center' });
 
       // Status text
       setColor(doc, MID_GRAY);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
-      doc.text((task.status || '').replace('_', ' '), W - 60, y + rowH / 2 + 1);
+      doc.text(TASK_STATUS_LABELS[task.status] || (task.status || '').replace('_', ' '), W - 60, y + rowH / 2 + 1);
 
       // Due date
       if (task.due_date) {
@@ -459,16 +468,16 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
   setColor(doc, [255, 255, 255]);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text('AnkoraOne Platform', 20, 13);
+  doc.text('Plataforma AnkoraOne', 20, 13);
 
   y = 36;
   setColor(doc, BRAND_DARK);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  doc.text('Important Notice', 20, y);
+  doc.text('Aviso importante', 20, y);
   y += 8;
 
-  const disclaimer = `This report was generated by the AnkoraOne Platform based on self-assessment responses and AI-assisted analysis. The maturity scores and recommendations contained herein reflect the information provided at the time of assessment and should be reviewed by qualified cybersecurity professionals before implementation.\n\nThis document is confidential and intended solely for the use of ${assessment.customer_name}. Unauthorized disclosure, copying, or distribution is strictly prohibited.\n\nGenerated: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  const disclaimer = `Este relatório foi gerado pela Plataforma AnkoraOne com base nas respostas de autoavaliação e numa análise assistida por IA. As pontuações de maturidade e as recomendações refletem a informação disponível à data da avaliação e devem ser revistas por profissionais de cibersegurança qualificados antes da implementação.\n\nEste documento é confidencial e destina-se exclusivamente a ${assessment.customer_name}. É proibida a divulgação, cópia ou distribuição sem autorização.\n\nGerado em: ${new Date().toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' })}`;
 
   setColor(doc, MID_GRAY);
   doc.setFont('helvetica', 'normal');
@@ -487,8 +496,8 @@ export function exportReportPdf(assessment, recommendations, tasks = []) {
     doc.line(20, ph - 14, pw - 20, ph - 14);
     setColor(doc, MID_GRAY);
     doc.setFontSize(8);
-    doc.text('AnkoraOne Platform · Confidential', 20, ph - 8);
-    doc.text(`Page ${i} of ${totalPages}`, pw - 20, ph - 8, { align: 'right' });
+    doc.text('Plataforma AnkoraOne · Confidencial', 20, ph - 8);
+    doc.text(`Página ${i} de ${totalPages}`, pw - 20, ph - 8, { align: 'right' });
   }
 
   const filename = `${assessment.customer_name?.replace(/[^a-z0-9]/gi, '_')}_${assessment.period}_Report.pdf`;

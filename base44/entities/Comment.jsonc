@@ -24,6 +24,10 @@
           }
         }
       }
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Cliente (tenant): partilha o registo com os colegas do mesmo cliente"
     }
   },
   "required": [
@@ -40,6 +44,9 @@
         },
         {
           "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
         }
       ]
     },
@@ -52,6 +59,9 @@
         },
         {
           "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
         }
       ]
     },

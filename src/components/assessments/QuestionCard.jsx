@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Check, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import EvidenceUploader from '@/components/assessments/EvidenceUploader';
+import QuestionEvidence from '@/components/assessments/QuestionEvidence';
 import CrossMappingSuggestions from '@/components/assessments/CrossMappingSuggestions';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -18,7 +19,7 @@ const MATURITY_LEVELS = [
   { level: 5, labelKey: 'maturity_optimized', color: 'bg-accent/10 text-accent border-accent/20 hover:bg-accent/20' },
 ];
 
-export default function QuestionCard({ question, index, response, onSave, language = 'en', currentFramework, allQuestions = [], responseMap = {} }) {
+export default function QuestionCard({ question, index, response, onSave, language = 'en', currentFramework, allQuestions = [], responseMap = {}, customerId }) {
   const { t } = useLanguage();
   const [notes, setNotes] = useState(response?.evidence_notes || '');
   const [showNotes, setShowNotes] = useState(!!response?.evidence_notes);
@@ -108,11 +109,14 @@ export default function QuestionCard({ question, index, response, onSave, langua
           />
         )}
 
-        {/* File Attachments */}
-        <EvidenceUploader
-          attachments={response?.attachments || []}
-          onAttachmentsChange={handleAttachmentsChange}
-        />
+        {/* Anexos antigos (públicos) só aparecem se já existirem; as evidências novas são privadas e estruturadas. */}
+        {(response?.attachments || []).length > 0 && (
+          <EvidenceUploader
+            attachments={response?.attachments || []}
+            onAttachmentsChange={handleAttachmentsChange}
+          />
+        )}
+        <QuestionEvidence question={question} customerId={customerId} />
 
         {/* Cross-framework mapping suggestions */}
         <CrossMappingSuggestions

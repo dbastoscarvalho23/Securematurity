@@ -382,6 +382,7 @@ ${LEGAL_AI_CONTEXT}`,
               currentFramework={currentFw}
               allQuestions={questions}
               responseMap={responseMap}
+              customerId={assessment?.customer_id}
             />
           ))}
           {(!domains[currentDomain] || domains[currentDomain].length === 0) && (

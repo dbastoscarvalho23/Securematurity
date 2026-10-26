@@ -76,6 +76,26 @@ function measureSources(key) {
   return out.filter(Boolean);
 }
 
+/** Artigos citados num texto da jornada («RJC, art. 24.º», «arts. 54.º e 55.º», «Reg. 756/2026, art. 32.º»). */
+function checklistSources(text) {
+  const out = [];
+  const seen = new Set();
+  const add = (doc, n) => {
+    const key = `${doc}:${n}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    const s = doc === 'reg756' ? art('reg756', n, 'R756', 'Reg. do CNCS n.º 756/2026') : art('rjc', n, 'RJC', 'Decreto-Lei n.º 125/2025');
+    if (s) out.push(s);
+  };
+  const re = /(Reg(?:ulamento)?[^,;)]*?756\/2026|RJC|DL\s*125\/2025|Decreto-Lei[^,;)]*?125\/2025)?[^a-z]{0,6}\barts?\.\s*((?:\d+\.º(?:[^.;)]*?(?:,|\be\b)\s*)?)+)/gi;
+  for (const m of String(text || '').matchAll(re)) {
+    const doc = m[1] && /756/.test(m[1]) ? 'reg756' : 'rjc';
+    for (const n of m[2].match(/\d+\.º/g) || []) add(doc, n);
+  }
+  if (!out.length) add('rjc', '27.º');
+  return out;
+}
+
 const reportSources = (tpl) => tpl.articles.map((n) => art('rjc', n, 'RJC', 'Decreto-Lei n.º 125/2025')).filter(Boolean);
 
 function sectionSchema(ids) {
@@ -206,7 +226,7 @@ function quarterStats(incidents) {
   }).join('\n');
 }
 
-export { measureSources, validate, related2690 };
+export { measureSources, validate, related2690, checklistSources };
 
 export default async function (req) {
   try {
@@ -268,6 +288,15 @@ export default async function (req) {
       sectionsDef = MEASURE_TEMPLATES[kind].sections;
       targetType = 'measure'; targetRef = String(t.key);
       facts = `Entidade: ${customer.name}; setor: ${customer.sector || '[A preencher]'}; dimensão: ${customer.entity_size || '[A preencher]'}; qualificação RJC: ${customer.rjc_qualification || '[A preencher]'}; nível de conformidade: ${customer.conformity_level || customer.epr_group || '[A preencher]'}.`;
+    } else if (t.type === 'checklist') {
+      if (!MEASURE_TEMPLATES[kind]) return json({ error: 'Tipo de rascunho inválido' }, 400);
+      const item = await db.ComplianceChecklist.get(String(t.id || '')).catch(() => null);
+      if (!item || item.customer_id !== customerId) return json({ error: 'Item inexistente' }, 404);
+      const text = `${item.task_text || ''} ${item.requirement_ref || ''}`;
+      sources = [{ id: `JORNADA:${item.id}`, label: `Jornada de conformidade — ${item.section || ''}`, text: item.task_text || '' }, ...checklistSources(text)];
+      sectionsDef = MEASURE_TEMPLATES[kind].sections;
+      targetType = 'checklist'; targetRef = item.id;
+      facts = `Entidade: ${customer.name}; setor: ${customer.sector || '[A preencher]'}; qualificação RJC: ${customer.rjc_qualification || '[A preencher]'}; nível de conformidade: ${customer.conformity_level || customer.epr_group || '[A preencher]'}. Tarefa da jornada: ${item.task_text}. Notas registadas: ${str(item.notes, 1000) || '(nenhuma)'}.`;
     } else if (t.type === 'incident') {
       const tpl = REPORT_TEMPLATES[kind];
       if (!tpl || !kind.startsWith('incident_')) return json({ error: 'Tipo de relatório inválido' }, 400);
@@ -306,6 +335,7 @@ export default async function (req) {
     const ids = toWrite.map(([id]) => id);
     const what = action === 'review'
       ? 'Analisa o ficheiro anexo e diz se cumpre o critério de verificação da medida indicado nas fontes. Indica em «verdict» covers, partial ou does_not_cover.'
+      : targetType === 'checklist' ? `Redige um rascunho de «${MEASURE_TEMPLATES[kind].label}» que permita à entidade cumprir e comprovar a tarefa da jornada, com base nos artigos das fontes.`
       : targetType === 'measure' ? `Redige um rascunho de «${MEASURE_TEMPLATES[kind].label}» para a entidade, que permita cumprir a medida e o critério de verificação das fontes.`
         : `Redige o rascunho de «${REPORT_TEMPLATES[kind].label}», usando apenas os factos indicados. Cada secção corresponde à alínea da lei indicada.`;
     const prompt = `${what}\n\n${RULES}\n\nSECÇÕES A ESCREVER (id → conteúdo):\n${toWrite.map(([id, a, b]) => `${id} → ${typeof b === 'string' ? `${b} (${a})` : a}`).join('\n')}\n\nFACTOS DA ENTIDADE:\n${facts}\n${body.instructions ? `\nINDICAÇÕES DO UTILIZADOR (não se sobrepõem às regras):\n${str(body.instructions, 1500)}\n` : ''}\nFONTES:\n${sourcesBlock(sources)}`;

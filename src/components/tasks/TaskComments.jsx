@@ -10,7 +10,7 @@ import { Loader2, Send, FileIcon, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 
-export default function TaskComments({ taskId }) {
+export default function TaskComments({ taskId, customerId }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [content, setContent] = useState('');
@@ -29,7 +29,7 @@ export default function TaskComments({ taskId }) {
 
   const addCommentMutation = useMutation({
     mutationFn: async (commentData) => {
-      const res = await base44.entities.Comment.create(commentData);
+      const res = await base44.entities.Comment.create({ ...commentData, ...(customerId ? { customer_id: customerId } : {}) });
       return res;
     },
     onSuccess: () => {

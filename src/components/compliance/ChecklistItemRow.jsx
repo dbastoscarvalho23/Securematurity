@@ -12,6 +12,12 @@ import { CheckCircle2, Circle, Clock, MinusCircle, CalendarDays, User, Pencil, X
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
+import { useLicense, hasModule } from '@/lib/licensing';
+import { MEASURE_KINDS } from '@/lib/ai';
+import EvidencePanel from '@/components/evidence/EvidencePanel';
+import AiDraftDialog from '@/components/ai/AiDraftDialog';
+import { Sparkles, Paperclip } from 'lucide-react';
 
 export default function ChecklistItemRow({ item, queryKey, displayText, customerUsers = [] }) {
   const { t } = useLanguage();
@@ -19,6 +25,13 @@ export default function ChecklistItemRow({ item, queryKey, displayText, customer
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ status: item.status, owner: item.owner || '', due_date: item.due_date || '', notes: item.notes || '' });
   const [calOpen, setCalOpen] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const { data: license } = useLicense(isAdmin ? item.customer_id : undefined);
+  const canManage = isAdmin || user?.role === 'customer_admin';
+  const aiAllowed = canManage && hasModule(license, user, 'ai_assistant');
+  const [showEvidence, setShowEvidence] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const STATUS_CONFIG = {
     pending:        { labelKey: 'status_pending',        icon: Circle,       color: 'text-muted-foreground', bg: 'bg-muted/50 border-border' },
@@ -137,6 +150,14 @@ export default function ChecklistItemRow({ item, queryKey, displayText, customer
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <Badge variant="outline" className={cn('text-xs border', cfg.bg, cfg.color)}>{t(cfg.labelKey)}</Badge>
+          <Button size="icon" variant="ghost" className="w-6 h-6" title={t('ev_title')} onClick={() => setShowEvidence((v) => !v)}>
+            <Paperclip className="w-3 h-3" />
+          </Button>
+          {aiAllowed && (
+            <Button size="icon" variant="ghost" className="w-6 h-6" title={t('ai_measure_button')} onClick={() => setAiOpen(true)}>
+              <Sparkles className="w-3 h-3" />
+            </Button>
+          )}
           {!editing && (
             <Button size="icon" variant="ghost" className="w-6 h-6" onClick={() => { setForm({ status: item.status, owner: item.owner || '', due_date: item.due_date || '', notes: item.notes || '' }); setEditing(true); }}>
               <Pencil className="w-3 h-3" />
@@ -144,6 +165,15 @@ export default function ChecklistItemRow({ item, queryKey, displayText, customer
           )}
         </div>
       </div>
+      {showEvidence && item.customer_id && (
+        <EvidencePanel customerId={item.customer_id} canUpload={canManage} className="mt-2"
+          links={[{ type: 'checklist', id: item.id, label: (displayText || item.task_text || '').slice(0, 120) }]} />
+      )}
+      {aiAllowed && (
+        <AiDraftDialog open={aiOpen} onOpenChange={setAiOpen} customerId={item.customer_id}
+          target={{ type: 'checklist', id: item.id }} kinds={['evidence_plan', ...MEASURE_KINDS.filter((k) => k !== 'evidence_plan')]}
+          title={`${t('ai_title')} — ${(displayText || item.task_text || '').slice(0, 60)}`} />
+      )}
     </div>
   );
 }

@@ -81,6 +81,7 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
     if (doc?.id) {
       await base44.entities.DocumentVersion.create({
         document_id: doc.id,
+        ...(doc.customer_id ? { customer_id: doc.customer_id } : {}),
         version_label: doc.version,
         title: doc.title,
         description: doc.description,

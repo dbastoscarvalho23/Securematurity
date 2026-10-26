@@ -15,7 +15,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import {
-  uploadEvidence, openEvidence, reviewEvidence, deleteEvidence, evidenceState, linkKey,
+  uploadEvidence, openEvidence, evidenceProvider, reviewEvidence, deleteEvidence, evidenceState, linkKey,
   EVIDENCE_ACCEPT, EVIDENCE_TYPES, EVIDENCE_METHODS,
 } from '@/lib/evidence';
 
@@ -61,13 +61,14 @@ export function evidenceSummary(items = []) {
  */
 export default function EvidencePanel({ customerId, provider: providerProp, links, canUpload = true, className = '' }) {
   // O repositório é o do cliente; se não for passado, lê-se do registo do cliente.
-  const { data: cust } = useQuery({
-    queryKey: ['evidence-customer', customerId],
-    queryFn: () => base44.entities.Customer.get(customerId),
-    enabled: Boolean(customerId) && !providerProp,
+  // Repositório efetivo (o servidor decide: sem ligação ao Google Drive/OneDrive usa o armazenamento nativo).
+  const { data: repo } = useQuery({
+    queryKey: ['evidence-provider', customerId],
+    queryFn: () => evidenceProvider(customerId),
+    enabled: Boolean(customerId),
     staleTime: 5 * 60 * 1000,
   });
-  const provider = providerProp || cust?.storage_provider || 'base44';
+  const provider = repo?.provider || providerProp || 'base44';
   const { t } = useLanguage();
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -88,6 +89,10 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
     try { const r = await aiReview(customerId, ev.id); setReview(r.draft); } catch (e) { toast.error(e?.message || t('ev_error')); } finally { setReviewing(null); }
   };
   const [form, setForm] = useState({ title: '', description: '', evidence_type: 'other', method: 'examine', collected_at: new Date().toISOString().slice(0, 10), valid_until: '' });
+  const measureLink = (links || []).find((l) => l.type === 'measure');
+  const [autoReview, setAutoReview] = useState(true);
+  const [aiPrepare, setAiPrepare] = useState(false);
+  const reviewable = (f) => /^(application\/pdf|image\/|text\/)/.test(f?.type || '');
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const refresh = () => qc.invalidateQueries({ queryKey: ['evidence', customerId] });
 
@@ -95,10 +100,12 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
     if (!file || !form.title.trim()) { toast.error(t('ev_missing')); return; }
     setBusy(true);
     try {
-      await uploadEvidence({ file, customerId, meta: { ...form, links, ...(replacing ? { supersedes_id: replacing.id } : {}) } });
+      const created = await uploadEvidence({ file, customerId, meta: { ...form, links, ...(replacing ? { supersedes_id: replacing.id } : {}) } });
       toast.success(t('ev_uploaded'));
+      const doReview = aiAllowed && measureLink && autoReview && reviewable(file) && created && !created.restricted;
       setOpen(false); setFile(null); setReplacing(null); setForm((f) => ({ ...f, title: '', description: '', valid_until: '' }));
       refresh();
+      if (doReview) runReview(created);
     } catch (e) {
       toast.error(e?.message || t('ev_error'));
     } finally {
@@ -118,7 +125,14 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
         <Paperclip className="w-4 h-4 text-primary" />
         <span className="text-sm font-medium">{t('ev_title')}</span>
         <Badge variant="outline" className="text-[10px]">{items.length}</Badge>
-        <span className="text-[11px] text-muted-foreground">{t(`ev_repo_${provider || 'base44'}`)}</span>
+        <span className="text-[11px] text-muted-foreground" title={repo?.fallback ? t('ev_repo_fallback', { wanted: t(`ev_repo_${repo.wanted}`) }) : undefined}>
+          {t(`ev_repo_${provider || 'base44'}`)}{repo?.fallback ? ` · ${t('ev_repo_fallback_short')}` : ''}
+        </span>
+        {aiAllowed && measureLink && canUpload && (
+          <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setAiPrepare(true)}>
+            <Sparkles className="w-3.5 h-3.5" /> {t('ev_ai_prepare')}
+          </Button>
+        )}
         {canUpload && (
           <Button type="button" size="sm" variant="outline" className="ml-auto h-7 text-xs gap-1" onClick={() => setOpen((v) => !v)}>
             <Upload className="w-3.5 h-3.5" /> {t('ev_add')}
@@ -158,6 +172,12 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
             <Button type="button" size="sm" variant="ghost" onClick={() => { setOpen(false); setReplacing(null); }}>{t('common_cancel')}</Button>
             <Button type="button" size="sm" onClick={submit} disabled={busy} className="gap-1">{busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}{t('ev_submit')}</Button>
           </div>
+          {aiAllowed && measureLink && (
+            <label className="sm:col-span-2 flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={autoReview} onChange={(e) => setAutoReview(e.target.checked)} />
+              {t('ev_ai_autoreview')}
+            </label>
+          )}
           <p className="sm:col-span-2 text-[11px] text-muted-foreground">{t('ev_privacy_note')}</p>
         </div>
       )}
@@ -194,6 +214,11 @@ export default function EvidencePanel({ customerId, provider: providerProp, link
         </ul>
       )}
       <AiDraftDialog open={review !== null} onOpenChange={(v) => !v && setReview(null)} customerId={customerId} initialDraft={review} title={t('ai_review_title')} />
+      {measureLink && (
+        <AiDraftDialog open={aiPrepare} onOpenChange={setAiPrepare} customerId={customerId}
+          target={{ type: 'measure', key: measureLink.id }} kinds={['evidence_plan', 'policy', 'procedure', 'record']}
+          title={`${t('ev_ai_prepare')} — ${measureLink.ref || measureLink.id}`} />
+      )}
     </div>
   );
 }

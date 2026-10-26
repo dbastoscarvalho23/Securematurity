@@ -233,6 +233,7 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
     if (!newQuestion.trim()) return;
     await base44.entities.SupplierQuestion.create({
       questionnaire_id: qid,
+      ...(questionnaire?.customer_id ? { customer_id: questionnaire.customer_id } : {}),
       question_text: newQuestion.trim(),
       area: newArea || 'General',
       order_index: questions.length + 1,
@@ -292,6 +293,7 @@ ${LEGAL_AI_CONTEXT}`,
       accepted.map((q, i) =>
         base44.entities.SupplierQuestion.create({
           questionnaire_id: qid,
+          ...(questionnaire?.customer_id ? { customer_id: questionnaire.customer_id } : {}),
           question_text: q.question_text,
           question_text_pt: q.question_text_pt,
           area: q.area,

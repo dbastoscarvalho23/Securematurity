@@ -22,7 +22,7 @@ import { resolveProvider, putFile, getFile, sha256Hex, fromBase64, toBase64, MAX
 
 const TYPES = ['screenshot', 'tool_report', 'contract_licence', 'policy_procedure', 'log_record', 'test_audit_report', 'other'];
 const METHODS = ['examine', 'interview', 'test'];
-const LINK_TYPES = ['measure', 'control', 'asset', 'component', 'incident', 'task', 'checklist', 'supplier', 'vulnerability'];
+const LINK_TYPES = ['measure', 'control', 'question', 'asset', 'component', 'incident', 'task', 'checklist', 'supplier', 'vulnerability'];
 const ALLOWED_MIME = /^(application\/pdf|image\/(png|jpeg|gif|webp)|text\/(plain|csv)|application\/(zip|json|xml|vnd\.openxmlformats-officedocument\.[\w.]+|vnd\.ms-excel|msword|vnd\.oasis\.opendocument\.[\w.]+)|message\/rfc822)$/i;
 
 // Entities a link may point to, checked to belong to the evidence's customer.
@@ -135,7 +135,9 @@ export default async function (req) {
       if (!admin && body.customer_id && body.customer_id !== customerId) return json({ error: 'Forbidden' }, 403);
       const customer = await base44.asServiceRole.entities.Customer.get(customerId).catch(() => null);
       if (!customer) return json({ error: 'Cliente inexistente' }, 404);
-      return json({ provider: await resolveProvider(base44, customer) });
+      const effective = await resolveProvider(base44, customer);
+      const wanted = customer.storage_provider || 'base44';
+      return json({ provider: effective, wanted, fallback: effective !== wanted });
     }
 
     if (action === 'create' || action === 'create_external') {

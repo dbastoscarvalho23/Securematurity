@@ -70,7 +70,7 @@ export default function GeneratedReportsPanel({ customers = [] }) {
       toast.success(t('genreports_saved'));
       setEditing(null);
     },
-    onError: (e) => toast.error(e?.message || 'Error'),
+    onError: (e) => toast.error(e?.message || t('x_tool_error')),
   });
 
   const deleteMut = useMutation({
@@ -83,7 +83,7 @@ export default function GeneratedReportsPanel({ customers = [] }) {
       toast.success(t('genreports_deleted'));
       setDeleting(null);
     },
-    onError: (e) => toast.error(e?.message || 'Error'),
+    onError: (e) => toast.error(e?.message || t('x_tool_error')),
   });
 
   return (

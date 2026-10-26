@@ -305,7 +305,7 @@ export default function MitigationTasksPanel({ riskId, customerId }) {
   const customerUsers = useCustomerUsers(customerId);
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.MitigationTask.create({ ...data, risk_id: riskId }),
+    mutationFn: (data) => base44.entities.MitigationTask.create({ ...data, risk_id: riskId, ...(customerId ? { customer_id: customerId } : {}) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mitigationTasks', riskId] }),
   });
 

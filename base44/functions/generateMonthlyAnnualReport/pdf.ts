@@ -14,12 +14,14 @@ const PRIORITY_COLORS = {
   medium: [234, 179, 8],
   low: [100, 110, 130],
 };
+const PRIORITY_LABELS = { critical: 'Crítica', high: 'Alta', medium: 'Média', low: 'Baixa' };
+const RISK_STATUS_LABELS = { open: 'Aberto', in_treatment: 'Em tratamento', accepted: 'Aceite', closed: 'Fechado' };
 // Keep in sync with src/lib/frameworkConstants.js (official names — see the Legal Library).
 const FRAMEWORK_NAMES = {
-  NIS2: 'NIS2 - Directive (EU) 2022/2555 / RJC (DL 125/2025)',
-  QNRC: 'QNRCS (Regulamento n.o 756/2026)',
-  EU_2024_2690: 'Implementing Regulation (EU) 2024/2690',
-  DORA: 'DORA - Regulation (EU) 2022/2554',
+  NIS2: 'NIS2 — Diretiva (UE) 2022/2555 / RJC (DL 125/2025)',
+  QNRC: 'QNRCS (Regulamento n.º 756/2026)',
+  EU_2024_2690: 'Regulamento de Execução (UE) 2024/2690',
+  DORA: 'DORA — Regulamento (UE) 2022/2554',
   ISO27001: 'ISO/IEC 27001:2022',
   NIST_CSF: 'NIST CSF',
   CIS_V8: 'CIS Controls v8.1.2',
@@ -51,16 +53,16 @@ export function buildPdf(reportData, monthLabel, customerName) {
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   sc(doc, [200, 210, 255]);
-  doc.text('ANKORAONE PLATFORM', 20, 28);
+  doc.text('PLATAFORMA ANKORAONE', 20, 28);
 
   doc.setFontSize(22);
   sc(doc, [255, 255, 255]);
-  doc.text('Annual Cybersecurity Report', 20, 44);
+  doc.text('Relatório Anual de Cibersegurança', 20, 44);
 
   doc.setFontSize(13);
   doc.setFont('helvetica', 'normal');
   sc(doc, [180, 195, 230]);
-  doc.text(`Monthly Snapshot — ${monthLabel}`, 20, 56);
+  doc.text(`Resumo mensal — ${monthLabel}`, 20, 56);
   if (customerName) doc.text(customerName, 20, 66);
 
   // Stats badge
@@ -73,12 +75,12 @@ export function buildPdf(reportData, monthLabel, customerName) {
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   sc(doc, [200, 220, 255]);
-  doc.text('total risks', W - 40, 52, { align: 'center' });
-  doc.text(`${tasks.length} tasks`, W - 40, 60, { align: 'center' });
+  doc.text('riscos no total', W - 40, 52, { align: 'center' });
+  doc.text(`${tasks.length} tarefas`, W - 40, 60, { align: 'center' });
 
   // Summary
   let y = 98;
-  const generated = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const generated = new Date().toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' });
 
   const critCount = risks.filter(r => riskScore(r.impact, r.likelihood) >= 16).length;
   const highCount = risks.filter(r => { const s = riskScore(r.impact, r.likelihood); return s >= 9 && s < 16; }).length;
@@ -86,20 +88,20 @@ export function buildPdf(reportData, monthLabel, customerName) {
   const recPending = recommendations.filter(r => r.status === 'pending').length;
 
   const summaryMeta = [
-    ['Report Period', monthLabel],
-    ['Generated', generated],
-    ...(customerName ? [['Customer / Scope', customerName]] : [['Customer / Scope', 'All Customers']]),
-    ['Total Risks', String(risks.length)],
-    ['Critical / High Risks', `${critCount} Critical, ${highCount} High`],
-    ['Total Tasks', `${tasks.length} (${taskDone} completed)`],
-    ['Pending Recommendations', String(recPending)],
-    ['Assessments (This Year)', String(assessments.length)],
+    ['Período do relatório', monthLabel],
+    ['Gerado em', generated],
+    ...(customerName ? [['Cliente / âmbito', customerName]] : [['Cliente / âmbito', 'Todos os clientes']]),
+    ['Total de riscos', String(risks.length)],
+    ['Riscos críticos / altos', `${critCount} críticos, ${highCount} altos`],
+    ['Total de tarefas', `${tasks.length} (${taskDone} concluídas)`],
+    ['Recomendações pendentes', String(recPending)],
+    ['Avaliações (este ano)', String(assessments.length)],
   ];
 
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   sc(doc, BRAND_DARK);
-  doc.text('Executive Summary', 20, y);
+  doc.text('Resumo executivo', 20, y);
   y += 8;
 
   sc(doc, BRAND_BLUE, 'draw');
@@ -126,7 +128,7 @@ export function buildPdf(reportData, monthLabel, customerName) {
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   sc(doc, BRAND_DARK);
-  doc.text('Risk Overview', 20, y);
+  doc.text('Visão geral dos riscos', 20, y);
   y += 10;
 
   // Severity distribution bar
@@ -140,14 +142,14 @@ export function buildPdf(reportData, monthLabel, customerName) {
     sc(doc, BRAND_DARK);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text('Risk Severity Distribution', 20, y);
+    doc.text('Distribuição por gravidade', 20, y);
     y += 6;
 
     const segments = [
-      { count: critCount, color: [220, 38, 38], label: 'Critical' },
-      { count: highCount, color: [249, 115, 22], label: 'High' },
-      { count: medCount, color: [234, 179, 8], label: 'Medium' },
-      { count: lowCount, color: MID_GRAY, label: 'Low' },
+      { count: critCount, color: [220, 38, 38], label: 'Crítico' },
+      { count: highCount, color: [249, 115, 22], label: 'Alto' },
+      { count: medCount, color: [234, 179, 8], label: 'Médio' },
+      { count: lowCount, color: MID_GRAY, label: 'Baixo' },
     ];
     let segX = barX;
     segments.forEach(({ count, color }) => {
@@ -180,7 +182,7 @@ export function buildPdf(reportData, monthLabel, customerName) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     sc(doc, BRAND_DARK);
-    doc.text('Top Risks by Score', 20, y);
+    doc.text('Principais riscos por pontuação', 20, y);
     y += 8;
 
     sc(doc, LIGHT_GRAY, 'fill');
@@ -188,10 +190,10 @@ export function buildPdf(reportData, monthLabel, customerName) {
     sc(doc, MID_GRAY);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
-    doc.text('Risk Title', 24, y);
-    doc.text('Category', W - 80, y);
-    doc.text('Score', W - 40, y);
-    doc.text('Status', W - 22, y);
+    doc.text('Risco', 24, y);
+    doc.text('Categoria', W - 80, y);
+    doc.text('Pontuação', W - 40, y);
+    doc.text('Estado', W - 22, y);
     y += 4;
 
     sortedRisks.forEach(risk => {
@@ -217,7 +219,7 @@ export function buildPdf(reportData, monthLabel, customerName) {
       doc.text(String(score), W - 38, y);
       sc(doc, MID_GRAY);
       doc.setFont('helvetica', 'normal');
-      doc.text((risk.status || '').replace('_', ' '), W - 22, y);
+      doc.text(RISK_STATUS_LABELS[risk.status] || (risk.status || '').replace('_', ' '), W - 22, y);
 
       sc(doc, BORDER_GRAY, 'draw');
       doc.setLineWidth(0.2);
@@ -232,7 +234,7 @@ export function buildPdf(reportData, monthLabel, customerName) {
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   sc(doc, BRAND_DARK);
-  doc.text('Measures & Recommendations', 20, y);
+  doc.text('Medidas e recomendações', 20, y);
   y += 10;
 
   // Tasks summary
@@ -244,14 +246,14 @@ export function buildPdf(reportData, monthLabel, customerName) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   sc(doc, BRAND_DARK);
-  doc.text('Task Status', 20, y);
+  doc.text('Estado das tarefas', 20, y);
   y += 8;
 
   const taskBoxes = [
-    { label: 'Done', value: taskDone, color: BRAND_TEAL },
-    { label: 'In Progress', value: taskInProg, color: [234, 179, 8] },
-    { label: 'To Do', value: taskTodo, color: MID_GRAY },
-    { label: 'Blocked', value: taskBlocked, color: [220, 38, 38] },
+    { label: 'Concluídas', value: taskDone, color: BRAND_TEAL },
+    { label: 'Em curso', value: taskInProg, color: [234, 179, 8] },
+    { label: 'Por fazer', value: taskTodo, color: MID_GRAY },
+    { label: 'Bloqueadas', value: taskBlocked, color: [220, 38, 38] },
   ];
   let bx = 20;
   taskBoxes.forEach(({ label, value, color }) => {
@@ -280,14 +282,14 @@ export function buildPdf(reportData, monthLabel, customerName) {
   sc(doc, BRAND_DARK);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
-  doc.text(`${taskPct}% complete`, barX2 + barFull + 2, y + 3);
+  doc.text(`${taskPct}% concluído`, barX2 + barFull + 2, y + 3);
   y += 14;
 
   // Recommendations summary
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   sc(doc, BRAND_DARK);
-  doc.text('Top Pending Recommendations', 20, y);
+  doc.text('Principais recomendações pendentes', 20, y);
   y += 8;
 
   const sortOrder = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -314,7 +316,7 @@ export function buildPdf(reportData, monthLabel, customerName) {
     sc(doc, [255, 255, 255]);
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'bold');
-    doc.text((rec.priority || 'medium').toUpperCase(), 39, y + 7.5, { align: 'center' });
+    doc.text((PRIORITY_LABELS[rec.priority || 'medium'] || rec.priority).toUpperCase(), 39, y + 7.5, { align: 'center' });
 
     if (rec.framework_code) {
       sc(doc, BORDER_GRAY, 'fill');
@@ -343,8 +345,8 @@ export function buildPdf(reportData, monthLabel, customerName) {
     doc.line(20, ph - 14, pw - 20, ph - 14);
     sc(doc, MID_GRAY);
     doc.setFontSize(8);
-    doc.text('AnkoraOne Platform · Monthly Snapshot · Confidential', 20, ph - 8);
-    doc.text(`Page ${i} of ${totalPages}`, pw - 20, ph - 8, { align: 'right' });
+    doc.text('Plataforma AnkoraOne · Resumo mensal · Confidencial', 20, ph - 8);
+    doc.text(`Página ${i} de ${totalPages}`, pw - 20, ph - 8, { align: 'right' });
   }
 
   // Return as ArrayBuffer
