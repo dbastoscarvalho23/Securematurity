@@ -353,3 +353,4 @@ export function buildPdf(reportData, monthLabel, customerName) {
   return doc.output('arraybuffer');
 }
 
+
