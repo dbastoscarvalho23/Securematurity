@@ -3,8 +3,8 @@
   "short_name": "AnkoraOne",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "background_color": "#070A13",
+  "theme_color": "#070A13",
   "icons": [
     {
       "src": "/logo.png",
@@ -18,5 +18,6 @@
       "type": "image/png",
       "purpose": "any"
     }
-  ]
+  ],
+  "description": "AnkoraOne: a infraestrutura inteligente de governação, risco e conformidade"
 }
