@@ -9,7 +9,8 @@ import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { AlertTriangle, CheckCircle2, Clock, Users, ListTodo } from 'lucide-react';
-import { format, isAfter, parseISO } from 'date-fns';
+import { isAfter, parseISO } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 

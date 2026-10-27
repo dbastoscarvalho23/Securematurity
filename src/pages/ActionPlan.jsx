@@ -19,7 +19,7 @@ import {
 import TaskFormDialog from '@/components/tasks/TaskFormDialog';
 import AIRecommendationDialog from '@/components/recommendations/AIRecommendationDialog';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';

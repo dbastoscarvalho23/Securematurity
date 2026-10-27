@@ -17,7 +17,7 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { exportReportPdf } from '@/lib/exportReportPdf';
