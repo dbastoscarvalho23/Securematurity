@@ -115,13 +115,13 @@ async function guiaNis2() {
       ['Autoidentificação no CNCS', '30 dias após o início de atividade; 60 dias após a plataforma do CNCS ficar disponível, se já estiver em atividade', 'RJC, art. 8.º, n.º 1; Reg. 756/2026, art. 8.º'],
       ['Resposta ao projeto de qualificação', '10 dias úteis', 'Reg. 756/2026, art. 9.º'],
       ['Responsável de cibersegurança e ponto de contacto permanente', '20 dias úteis', 'RJC, arts. 31.º e 32.º; Reg. 756/2026, arts. 14.º e 15.º'],
-      ['Alteração de dados do registo', '30 dias úteis', 'RJC, art. 35.º; Reg. 756/2026, art. 11.º'],
+      ['Alteração de dados do registo', '30 dias úteis (3 meses para os prestadores digitais do art. 35.º, n.º 4)', 'RJC, art. 35.º, n.os 3 e 4; Reg. 756/2026, art. 11.º'],
       ['Notificação inicial de incidente significativo', '24 horas', 'RJC, arts. 41.º e 42.º; Reg. 756/2026, art. 20.º'],
       ['Atualização da notificação', 'Até 72 horas', 'RJC, art. 42.º'],
       ['Fim do impacto', '24 horas após o fim do impacto', 'RJC, art. 43.º'],
       ['Relatório final do incidente', '30 dias úteis', 'RJC, art. 44.º'],
       ['Lista de ativos acessíveis pela Internet', 'Até 31 de janeiro do ano seguinte à qualificação ou em 6 meses (o que ocorrer primeiro); depois, anual', 'Reg. 756/2026, art. 32.º'],
-      ['Relatório anual (entidades essenciais)', 'Último dia útil de janeiro, a partir de 2028', 'RJC, art. 30.º; Reg. 756/2026, art. 13.º'],
+      ['Relatório anual (entidades essenciais)', 'Último dia útil de janeiro do ano seguinte; o primeiro em janeiro de 2029, relativo a 2028', 'RJC, art. 30.º; Reg. 756/2026, art. 13.º'],
       ['Alterações às certificações', 'Revogação em 72 horas; restantes em 10 dias úteis', 'Reg. 756/2026, art. 27.º, n.º 6'],
       ['Adaptação a nova qualificação ou novas medidas', '6 meses', 'RJC, art. 26.º, n.º 8'],
     ], [3.4, 3.6, 3]),
@@ -404,7 +404,7 @@ async function guia42001() {
 
   body.push(H1('Anexo. Controlos do Anexo A'),
     note('Títulos e evidências sugeridas escritos pela AnkoraOne; não reproduzem a norma. A coluna da direita indica os requisitos da ISO/IEC 27001 em que o controlo se apoia (orientação AnkoraOne).'),
-    ...annexAppendix(iso42, { header: 'Base na ISO/IEC 27001', value: (c) => (c.iso27001.length ? c.iso27001.map((id) => `${id} ${titles27[id] || ''}`.trim()).join('\n') : 'Próprio da IA') }));
+    ...annexAppendix(iso42, { header: 'Base na ISO/IEC 27001', value: (c) => (c.iso27001.length ? c.iso27001.map((id) => `${id.startsWith('C.') ? `Cláusula ${id.slice(2)}` : id} ${titles27[id] || ''}`.trim()).join('\n') : 'Próprio da IA') }));
 
   await write(makeDocument({
     title: 'AnkoraOne — Guia ISO/IEC 42001', description: 'Guia de implementação da ISO/IEC 42001:2023 na AnkoraOne',

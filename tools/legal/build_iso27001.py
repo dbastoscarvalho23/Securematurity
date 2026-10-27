@@ -24,7 +24,7 @@ CLAUSES = [
  ("6", "Planeamento", [
   ("6.1.1", "Ações para tratar riscos e oportunidades", "Planear como tratar os riscos e oportunidades que afetam os resultados do sistema de gestão.", "Plano de ações para riscos e oportunidades."),
   ("6.1.2", "Avaliação de riscos de segurança da informação", "Definir e aplicar um processo de avaliação de riscos com critérios de aceitação, que produza resultados consistentes.", "Metodologia de avaliação de riscos e registo de riscos."),
-  ("6.1.3", "Tratamento de riscos e Declaração de Aplicabilidade", "Escolher as opções de tratamento, comparar os controlos com o Anexo A e justificar inclusões e exclusões na Declaração de Aplicabilidade.", "Plano de tratamento de riscos e Declaração de Aplicabilidade aprovada pelos donos dos riscos."),
+  ("6.1.3", "Tratamento de riscos e Declaração de Aplicabilidade", "Escolher as opções de tratamento, comparar os controlos com o Anexo A e justificar inclusões e exclusões na Declaração de Aplicabilidade.", "Plano de tratamento de riscos aprovado e risco residual aceite pelos donos dos riscos; Declaração de Aplicabilidade aprovada pela gestão."),
   ("6.2", "Objetivos de segurança da informação", "Definir objetivos mensuráveis, coerentes com a política, e planear como os atingir.", "Objetivos com indicadores, responsáveis e prazos."),
   ("6.3", "Planeamento de alterações", "Fazer alterações ao sistema de gestão de forma planeada.", "Registo de alterações ao SGSI com análise de impacto."),
  ]),

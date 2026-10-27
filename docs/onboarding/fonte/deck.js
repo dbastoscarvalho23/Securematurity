@@ -151,7 +151,7 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
   // 5. Enquadramento
   {
     const s = content('O enquadramento define o que tem de cumprir', 'Abertura');
-    const st = ['Atividade (Anexos I e II)', 'Tipo de entidade (art. 4.º)', 'Dimensão', 'Casos especiais', 'Entidade pública', 'Prazos e decisões do CNCS', 'Resultado com a base legal'];
+    const st = ['Atividade (Anexos I e II)', 'Estabelecimento (art. 4.º)', 'Dimensão', 'Casos especiais', 'Entidade pública', 'Prazos e decisões do CNCS', 'Resultado com a base legal'];
     txt(s, 'Sete perguntas, por esta ordem', { x: 0.6, y: 1.5, w: 5, h: 0.4, fontSize: 16, bold: true, color: '17766C' });
     st.forEach((a, i) => {
       s.addShape(pres.shapes.OVAL, { x: 0.6, y: 2.05 + i * 0.62, w: 0.42, h: 0.42, fill: { color: HEX.navy }, line: { color: HEX.navy }, objectName: `q-${i}` });
@@ -344,7 +344,7 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
     const rows = [
       ['Autoidentificação no CNCS', '30 dias após iniciar atividade; 60 dias após a plataforma do CNCS, se já em atividade'],
       ['Lista de ativos acessíveis pela Internet', 'Até 31 de janeiro do ano seguinte à qualificação ou em 6 meses; depois, anual'],
-      ['Relatório anual (essenciais)', 'Último dia útil de janeiro, a partir de 2028'],
+      ['Relatório anual (essenciais)', 'Último dia útil de janeiro; o primeiro em janeiro de 2029, relativo a 2028'],
     ];
     s.addTable([[{ text: 'Obrigação', options: { bold: true, color: 'FFFFFF', fill: { color: HEX.navy } } }, { text: 'Prazo', options: { bold: true, color: 'FFFFFF', fill: { color: HEX.navy } } }],
       ...rows.map((r) => r.map((t) => ({ text: t })))], { x: 0.6, y: 4.55, w: 12.1, colW: [4.3, 7.8], fontSize: 13, color: HEX.ink, border: { type: 'solid', pt: 0.75, color: HEX.line }, margin: 0.08, fontFace: 'Calibri' });

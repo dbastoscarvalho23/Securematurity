@@ -21,11 +21,11 @@ export const JOURNEY_TEMPLATE_PT = [
     tasks: [
       { title: 'Confirmar se a entidade está abrangida pelo regime', basis: 'RJC, arts. 3.º, 4.º, 6.º e 7.º e Anexos I e II; Reg. 756/2026, art. 4.º, n.os 6 e 7' },
       { title: 'Criar a conta da entidade na plataforma do CNCS', basis: 'Reg. 756/2026, arts. 6.º e 7.º' },
-      { title: 'Fazer a autoidentificação no CNCS (30 dias após iniciar atividade; 60 dias se já está em atividade)', basis: 'RJC, art. 8.º, n.º 1; Reg. 756/2026, art. 8.º' },
+      { title: 'Fazer a autoidentificação no CNCS (30 dias após iniciar atividade; 60 dias após a plataforma do CNCS estar disponível, se já está em atividade)', basis: 'RJC, art. 8.º, n.º 1; Reg. 756/2026, art. 8.º' },
       { title: 'Responder ao projeto de qualificação do CNCS em 10 dias úteis', basis: 'Reg. 756/2026, art. 9.º, n.os 1 a 3' },
       { title: 'Registar na AnkoraOne a qualificação e o nível notificados pelo CNCS', basis: 'RJC, art. 8.º, n.º 5; Reg. 756/2026, art. 9.º, n.os 4 a 6 e 10' },
       { title: 'Completar o registo definitivo no CNCS', basis: 'RJC, art. 35.º; Reg. 756/2026, art. 10.º' },
-      { title: 'Manter os dados do registo atualizados (alterações em 30 dias úteis)', basis: 'RJC, art. 35.º, n.os 3 e 4; Reg. 756/2026, art. 11.º' },
+      { title: 'Manter os dados do registo atualizados (alterações em 30 dias úteis; 3 meses para os prestadores digitais do art. 35.º, n.º 4)', basis: 'RJC, art. 35.º, n.os 3 e 4; Reg. 756/2026, art. 11.º' },
     ],
   },
   {
@@ -99,11 +99,11 @@ export const JOURNEY_TEMPLATE_EN = [
     tasks: [
       { title: 'Confirm whether the entity is covered by the regime', basis: 'RJC arts. 3, 4, 6 and 7 and Annexes I and II; Reg. 756/2026, art. 4(6)-(7)' },
       { title: 'Create the entity account on the CNCS platform', basis: 'Reg. 756/2026, arts. 6 and 7' },
-      { title: 'Self-identify with the CNCS (30 days after starting activity; 60 days if already operating)', basis: 'RJC art. 8(1); Reg. 756/2026, art. 8' },
+      { title: 'Self-identify with the CNCS (30 days after starting activity; 60 days after the CNCS platform becomes available, if already operating)', basis: 'RJC art. 8(1); Reg. 756/2026, art. 8' },
       { title: 'Reply to the CNCS draft qualification within 10 working days', basis: 'Reg. 756/2026, art. 9(1)-(3)' },
       { title: 'Record in AnkoraOne the qualification and level notified by the CNCS', basis: 'RJC art. 8(5); Reg. 756/2026, art. 9(4)-(6) and (10)' },
       { title: 'Complete the definitive registration with the CNCS', basis: 'RJC art. 35; Reg. 756/2026, art. 10' },
-      { title: 'Keep the registration data up to date (changes within 30 working days)', basis: 'RJC art. 35(3)-(4); Reg. 756/2026, art. 11' },
+      { title: 'Keep the registration data up to date (changes within 30 working days; 3 months for the digital providers in art. 35(4))', basis: 'RJC art. 35(3)-(4); Reg. 756/2026, art. 11' },
     ],
   },
   {
