@@ -356,7 +356,7 @@ export async function putFile(base44, customer, provider, { bytes, fileName, mim
     const { accessToken } = await base44.asServiceRole.connectors.getConnection("googledrive");
     const auth = { Authorization: `Bearer ${accessToken}` };
     const ensure = async (fname, parent) => {
-      const q = encodeURIComponent(`mimeType='application/vnd.google-apps.folder' and name='${fname.replace(/'/g, "\\'")}' and trashed=false` + (parent ? ` and '${parent}' in parents` : ""));
+      const q = encodeURIComponent(`mimeType='application/vnd.google-apps.folder' and name='${fname.replace(/'/g, "\\'")}' and trashed=false` + (parent ? ` and '${parent}' in parents` : " and 'root' in parents and 'me' in owners"));
       const l = await (await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`, { headers: auth })).json();
       if (l.files?.length) return l.files[0].id;
       const c = await (await fetch("https://www.googleapis.com/drive/v3/files", { method: "POST", headers: { ...auth, "Content-Type": "application/json" }, body: JSON.stringify({ name: fname, mimeType: "application/vnd.google-apps.folder", ...(parent ? { parents: [parent] } : {}) }) })).json();
@@ -421,7 +421,7 @@ export async function listFolder(base44, customer, provider, folder = "inbox", m
     const q = (s) => encodeURIComponent(s);
     let parent = null;
     for (const seg of segments) {
-      const cond = `mimeType='application/vnd.google-apps.folder' and name='${seg.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}' and trashed=false` + (parent ? ` and '${parent}' in parents` : "");
+      const cond = `mimeType='application/vnd.google-apps.folder' and name='${seg.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}' and trashed=false` + (parent ? ` and '${parent}' in parents` : " and 'root' in parents and 'me' in owners");
       const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q(cond)}&fields=files(id)`, { headers: auth });
       if (!r.ok) throw new Error(`Não foi possível ler o Google Drive (${r.status})`);
       const l = await r.json();

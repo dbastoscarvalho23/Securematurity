@@ -215,6 +215,28 @@
       "type": "string",
       "format": "date-time",
       "description": "When the supervisory authority was notified"
+    },
+    "recipients_notified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Destinatários dos serviços informados do incidente significativo (RJC, art. 48.º)"
+    },
+    "recipients_notified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Quando os destinatários dos serviços foram informados"
+    },
+    "other_notifications": {
+      "type": "array",
+      "description": "Outras notificações obrigatórias (RJC, art. 40.º, n.º 5): Ministério Público, PJ, GNS, autoridades setoriais",
+      "items": {
+        "type": "object",
+        "properties": {
+          "authority": { "type": "string" },
+          "sent_at": { "type": "string" },
+          "reference": { "type": "string" }
+        }
+      }
     }
   },
   "required": [

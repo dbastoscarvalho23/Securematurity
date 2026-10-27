@@ -92,9 +92,6 @@
           }
         },
         {
-          "data.changed_by": "{{user.email}}"
-        },
-        {
           "data.customer_id": "{{user.data.customer_id}}"
         }
       ]

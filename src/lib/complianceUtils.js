@@ -102,7 +102,8 @@ export function incidentDeadlines(inc) {
   const start = inc.significant_verified_at || inc.detected_at;
   const endOfImpact = { id: 'rjc_end_of_impact', labelKey: 'inc_rjc_end_of_impact', due: addHours(inc.impact_ended_at, RJC_END_OF_IMPACT_HOURS), sent: !!inc.end_of_impact_notification_sent, ref: 'RJC, art. 43.º, n.º 1' };
   const final = { id: 'rjc_final', labelKey: 'inc_rjc_final', due: addBusinessDays(inc.end_of_impact_notification_sent_at, RJC_FINAL_REPORT_BUSINESS_DAYS), sent: !!inc.final_report_sent, ref: 'RJC, art. 44.º, n.º 1' };
-  if (inc.resolved_within_2h) return [endOfImpact, final];
+  // RJC, art. 41.º, n.º 2: resolvido nas 2 horas após a deteção → só a notificação do fim do impacto significativo.
+  if (inc.resolved_within_2h) return [endOfImpact];
   return [
     { id: 'rjc_initial', labelKey: 'inc_rjc_initial', due: addHours(start, RJC_INITIAL_NOTIFICATION_HOURS), sent: !!inc.early_warning_sent, ref: 'RJC, art. 42.º, n.º 1' },
     { id: 'rjc_update', labelKey: 'inc_rjc_update', due: addHours(start, RJC_UPDATE_NOTIFICATION_HOURS), sent: !!inc.notification_sent, ref: 'RJC, art. 42.º, n.º 3', optional: true },

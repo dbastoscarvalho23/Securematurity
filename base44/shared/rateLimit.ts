@@ -11,7 +11,7 @@ import { LicenseError } from './license.ts';
  * lotes de 10 e cada pedido ao modelo demora segundos), apertado para uma rajada automatizada.
  */
 export const AI_REQUESTS_PER_MINUTE = 30;
-const AI_ACTIONS = ['ai_assist', 'ai_draft_created', 'document_classified'];
+const AI_ACTIONS = ['ai_assist', 'ai_draft_created', 'document_classified', 'ai_questionnaire'];
 
 /**
  * Recusa (429) quando o utilizador já esgotou o limite de pedidos de IA do último minuto.

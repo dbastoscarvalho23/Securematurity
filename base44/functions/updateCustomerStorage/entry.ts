@@ -51,10 +51,19 @@ export default async function (req) {
       // Google Drive e OneDrive são uma conta só para toda a plataforma: dois clientes nunca partilham a mesma pasta.
       if (storageRoot) {
         // Comparação sem maiúsculas/minúsculas (o OneDrive não as distingue).
-        const all = await base44.asServiceRole.entities.Customer.list('-created_date', 5000).catch(() => []);
-        const key = storageRoot.toLowerCase();
-        if (all.some((c) => c.id !== customerId && String(c.storage_root || '').toLowerCase() === key)) {
-          return json({ error: 'Já existe outro cliente com esta localização. Escolha outra pasta.' }, 409);
+        // Compara com a localização EFETIVA de cada cliente (a gravada ou a por omissão) e recusa também pastas
+        // contidas umas nas outras: caso contrário, um cliente podia apontar para a pasta de outro e ler os seus
+        // ficheiros pela procura em «00 Por classificar».
+        const all = await base44.asServiceRole.entities.Customer.list('-created_date', 5000).catch(() => null);
+        if (!all) return json({ error: 'Não foi possível confirmar que a localização é única. Tente novamente.' }, 503);
+        const key = `${storageRoot.toLowerCase()}/`;
+        const effective = (c) => {
+          let r = '';
+          try { r = normalizeStorageRoot(c.storage_root); } catch { r = ''; }
+          return `${(r || defaultStorageRoot(c)).toLowerCase()}/`;
+        };
+        if (all.some((c) => c.id !== customerId && (effective(c).startsWith(key) || key.startsWith(effective(c))))) {
+          return json({ error: 'Esta localização coincide com a de outro cliente ou está dentro dela (ou o contrário). Escolha outra pasta.' }, 409);
         }
       }
     }

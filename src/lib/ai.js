@@ -14,6 +14,7 @@ export const AI_PURPOSES = [
   { key: 'supplier_questionnaire_generation', default: true },
   { key: 'supplier_email_answer_extraction', default: true },
   { key: 'assessment_recommendations', default: true },
+  { key: 'assessment_questionnaire', default: true },
   { key: 'recommendation_generation', default: true },
   { key: 'assessment_question_selection', default: false },
   { key: 'question_gap_analysis', default: false },
@@ -115,3 +116,10 @@ export async function draftToPdf(d) {
   (d.sources || []).forEach((s) => para(`[${s.id}] ${s.label}`, 8));
   doc.save(`${(d.title || 'rascunho').replace(/[^\w\- ]+/g, '').slice(0, 60)}.pdf`);
 }
+
+/** Questionário de avaliação elaborado pela IA a partir da Biblioteca Legal (função «aiQuestionnaire»). */
+export const questionnaireGenerate = (customerId, frameworks, count, instructions) =>
+  invokeFn('aiQuestionnaire', { action: 'generate', customer_id: customerId, frameworks, count, instructions });
+export const questionnaireSave = (customerId, payload) => invokeFn('aiQuestionnaire', { action: 'save', customer_id: customerId, ...payload });
+/** Referenciais com textos no repositório para elaborar perguntas (igual a QUESTIONNAIRE_FRAMEWORKS no servidor). */
+export const QUESTIONNAIRE_FRAMEWORKS = ['QNRC', 'NIS2', 'EU_2024_2690', 'DORA', 'ISO27001', 'ISO42001'];

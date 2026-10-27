@@ -3,6 +3,7 @@ import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId }
 import { sendMail, mailConfig } from '../../shared/mail.ts';
 import { logEmailSent } from '../../shared/audit.ts';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
+import { sanitizeHtml } from '../../shared/sanitizeHtml.ts';
 
 // Envio de email pedido pela interface. O browser deixa de chamar Core.SendEmail diretamente:
 // o envio passa pelo remetente da AnkoraOne (shared/mail.ts), fica no registo de auditoria e
@@ -15,6 +16,17 @@ import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
 //  - test (admin) { to? } → email de teste para o próprio administrador (ou para `to`)
 
 const MAX_RECIPIENTS = 50;
+// Utilizadores de cliente: máximo de envios por hora (cada envio pode ter até 50 destinatários). Folgado para
+// convocatórias e questionários; trava o uso da conta para envios em massa.
+const CUSTOMER_SENDS_PER_HOUR = 30;
+
+async function customerSendsLastHour(base44, email) {
+  const since = new Date(Date.now() - 3600_000).toISOString();
+  const rows = await base44.asServiceRole.entities.AuditLog.filter(
+    { user_email: email, action: 'email_sent', created_date: { $gte: since } }, '-created_date', CUSTOMER_SENDS_PER_HOUR + 1,
+  ).catch(() => []);
+  return rows?.length || 0;
+}
 
 /** Extrai o conteúdo de <body> quando a interface envia um documento HTML completo. */
 function bodyOf(html: string): string {
@@ -137,13 +149,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    const result = await sendMail(base44, { to, subject, body: html, heading: body.heading ? String(body.heading) : undefined });
+    // Utilizadores de cliente: HTML limpo (sem scripts, imagens, formulários nem ligações não https), limite por hora
+    // e rodapé com o autor, para que a mensagem não possa passar por um aviso oficial da AnkoraOne.
+    let finalHtml = html;
+    let finalSubject = subject.slice(0, 200);
+    if (!admin) {
+      if ((await customerSendsLastHour(base44, user.email)) >= CUSTOMER_SENDS_PER_HOUR) {
+        return json({ error: `Atingiu o limite de ${CUSTOMER_SENDS_PER_HOUR} envios por hora. Tente mais tarde.` }, 429);
+      }
+      const customer = await base44.asServiceRole.entities.Customer.get(own).catch(() => null);
+      finalHtml = `${sanitizeHtml(html)}<hr><p style="color:#64748b;font-size:12px;">Mensagem enviada por ${esc(user.email)}${customer?.name ? ` (${esc(customer.name)})` : ''} através da plataforma AnkoraOne.</p>`;
+      finalSubject = finalSubject.replace(/[\r\n]+/g, ' ');
+    }
+    const result = await sendMail(base44, { to, subject: finalSubject, body: finalHtml, heading: body.heading ? String(body.heading).slice(0, 120) : undefined });
     await logEmailSent(base44, {
       user_email: user.email,
       entity_type: String(body.entity_type || 'Email'),
       entity_id: body.entity_id ? String(body.entity_id) : undefined,
       customer_id: customerId || undefined,
-      details: `«${subject.slice(0, 120)}» enviado a ${to.join(', ').slice(0, 300)} (${result.sent}/${to.length})`,
+      details: `«${finalSubject.slice(0, 120)}» enviado a ${to.join(', ').slice(0, 300)} (${result.sent}/${to.length})`,
     });
     return json(result);
   } catch (error) {

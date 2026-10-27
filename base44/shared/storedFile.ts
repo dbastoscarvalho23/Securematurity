@@ -5,7 +5,7 @@ export const FILE_SCHEME = 'ankora-file://';
 
 export const FILE_CONTEXTS = Object.keys(CONTEXT_FOLDER);
 // Dados pessoais, relatórios e ativos: só administradores do cliente.
-const RESTRICTED_CONTEXTS = new Set(['training', 'report', 'asset']);
+const RESTRICTED_CONTEXTS = new Set(['training', 'report', 'asset', 'intake']);
 
 /**
  * Registo a que cada contexto se refere (context_id). É deste registo que sai o cliente do ficheiro, para que um

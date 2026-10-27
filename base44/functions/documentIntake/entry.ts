@@ -267,7 +267,7 @@ export default async function (req) {
         const sf = await db.StoredFile.create({
           customer_id: customer.id, file_name: name, mime_type: mime, size_bytes: bytes.byteLength, sha256,
           storage_provider: provider, storage_ref: f.ref, folder: label, storage_location: location,
-          context: 'intake', context_id: dup?.id || '', restricted: false, uploaded_by: user.email,
+          context: 'intake', context_id: dup?.id || '', restricted: true, uploaded_by: user.email,
         });
         if (dup) { duplicates.push({ name, intake_id: dup.id }); continue; }
         let it = await db.DocumentIntake.create({

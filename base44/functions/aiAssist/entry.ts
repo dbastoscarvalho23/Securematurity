@@ -50,6 +50,9 @@ export default async function (req) {
     if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return json({ error: 'Esquema de resposta inválido' }, 400);
     const fileUrls = body.file_urls == null ? [] : body.file_urls;
     if (!Array.isArray(fileUrls) || fileUrls.length > MAX_FILES) return json({ error: `Pode enviar no máximo ${MAX_FILES} ficheiros` }, 400);
+    // Endereços arbitrários levariam o servidor a descarregar URLs à escolha do utilizador (SSRF) e a enviar à IA
+    // ficheiros sem o filtro de ativos expostos. Só o administrador da plataforma pode anexar ficheiros por URL.
+    if (fileUrls.length && !admin) return json({ error: 'Só o administrador da plataforma pode anexar ficheiros por endereço' }, 403);
     for (const u of fileUrls) {
       let ok = false;
       try { ok = new URL(String(u)).protocol === 'https:'; } catch { ok = false; }

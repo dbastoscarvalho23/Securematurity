@@ -85,9 +85,6 @@
           }
         },
         {
-          "created_by_id": "{{user.id}}"
-        },
-        {
           "data.customer_id": "{{user.data.customer_id}}"
         }
       ]
