@@ -1,87 +1,21 @@
 const fs = require('fs');
 const path = require('path');
-const {
-  Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, ShadingType,
-  AlignmentType, HeadingLevel, LevelFormat, BorderStyle, Header, Footer, PageNumber, PageBreak,
-  TableOfContents, VerticalAlign,
-} = require('docx');
+const { Packer } = require('docx');
+const { DIR, MUTED, t, p, P, note, H1, H2, H3, B, N, gap, table, callout, tip, cover, toc, makeDocument } = require('./estilo');
+const TEALT = 'E6F5F3', TEAL = '26A699';
 
-const DIR = __dirname;
-const NAVY = '070A13', CARD = '0C111D', GOLD = 'CFA04A', TEAL = '26A699', INK = '111827', MUTED = '5B6474', LINE = 'D9DEE7', TINT = 'F4F1EA', TEALT = 'E6F5F3';
-const FONT = 'Calibri';
-const W = 9638; // largura útil A4 com margens de 2 cm (DXA)
-
-const t = (text, o = {}) => new TextRun({ text, font: FONT, ...o });
-const p = (runs, o = {}) => new Paragraph({ spacing: { after: 120, line: 288 }, ...o, children: (Array.isArray(runs) ? runs : [runs]).map((r) => (typeof r === 'string' ? t(r) : r)) });
-const rich = (s) => s.split(/(\*\*[^*]+\*\*)/).filter(Boolean).map((x) => (x.startsWith('**') ? t(x.slice(2, -2), { bold: true }) : t(x)));
-const P = (s, o) => p(rich(s), o);
-const H1 = (s) => new Paragraph({ heading: HeadingLevel.HEADING_1, pageBreakBefore: true, children: [t(s)] });
-const H2 = (s) => new Paragraph({ heading: HeadingLevel.HEADING_2, children: [t(s)] });
-const H3 = (s) => new Paragraph({ heading: HeadingLevel.HEADING_3, children: [t(s)] });
-const B = (s, level = 0) => new Paragraph({ numbering: { reference: 'bullets', level }, spacing: { after: 80, line: 276 }, children: rich(s) });
-const N = (s, ref = 'steps') => new Paragraph({ numbering: { reference: ref, level: 0 }, spacing: { after: 80, line: 276 }, children: rich(s) });
-
-const border = { style: BorderStyle.SINGLE, size: 4, color: LINE };
-const borders = { top: border, bottom: border, left: border, right: border };
-function table(headers, rows, widths) {
-  const sum = widths.reduce((a, b) => a + b, 0);
-  const ws = widths.map((w) => Math.round((w / sum) * W));
-  ws[ws.length - 1] += W - ws.reduce((a, b) => a + b, 0);
-  const cell = (txt, i, head) => new TableCell({
-    width: { size: ws[i], type: WidthType.DXA }, borders,
-    shading: head ? { fill: NAVY, type: ShadingType.CLEAR, color: 'auto' } : undefined,
-    margins: { top: 80, bottom: 80, left: 110, right: 110 },
-    children: String(txt).split('\n').map((line) => new Paragraph({ spacing: { after: 40 }, children: head ? [t(line, { bold: true, color: 'FFFFFF', size: 19 })] : rich(line) })),
-  });
-  return new Table({
-    width: { size: W, type: WidthType.DXA }, columnWidths: ws,
-    rows: [new TableRow({ tableHeader: true, children: headers.map((h, i) => cell(h, i, true)) }),
-      ...rows.map((r) => new TableRow({ cantSplit: true, children: r.map((c, i) => cell(c, i, false)) }))],
-  });
-}
-const gap = () => new Paragraph({ spacing: { after: 60 }, children: [] });
-
-// Caixa de destaque (tabela de uma célula com fundo suave)
-function callout(title, lines, fill = TINT, accent = GOLD) {
-  return new Table({
-    width: { size: W, type: WidthType.DXA }, columnWidths: [W],
-    rows: [new TableRow({ children: [new TableCell({
-      width: { size: W, type: WidthType.DXA }, shading: { fill, type: ShadingType.CLEAR, color: 'auto' },
-      borders: { top: { style: BorderStyle.SINGLE, size: 4, color: fill }, bottom: { style: BorderStyle.SINGLE, size: 4, color: fill }, left: { style: BorderStyle.SINGLE, size: 4, color: fill }, right: { style: BorderStyle.SINGLE, size: 4, color: fill } },
-      margins: { top: 140, bottom: 140, left: 200, right: 200 },
-      children: [new Paragraph({ spacing: { after: 80 }, children: [t(title, { bold: true, color: accent === GOLD ? '8A6620' : '17766C' })] }),
-        ...lines.map((l) => new Paragraph({ spacing: { after: 60, line: 276 }, children: rich(l) }))],
-    })] })],
-  });
-}
-
-const logoNavy = fs.readFileSync(path.join(DIR, 'logo-navy.png'));
-const logoWhite = fs.readFileSync(path.join(DIR, 'logo-white.png'));
-
-// ── Capa ────────────────────────────────────────────────────────────────────────────────────────────
-const coverCell = (children, fill, h) => new TableCell({ width: { size: W, type: WidthType.DXA }, shading: { fill, type: ShadingType.CLEAR, color: 'auto' },
-  borders: { top: { style: BorderStyle.NONE, size: 0, color: fill }, bottom: { style: BorderStyle.NONE, size: 0, color: fill }, left: { style: BorderStyle.NONE, size: 0, color: fill }, right: { style: BorderStyle.NONE, size: 0, color: fill } },
-  margins: { top: 500, bottom: 500, left: 500, right: 500 }, verticalAlign: VerticalAlign.CENTER, children });
-const cover = [
-  new Table({ width: { size: W, type: WidthType.DXA }, columnWidths: [W], rows: [
-    new TableRow({ height: { value: 12600, rule: 'atLeast' }, children: [coverCell([
-      new Paragraph({ spacing: { after: 1400 }, children: [new ImageRun({ type: 'png', data: logoWhite, transformation: { width: 300, height: 68 } })] }),
-      new Paragraph({ spacing: { after: 200 }, children: [t('MANUAL DE ONBOARDING', { color: GOLD, bold: true, size: 22, characterSpacing: 60 })] }),
-      new Paragraph({ spacing: { after: 240, line: 320 }, children: [t('Começar a trabalhar na AnkoraOne', { color: 'FFFFFF', bold: true, size: 56 })] }),
-      new Paragraph({ spacing: { after: 1600, line: 300 }, children: [t('Para novos clientes que adotam o Regime Jurídico da Cibersegurança (NIS2) e a ISO/IEC 27001: criação da conta, navegação, uso diário e guia de cada referencial disponível na plataforma.', { color: 'C9CFDA', size: 24 })] }),
-      new Paragraph({ spacing: { after: 60 }, children: [t('Versão 1.1 · outubro de 2026', { color: 'C9CFDA', size: 20 })] }),
-      new Paragraph({ children: [t('app.ankoraone.com', { color: GOLD, size: 20, bold: true })] }),
-    ], NAVY)] }),
-  ] }),
-];
+const coverChildren = cover({
+  kicker: 'MANUAL DE ONBOARDING',
+  title: 'Começar a trabalhar na AnkoraOne',
+  summary: 'Para novos clientes que adotam o Regime Jurídico da Cibersegurança (NIS2), a ISO/IEC 27001 e a ISO/IEC 42001: criação da conta, navegação, uso diário e guia de cada referencial disponível na plataforma.',
+  version: 'Versão 1.2 · outubro de 2026',
+});
 
 // ── Conteúdo ────────────────────────────────────────────────────────────────────────────────────────
 const body = [];
 const add = (...x) => body.push(...x);
 
-add(new Paragraph({ heading: HeadingLevel.HEADING_1, pageBreakBefore: true, children: [t('Índice')] }),
-  new TableOfContents('Índice', { hyperlink: true, headingStyleRange: '1-2' }),
-  p([t('Se o índice aparecer vazio, atualize os campos no Word (botão direito → Atualizar campo).', { italics: true, color: MUTED, size: 18 })]));
+add(...toc());
 
 // 1
 add(H1('1. A AnkoraOne em resumo'),
@@ -91,8 +25,10 @@ add(H1('1. A AnkoraOne em resumo'),
   B('Saber se a entidade está abrangida pelo RJC e com que qualificação e nível.'),
   B('Seguir uma jornada de conformidade com as tarefas por ordem e com os prazos legais.'),
   B('Ver as medidas mínimas aplicáveis ao seu nível e o que guardar como evidência de cada uma.'),
-  B('Guardar evidências e documentos de forma privada, com versões, validade e aprovação.'),
-  B('Medir a maturidade por referencial (NIS2, ISO/IEC 27001 e outros) e transformar as lacunas num plano de ação.'),
+  B('Guardar evidências e documentos de forma privada, com versões, validade e aprovação, no repositório que escolher.'),
+  B('Carregar documentos que já tem e deixar a plataforma propor a que medida, tarefa ou controlo pertencem.'),
+  B('Medir a maturidade por referencial (NIS2, ISO/IEC 27001, ISO/IEC 42001 e outros) e transformar as lacunas num plano de ação.'),
+  B('Preparar a Declaração de Aplicabilidade e a análise de lacunas da ISO/IEC 27001 e da ISO/IEC 42001.'),
   B('Preparar notificações de incidentes, relatórios e a supervisão do CNCS.'),
   H2('Quem faz o quê'),
   table(['Perfil', 'Quem é', 'O que pode fazer'], [
@@ -114,7 +50,8 @@ add(H1('2. Antes de começar'),
     ['Responsável de cibersegurança e ponto de contacto permanente (nome, email, telefone)', 'Tarefas B.3 e B.5 da jornada'],
     ['Lista de pessoas a convidar e respetivo perfil', 'Convites e número de licenças de utilizador'],
     ['Onde quer guardar os ficheiros', 'Repositório privado da plataforma, Google Drive, OneDrive ou NAS por WebDAV'],
-    ['Referenciais a seguir (por exemplo NIS2 e ISO/IEC 27001)', 'Referenciais permitidos e licença'],
+    ['Referenciais a seguir (por exemplo NIS2, ISO/IEC 27001 e, se a entidade desenvolve ou usa IA, ISO/IEC 42001)', 'Referenciais permitidos e licença'],
+    ['Se usa ou desenvolve sistemas de IA: lista dos sistemas e do papel da entidade em cada um (fornecedor, utilizador…)', 'Âmbito da ISO/IEC 42001'],
   ], [4.5, 5]),
 );
 
@@ -152,7 +89,7 @@ add(H1('3. Processo de criação'),
     'Ao confirmar o enquadramento, a plataforma cria a jornada, marca as primeiras tarefas da secção A e guarda o **relatório de enquadramento em PDF** como evidência privada.',
   ]),
   H2('3.3 Licença e módulos'),
-  P('A licença define os módulos disponíveis, os referenciais e o número de utilizadores (mínimo de 5).'),
+  P('A licença define os módulos disponíveis, os referenciais (NIS2, QNRCS, ISO/IEC 27001, ISO/IEC 42001, DORA e outros) e o número de utilizadores (mínimo de 5).'),
   table(['Bundle', 'Módulos incluídos'], [
     ['Core', 'Jornada de Conformidade · Avaliações e Plano de Ação · Documentos e Evidências · Conhecimento e Orientação (Biblioteca Legal) · Gestão de Risco · Relatórios · Ativos e Ferramentas'],
     ['PRO', 'Core + Gestão de Incidentes · Gestão de Fornecedores · Alertas de vulnerabilidades (CVE)'],
@@ -168,6 +105,7 @@ add(H1('3. Processo de criação'),
     ['Google Drive ou OneDrive', 'Pasta própria da entidade, sem partilhas públicas.'],
     ['NAS da entidade (WebDAV)', 'Só HTTPS; as credenciais ficam cifradas. FTP não é suportado.'],
   ], [3, 6.5]),
+  P('Na ficha do cliente escolhe-se também a **localização** (por omissão, AnkoraOne/<nome da entidade>). Dentro dela, a plataforma usa sempre as mesmas 13 pastas, de «00 Por classificar» a «99 Outros», para que a estrutura seja igual em todos os clientes. Mudar de repositório ou de localização só afeta os ficheiros novos.'),
 );
 
 // 4
@@ -180,7 +118,7 @@ add(H1('4. Entrar e navegar'),
     ['Visão geral', 'Painel', 'Estado da conformidade, tarefas, riscos e alertas'],
     ['Avaliar e comprovar', 'Jornada de Conformidade · Avaliações · Evidências · Biblioteca Legal · Guia de referenciais · Ativos e ferramentas', 'Saber o que cumprir e comprovar que se cumpre'],
     ['Melhorar e gerir', 'Plano de Ação · Recomendações · Tarefas · Análise de Tarefas · Gestão de Risco · Incidentes · Vulnerabilidades', 'Corrigir lacunas e gerir o dia a dia'],
-    ['Governar', 'Documentos · Auditoria de Documentos · Cadeia de Abastecimento · Fornecedores', 'Políticas aprovadas e relação com terceiros'],
+    ['Governar', 'Documentos · Repositório documental · Auditoria de Documentos · Cadeia de Abastecimento · Fornecedores', 'Políticas aprovadas, todos os ficheiros num sítio e relação com terceiros'],
     ['Analisar', 'Relatórios', 'Resultados por referencial, evolução e relatório anual'],
     ['Sistema', 'Relatório de Emails · Definições', 'Comunicações enviadas, perfil, utilizadores, lembretes e repositório'],
   ], [2, 4.5, 3.5]),
@@ -223,42 +161,55 @@ add(H1('5. Uso no dia a dia'),
   H2('5.4 Documentos de segurança'),
   table(['Nível', 'Tipo de documento'], [['L1', 'Política'], ['L2', 'Norma'], ['L3', 'Procedimento'], ['L4', 'Playbook']], [1.5, 8]),
   P('Os documentos passam por **Rascunho → Em revisão → Aprovado → Obsoleto**. A aprovação exige a assinatura do aprovador (nome completo ou email) e fica no histórico. Se um documento aprovado for alterado, volta a Em revisão. A plataforma avisa por email os responsáveis dos documentos com revisão nos 30 dias seguintes.'),
-  H2('5.5 Avaliações de maturidade'),
-  P('O consultor cria a avaliação com os referenciais escolhidos (por exemplo NIS2 e ISO/IEC 27001). A equipa responde a cada pergunta com a escala:'),
+  H2('5.5 Repositório documental e documentos por classificar'),
+  P('**Governar › Repositório documental** mostra todos os ficheiros do cliente (evidências, documentos, relatórios) arrumados pelas 13 pastas, abertos sempre pela plataforma e com registo de cada abertura.'),
+  P('Na área **Por classificar** (administradores) pode carregar documentos que já existem na organização, ou pô-los diretamente na pasta «00 Por classificar» do Google Drive, OneDrive ou NAS e carregar em **Procurar na pasta**. Depois:'),
+  N('A plataforma pré-seleciona, sem IA, as medidas, tarefas da jornada e controlos ISO com texto parecido.', 'n4'),
+  N('Com o assistente de IA, **Classificar** (ou **Classificar todos**, até 25 de cada vez) propõe o tipo de documento e até 8 ligações, cada uma com um excerto do documento que a justifica e uma confiança.', 'n4'),
+  N('Uma pessoa revê, marca as ligações certas e indexa. O documento passa a evidência **Por rever**; nenhuma medida ou tarefa muda de estado sozinha.', 'n4'),
+  P('O painel **Qualidade das propostas** mostra quantas ligações propostas as pessoas mantêm, por nível de confiança, para saber até que ponto pode confiar nas propostas.'),
+  callout('Limites', [
+    'PDF e imagens seguem para o modelo como ficheiro; DOCX, XLSX, PPTX e texto seguem como texto extraído. Formatos antigos (.doc, .xls, .ppt) não são lidos.',
+    'Documentos com endereços de ativos expostos à Internet (lista do art. 32.º) nunca seguem para a IA.',
+  ]),
+  H2('5.6 Avaliações de maturidade'),
+  P('O consultor cria a avaliação com os referenciais escolhidos (por exemplo NIS2, ISO/IEC 27001 e ISO/IEC 42001). A equipa responde a cada pergunta com a escala:'),
   table(['Nível', 'Significado'], [['0', 'Inexistente'], ['1', 'Inicial'], ['2', 'Em desenvolvimento'], ['3', 'Definido'], ['4', 'Gerido (nível-alvo por omissão)'], ['5', 'Otimizado']], [1.5, 8]),
   P('Ao concluir, a plataforma calcula a pontuação por domínio, por referencial e global, e propõe recomendações com prioridade, esforço e prazo. As recomendações passam para o **Plano de Ação**, onde se transformam em tarefas. Os domínios abaixo de 3,5 aparecem no Painel como riscos de lacuna.'),
-  H2('5.6 Riscos, incidentes e vulnerabilidades'),
+  H2('5.7 Riscos, incidentes e vulnerabilidades'),
   B('**Riscos:** pontuação = impacto (1 a 5) × probabilidade (1 a 5). Baixo abaixo de 4, médio de 4 a 8, alto de 9 a 15, crítico a partir de 16. Cada risco tem tratamento, risco residual e tarefas de mitigação.'),
   B('**Incidentes:** a plataforma calcula os prazos de notificação do RJC e prepara os textos das notificações.'),
   B('**Vulnerabilidades:** prazo de correção de 7, 30, 90 ou 180 dias para crítica, alta, média ou baixa. Com o módulo de alertas, a plataforma vigia os fabricantes do seu inventário na base de dados NVD e no catálogo KEV da CISA.'),
-  H2('5.7 Fornecedores e cadeia de abastecimento'),
+  H2('5.8 Fornecedores e cadeia de abastecimento'),
   P('Classifique os fornecedores por nível (Tier 1 estratégico ou crítico, Tier 2 importante, Tier 3 normal), indique se acedem a dados pessoais ou a sistemas críticos e envie questionários de segurança por email. As respostas recebidas por email podem ser lidas pelo assistente de IA.'),
-  H2('5.8 Ativos e lista do art. 32.º'),
+  H2('5.9 Ativos e lista do art. 32.º'),
   P('O inventário de ativos indica a criticidade e se o ativo está exposto à Internet. A exportação da **lista de ativos acessíveis pela Internet** (Reg. 756/2026, art. 32.º) é classificada como reservada, fica registada e **nunca é enviada ao assistente de IA**.'),
-  H2('5.9 Relatórios'),
+  H2('5.10 Relatórios'),
   P('Os relatórios mostram a pontuação por referencial, a evolução face ao período anterior e o radar por domínio. O **Relatório Anual** reúne medidas, riscos, incidentes e próximos passos, e a plataforma guarda uma cópia em PDF no dia 1 de cada mês.'),
-  H2('5.10 Assistente de IA'),
+  H2('5.11 Assistente de IA'),
   P('Com a licença Enterprise, o assistente prepara rascunhos onde há documentos para construir ou analisar:'),
   B('políticas, procedimentos, modelos de registo e planos de evidências para cada medida ou tarefa;'),
   B('análise de uma evidência face ao critério de verificação da medida (cumpre, cumpre em parte, não cumpre);'),
   B('notificações de incidentes e o relatório anual;'),
-  B('questionários a fornecedores, leitura de respostas por email e recomendações de melhoria.'),
+  B('questionários a fornecedores, leitura de respostas por email e recomendações de melhoria;'),
+  B('classificação de documentos carregados em «Por classificar».'),
   callout('Regras do assistente', [
     'Usa apenas os textos oficiais da Biblioteca Legal e assinala citações ou prazos que não encontre.',
     'O resultado é sempre um **rascunho**: só passa a documento depois de revisto e aprovado por uma pessoa.',
     'Não recebe contactos pessoais, o inventário de ativos nem evidências restritas.',
-    'Cada pedido fica no registo de auditoria e conta para a quota mensal.',
+    'Cada pedido fica no registo de auditoria e conta para a quota mensal; há um limite de 30 pedidos por minuto por utilizador.',
   ], TEALT, TEAL),
 );
 
 // 6
 add(H1('6. Guia por referencial'),
-  P('A plataforma inclui os referenciais abaixo. Cada cliente usa os que estiverem na sua licença. As correspondências entre referenciais permitem reaproveitar a mesma evidência em vários.'),
+  P('A plataforma inclui os referenciais abaixo. Cada cliente usa os que estiverem na sua licença. As correspondências entre referenciais permitem reaproveitar a mesma evidência em vários. Para a NIS2, a ISO/IEC 27001 e a ISO/IEC 42001 há também um **guia de implementação próprio**, entregue com este manual.'),
   table(['Referencial', 'Fonte', 'Conteúdo na plataforma'], [
     ['RJC (NIS2 em Portugal)', 'DL 125/2025; Reg. CNCS 756/2026', 'Jornada, enquadramento, 107 controlos do QNRCS, medidas por nível (Anexo III) e por grupo (Anexo IV), prazos'],
     ['NIS2', 'Diretiva (UE) 2022/2555', 'Medidas do art. 21.º, n.º 2, alíneas a) a j), e prazos do art. 23.º'],
     ['Requisitos técnicos NIS2', 'Reg. de Execução (UE) 2024/2690', '161 requisitos do anexo'],
-    ['ISO/IEC 27001:2022', 'Norma ISO (não reproduzida)', 'Guia com as cláusulas 4 a 10 e os 93 controlos do Anexo A, Declaração de Aplicabilidade e ligações ao QNRCS'],
+    ['ISO/IEC 27001:2022', 'Norma ISO (não reproduzida)', 'Guia com as cláusulas 4 a 10 e os 93 controlos do Anexo A, Declaração de Aplicabilidade, análise de lacunas e ligações ao QNRCS'],
+    ['ISO/IEC 42001:2023', 'Norma ISO (não reproduzida)', 'Guia do sistema de gestão da IA: cláusulas 4 a 10, 38 controlos do Anexo A, objetivos e fontes de risco, ligações à ISO/IEC 27001'],
     ['DORA', 'Reg. (UE) 2022/2554 e atos delegados', '111 obrigações e prazos de incidentes'],
     ['TISAX', 'VDA ISA 6.0.3 e 2027.1', '80 e 78 controlos, maturidade 0 a 5'],
     ['CIS Controls v8.1', 'CIS', 'Identificadores (18 controlos, 153 salvaguardas); o texto entra se a entidade importar o ficheiro oficial'],
@@ -269,11 +220,11 @@ add(H1('6. Guia por referencial'),
   H2('6.1 RJC e NIS2'),
   P('O RJC transpõe a Diretiva NIS2 para Portugal. O **DL 125/2025 entrou em vigor a 3 de abril de 2026**; o Regulamento n.º 756/2026 do CNCS, publicado a 22 de junho de 2026, fixa as medidas mínimas e os procedimentos. Algumas obrigações (arts. 27.º, n.os 1 e 2, 28.º a 30.º e 33.º do RJC) só produzem efeitos a **22 de junho de 2028**.'),
   H3('Como trabalhar este referencial na AnkoraOne'),
-  N('Faça o enquadramento e confirme a qualificação e o nível.', 'rjc'),
-  N('Siga a Jornada por secções, começando pela A e pela B.', 'rjc'),
-  N('Abra Biblioteca Legal › Conformidade e trate as medidas do seu nível, guardando o que é pedido em «O que guardar como evidência».', 'rjc'),
-  N('Faça uma avaliação NIS2 para medir a maturidade e gerar o plano de ação.', 'rjc'),
-  N('Prepare os procedimentos de incidentes e o relatório anual com antecedência.', 'rjc'),
+  N('Faça o enquadramento e confirme a qualificação e o nível.', 'n2'),
+  N('Siga a Jornada por secções, começando pela A e pela B.', 'n2'),
+  N('Abra Biblioteca Legal › Conformidade e trate as medidas do seu nível, guardando o que é pedido em «O que guardar como evidência».', 'n2'),
+  N('Faça uma avaliação NIS2 para medir a maturidade e gerar o plano de ação.', 'n2'),
+  N('Prepare os procedimentos de incidentes e o relatório anual com antecedência.', 'n2'),
   H3('Prazos a conhecer'),
   table(['Obrigação', 'Prazo', 'Base legal'], [
     ['Autoidentificação no CNCS', '30 dias após o início de atividade; 60 dias após a plataforma do CNCS ficar disponível, se já estiver em atividade', 'RJC, art. 8.º, n.º 1; Reg. 756/2026, art. 8.º'],
@@ -292,24 +243,25 @@ add(H1('6. Guia por referencial'),
   H2('6.2 ISO/IEC 27001:2022'),
   callout('Antes de começar', [
     'A AnkoraOne inclui um **guia de preparação** para a ISO/IEC 27001:2022, com a emenda de 2024. A norma é protegida por direitos de autor e **não está reproduzida**: os títulos, as descrições e as evidências sugeridas são da AnkoraOne.',
-    'A plataforma organiza o trabalho e guarda as evidências; não substitui a norma nem a auditoria de certificação por uma entidade acreditada. A validação do guia com o texto oficial está em curso.',
+    'A estrutura (cláusulas 4 a 10 e os 93 controlos) foi conferida com o texto oficial em outubro de 2026. A plataforma organiza o trabalho e guarda as evidências; não substitui a norma, que a entidade deve adquirir, nem a auditoria de certificação por uma entidade acreditada.',
   ]),
   gap(),
   P('O guia está em **Biblioteca Legal › ISO/IEC 27001** e tem duas partes:'),
   table(['Parte', 'Conteúdo', 'O que a entidade regista'], [
     ['Requisitos do sistema de gestão', 'Cláusulas 4 a 10: contexto, liderança, planeamento, suporte, operação, avaliação do desempenho e melhoria (25 requisitos)', 'Estado, responsável, data-alvo, notas e evidências. Estas cláusulas não podem ser excluídas.'],
-    ['Controlos do Anexo A', '93 controlos: 37 organizacionais, 8 de pessoas, 14 físicos e 34 tecnológicos', 'Aplicável ou não, justificação, estado, responsável e evidências. Estas escolhas formam a Declaração de Aplicabilidade.'],
+    ['Controlos do Anexo A', '93 controlos: 37 organizacionais, 8 de pessoas, 14 físicos e 34 tecnológicos', 'Aplicável ou não, justificação, método de implementação, estado, responsável e evidências. Estas escolhas formam a Declaração de Aplicabilidade.'],
   ], [2.4, 4, 3.6]),
   gap(),
+  P('As cláusulas que exigem **informação documentada** estão assinaladas e há um filtro para as ver todas. A **análise de lacunas** mostra o sistema de gestão e os controlos em separado (conforme, parcialmente conforme, não conforme, não aplicável) e exporta-se em CSV.'),
   P('Cada requisito e cada controlo mostra o que guardar como evidência e os **controlos do QNRCS ligados**. Estas ligações vêm das referências oficiais do Regulamento n.º 756/2026 (Anexo I), que cobrem 92 dos 93 controlos do Anexo A. Por isso, uma evidência guardada para uma medida do RJC conta também para o controlo ISO correspondente.'),
   H3('Como trabalhar este referencial na AnkoraOne'),
-  N('Abra **Biblioteca Legal › ISO/IEC 27001** e comece pelas cláusulas 4 a 6: âmbito, política, metodologia de riscos e objetivos.', 'iso'),
-  N('Faça a avaliação de riscos em **Gestão de Risco** e decida o tratamento.', 'iso'),
-  N('Percorra os 93 controlos do Anexo A: marque cada um como aplicável ou não aplicável e escreva a justificação.', 'iso'),
-  N('Exporte a **Declaração de Aplicabilidade** e submeta-a à aprovação da gestão em **Documentos**.', 'iso'),
-  N('Ligue as evidências a cada controlo; as que já existem nos controlos QNRCS ligados aparecem indicadas.', 'iso'),
-  N('Peça ao consultor uma avaliação de maturidade ISO/IEC 27001 (pode ser em conjunto com NIS2) e trate as lacunas no **Plano de Ação**.', 'iso'),
-  N('Antes da certificação, faça a auditoria interna (9.2) e a revisão pela gestão (9.3) e guarde os relatórios como evidência.', 'iso'),
+  N('Abra **Biblioteca Legal › ISO/IEC 27001** e comece pelas cláusulas 4 a 6: âmbito, política, metodologia de riscos e objetivos.', 'n3'),
+  N('Faça a avaliação de riscos em **Gestão de Risco** e decida o tratamento.', 'n3'),
+  N('Percorra os 93 controlos do Anexo A: marque cada um como aplicável ou não aplicável, escreva a justificação e, nos aplicáveis, o método de implementação.', 'n3'),
+  N('Exporte a **Declaração de Aplicabilidade** e submeta-a à aprovação da gestão em **Documentos**.', 'n3'),
+  N('Ligue as evidências a cada controlo; as que já existem nos controlos QNRCS ligados aparecem indicadas. Exporte a análise de lacunas para acompanhar o progresso.', 'n3'),
+  N('Peça ao consultor uma avaliação de maturidade ISO/IEC 27001 (pode ser em conjunto com NIS2) e trate as lacunas no **Plano de Ação**.', 'n3'),
+  N('Antes da certificação, faça a auditoria interna (9.2) e a revisão pela gestão (9.3) e guarde os relatórios como evidência.', 'n3'),
   H3('O que a NIS2 e a ISO/IEC 27001 têm em comum'),
   table(['Tema', 'RJC / NIS2', 'ISO/IEC 27001'], [
     ['Gestão dos riscos', 'Obrigatória (RJC, arts. 26.º e 29.º)', 'Base do sistema de gestão'],
@@ -320,7 +272,29 @@ add(H1('6. Guia por referencial'),
     ['Formação', 'Gestão e pessoal (art. 25.º e QNRCS)', 'Consciencialização e competência'],
   ], [2.6, 3.6, 3.4]),
 
-  H2('6.3 Outros referenciais disponíveis'),
+  H2('6.3 ISO/IEC 42001:2023 — sistema de gestão da inteligência artificial'),
+  callout('Antes de começar', [
+    'A ISO/IEC 42001 é a norma para gerir de forma responsável o desenvolvimento, o fornecimento ou a utilização de sistemas de IA. Tal como na 27001, a AnkoraOne inclui um **guia de preparação** com textos próprios; a estrutura foi conferida com o texto oficial e a norma **não está reproduzida**.',
+    'Não substitui as obrigações do Regulamento (UE) 2024/1689 (Regulamento da IA), mas ajuda a organizá-las.',
+  ]),
+  gap(),
+  P('O guia está em **Biblioteca Legal › ISO/IEC 42001**:'),
+  table(['Parte', 'Conteúdo', 'Particularidade'], [
+    ['Requisitos do sistema de gestão', 'Cláusulas 4 a 10 (27 requisitos), com a mesma estrutura da 27001', 'Acrescenta a **avaliação de impacto dos sistemas de IA** (6.1.4 e 8.4), sem equivalente na 27001'],
+    ['Controlos do Anexo A', '38 controlos em 9 domínios: políticas, organização, recursos, avaliação de impactos, ciclo de vida, dados, informação a partes interessadas, utilização e terceiros', '33 apoiam-se em requisitos da 27001; 5 são próprios da IA'],
+    ['Anexo C', '11 objetivos e 7 fontes de risco de referência', 'Ajudam a definir objetivos (6.2) e a avaliar riscos (6.1.2)'],
+  ], [2.4, 4.2, 3.4]),
+  gap(),
+  P('Se a entidade já segue a ISO/IEC 27001, trabalhe as duas como **um só sistema de gestão**: a mesma análise de contexto, o mesmo controlo documental, uma auditoria interna e uma revisão pela gestão. Cada controlo da 42001 mostra os requisitos da 27001 em que se apoia e conta as evidências que já lá estão. A **Declaração de Aplicabilidade é separada** para cada norma.'),
+  H3('Como trabalhar este referencial na AnkoraOne'),
+  N('Faça o inventário dos sistemas de IA e defina o papel da entidade em cada um (cláusula 4).', 'n5'),
+  N('Aprove a política de IA e as responsabilidades (5.2 e 5.3).', 'n5'),
+  N('Avalie os riscos de IA e, para cada sistema, o impacto em pessoas e na sociedade (6.1.2 e 6.1.4).', 'n5'),
+  N('Percorra os 38 controlos: aplicabilidade, justificação e método de implementação; exporte a Declaração de Aplicabilidade.', 'n5'),
+  N('Ligue as evidências; nos controlos com base na 27001, reaproveite o que já existe e acrescente o que é próprio da IA.', 'n5'),
+  N('Inclua a IA na auditoria interna e na revisão pela gestão (9.2 e 9.3).', 'n5'),
+
+  H2('6.4 Outros referenciais disponíveis'),
   B('**QNRCS (Reg. 756/2026, Anexo I):** 107 controlos organizados em seis objetivos (Gerir, Identificar, Proteger, Detetar, Responder, Recuperar), com a medida e a verificação por nível.'),
   B('**Reg. de Execução (UE) 2024/2690:** requisitos técnicos para prestadores de serviços digitais (por exemplo centros de dados, nuvem e serviços geridos).'),
   B('**DORA:** para entidades financeiras; inclui os prazos próprios de notificação de incidentes.'),
@@ -333,7 +307,7 @@ add(H1('7. Os primeiros 90 dias'),
   table(['Período', 'O que fazer', 'Na AnkoraOne'], [
     ['Semana 1', 'Criar a conta, fazer o enquadramento, convidar a equipa', 'Clientes · Enquadramento · Definições → Utilizadores'],
     ['Semanas 2 a 4', 'Nomear o responsável e o ponto de contacto; autoidentificação no CNCS; primeira avaliação NIS2 e ISO/IEC 27001', 'Jornada (A e B) · Avaliações'],
-    ['Mês 2', 'Políticas base aprovadas; inventário de ativos; fornecedores críticos identificados; Declaração de Aplicabilidade ISO em rascunho', 'Documentos · Ativos e ferramentas · Fornecedores · Biblioteca Legal › ISO/IEC 27001'],
+    ['Mês 2', 'Políticas base aprovadas; inventário de ativos (e de sistemas de IA, se aplicável); fornecedores críticos identificados; Declarações de Aplicabilidade ISO em rascunho; documentos existentes carregados em Por classificar', 'Documentos · Repositório documental · Ativos e ferramentas · Fornecedores · Biblioteca Legal › ISO'],
     ['Mês 3', 'Medidas mínimas em curso com evidências; procedimento de incidentes testado; plano de ação revisto', 'Biblioteca Legal › Conformidade · Incidentes · Plano de Ação'],
     ['Depois', 'Revisão trimestral da maturidade e anual dos riscos; preparação do relatório anual', 'Relatórios · Gestão de Risco'],
   ], [1.8, 4.4, 3.6]),
@@ -341,7 +315,7 @@ add(H1('7. Os primeiros 90 dias'),
   callout('Lista de verificação de arranque', [
     '☐ Enquadramento confirmado e relatório guardado',
     '☐ Equipa convidada com os perfis certos',
-    '☐ Repositório de ficheiros escolhido',
+    '☐ Repositório de ficheiros e localização escolhidos',
     '☐ Responsável de cibersegurança e ponto de contacto registados',
     '☐ Primeira avaliação concluída e plano de ação criado',
     '☐ Lembretes de revisão e de prazos configurados em Definições',
@@ -359,36 +333,21 @@ add(H1('8. Glossário'),
     ['Evidência', 'Prova de que uma medida ou tarefa está cumprida (documento, registo, captura, relatório)'],
     ['Ponto de contacto permanente', 'Pessoa ou serviço contactável pelo CNCS, 24/7 em períodos de ativação'],
     ['Incidente significativo', 'Incidente que cumpre os critérios do art. 40.º do RJC e obriga a notificação'],
+    ['Declaração de Aplicabilidade', 'Lista dos controlos do Anexo A de uma norma ISO, com a decisão de aplicar ou não cada um e a justificação'],
+    ['Análise de lacunas', 'Comparação entre o que a norma pede e o que já existe, requisito a requisito'],
+    ['Avaliação de impacto de IA', 'Análise dos efeitos de um sistema de IA em pessoas e na sociedade (ISO/IEC 42001, 6.1.4)'],
   ], [3, 6.5]),
   H2('Contactos'),
   P('Plataforma: **app.ankoraone.com**'),
   P('Apoio ao cliente: **daniel.carvalho@ankoraone.com**'),
-  p([t('Este manual descreve a plataforma em outubro de 2026. As referências legais remetem para os textos publicados no Diário da República e no EUR-Lex, disponíveis na Biblioteca Legal da plataforma.', { italics: true, color: MUTED, size: 18 })]),
+  p([t('Este manual (versão 1.2) descreve a plataforma em outubro de 2026. As referências legais remetem para os textos publicados no Diário da República e no EUR-Lex, disponíveis na Biblioteca Legal da plataforma.', { italics: true, color: MUTED, size: 18 })]),
 );
 
-const doc = new Document({
-  creator: 'AnkoraOne', features: { updateFields: true }, title: 'AnkoraOne — Manual de onboarding', description: 'Manual de onboarding para novos clientes (NIS2 e ISO/IEC 27001)',
-  styles: {
-    default: { document: { run: { font: FONT, size: 21, color: INK } } },
-    paragraphStyles: [
-      { id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { size: 36, bold: true, color: NAVY, font: FONT }, paragraph: { spacing: { before: 120, after: 240 }, outlineLevel: 0, keepNext: true } },
-      { id: 'Heading2', name: 'Heading 2', basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { size: 26, bold: true, color: '8A6620', font: FONT }, paragraph: { spacing: { before: 280, after: 120 }, outlineLevel: 1, keepNext: true } },
-      { id: 'Heading3', name: 'Heading 3', basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { size: 22, bold: true, color: '17766C', font: FONT }, paragraph: { spacing: { before: 200, after: 100 }, outlineLevel: 2, keepNext: true } },
-    ],
-  },
-  numbering: { config: [
-    { reference: 'bullets', levels: [{ level: 0, format: LevelFormat.BULLET, text: '•', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 540, hanging: 270 } } } }] },
-    ...['steps', 'rjc', 'iso'].map((reference) => ({ reference, levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 540, hanging: 300 } } } }] })),
-  ] },
-  sections: [
-    { properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 } } }, children: cover },
-    {
-      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1300, bottom: 1134, left: 1134, right: 1134 } } },
-      headers: { default: new Header({ children: [new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: LINE, space: 6 } }, children: [new ImageRun({ type: 'png', data: logoNavy, transformation: { width: 110, height: 25 } }), t('     Manual de onboarding · NIS2 e ISO/IEC 27001', { color: MUTED, size: 16 })] })] }) },
-      footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [t('Página ', { color: MUTED, size: 16 }), new TextRun({ children: [PageNumber.CURRENT], font: FONT, color: MUTED, size: 16 })] })] }) },
-      children: body,
-    },
-  ],
+const doc = makeDocument({
+  title: 'AnkoraOne — Manual de onboarding',
+  description: 'Manual de onboarding para novos clientes (NIS2, ISO/IEC 27001 e ISO/IEC 42001)',
+  headerText: 'Manual de onboarding · NIS2, ISO/IEC 27001 e ISO/IEC 42001',
+  coverChildren, body,
 });
 
 Packer.toBuffer(doc).then((buf) => { fs.writeFileSync(path.join(DIR, 'AnkoraOne-Manual-Onboarding.docx'), buf); console.log('ok'); });
