@@ -42,7 +42,7 @@ flowchart TB
 - **Documentos:** gravação, aprovação com assinatura, versões e reposição pela função `documents`.
 - **IA:** funções `aiDraft` (rascunhos com fontes oficiais) e `aiAssist` (pedidos da interface), com motor e pontos ativos escolhidos em Definições → Aplicação (`docs/ia.md`).
 - **Licenças:** catálogo e subscrições pela função `licensing`; certificados assinados Ed25519.
-- **Email:** `base44/shared/mail.ts` (Resend, SMTP ou Base44); ver `docs/email-dominio.md`.
+- **Email:** `base44/shared/mail.ts` (Resend ou Base44); ver `docs/email-dominio.md`.
 
 ## Publicação
 

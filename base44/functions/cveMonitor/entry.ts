@@ -1,5 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { secrets } from 'base44:runtime';
 import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, getEntitlements, LicenseError } from '../../shared/license.ts';
@@ -26,24 +25,22 @@ const FIRST_RUN_DAYS = 30;
 const MAX_GROUPS_PER_RUN = 40;
 const RANK = { high: 1, critical: 2 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const nvdKey = () => { try { return secrets.get('NVD_API_KEY') || ''; } catch { return ''; } };
 const nvdDate = (d) => d.toISOString().replace('Z', ''); // sem desvio = UTC
 const days = (n) => n * 86400000;
 const str = (v, n = 300) => (v == null ? '' : String(v)).slice(0, n);
 const normVendor = (s) => String(s || '').trim().toLowerCase().replace(/[\s,.]+(inc|ltd|llc|gmbh|corp|corporation|co|sa|s\.a|lda|ag|bv)\.?$/i, '').replace(/\s+/g, '_');
 
 async function nvdGet(path, params) {
-  const key = nvdKey();
   const url = `${NVD}/${path}?${new URLSearchParams(params)}`;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const r = await fetch(url, { headers: { Accept: 'application/json', ...(key ? { apiKey: key } : {}) }, redirect: 'error' });
+    const r = await fetch(url, { headers: { Accept: 'application/json' }, redirect: 'error' });
     if (r.ok) return r.json();
     if (![403, 429, 503].includes(r.status)) throw new Error(`NVD respondeu ${r.status}`);
-    await sleep(key ? 2000 : 8000);
+    await sleep(8000);
   }
   throw new Error('NVD indisponível ou limite de pedidos atingido');
 }
-const pause = () => sleep(nvdKey() ? 700 : 6500); // 50 ou 5 pedidos por 30 s
+const pause = () => sleep(6500); // 5 pedidos por 30 s (limite anónimo do NVD)
 
 /** Gravidade e pontuação CVSS preferindo a entrada «Primary»: v3.1, depois v4.0, depois v3.0. */
 function cvssOf(cve) {
@@ -260,7 +257,7 @@ export default async function (req) {
 
     if (action === 'check') {
       const customerId = resolveCustomer(body.customer_id);
-      const watches = (await db.CveWatch.filter({ customer_id: customerId, enabled: true }, 'last_checked_at', 200)).slice(0, nvdKey() ? 30 : 8);
+      const watches = (await db.CveWatch.filter({ customer_id: customerId, enabled: true }, 'last_checked_at', 200)).slice(0, 8);
       return json(await runWatches(base44, watches));
     }
 
