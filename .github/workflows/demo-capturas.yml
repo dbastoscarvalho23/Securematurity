@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund --legacy-peer-deps
       - run: node node_modules/vite/bin/vite.js build --config .demo/vite.demo.config.js
       - run: |
           git config user.name "github-actions"
