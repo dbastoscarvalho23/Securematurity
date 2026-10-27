@@ -82,6 +82,7 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
     s.addText('ONBOARDING DE NOVOS CLIENTES', { placeholder: 'kicker' });
     s.addText('Começar a trabalhar na AnkoraOne', { placeholder: 'title' });
     s.addText('Regime Jurídico da Cibersegurança (NIS2), ISO/IEC 27001 e ISO/IEC 42001: criação da conta, navegação, uso diário e guia por referencial', { placeholder: 'body' });
+    txt(s, [{ text: 'AnkoraOne: ', options: { bold: true, color: HEX.gold } }, { text: 'a infraestrutura inteligente de governação, risco e conformidade', options: { color: 'FFFFFF' } }], { x: 0.8, y: 6.15, w: 11, h: 0.35, fontSize: 14 });
     txt(s, 'app.ankoraone.com  ·  versão 1.2  ·  outubro de 2026', { x: 0.8, y: 6.6, w: 6, h: 0.35, fontSize: 12, color: HEX.gold });
     notes(s, 'Apresentação de arranque para novos clientes. Duração prevista: 30 a 40 minutos.');
   }
