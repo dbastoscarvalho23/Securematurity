@@ -33,6 +33,8 @@ export const parseJson = (text) => {
  *  - documents: tudo o que passa por aiDraft (rascunhos de documentos, análise de evidências, notificações de incidentes).
  *  - document_classification: classificação de documentos em «00 Por classificar» (função documentIntake); contexto
  *    documental, ativo por omissão.
+ *  - assessment_questionnaire: questionário de avaliação elaborado a partir da Biblioteca Legal (função aiQuestionnaire);
+ *    cada pergunta cita uma fonte do repositório e é revista antes de gravar.
  *  - Desligados por omissão: escolha de perguntas (segue as medidas oficiais e a qualificação, não o modelo),
  *    lacunas do banco de perguntas e traduções de texto oficial/legal (existe o texto de origem em PT-PT).
  */
@@ -42,6 +44,7 @@ export const AI_PURPOSE_DEFAULTS = {
   supplier_questionnaire_generation: true,
   supplier_email_answer_extraction: true,
   assessment_recommendations: true,
+  assessment_questionnaire: true,
   recommendation_generation: true,
   assessment_question_selection: false,
   question_gap_analysis: false,

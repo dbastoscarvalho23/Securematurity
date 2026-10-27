@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Sparkles, ListChecks } from 'lucide-react';
+import { Sparkles, ListChecks, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -10,6 +10,7 @@ import { useAiEnabled } from '@/lib/ai';
 import AssessmentWizardMeta from './AssessmentWizardMeta';
 import AssessmentWizardAI from './AssessmentWizardAI';
 import AssessmentWizardManual from './AssessmentWizardManual';
+import AssessmentWizardLegalAI from './AssessmentWizardLegalAI';
 
 const STEPS = ['mode', 'meta', 'build'];
 
@@ -23,12 +24,15 @@ const DEFAULT_META = {
 export default function NewAssessmentDialog({ open, onOpenChange }) {
   const { t } = useLanguage();
   const [step, setStep] = useState('mode');
-  const [mode, setMode] = useState(null); // 'ai' | 'manual'
+  const [mode, setMode] = useState(null); // 'legal' | 'ai' | 'manual'
   const [meta, setMeta] = useState(DEFAULT_META);
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
   // Escolha de perguntas por IA: só quando o administrador a ativou (Definições → Aplicação → Assistente de IA).
   const aiOn = useAiEnabled('assessment_question_selection');
+  // Questionário elaborado pela IA a partir da Biblioteca Legal (ponto de uso «assessment_questionnaire», ativo por omissão).
+  const legalOn = useAiEnabled('assessment_questionnaire');
+  const modes = 1 + (aiOn ? 1 : 0) + (legalOn ? 1 : 0);
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -115,7 +119,7 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
           <DialogTitle>
             {step === 'mode' && t('assessments_new')}
             {step === 'meta' && t('assessment_wizard_details')}
-            {step === 'build' && (mode === 'ai' ? t('assessment_wizard_ai_questionnaire') : t('assessment_wizard_build'))}
+            {step === 'build' && (mode === 'legal' ? t('qai_title') : mode === 'ai' ? t('assessment_wizard_ai_questionnaire') : t('assessment_wizard_build'))}
           </DialogTitle>
         </DialogHeader>
 
@@ -125,7 +129,17 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
         {step === 'mode' && (
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">{t('assessment_wizard_how_build')}</p>
-            <div className={cn('grid gap-4', aiOn ? 'grid-cols-2' : 'grid-cols-1')}>
+            <div className={cn('grid gap-4', modes === 3 ? 'sm:grid-cols-3' : modes === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
+              {legalOn && <button
+                onClick={() => handleSelectMode('legal')}
+                className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-primary/40 hover:border-primary hover:bg-primary/5 transition-all text-left"
+              >
+                <BookOpen className="w-8 h-8 text-primary" />
+                <div>
+                  <p className="font-semibold text-sm">{t('qai_mode')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('qai_mode_desc')}</p>
+                </div>
+              </button>}
               {aiOn && <button
                 onClick={() => handleSelectMode('ai')}
                 className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-left"
@@ -169,6 +183,19 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
             onBack={() => setStep('meta')}
             onFinish={handleFinish}
             isSaving={isSaving}
+          />
+        )}
+
+        {step === 'build' && mode === 'legal' && legalOn && (
+          <AssessmentWizardLegalAI
+            meta={meta}
+            selectedCustomer={selectedCustomer}
+            onBack={() => setStep('meta')}
+            onSaved={() => {
+              queryClient.invalidateQueries({ queryKey: ['assessments'] });
+              queryClient.invalidateQueries({ queryKey: ['questions'] });
+              handleClose();
+            }}
           />
         )}
 

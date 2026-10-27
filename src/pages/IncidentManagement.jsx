@@ -10,7 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangle, Plus, Pencil, Loader2, Search, Clock, CheckCircle2, AlertOctagon } from 'lucide-react';
+import { AlertTriangle, Plus, Pencil, Loader2, Search, Clock, CheckCircle2, AlertOctagon, ListChecks } from 'lucide-react';
+import IncidentPlanDialog from '@/components/incidents/IncidentPlanDialog';
+import { nextIncidentAction } from '@/lib/incidentPlan';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { writeAuditLog } from '@/lib/auditLog';
@@ -114,6 +116,7 @@ export default function IncidentManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [aiIncident, setAiIncident] = useState(null);
+  const [planIncident, setPlanIncident] = useState(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
 
@@ -222,7 +225,7 @@ export default function IncidentManagement() {
                   <TableHead>{t('common_status')}</TableHead>
                   <TableHead>{t('inc_col_detected')}</TableHead>
                   <TableHead>{t('inc_col_notifications')}</TableHead>
-                  <TableHead className="w-16">{t('common_edit')}</TableHead>
+                  <TableHead className="w-24">{t('common_edit')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -244,7 +247,13 @@ export default function IncidentManagement() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell><Button variant="ghost" size="icon" onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button></TableCell>
+                    <TableCell>
+                      <div className="flex">
+                        <Button variant="ghost" size="icon" onClick={() => setPlanIncident(r)} aria-label={t('incplan_open')} title={t('incplan_open')}
+                          className={nextIncidentAction(r).overdue ? 'text-destructive' : ''}><ListChecks className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(r)} aria-label={t('common_edit')}><Pencil className="w-3.5 h-3.5" /></Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -393,6 +402,8 @@ export default function IncidentManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <IncidentPlanDialog incident={planIncident} open={planIncident !== null} onOpenChange={(v) => !v && setPlanIncident(null)}
+        canUseAi={aiDocs} canEdit />
       <AiDraftDialog open={aiIncident !== null} onOpenChange={(v) => !v && setAiIncident(null)} customerId={aiIncident?.customer_id}
         target={aiIncident ? { type: 'incident', id: aiIncident.id } : null} kinds={INCIDENT_KINDS} title={aiIncident ? `${t('ai_incident_button')} — ${aiIncident.title}` : ''} />
     </div>

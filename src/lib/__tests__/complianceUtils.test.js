@@ -92,16 +92,14 @@ describe('incidentDeadlines', () => {
     expect(phases[0].due.toISOString()).toBe('2026-01-02T10:00:00.000Z');
   });
 
-  it('resolved_within_2h skips the initial/update phases', () => {
+  it('resolved_within_2h: only the end-of-impact notification (RJC, art. 41.º, n.º 2)', () => {
     const phases = incidentDeadlines({
       resolved_within_2h: true,
       impact_ended_at: '2026-01-01T12:00:00Z',
       end_of_impact_notification_sent_at: '2026-01-02T09:00:00Z',
     });
-    expect(phases.map((p) => p.id)).toEqual(['rjc_end_of_impact', 'rjc_final']);
+    expect(phases.map((p) => p.id)).toEqual(['rjc_end_of_impact']);
     expect(phases[0].due.toISOString()).toBe('2026-01-02T12:00:00.000Z');
-    // final = 30 business days after end-of-impact notification
-    expect(phases[1].due).toEqual(addBusinessDays('2026-01-02T09:00:00Z', 30));
   });
 
   it('computes end-of-impact and final due dates when trigger facts exist', () => {
