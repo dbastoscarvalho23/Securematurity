@@ -15,7 +15,7 @@ import TrainingReportEditDialog from '@/components/genreports/TrainingReportEdit
 import { Search, Download, Pencil, Trash2, FileText, GraduationCap } from 'lucide-react';
 import { writeAuditLog } from '@/lib/auditLog';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { cn } from '@/lib/utils';
 import FileLink from '@/components/shared/FileLink';
 

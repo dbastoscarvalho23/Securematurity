@@ -20,7 +20,7 @@ import StatCard from '@/components/dashboard/StatCard';
 import SeatManagementPanel from '@/components/customers/SeatManagementPanel';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';

@@ -2,7 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { CalendarClock, FileClock } from 'lucide-react';
-import { format, parseISO, differenceInCalendarDays } from 'date-fns';
+import { parseISO, differenceInCalendarDays } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { useLanguage } from '@/lib/LanguageContext';
 import StatusBadge from '@/components/shared/StatusBadge';
 

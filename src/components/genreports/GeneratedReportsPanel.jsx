@@ -15,7 +15,7 @@ import GeneratedReportEditDialog from '@/components/genreports/GeneratedReportEd
 import { FileText, Download, Pencil, Trash2, Search, FileBarChart } from 'lucide-react';
 import { writeAuditLog } from '@/lib/auditLog';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { cn } from '@/lib/utils';
 import FileLink from '@/components/shared/FileLink';
 
