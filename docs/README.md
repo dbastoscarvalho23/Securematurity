@@ -26,6 +26,7 @@
 | Documento | Conteúdo |
 |---|---|
 | [legal/README.md](legal/README.md) | Fontes oficiais da Biblioteca Legal, licenças, datas e guias ISO/IEC 27001 e 42001 (estrutura conferida com os textos oficiais) |
+| [modelos/README.md](modelos/README.md) | Modelos e relatórios por referencial (RJC/QNRCS, NIS2, DORA, ISO 27001, ISO 42001, TISAX), em Word e Excel, gerados a partir dos textos oficiais |
 | [legal/referencias-iso.md](legal/referencias-iso.md) | Fontes usadas para conferir os guias ISO e o que se encontrou em cada uma (só metadados) |
 | [../tools/legal/README.md](../tools/legal/README.md) | Como regenerar os dados legais |
 
