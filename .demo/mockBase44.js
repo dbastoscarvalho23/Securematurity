@@ -53,10 +53,19 @@ const vulns = [
   ['CVE-2026-31201', 'Execução remota no VPN de acesso remoto', 'critical', 9.8, 'open'], ['CVE-2026-28877', 'Escalada de privilégios no hipervisor', 'high', 8.1, 'in_progress'], ['CVE-2026-19054', 'Fuga de informação no servidor web', 'medium', 5.3, 'remediated'],
 ].map(([cve_id, title, severity, cvss_score, status], i) => ({ id: `v${i}`, cve_id, title, severity, cvss_score, status, customer_id: 'c1', customer_name: C1.name, discovered_date: d(-i * 3 - 1), due_date: d(7 - i * 3) }));
 
+const evid = [
+  ['Política de segurança da informação', 'policy_procedure', 'accepted', 'QNRCS GV.PO-1 · Jornada RJC 3.1', -40, 325],
+  ['Relatório de teste de restauro de cópias', 'test_audit_report', 'accepted', 'QNRCS RC.PR-1 · Tarefa T-112', -12, 170],
+  ['Registo de acessos privilegiados (outubro)', 'log_record', 'pending', 'QNRCS PR.GA-1 · Risco R-107', -3, 60],
+  ['Contrato com fornecedor de telemetria', 'contract_licence', 'accepted', 'Cadeia de abastecimento · art. 28.º', -90, 400],
+  ['Relatório de análise de vulnerabilidades', 'tool_report', 'pending', 'QNRCS ID.AR-1 · CVE-2026-31201', -1, 89],
+  ['Plano de resposta a incidentes v1', 'policy_procedure', 'accepted', 'QNRCS RS.PR-1', -200, -10, true],
+].map(([title, evidence_type, status, label, col, val, sup], i) => ({ id: `e${i}`, customer_id: 'c1', title, evidence_type, status, links: [{ label }], link_keys: [], collected_at: d(col), valid_until: d(val), version: sup ? 1 : 1 + (i % 3), superseded: !!sup, sha256: ('9f2c4a7be1d0' + i).padEnd(64, '0'), created_date: h(i * 10) }));
+
 const DATA = {
   Customer: customers,
   Framework: [fw('QNRCS', 'QNRCS (Reg. 756/2026)'), fw('NIS2', 'Diretiva NIS2'), fw('DORA', 'DORA'), fw('ISO27001', 'ISO/IEC 27001:2022'), fw('ISO42001', 'ISO/IEC 42001:2023'), fw('TISAX', 'TISAX / VDA ISA')],
-  Assessment: assessments, Incident: incidents, RiskItem: risks, Task: tasks, ComplianceChecklist: journey, Recommendation: recommendations, Vulnerability: vulns,
+  Assessment: assessments, Incident: incidents, RiskItem: risks, Task: tasks, ComplianceChecklist: journey, Recommendation: recommendations, Vulnerability: vulns, Evidence: evid,
   AiSettings: [],
 };
 
