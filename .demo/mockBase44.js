@@ -12,10 +12,12 @@ const C4 = { id: 'c4', name: 'TechNova Serviços, Lda.', sector: 'technology', s
 const customers = [C1, C2, C3, C4];
 
 const fw = (code, name) => ({ id: `f-${code}`, code, name, status: 'active', version: '' });
+const QD = ['Gerir', 'Identificar', 'Proteger', 'Detetar', 'Responder', 'Recuperar'];
+const fsc = (code, score, domains, base) => ({ framework_code: code, score, domain_scores: domains.map((domain, i) => ({ domain, score: Math.max(1, Math.min(5, +(base[i % base.length]).toFixed(1))) })) });
 const assessments = [
-  { id: 'a1', customer_id: 'c1', customer_name: C1.name, title: 'Avaliação QNRCS — nível Elevado', period: '2026-T4', frameworks: ['QNRCS'], status: 'in_progress', overall_score: 2.9, framework_scores: { QNRCS: 2.9 }, created_date: h(240) },
-  { id: 'a2', customer_id: 'c2', customer_name: C2.name, title: 'DORA e QNRCS — revisão anual', period: '2026', frameworks: ['DORA', 'QNRCS'], status: 'completed', overall_score: 3.4, framework_scores: { DORA: 3.2, QNRCS: 3.6 }, completed_date: d(-12), created_date: h(900) },
-  { id: 'a3', customer_id: 'c3', customer_name: C3.name, title: 'ISO/IEC 27001 e 42001 — análise de lacunas', period: '2026-T4', frameworks: ['ISO27001', 'ISO42001'], status: 'in_progress', overall_score: 2.4, framework_scores: { ISO27001: 2.6, ISO42001: 2.1 }, created_date: h(120) },
+  { id: 'a1', customer_id: 'c1', customer_name: C1.name, title: 'Avaliação QNRCS — nível Elevado', period: '2026-T4', frameworks: ['QNRCS'], status: 'in_progress', overall_score: 2.9, framework_scores: [fsc('QNRCS', 2.9, QD, [3.4, 3.1, 2.6, 2.2, 3.0, 2.8])], created_date: h(240) },
+  { id: 'a2', customer_id: 'c2', customer_name: C2.name, title: 'DORA e QNRCS — revisão anual', period: '2026', frameworks: ['DORA', 'QNRCS'], status: 'completed', overall_score: 3.4, framework_scores: [fsc('DORA', 3.2, ['Governação', 'Risco TIC', 'Incidentes', 'Testes', 'Terceiros TIC'], [3.6, 3.3, 3.5, 2.6, 2.9]), fsc('QNRCS', 3.6, QD, [3.9, 3.7, 3.6, 3.2, 3.8, 3.4])], completed_date: d(-12), created_date: h(900) },
+  { id: 'a3', customer_id: 'c3', customer_name: C3.name, title: 'ISO/IEC 27001 e 42001 — análise de lacunas', period: '2026-T4', frameworks: ['ISO27001', 'ISO42001'], status: 'in_progress', overall_score: 2.4, framework_scores: [fsc('ISO27001', 2.6, ['Organizacionais', 'Pessoas', 'Físicos', 'Tecnológicos'], [2.8, 2.5, 3.0, 2.2]), fsc('ISO42001', 2.1, ['Políticas de IA', 'Avaliação de impacto', 'Dados', 'Terceiros'], [2.4, 1.6, 2.2, 2.0])], created_date: h(120) },
   { id: 'a4', customer_id: 'c4', customer_name: C4.name, title: 'Diagnóstico inicial QNRCS — nível Básico', period: '2026-T4', frameworks: ['QNRCS'], status: 'draft', overall_score: null, created_date: h(30) },
 ];
 const incidents = [
