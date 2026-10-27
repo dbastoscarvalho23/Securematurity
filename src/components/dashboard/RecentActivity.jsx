@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
+import { pt, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -14,7 +15,7 @@ const statusStyles = {
 };
 
 export default function RecentActivity({ assessments }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const statusLabel = (s) => {
     if (s === 'completed') return t('assessments_status_completed');
@@ -64,7 +65,7 @@ export default function RecentActivity({ assessments }) {
                   {statusLabel(a.status)}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  {a.created_date ? format(new Date(a.created_date), 'MMM d') : ''}
+                  {a.created_date ? format(new Date(a.created_date), 'd MMM', { locale: language === 'pt' ? pt : enUS }) : ''}
                 </span>
               </div>
             </Link>

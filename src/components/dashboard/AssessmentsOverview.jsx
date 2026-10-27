@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { ClipboardCheck, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
+import { pt, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -15,7 +16,7 @@ const statusStyles = {
 };
 
 export default function AssessmentsOverview({ assessments }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const completed = assessments.filter(a => a.status === 'completed').length;
   const inProgress = assessments.filter(a => a.status === 'in_progress').length;
   const draft = assessments.filter(a => a.status === 'draft').length;
@@ -64,7 +65,7 @@ export default function AssessmentsOverview({ assessments }) {
                     {statusLabel(a.status)}
                   </Badge>
                   <span className="text-xs text-muted-foreground hidden sm:block">
-                    {a.created_date ? format(new Date(a.created_date), 'MMM d') : ''}
+                    {a.created_date ? format(new Date(a.created_date), 'd MMM', { locale: language === 'pt' ? pt : enUS }) : ''}
                   </span>
                 </div>
               </Link>
