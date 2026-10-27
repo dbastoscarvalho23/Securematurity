@@ -13,7 +13,7 @@ Estado a 26 de outubro de 2026.
 - Segredos da app: `MAIL_PROVIDER=resend`, `MAIL_FROM`, `MAIL_REPLY_TO`, `RESEND_API_KEY`.
 - Se a Resend falhar para um destinatário, o email segue pelo Base44 e o resultado indica o recurso.
 - Teste: Definições → Aplicação → «Enviar email de teste». Histórico: Relatório de Emails.
-- Alternativa: `MAIL_PROVIDER=smtp` com `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (Microsoft 365 `smtp.office365.com:587`; Google Workspace `smtp.gmail.com:587`).
+- Alternativa sem domínio próprio: `MAIL_PROVIDER=base44` (integração Core.SendEmail).
 
 ## Emails da plataforma (convites e palavra-passe)
 

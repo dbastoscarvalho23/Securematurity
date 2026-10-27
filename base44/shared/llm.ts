@@ -5,7 +5,7 @@ import { secrets } from 'base44:runtime';
  *
  * Motor: o registo AiSettings (Definições → Aplicação → Assistente de IA), lido com service role uma vez por pedido.
  * Sem registo, vale o segredo AI_PROVIDER. Valores:
- *  - "claude" (ou "anthropic"): Claude (ANTHROPIC_API_KEY; modelo em ANTHROPIC_MODEL, por omissão DEFAULT_CLAUDE_MODEL).
+ *  - "claude" (ou "anthropic"): Claude (ANTHROPIC_API_KEY; modelo DEFAULT_CLAUDE_MODEL).
  *    Se o Claude não estiver configurado ou falhar, o pedido segue pelo LLM do Base44 e a resposta indica-o.
  *  - "claude_only": só o Claude; se falhar, o pedido dá erro (sem recurso ao Base44).
  *  - "base44": só o LLM do Base44 (exceto PDF/imagens fora do repositório nativo, que exigem o Claude).
@@ -90,7 +90,7 @@ export async function aiProvider(base44) {
 async function callClaude(prompt, schema, file, textFile) {
   const key = secrets.get('ANTHROPIC_API_KEY');
   if (!key) throw new Error('Falta o segredo ANTHROPIC_API_KEY');
-  const model = String(secrets.get('ANTHROPIC_MODEL') || DEFAULT_CLAUDE_MODEL).trim();
+  const model = DEFAULT_CLAUDE_MODEL;
   const content = [];
   if (file && !textFile) {
     const bytes = file.bytes || new Uint8Array(await (await fetch(file.url, { redirect: 'error' })).arrayBuffer());
