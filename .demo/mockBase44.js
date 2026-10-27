@@ -1,4 +1,4 @@
-// Cliente Base44 simulado, só para capturas de ecrã da AnkoraOne com dados de demonstração (entidades fictícias).
+// Cliente Base44 simulado, só para capturas de ecrã da AnkoraOne com dados de demonstração (entidades fictícias). v2
 import { JOURNEY_TEMPLATE_PT, JOURNEY_FRAMEWORK } from '@/lib/legal/journeyTemplate';
 
 const now = Date.now();
