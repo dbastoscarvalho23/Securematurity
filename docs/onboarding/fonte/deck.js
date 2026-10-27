@@ -8,6 +8,7 @@ const lu = require('react-icons/lu');
 // O tema (cores do esquema) é aplicado por um script externo opcional; sem ele, o deck usa as cores diretas.
 let applyTheme = null;
 try { ({ applyTheme } = require(process.env.APPLY_THEME || './apply_theme.js')); } catch { applyTheme = null; }
+// Versão do deck (ver capa e README)
 
 const DIR = __dirname;
 const OUT = path.join(DIR, 'AnkoraOne-Apresentacao-Onboarding.pptx');
@@ -80,8 +81,8 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
     const s = pres.addSlide({ masterName: 'CAPA', sectionTitle: 'Abertura' });
     s.addText('ONBOARDING DE NOVOS CLIENTES', { placeholder: 'kicker' });
     s.addText('Começar a trabalhar na AnkoraOne', { placeholder: 'title' });
-    s.addText('Regime Jurídico da Cibersegurança (NIS2) e ISO/IEC 27001: criação da conta, navegação, uso diário e guia por referencial', { placeholder: 'body' });
-    txt(s, 'app.ankoraone.com  ·  outubro de 2026', { x: 0.8, y: 6.6, w: 6, h: 0.35, fontSize: 12, color: HEX.gold });
+    s.addText('Regime Jurídico da Cibersegurança (NIS2), ISO/IEC 27001 e ISO/IEC 42001: criação da conta, navegação, uso diário e guia por referencial', { placeholder: 'body' });
+    txt(s, 'app.ankoraone.com  ·  versão 1.2  ·  outubro de 2026', { x: 0.8, y: 6.6, w: 6, h: 0.35, fontSize: 12, color: HEX.gold });
     notes(s, 'Apresentação de arranque para novos clientes. Duração prevista: 30 a 40 minutos.');
   }
 
@@ -150,7 +151,7 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
   // 5. Enquadramento
   {
     const s = content('O enquadramento define o que tem de cumprir', 'Abertura');
-    const st = ['Atividade (Anexos I e II)', 'Tipo de entidade (art. 4.º)', 'Dimensão', 'Casos especiais', 'Entidade pública', 'Prazos e decisões do CNCS', 'Resultado com a base legal'];
+    const st = ['Atividade (Anexos I e II)', 'Estabelecimento (art. 4.º)', 'Dimensão', 'Casos especiais', 'Entidade pública', 'Prazos e decisões do CNCS', 'Resultado com a base legal'];
     txt(s, 'Sete perguntas, por esta ordem', { x: 0.6, y: 1.5, w: 5, h: 0.4, fontSize: 16, bold: true, color: '17766C' });
     st.forEach((a, i) => {
       s.addShape(pres.shapes.OVAL, { x: 0.6, y: 2.05 + i * 0.62, w: 0.42, h: 0.42, fill: { color: HEX.navy }, line: { color: HEX.navy }, objectName: `q-${i}` });
@@ -187,7 +188,7 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
       txt(s, t1, { x: x + 0.35, y: 1.9, w: 3.2, h: 0.6, fontSize: 26, bold: true, color: dark ? HEX.gold : HEX.navy });
       txt(s, list.map((l, j) => ({ text: l, options: { bullet: true, breakLine: j < list.length - 1 } })), { x: x + 0.35, y: 2.7, w: 3.25, h: 3.1, fontSize: 14, color: dark ? 'E6E9EF' : HEX.ink, paraSpaceAfter: 6 });
     });
-    txt(s, 'A licença define também os referenciais disponíveis e o número de utilizadores (mínimo de 5). O menu só mostra o que está incluído.', { x: 0.6, y: 6.2, w: 12, h: 0.5, fontSize: 14, color: HEX.muted });
+    txt(s, 'A licença define também os referenciais (NIS2, QNRCS, ISO/IEC 27001, ISO/IEC 42001, DORA…) e o número de utilizadores (mínimo de 5). O menu só mostra o que está incluído.', { x: 0.6, y: 6.2, w: 12, h: 0.5, fontSize: 14, color: HEX.muted });
   }
 
   // 7. Secção
@@ -207,7 +208,7 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
       ['LuCompass', 'Visão geral', 'Painel'],
       ['LuShieldCheck', 'Avaliar e comprovar', 'Jornada · Avaliações · Evidências · Biblioteca Legal · Guia · Ativos'],
       ['LuListChecks', 'Melhorar e gerir', 'Plano de Ação · Recomendações · Tarefas · Riscos · Incidentes · Vulnerabilidades'],
-      ['LuBookOpen', 'Governar', 'Documentos · Auditoria de Documentos · Cadeia de Abastecimento · Fornecedores'],
+      ['LuBookOpen', 'Governar', 'Documentos · Repositório documental · Auditoria · Cadeia de Abastecimento · Fornecedores'],
       ['LuGauge', 'Analisar', 'Relatórios e relatório anual'],
     ];
     for (let i = 0; i < g.length; i++) {
@@ -262,6 +263,28 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
     txt(s, [{ text: 'Regras: ', options: { bold: true } }, { text: 'ficheiros até 8 MB, nunca públicos; cada abertura fica registada; evidências de ativos são restritas.' }], { x: 7.4, y: 5.3, w: 5.3, h: 0.9, fontSize: 13, color: HEX.ink });
   }
 
+  // 10b. Repositório e classificação
+  {
+    const s = content('Carregue o que já tem: a plataforma propõe onde pertence', 'Navegar e trabalhar');
+    txt(s, 'Governar › Repositório documental: todos os ficheiros do cliente nas mesmas 13 pastas, no repositório escolhido (plataforma, Google Drive, OneDrive ou NAS).', { x: 0.6, y: 1.35, w: 12, h: 0.45, fontSize: 15, color: HEX.muted });
+    const steps = [
+      ['LuInbox', 'Carregar', 'Na área Por classificar, ou diretamente na pasta «00 Por classificar» e Procurar na pasta'],
+      ['LuListFilter', 'Pré-selecionar', 'Sem IA: medidas, tarefas e controlos ISO com texto parecido'],
+      ['LuSparkles', 'Classificar', 'A IA propõe o tipo e até 8 ligações, cada uma com excerto e confiança; até 25 de cada vez'],
+      ['LuClipboardCheck', 'Rever e indexar', 'Uma pessoa confirma; nasce uma evidência Por rever; nada muda de estado sozinho'],
+    ];
+    for (let i = 0; i < steps.length; i++) {
+      const x = 0.6 + i * 3.05;
+      card(s, x, 2.05, 2.85, 2.65, i === 2 ? HEX.navy : HEX.light);
+      await circleIcon(s, x + 0.25, 2.3, 0.7, steps[i][0], i === 2 ? HEX.gold : HEX.navy, i === 2 ? HEX.navy : HEX.gold);
+      txt(s, steps[i][1], { x: x + 0.25, y: 3.15, w: 2.4, h: 0.45, fontSize: 17, bold: true, color: i === 2 ? 'FFFFFF' : HEX.ink });
+      txt(s, steps[i][2], { x: x + 0.25, y: 3.65, w: 2.4, h: 1.3, fontSize: 13, color: i === 2 ? 'E6E9EF' : HEX.muted });
+      if (i < 3) s.addShape(pres.shapes.CHEVRON, { x: x + 2.88, y: 3.4, w: 0.14, h: 0.35, fill: { color: HEX.gold }, line: { color: HEX.gold }, objectName: `seta-rep-${i}` });
+    }
+    card(s, 0.6, 5.0, 12.1, 1.2, 'E6F5F3');
+    txt(s, [{ text: 'Qualidade das propostas: ', options: { bold: true, color: '17766C' } }, { text: 'quantas ligações propostas as pessoas mantêm, por nível de confiança. Documentos com endereços de ativos expostos à Internet nunca seguem para a IA.' }], { x: 0.9, y: 5.15, w: 11.5, h: 0.9, fontSize: 14, valign: 'middle' });
+  }
+
   // 11. Avaliações
   {
     const s = content('Avaliar a maturidade de 0 a 5 e transformar lacunas em tarefas', 'Navegar e trabalhar');
@@ -289,11 +312,11 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
     const s = content('O assistente de IA prepara rascunhos, não decide', 'Navegar e trabalhar');
     await circleIcon(s, 0.6, 1.55, 0.8, 'LuSparkles');
     txt(s, 'Ativo só onde há documentos para construir ou analisar', { x: 1.6, y: 1.65, w: 5, h: 0.65, fontSize: 17, bold: true });
-    const on = ['Políticas, procedimentos e planos de evidências por medida', 'Análise de evidências face ao critério oficial', 'Notificações de incidentes e relatório anual', 'Questionários a fornecedores e leitura de respostas', 'Recomendações para o plano de ação'];
+    const on = ['Políticas, procedimentos e planos de evidências por medida', 'Análise de evidências face ao critério oficial', 'Classificação de documentos carregados', 'Notificações de incidentes e relatório anual', 'Questionários a fornecedores e leitura de respostas', 'Recomendações para o plano de ação'];
     txt(s, on.map((l, j) => ({ text: l, options: { bullet: true, breakLine: j < on.length - 1 } })), { x: 0.6, y: 2.6, w: 6, h: 3.0, fontSize: 15, paraSpaceAfter: 8 });
     card(s, 7.2, 1.55, 5.5, 4.95, HEX.navy);
     txt(s, 'REGRAS', { x: 7.55, y: 1.85, w: 4.8, h: 0.35, fontSize: 12, bold: true, color: HEX.gold, charSpacing: 3 });
-    const rules = ['Usa só os textos oficiais da Biblioteca Legal', 'O resultado é sempre um rascunho a aprovar por uma pessoa', 'Não recebe contactos, inventário de ativos nem evidências restritas', 'Cada pedido fica na auditoria e conta para a quota', 'Motor escolhido pelo administrador: Claude ou Base44'];
+    const rules = ['Usa só os textos oficiais da Biblioteca Legal', 'O resultado é sempre um rascunho a aprovar por uma pessoa', 'Não recebe contactos, inventário de ativos nem evidências restritas', 'Cada pedido fica na auditoria e conta para a quota (máximo de 30 por minuto)', 'Motor escolhido pelo administrador: Claude ou Base44'];
     txt(s, rules.map((l, j) => ({ text: l, options: { bullet: true, breakLine: j < rules.length - 1 } })), { x: 7.55, y: 2.35, w: 4.85, h: 3.9, fontSize: 15, color: 'E6E9EF', paraSpaceAfter: 10 });
     txt(s, 'Incluído na licença Enterprise.', { x: 0.6, y: 6.0, w: 6, h: 0.35, fontSize: 12, color: HEX.muted });
   }
@@ -304,7 +327,7 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
     const s = pres.addSlide({ masterName: 'SECCAO', sectionTitle: 'Guia por referencial' });
     s.addText('PARTE 3', { placeholder: 'kicker' });
     s.addText('Guia por referencial', { placeholder: 'title' });
-    s.addText('RJC e NIS2, ISO/IEC 27001 e os restantes referenciais da plataforma', { placeholder: 'body' });
+    s.addText('RJC e NIS2, ISO/IEC 27001, ISO/IEC 42001 e os restantes referenciais (com um guia de implementação para cada um dos três primeiros)', { placeholder: 'body' });
   }
 
   // 14. RJC prazos
@@ -321,7 +344,7 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
     const rows = [
       ['Autoidentificação no CNCS', '30 dias após iniciar atividade; 60 dias após a plataforma do CNCS, se já em atividade'],
       ['Lista de ativos acessíveis pela Internet', 'Até 31 de janeiro do ano seguinte à qualificação ou em 6 meses; depois, anual'],
-      ['Relatório anual (essenciais)', 'Último dia útil de janeiro, a partir de 2028'],
+      ['Relatório anual (essenciais)', 'Último dia útil de janeiro; o primeiro em janeiro de 2029, relativo a 2028'],
     ];
     s.addTable([[{ text: 'Obrigação', options: { bold: true, color: 'FFFFFF', fill: { color: HEX.navy } } }, { text: 'Prazo', options: { bold: true, color: 'FFFFFF', fill: { color: HEX.navy } } }],
       ...rows.map((r) => r.map((t) => ({ text: t })))], { x: 0.6, y: 4.55, w: 12.1, colW: [4.3, 7.8], fontSize: 13, color: HEX.ink, border: { type: 'solid', pt: 0.75, color: HEX.line }, margin: 0.08, fontFace: 'Calibri' });
@@ -332,7 +355,7 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
   {
     const s = content('ISO/IEC 27001: um guia com Declaração de Aplicabilidade', 'Guia por referencial');
     card(s, 0.6, 1.45, 12.1, 0.8, 'F7F2E7');
-    txt(s, [{ text: 'Guia de preparação: ', options: { bold: true, color: '8A6620' } }, { text: 'a norma não está reproduzida (textos da AnkoraOne, validação com a norma em curso). Para certificação: texto oficial e entidade acreditada.' }], { x: 0.9, y: 1.55, w: 11.5, h: 0.6, fontSize: 14, valign: 'middle' });
+    txt(s, [{ text: 'Guia de preparação: ', options: { bold: true, color: '8A6620' } }, { text: 'textos da AnkoraOne, estrutura conferida com o texto oficial (outubro de 2026); a norma não está reproduzida. Para certificação: texto oficial e entidade acreditada.' }], { x: 0.9, y: 1.55, w: 11.5, h: 0.6, fontSize: 14, valign: 'middle' });
     const stats = [['25', 'requisitos do sistema de gestão (cláusulas 4 a 10)'], ['93', 'controlos do Anexo A, com aplicabilidade e justificação'], ['92', 'controlos ligados ao QNRCS pelo Reg. 756/2026']];
     stats.forEach(([a, b], i) => {
       const y = 2.5 + i * 1.3;
@@ -341,8 +364,28 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
       txt(s, b, { x: 2.15, y: y + 0.15, w: 2.9, h: 0.85, fontSize: 14, color: i === 1 ? 'FFFFFF' : HEX.ink, valign: 'middle' });
     });
     txt(s, 'Como trabalhar (Biblioteca Legal › ISO/IEC 27001)', { x: 5.6, y: 2.5, w: 7.1, h: 0.4, fontSize: 17, bold: true, color: '17766C' });
-    const how = ['Cláusulas 4 a 6: âmbito, política, metodologia de riscos e objetivos', 'Avaliação e tratamento de riscos em Gestão de Risco', 'Anexo A: aplicável ou não, com justificação, para cada controlo', 'Exportar a Declaração de Aplicabilidade e aprová-la em Documentos', 'Evidências por controlo; as do RJC ligadas contam também', 'Auditoria interna (9.2) e revisão pela gestão (9.3) antes da certificação'];
-    txt(s, how.map((l, j) => ({ text: l, options: { bullet: { type: 'number' }, breakLine: j < how.length - 1 } })), { x: 5.6, y: 3.0, w: 7.1, h: 3.4, fontSize: 14, paraSpaceAfter: 8 });
+    const how = ['Cláusulas 4 a 6: âmbito, política, metodologia de riscos e objetivos', 'Avaliação e tratamento de riscos em Gestão de Risco', 'Anexo A: aplicável ou não, justificação e método de implementação', 'Exportar a Declaração de Aplicabilidade e aprová-la em Documentos', 'Evidências por controlo; as do RJC ligadas contam também', 'Análise de lacunas: sistema de gestão e controlos em separado', 'Auditoria interna (9.2) e revisão pela gestão (9.3) antes da certificação'];
+    txt(s, how.map((l, j) => ({ text: l, options: { bullet: { type: 'number' }, breakLine: j < how.length - 1 } })), { x: 5.6, y: 3.0, w: 7.1, h: 3.6, fontSize: 14, paraSpaceAfter: 6 });
+  }
+
+  // 15b. ISO 42001
+  {
+    const s = content('ISO/IEC 42001: gerir a inteligência artificial', 'Guia por referencial');
+    txt(s, 'Para quem desenvolve, fornece ou usa sistemas de IA. Guia em Biblioteca Legal › ISO/IEC 42001, com a mesma abordagem da 27001.', { x: 0.6, y: 1.35, w: 12, h: 0.45, fontSize: 15, color: HEX.muted });
+    const stats = [['27', 'requisitos (cláusulas 4 a 10), com a avaliação de impacto em 6.1.4 e 8.4'], ['38', 'controlos do Anexo A em 9 domínios'], ['33', 'apoiam-se em requisitos da 27001; 5 são próprios da IA']];
+    stats.forEach(([a, b], i) => {
+      const y = 2.0 + i * 1.3;
+      card(s, 0.6, y, 4.6, 1.15, i === 1 ? HEX.navy : HEX.light);
+      txt(s, a, { x: 0.85, y: y + 0.12, w: 1.3, h: 0.9, fontSize: 44, bold: true, color: i === 1 ? HEX.gold : HEX.navy, valign: 'middle' });
+      txt(s, b, { x: 2.15, y: y + 0.15, w: 2.9, h: 0.85, fontSize: 14, color: i === 1 ? 'FFFFFF' : HEX.ink, valign: 'middle' });
+    });
+    card(s, 0.6, 5.95, 4.6, 0.6, 'F7F2E7');
+    txt(s, 'Não substitui o Regulamento (UE) 2024/1689.', { x: 0.8, y: 5.95, w: 4.3, h: 0.6, fontSize: 13, valign: 'middle', color: '8A6620', bold: true });
+    card(s, 5.6, 2.0, 7.1, 4.55, HEX.light);
+    await circleIcon(s, 5.9, 2.25, 0.65, 'LuLayers');
+    txt(s, 'Um só sistema de gestão com a 27001', { x: 6.75, y: 2.35, w: 5.8, h: 0.5, fontSize: 18, bold: true, color: HEX.navy });
+    const integ = ['Mesma análise de contexto, controlo documental, auditoria interna e revisão pela gestão', 'Cada controlo mostra os requisitos da 27001 de base e conta as evidências que já lá estão', 'Avaliação de impacto em pessoas e na sociedade: nova, sem equivalente na 27001', 'Declaração de Aplicabilidade separada para cada norma', 'Objetivos e fontes de risco do Anexo C como lista de apoio'];
+    txt(s, integ.map((l, j) => ({ text: l, options: { bullet: true, breakLine: j < integ.length - 1 } })), { x: 5.9, y: 3.1, w: 6.5, h: 3.3, fontSize: 14, paraSpaceAfter: 8 });
   }
 
   // 16. Outros referenciais
@@ -370,7 +413,7 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
   pres.addSection({ title: 'Fecho' });
   {
     const s = content('Os primeiros 90 dias', 'Fecho');
-    const ph = [['Semana 1', 'Conta, enquadramento e equipa convidada'], ['Semanas 2 a 4', 'Responsável e ponto de contacto; autoidentificação; primeira avaliação NIS2 e ISO'], ['Mês 2', 'Políticas aprovadas; inventário de ativos; fornecedores críticos'], ['Mês 3', 'Medidas com evidências; procedimento de incidentes testado; plano revisto']];
+    const ph = [['Semana 1', 'Conta, enquadramento e equipa convidada'], ['Semanas 2 a 4', 'Responsável e ponto de contacto; autoidentificação; primeira avaliação NIS2 e ISO'], ['Mês 2', 'Políticas aprovadas; inventário de ativos e de sistemas de IA; documentos carregados em Por classificar'], ['Mês 3', 'Medidas com evidências; Declarações de Aplicabilidade; incidentes testados; plano revisto']];
     s.addShape(pres.shapes.LINE, { x: 0.9, y: 2.25, w: 11.5, h: 0, line: { color: HEX.line, width: 2 }, objectName: 'linha-90' });
     ph.forEach(([a, b], i) => {
       const x = 0.6 + i * 3.05;
@@ -388,7 +431,7 @@ const b64 = (f) => 'image/png;base64,' + fs.readFileSync(path.join(DIR, f)).toSt
     const s = pres.addSlide({ masterName: 'CAPA', sectionTitle: 'Fecho' });
     s.addText('PRÓXIMO PASSO', { placeholder: 'kicker' });
     s.addText('Marcar a reunião de criação da conta', { placeholder: 'title' });
-    s.addText('Traga a informação da secção 2 do manual de onboarding.\napp.ankoraone.com  ·  daniel.carvalho@ankoraone.com', { placeholder: 'body' });
+    s.addText('Traga a informação da secção 2 do manual de onboarding. Guias de implementação: NIS2, ISO/IEC 27001 e ISO/IEC 42001.\napp.ankoraone.com  ·  daniel.carvalho@ankoraone.com', { placeholder: 'body' });
   }
 
   await pres.writeFile({ fileName: OUT });
