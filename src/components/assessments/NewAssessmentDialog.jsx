@@ -104,6 +104,8 @@ export default function NewAssessmentDialog({ open, onOpenChange }) {
       status: 'draft',
     });
 
+    base44.analytics.track({ eventName: 'assessment_started' });
+
     queryClient.invalidateQueries({ queryKey: ['assessments'] });
     queryClient.invalidateQueries({ queryKey: ['questions'] });
     queryClient.invalidateQueries({ queryKey: ['questions-global'] });
