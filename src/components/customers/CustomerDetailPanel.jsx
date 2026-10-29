@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Building2, Mail, Phone, Globe, Users, Briefcase, Hash, Pencil, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, FileText } from 'lucide-react';
+import { Building2, Mail, Phone, Globe, Users, Briefcase, Hash, Pencil, ExternalLink, ShieldCheck, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -129,7 +129,7 @@ export default function CustomerDetailPanel({ customer, onEdit, onCustomerUpdate
         )}
 
         {canManageUsers && (
-          <Section title="User Seats & Access" defaultOpen={true}>
+          <Section title={t('x_customer_seats_access')} defaultOpen={true}>
             <CustomerSeatSection customer={customer} onCustomerUpdated={onCustomerUpdated} />
           </Section>
         )}

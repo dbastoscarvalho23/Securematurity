@@ -1,0 +1,151 @@
+{
+  "name": "StoredFile",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Cliente (tenant) dono do ficheiro; vazio só em relatórios internos da plataforma",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Nome original do ficheiro"
+    },
+    "mime_type": {
+      "type": "string"
+    },
+    "size_bytes": {
+      "type": "number"
+    },
+    "sha256": {
+      "type": "string",
+      "description": "Impressão digital do conteúdo"
+    },
+    "storage_provider": {
+      "type": "string",
+      "enum": [
+        "base44",
+        "google_drive",
+        "one_drive",
+        "webdav"
+      ],
+      "description": "Repositório onde o ficheiro está guardado"
+    },
+    "storage_ref": {
+      "type": "string",
+      "description": "Referência privada no repositório (nunca um link público)",
+      "rls": {
+        "read": false,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "folder": {
+      "type": "string",
+      "description": "Pasta do repositório documental (ex.: «02 Documentos de segurança»); no armazenamento da plataforma não há pastas reais e é este campo que agrupa os ficheiros"
+    },
+    "storage_location": {
+      "type": "string",
+      "description": "Caminho da pasta no repositório externo no momento da gravação (vazio no armazenamento da plataforma)"
+    },
+    "context": {
+      "type": "string",
+      "enum": [
+        "qualification",
+        "security_document",
+        "document_version",
+        "nomination",
+        "task",
+        "comment",
+        "assessment",
+        "risk",
+        "incident",
+        "supplier",
+        "asset",
+        "training",
+        "report",
+        "ai_draft",
+        "intake",
+        "framework",
+        "other"
+      ],
+      "default": "other",
+      "description": "Onde o ficheiro é usado"
+    },
+    "context_id": {
+      "type": "string",
+      "description": "Registo a que o ficheiro está associado, quando conhecido"
+    },
+    "restricted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Só administradores do cliente o podem abrir (dados pessoais, relatórios, ativos)"
+    },
+    "uploaded_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "file_name",
+    "storage_provider",
+    "storage_ref"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            },
+            {
+              "data.restricted": false
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
+

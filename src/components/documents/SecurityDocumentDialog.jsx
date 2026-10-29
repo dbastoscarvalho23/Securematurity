@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { validators, validateForm, hasErrors } from '@/lib/validation';
+import FileLink from '@/components/shared/FileLink';
 
 const DEFAULT = {
   title: '', level: 'policy', status: 'draft', description: '',
@@ -54,11 +55,17 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await uploadFile(file, form.customer_id);
-    set('file_url', file_url);
-    set('file_name', file.name);
-    setUploading(false);
-    toast.success(t('docs_dlg_file_uploaded'));
+    try {
+      const { file_url } = await uploadFile(file, form.customer_id || undefined, 'security_document', doc?.id);
+      set('file_url', file_url);
+      set('file_name', file.name);
+      toast.success(t('docs_dlg_file_uploaded'));
+    } catch (err) {
+      toast.error(err?.message || t('x_tool_error'));
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -77,28 +84,14 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
     setSaving(true);
     const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
     const framework_codes = frameworksInput.split(',').map(f => f.trim()).filter(Boolean);
-    // If editing an existing doc, snapshot the current state as a version before saving
-    if (doc?.id) {
-      await base44.entities.DocumentVersion.create({
-        document_id: doc.id,
-        version_label: doc.version,
-        title: doc.title,
-        description: doc.description,
-        level: doc.level,
-        status: doc.status,
-        file_url: doc.file_url,
-        file_name: doc.file_name,
-        approved_by: doc.approved_by,
-        approved_date: doc.approved_date,
-        review_date: doc.review_date,
-        tags: doc.tags,
-        framework_codes: doc.framework_codes,
-        changed_by: user?.email,
-        change_note: changeNote || 'Document updated',
-      });
+    // A versão anterior é guardada no servidor (função `documents`), com esta nota.
+    try {
+      await onSave({ ...form, tags, framework_codes }, changeNote || (doc?.id ? t('x_doc_updated_note') : ''));
+    } catch (err) {
+      toast.error(err?.message || t('docs_save_error'));
+    } finally {
+      setSaving(false);
     }
-    await onSave({ ...form, tags, framework_codes });
-    setSaving(false);
   };
 
   const handleCustomerChange = (id) => {
@@ -149,8 +142,8 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
                   <SelectContent>
                     <SelectItem value="draft">{t('docs_status_draft')}</SelectItem>
                     <SelectItem value="under_review">{t('docs_status_under_review')}</SelectItem>
-                    <SelectItem value="approved">{t('docs_status_approved')}</SelectItem>
                     <SelectItem value="deprecated">{t('docs_status_deprecated')}</SelectItem>
+                    {form.status === 'approved' && <SelectItem value="approved" disabled>{t('docs_status_approved')}</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>
@@ -169,14 +162,14 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
             </div>
             <div className="space-y-1.5">
               <Label>{t('docs_dlg_approved_by')}</Label>
-              <Input value={form.approved_by} onChange={e => set('approved_by', e.target.value)} placeholder={t('docs_dlg_approved_by_ph')} />
+              <Input value={form.approved_by || ''} readOnly disabled placeholder={t('x_doc_approved_by_auto')} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>{t('docs_dlg_approval_date')}</Label>
-              <Input value={form.approved_date} onChange={e => set('approved_date', e.target.value)} type="date" />
+              <Input value={form.approved_date || ''} readOnly disabled type="date" />
             </div>
             <div className="space-y-1.5">
               <Label>{t('docs_dlg_review_date')}</Label>
@@ -223,9 +216,9 @@ export default function SecurityDocumentDialog({ open, onOpenChange, doc, custom
                 <input type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.doc,.docx,.xlsx,.pptx,.txt,.md" />
               </label>
               {form.file_url && (
-                <a href={form.file_url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
+                <FileLink url={form.file_url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
                   {t('docs_dlg_view_current')}
-                </a>
+                </FileLink>
               )}
             </div>
           </div>

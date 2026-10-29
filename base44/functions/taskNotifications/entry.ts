@@ -1,130 +1,131 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
+import { json, getAuthenticatedUser, canAccessRecord } from '../../shared/http.ts';
+import { logEmailSent } from '../../shared/audit.ts';
+import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
+import { sendMail } from '../../shared/mail.ts';
 
 const STATUS_LABELS = {
-  todo: 'To-Do',
-  in_progress: 'In Progress',
-  done: 'Done',
-  blocked: 'Blocked',
+  todo: 'Por fazer',
+  in_progress: 'Em curso',
+  done: 'Concluída',
+  blocked: 'Bloqueada',
 };
 
 const PRIORITY_LABELS = {
-  critical: 'Critical',
-  high: 'High',
-  medium: 'Medium',
-  low: 'Low',
+  critical: 'Crítica',
+  high: 'Alta',
+  medium: 'Média',
+  low: 'Baixa',
 };
-
-async function getSettings(base44, customerId) {
-  const all = await base44.asServiceRole.entities.ReminderSettings.list();
-  const customerSpecific = customerId ? all.find(s => s.customer_id === customerId) : null;
-  const global = all.find(s => !s.customer_id);
-  return customerSpecific || global || {
-    notify_on_assignment: true,
-    notify_on_status_change: true,
-    additional_recipients: '',
-  };
-}
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const user = await base44.auth.me();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const user = await getAuthenticatedUser(base44);
+  if (!user) return json({ error: 'Unauthorized' }, 401);
 
-  const { type, task: submittedTask, previousTask } = await req.json();
-  // Never trust the task sent by the caller: load the real record with the caller's own
-  // permissions, so notifications only go out for tasks they can access, with real data.
-  const task = submittedTask?.id
-    ? await base44.entities.Task.get(submittedTask.id).catch(() => null)
-    : null;
-  if (!task) return Response.json({ error: 'Task not found' }, { status: 404 });
+  const body = await req.json();
+  const { type, previousTask: payloadPreviousTask } = body;
+  let task = body.task;
+
+  // Never trust the caller-supplied record: only its id is used to fetch the
+  // real record from the database, and the caller must be authorized on it
+  // (admin, same customer, creator or assignee) before any email is sent.
+  const taskId = task?.id;
+  if (!taskId) return json({ error: 'task.id is required' }, 400);
+  let real = null;
+  try {
+    real = await base44.asServiceRole.entities.Task.get(taskId);
+  } catch {
+    real = null;
+  }
+  if (!real) return json({ error: 'task not found' }, 404);
+
+  if (!canAccessRecord(user, real)) return json({ error: 'Forbidden' }, 403);
+
+  // All email content and recipients are derived from the real record.
+  task = real;
+
+  // The previous state is also client-supplied, so only accept it when it
+  // references the same record; otherwise ignore it (prevents forged
+  // "previous" data from suppressing or injecting content into emails).
+  const previousTask = payloadPreviousTask?.id === taskId ? payloadPreviousTask : null;
+
   const assignedTo = task.assigned_to;
 
-  if (!assignedTo) return Response.json({ skipped: 'no assigned_to email' });
+  if (!assignedTo) return json({ skipped: 'no assigned_to email' });
 
-  const settings = await getSettings(base44, task.customer_id);
-
-  const buildRecipients = (primary) => {
-    const list = [primary];
-    if (settings.additional_recipients) {
-      settings.additional_recipients.split(',').map(e => e.trim()).filter(Boolean).forEach(e => {
-        if (!list.includes(e)) list.push(e);
-      });
-    }
-    return list;
-  };
+  const settings = await getReminderSettings(base44.asServiceRole, task.customer_id);
 
   // ── 1. New assignment ──────────────────────────────────────────────────────
   if (type === 'assigned') {
-    if (!settings.notify_on_assignment) return Response.json({ skipped: 'assignment notifications disabled' });
+    if (!settings.notify_on_assignment) return json({ skipped: 'assignment notifications disabled' });
 
     const wasAssigned = previousTask?.assigned_to;
-    if (wasAssigned === assignedTo) return Response.json({ skipped: 'assignee unchanged' });
+    if (wasAssigned === assignedTo) return json({ skipped: 'assignee unchanged' });
 
-    const recipients = buildRecipients(assignedTo);
+    const recipients = buildRecipients(assignedTo, settings);
     const body = `
-<p>Hello,</p>
-<p>You have been assigned to the following task:</p>
+<p>Olá,</p>
+<p>Foi-lhe atribuída a seguinte tarefa:</p>
 <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:sans-serif;font-size:14px;">
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Title</td><td style="padding:6px 12px;">${esc(task.title)}</td></tr>
-  ${task.description ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Description</td><td style="padding:6px 12px;">${esc(task.description)}</td></tr>` : ''}
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Status</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[task.status] || task.status)}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Priority</td><td style="padding:6px 12px;">${esc(PRIORITY_LABELS[task.priority] || task.priority || '—')}</td></tr>
-  ${task.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;">${esc(task.due_date)}</td></tr>` : ''}
-  ${task.customer_name ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Customer</td><td style="padding:6px 12px;">${esc(task.customer_name)}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Título</td><td style="padding:6px 12px;">${esc(task.title)}</td></tr>
+  ${task.description ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Descrição</td><td style="padding:6px 12px;">${esc(task.description)}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Estado</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[task.status] || task.status)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Prioridade</td><td style="padding:6px 12px;">${esc(PRIORITY_LABELS[task.priority] || task.priority || '—')}</td></tr>
+  ${task.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Data-limite</td><td style="padding:6px 12px;">${esc(task.due_date)}</td></tr>` : ''}
+  ${task.customer_name ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Cliente</td><td style="padding:6px 12px;">${esc(task.customer_name)}</td></tr>` : ''}
 </table>
-<p>Please review this task and take appropriate action.</p>
-<p style="color:#6b7280;font-size:12px;">Assigned by: ${esc(user.full_name || user.email)}</p>
+<p>Analise a tarefa e dê-lhe seguimento.</p>
+<p style="color:#6b7280;font-size:12px;">Atribuído por: ${esc(user.full_name || user.email)}</p>
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Task Assigned] ${esc(task.title)}`, body });
+      await sendMail(base44, { to, subject: `[Tarefa atribuída] ${esc(task.title)}`, body });
     }
-    await base44.asServiceRole.entities.AuditLog.create({
-      action: 'email_sent',
+    await logEmailSent(base44, {
       user_email: user.email,
       entity_type: 'Task',
       entity_id: task.id,
       details: `Task assignment email sent to ${recipients.join(', ')} for task: ${task.title}`,
     });
-    return Response.json({ sent: 'assigned', to: recipients });
+    return json({ sent: 'assigned', to: recipients });
   }
 
   // ── 2. Status change ───────────────────────────────────────────────────────
   if (type === 'status_changed') {
-    if (!settings.notify_on_status_change) return Response.json({ skipped: 'status change notifications disabled' });
+    if (!settings.notify_on_status_change) return json({ skipped: 'status change notifications disabled' });
 
     const oldStatus = previousTask?.status;
     const newStatus = task.status;
-    if (!oldStatus || oldStatus === newStatus) return Response.json({ skipped: 'status unchanged' });
+    if (!oldStatus || oldStatus === newStatus) return json({ skipped: 'status unchanged' });
 
-    const recipients = buildRecipients(assignedTo);
+    const recipients = buildRecipients(assignedTo, settings);
     const body = `
-<p>Hello,</p>
-<p>The status of a task assigned to you has been updated:</p>
+<p>Olá,</p>
+<p>O estado de uma tarefa que lhe está atribuída foi alterado:</p>
 <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:sans-serif;font-size:14px;">
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Title</td><td style="padding:6px 12px;">${esc(task.title)}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Old Status</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[oldStatus] || oldStatus)}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">New Status</td><td style="padding:6px 12px;"><strong>${esc(STATUS_LABELS[newStatus] || newStatus)}</strong></td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Priority</td><td style="padding:6px 12px;">${esc(PRIORITY_LABELS[task.priority] || task.priority || '—')}</td></tr>
-  ${task.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;">${esc(task.due_date)}</td></tr>` : ''}
-  ${task.customer_name ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Customer</td><td style="padding:6px 12px;">${esc(task.customer_name)}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Título</td><td style="padding:6px 12px;">${esc(task.title)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Estado anterior</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[oldStatus] || oldStatus)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Novo estado</td><td style="padding:6px 12px;"><strong>${esc(STATUS_LABELS[newStatus] || newStatus)}</strong></td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Prioridade</td><td style="padding:6px 12px;">${esc(PRIORITY_LABELS[task.priority] || task.priority || '—')}</td></tr>
+  ${task.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Data-limite</td><td style="padding:6px 12px;">${esc(task.due_date)}</td></tr>` : ''}
+  ${task.customer_name ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Cliente</td><td style="padding:6px 12px;">${esc(task.customer_name)}</td></tr>` : ''}
 </table>
-<p style="color:#6b7280;font-size:12px;">Updated by: ${esc(user.full_name || user.email)}</p>
+<p style="color:#6b7280;font-size:12px;">Atualizado por: ${esc(user.full_name || user.email)}</p>
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Task Update] Status changed — ${esc(task.title)}`, body });
+      await sendMail(base44, { to, subject: `[Tarefa] Estado alterado: ${esc(task.title)}`, body });
     }
-    await base44.asServiceRole.entities.AuditLog.create({
-      action: 'email_sent',
+    await logEmailSent(base44, {
       user_email: user.email,
       entity_type: 'Task',
       entity_id: task.id,
       details: `Task status change email sent to ${recipients.join(', ')} for task: ${task.title} (${STATUS_LABELS[oldStatus] || oldStatus} → ${STATUS_LABELS[newStatus] || newStatus})`,
     });
-    return Response.json({ sent: 'status_changed', to: recipients });
+    return json({ sent: 'status_changed', to: recipients });
   }
 
-  return Response.json({ skipped: 'unknown type' });
+  return json({ skipped: 'unknown type' });
 });

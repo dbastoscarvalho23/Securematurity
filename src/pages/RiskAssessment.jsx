@@ -18,6 +18,7 @@ import RiskExcelImportDialog from '@/components/risks/RiskExcelImportDialog';
 import RiskHeatmap from '@/components/risks/RiskHeatmap';
 import TaskHeatmap from '@/components/risks/TaskHeatmap';
 import { writeAuditLog } from '@/lib/auditLog';
+import { notifyEntityChange } from '@/lib/notifications';
 import { useLanguage } from '@/lib/LanguageContext';
 
 function riskScore(r) { return (r.impact || 0) * (r.likelihood || 0); }
@@ -93,6 +94,7 @@ export default function RiskAssessment() {
         await writeAuditLog({ action: 'risk_created', entity_type: 'RiskItem', entity_id: result?.id, details: `Created risk: ${data.title} (score: ${(data.impact || 0) * (data.likelihood || 0)})` });
       }
       const savedRisk = result || data;
+      notifyEntityChange('RiskItem', savedRisk?.id, isEdit ? 'update' : 'create', previousRisk || null);
 
       // Fire notifications in the background (don't block save)
       if (savedRisk.owner_email) {

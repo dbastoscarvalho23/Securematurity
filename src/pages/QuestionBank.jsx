@@ -16,6 +16,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import { aiAssist, useAiSettings, aiEnabled } from '@/lib/ai';
 
 const FRAMEWORK_COLORS = {
   NIS2: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
@@ -41,6 +42,10 @@ export default function QuestionBank() {
   const [isDeduplicating, setIsDeduplicating] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateProgress, setTranslateProgress] = useState({ done: 0, total: 0 });
+  // Botões de IA só nos pontos ativos (Definições → Aplicação → Assistente de IA).
+  const { data: aiSettings, isSuccess: aiLoaded } = useAiSettings();
+  const aiTranslate = aiLoaded && aiEnabled(aiSettings, 'question_bank_translation');
+  const aiGaps = aiLoaded && aiEnabled(aiSettings, 'question_gap_analysis');
 
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ['questions'],
@@ -98,10 +103,10 @@ export default function QuestionBank() {
   const handleTranslate = async () => {
     const untranslated = questions.filter(q => !q.question_text_pt);
     if (untranslated.length === 0) {
-      toast.success('All questions already have a Portuguese translation!');
+      toast.success(t('x_qb_all_translated'));
       return;
     }
-    if (!confirm(`Translate ${untranslated.length} question${untranslated.length !== 1 ? 's' : ''} to European Portuguese?`)) return;
+    if (!confirm(t('x_qb_translate_confirm', { count: untranslated.length }))) return;
 
     setIsTranslating(true);
     setTranslateProgress({ done: 0, total: untranslated.length });
@@ -110,16 +115,16 @@ export default function QuestionBank() {
     const BATCH_SIZE = 10;
     for (let i = 0; i < untranslated.length; i += BATCH_SIZE) {
       const batch = untranslated.slice(i, i + BATCH_SIZE);
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a professional translator specialising in European Portuguese (Portugal), not Brazilian Portuguese.
+      const result = await aiAssist('question_bank_translation', {
+        prompt: `You are a professional translator specialising in European Portuguese (Portugal, 1990 spelling agreement), not Brazilian Portuguese. Use a plain professional register, without marketing filler, emojis or exclamation marks.
 Translate the following cybersecurity assessment questions and their guidance texts to European Portuguese (Portugal).
-Use formal register ("você"/"a organização"), European vocabulary and spelling (e.g. "implementação" not "implementação", avoid Brazilian colloquialisms).
+Use an impersonal formal register ("a organização", "a entidade"), never "você"; European vocabulary and spelling (utilizador, ficheiro, ecrã, registo, contacto), no Brazilian forms.
 
 Questions to translate (JSON array):
 ${JSON.stringify(batch.map(q => ({ id: q.id, question_text: q.question_text, guidance: q.guidance || '' })), null, 2)}
 
 Return only valid JSON with the translations.`,
-        response_json_schema: {
+        schema: {
           type: 'object',
           properties: {
             translations: {
@@ -152,7 +157,7 @@ Return only valid JSON with the translations.`,
     queryClient.invalidateQueries({ queryKey: ['questions'] });
     setIsTranslating(false);
     await writeAuditLog({ action: 'questions_translated', entity_type: 'Question', details: `AI translated ${untranslated.length} question${untranslated.length !== 1 ? 's' : ''} to European Portuguese` });
-    toast.success(`Translated ${untranslated.length} question${untranslated.length !== 1 ? 's' : ''} to European Portuguese.`);
+    toast.success(t('x_qb_translated', { count: untranslated.length }));
   };
 
   const handleRemoveDuplicates = async () => {
@@ -170,22 +175,22 @@ Return only valid JSON with the translations.`,
     }
 
     if (toDelete.length === 0) {
-      toast.success('No duplicates found — your question bank is clean!');
+      toast.success(t('x_qb_no_duplicates'));
       return;
     }
 
-    if (!confirm(`Found ${toDelete.length} duplicate question${toDelete.length !== 1 ? 's' : ''}. Delete them now?`)) return;
+    if (!confirm(t('x_qb_dupes_confirm', { count: toDelete.length }))) return;
 
     setIsDeduplicating(true);
     await Promise.all(toDelete.map(id => base44.entities.Question.delete(id)));
     queryClient.invalidateQueries({ queryKey: ['questions'] });
     setIsDeduplicating(false);
     await writeAuditLog({ action: 'questions_deduplicated', entity_type: 'Question', details: `Removed ${toDelete.length} duplicate question${toDelete.length !== 1 ? 's' : ''}` });
-    toast.success(`Removed ${toDelete.length} duplicate question${toDelete.length !== 1 ? 's' : ''}.`);
+    toast.success(t('x_qb_dupes_removed', { count: toDelete.length }));
   };
 
   const handleDelete = (q) => {
-    if (confirm(`Delete question "${q.question_text.substring(0, 60)}..."?`)) {
+    if (confirm(t('x_qb_delete_confirm', { text: q.question_text.substring(0, 60) }))) {
       deleteMutation.mutate(q);
     }
   };
@@ -196,19 +201,23 @@ Return only valid JSON with the translations.`,
         description={t('qb_subtitle')}
         actions={
           <div className="flex gap-2 items-center flex-wrap">
-            <Button variant="outline" onClick={handleTranslate} disabled={isTranslating} className="gap-2">
-              {isTranslating
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('qb_translating')} {translateProgress.done}/{translateProgress.total}</>
-                : <><Languages className="w-4 h-4" /> {t('qb_translate_pt')}</>
-              }
-            </Button>
+            {aiTranslate && (
+              <Button variant="outline" onClick={handleTranslate} disabled={isTranslating} className="gap-2">
+                {isTranslating
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('qb_translating')} {translateProgress.done}/{translateProgress.total}</>
+                  : <><Languages className="w-4 h-4" /> {t('qb_translate_pt')}</>
+                }
+              </Button>
+            )}
             <Button variant="outline" onClick={handleRemoveDuplicates} disabled={isDeduplicating} className="gap-2">
               {isDeduplicating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
               {t('qb_remove_dupes')}
             </Button>
-            <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="gap-2">
-              <Sparkles className="w-4 h-4" /> {t('qb_ai_generate')}
-            </Button>
+            {aiGaps && (
+              <Button variant="outline" onClick={() => setAiDialogOpen(true)} className="gap-2">
+                <Sparkles className="w-4 h-4" /> {t('qb_ai_generate')}
+              </Button>
+            )}
             <Button onClick={handleNew} className="gap-2">
               <Plus className="w-4 h-4" /> {t('qb_new_question')}
             </Button>
@@ -253,16 +262,16 @@ Return only valid JSON with the translations.`,
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
-                  <TableHead>Question</TableHead>
+                  <TableHead>{t('x_qb_col_question')}</TableHead>
                   <TableHead className="w-36">
                     <div className="space-y-1">
                       <span>{t('qb_col_framework')}</span>
                       <Select value={filterFramework} onValueChange={v => { setFilterFramework(v); setFilterDomain('all'); }}>
                         <SelectTrigger className="h-7 text-xs w-full">
-                          <SelectValue placeholder="All" />
+                          <SelectValue placeholder={t('x_filter_all')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="all">{t('x_filter_all')}</SelectItem>
                           {allFrameworks.filter(fw => fw.status === 'active').map(fw => <SelectItem key={fw.code} value={fw.code}>{fw.code}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -273,10 +282,10 @@ Return only valid JSON with the translations.`,
                       <span>{t('qb_col_domain')}</span>
                       <Select value={filterDomain} onValueChange={setFilterDomain}>
                         <SelectTrigger className="h-7 text-xs w-full">
-                          <SelectValue placeholder="All" />
+                          <SelectValue placeholder={t('x_filter_all')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="all">{t('x_filter_all')}</SelectItem>
                           {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -288,7 +297,7 @@ Return only valid JSON with the translations.`,
                       <Input
                         value={filterControlId}
                         onChange={e => setFilterControlId(e.target.value)}
-                        placeholder="Filter..."
+                        placeholder={t('x_filter_placeholder')}
                         className="h-7 text-xs"
                       />
                     </div>
@@ -298,10 +307,10 @@ Return only valid JSON with the translations.`,
                       <span>{t('qb_col_weight')}</span>
                       <Select value={filterWeight} onValueChange={setFilterWeight}>
                         <SelectTrigger className="h-7 text-xs w-full">
-                          <SelectValue placeholder="All" />
+                          <SelectValue placeholder={t('x_filter_all')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="all">{t('x_filter_all')}</SelectItem>
                           {[1, 2, 3, 4, 5].map(w => <SelectItem key={w} value={String(w)}>{w}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -312,12 +321,12 @@ Return only valid JSON with the translations.`,
                       <span>{t('qb_col_language')}</span>
                       <Select value={filterLang} onValueChange={setFilterLang}>
                         <SelectTrigger className="h-7 text-xs w-full">
-                          <SelectValue placeholder="All" />
+                          <SelectValue placeholder={t('x_filter_all')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="all">{t('x_filter_all')}</SelectItem>
                           <SelectItem value="PT">PT ✓</SelectItem>
-                          <SelectItem value="EN">EN only</SelectItem>
+                          <SelectItem value="EN">{t('x_qb_lang_en_only')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -374,7 +383,7 @@ Return only valid JSON with the translations.`,
       />
 
       <AIQuestionGeneratorDialog
-        open={aiDialogOpen}
+        open={aiDialogOpen && aiGaps}
         onOpenChange={setAiDialogOpen}
         existingQuestions={questions}
         onSave={async (newQuestions) => {

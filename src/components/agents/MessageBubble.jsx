@@ -1,18 +1,20 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Check, ChevronDown, Loader2, X, AlertCircle } from "lucide-react";
+import { useLanguage } from "@/lib/LanguageContext";
 
 const statusMeta = {
-  pending: { icon: Loader2, spin: true, label: "Pending" },
-  running: { icon: Loader2, spin: true, label: "Running" },
-  in_progress: { icon: Loader2, spin: true, label: "In progress" },
-  completed: { icon: Check, spin: false, label: "Completed" },
-  success: { icon: Check, spin: false, label: "Done" },
-  failed: { icon: X, spin: false, label: "Failed" },
-  error: { icon: AlertCircle, spin: false, label: "Error" },
+  pending: { icon: Loader2, spin: true, label: "x_tool_pending" },
+  running: { icon: Loader2, spin: true, label: "x_tool_running" },
+  in_progress: { icon: Loader2, spin: true, label: "x_tool_in_progress" },
+  completed: { icon: Check, spin: false, label: "x_tool_completed" },
+  success: { icon: Check, spin: false, label: "x_tool_done" },
+  failed: { icon: X, spin: false, label: "x_tool_failed" },
+  error: { icon: AlertCircle, spin: false, label: "x_tool_error" },
 };
 
 function ToolCall({ toolCall }) {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const status = toolCall.status || "pending";
   const meta = statusMeta[status] || statusMeta.pending;
@@ -31,19 +33,19 @@ function ToolCall({ toolCall }) {
         <Icon className={`h-3.5 w-3.5 ${meta.spin ? "animate-spin" : ""} ${failed ? "text-destructive" : "text-muted-foreground"}`} />
         <span className="font-medium text-foreground">{toolCall.name}</span>
         {!hide && <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${expanded ? "rotate-180" : ""}`} />}
-        <span className={failed ? "text-destructive" : "text-muted-foreground"}>{proj.active_label && meta.spin ? proj.active_label : (failed ? (proj.error_label || meta.label) : (proj.label || meta.label))}</span>
+        <span className={failed ? "text-destructive" : "text-muted-foreground"}>{proj.active_label && meta.spin ? proj.active_label : (failed ? (proj.error_label || t(meta.label)) : (proj.label || t(meta.label)))}</span>
       </button>
       {!hide && expanded && (
         <div className="mt-2 space-y-1.5">
           {toolCall.arguments_string && (
             <div>
-              <div className="text-muted-foreground">Parameters:</div>
+              <div className="text-muted-foreground">{t("x_tool_parameters")}</div>
               <pre className="whitespace-pre-wrap break-words bg-background rounded p-2">{(() => { try { return JSON.stringify(JSON.parse(toolCall.arguments_string), null, 2); } catch { return toolCall.arguments_string; } })()}</pre>
             </div>
           )}
           {parsedResults !== undefined && parsedResults !== null && (
             <div>
-              <div className="text-muted-foreground">Result:</div>
+              <div className="text-muted-foreground">{t("x_tool_result")}</div>
               <pre className="whitespace-pre-wrap break-words bg-background rounded p-2">{typeof parsedResults === "string" ? parsedResults : JSON.stringify(parsedResults, null, 2)}</pre>
             </div>
           )}

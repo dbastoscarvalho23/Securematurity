@@ -1,0 +1,215 @@
+{
+  "name": "LicenseTier",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "commercial_value": {
+      "type": "string",
+      "description": "Valor comercial (texto livre)",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Módulos publicados"
+    },
+    "modules_draft": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Módulos em rascunho (por publicar)",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "draft_note": {
+      "type": "string",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "draft_at": {
+      "type": "string",
+      "format": "date-time",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "draft_by_email": {
+      "type": "string",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "version": {
+      "type": "number",
+      "description": "Versão publicada"
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "published_by_email": {
+      "type": "string"
+    },
+    "display_order": {
+      "type": "number"
+    },
+    "is_partner_tier": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "has_draft": {
+      "type": "boolean",
+      "default": false,
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "excluded_entitlements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Funcionalidades (LicenseEntitlement.code) dos módulos incluídos que este bundle exclui (publicado)"
+    },
+    "excluded_entitlements_draft": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Funcionalidades excluídas em rascunho",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "quotas": {
+      "type": "object",
+      "description": "Quotas mensais publicadas por feature de LicenseUsageRecord (ex.: { \"ai\": 200 }); a quota da subscrição prevalece"
+    },
+    "quotas_draft": {
+      "type": "object",
+      "description": "Quotas em rascunho",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "archived_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Arquivado (inativo, escondido da lista); as subscrições existentes mantêm-se"
+    },
+    "archived_by_email": {
+      "type": "string",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "duplicated_from": {
+      "type": "string",
+      "description": "Código do bundle de origem, quando criado por duplicação",
+      "rls": {
+        "read": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "code",
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "customer_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
+
+

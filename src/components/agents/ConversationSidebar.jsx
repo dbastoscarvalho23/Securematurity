@@ -3,8 +3,8 @@ import { Plus, MessageSquare, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const STR = {
-  en: { title: "Assessment Sessions", new: "New Session", empty: "No sessions yet. Start a new one to begin assessing a framework." },
-  pt: { title: "Sessões de Avaliação", new: "Nova Sessão", empty: "Ainda não há sessões. Inicie uma nova para avaliar um framework." },
+  en: { title: "Assessment Sessions", new: "New Session", empty: "No sessions yet. Start a new one to begin assessing a framework.", untitled: "Untitled session" },
+  pt: { title: "Sessões de Avaliação", new: "Nova Sessão", empty: "Ainda não há sessões. Crie uma para avaliar um framework.", untitled: "Sessão sem título" },
 };
 
 export default function ConversationSidebar({ language, conversations, activeId, onSelect, onNew, onDelete, creating }) {
@@ -27,7 +27,7 @@ export default function ConversationSidebar({ language, conversations, activeId,
             className={`group flex items-center gap-2 rounded-lg px-3 py-2 cursor-pointer text-sm transition-colors ${c.id === activeId ? "bg-primary/10 text-primary" : "hover:bg-muted"}`}
           >
             <MessageSquare className="h-4 w-4 shrink-0" />
-            <span className="truncate flex-1">{c.metadata?.name || "Untitled session"}</span>
+            <span className="truncate flex-1">{c.metadata?.name || s.untitled}</span>
             {onDelete && (
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(c.id); }}

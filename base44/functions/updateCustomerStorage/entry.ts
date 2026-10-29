@@ -1,42 +1,97 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { json, readJson, getAuthenticatedUser, isStaffRole, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
+import { logAudit } from '../../shared/audit.ts';
+import { PROVIDERS, normalizeStorageRoot, defaultStorageRoot } from '../../shared/storage.ts';
 
-const ALLOWED_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
-
-// Lets a customer admin change the storage provider of their own customer only.
-// Uses the service role so the Customer record itself stays locked down: this
-// endpoint can never touch any other field, or any other customer.
+/**
+ * Repositório documental de um cliente: fornecedor (`provider`) e localização (`storage_root`).
+ * O administrador da plataforma altera qualquer cliente; o administrador do cliente só o seu. Usa a service role para
+ * que a entidade Customer continue fechada: esta função só toca em storage_provider, storage_root e
+ * storage_configured_at.
+ *
+ * { customer_id? (só admin), provider, storage_root? } — storage_root omitido mantém o atual; '' volta à localização
+ * por omissão (AnkoraOne/<cliente>). A localização é validada por normalizeStorageRoot.
+ * Os ficheiros já guardados não mudam de sítio: só os novos seguem o repositório e a localização escolhidos.
+ */
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getAuthenticatedUser(base44);
+    if (!user) return json({ error: 'Unauthorized' }, 401);
+    if (!isStaffRole(user)) return json({ error: 'Forbidden' }, 403);
 
-    const isAdmin = user.role === 'admin';
-    const isCustomerAdmin = user.role === 'customer_admin';
-    if (!isAdmin && !isCustomerAdmin) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const body = await req.json();
+    const isAdmin = isPlatformAdmin(user);
+    const body = await readJson(req);
     const provider = body.provider;
-    if (!ALLOWED_PROVIDERS.includes(provider)) {
-      return Response.json({ error: 'Invalid storage provider' }, { status: 400 });
+    if (!PROVIDERS.includes(provider)) {
+      return json({ error: 'Repositório inválido' }, 400);
     }
 
-    const ownCustomerId = user.customer_id || (user.data && user.data.customer_id);
+    const ownCustomerId = userCustomerId(user);
     const customerId = isAdmin ? (body.customer_id || ownCustomerId) : ownCustomerId;
 
     if (!customerId) {
-      return Response.json({ error: 'No customer linked to this account' }, { status: 400 });
+      return json({ error: 'Sem cliente associado' }, 400);
     }
     if (!isAdmin && body.customer_id && body.customer_id !== ownCustomerId) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+      return json({ error: 'Forbidden' }, 403);
+    }
+    const customer = await base44.asServiceRole.entities.Customer.get(customerId).catch(() => null);
+    if (!customer) return json({ error: 'Cliente inexistente' }, 404);
+
+    let storageRoot = customer.storage_root || '';
+    if (body.storage_root !== undefined) {
+      try {
+        storageRoot = normalizeStorageRoot(body.storage_root);
+      } catch (e) {
+        return json({ error: (e as Error).message }, 400);
+      }
+      // Guardar a localização por omissão como vazio: continua a acompanhar o nome do cliente.
+      if (storageRoot === defaultStorageRoot(customer)) storageRoot = '';
+      // Google Drive e OneDrive são uma conta só para toda a plataforma: dois clientes nunca partilham a mesma pasta.
+      if (storageRoot) {
+        // Comparação sem maiúsculas/minúsculas (o OneDrive não as distingue).
+        // Compara com a localização EFETIVA de cada cliente (a gravada ou a por omissão) e recusa também pastas
+        // contidas umas nas outras: caso contrário, um cliente podia apontar para a pasta de outro e ler os seus
+        // ficheiros pela procura em «00 Por classificar».
+        const all = await base44.asServiceRole.entities.Customer.list('-created_date', 5000).catch(() => null);
+        if (!all) return json({ error: 'Não foi possível confirmar que a localização é única. Tente novamente.' }, 503);
+        const key = `${storageRoot.toLowerCase()}/`;
+        const effective = (c) => {
+          let r = '';
+          try { r = normalizeStorageRoot(c.storage_root); } catch { r = ''; }
+          return `${(r || defaultStorageRoot(c)).toLowerCase()}/`;
+        };
+        if (all.some((c) => c.id !== customerId && (effective(c).startsWith(key) || key.startsWith(effective(c))))) {
+          return json({ error: 'Esta localização coincide com a de outro cliente ou está dentro dela (ou o contrário). Escolha outra pasta.' }, 409);
+        }
+      }
     }
 
-    await base44.asServiceRole.entities.Customer.update(customerId, { storage_provider: provider });
+    if (provider === 'webdav') {
+      // O NAS tem de estar configurado (e testado com sucesso) antes de passar a ser o repositório do cliente.
+      const conn = (await base44.asServiceRole.entities.StorageConnection.filter({ customer_id: customerId, provider: 'webdav' }))[0];
+      if (!conn || !conn.last_test_ok) {
+        return json({ error: 'O NAS deste cliente ainda não está configurado ou o último teste falhou. Peça ao administrador da plataforma para o configurar.' }, 409);
+      }
+    }
 
-    return Response.json({ success: true, provider });
+    const before = { provider: customer.storage_provider || 'base44', root: customer.storage_root || '' };
+    const changed = before.provider !== provider || before.root !== storageRoot;
+    if (changed) {
+      await base44.asServiceRole.entities.Customer.update(customerId, {
+        storage_provider: provider,
+        storage_root: storageRoot,
+        storage_configured_at: new Date().toISOString(),
+      });
+      await logAudit(base44, 'settings_changed', {
+        user_email: user.email, customer_id: customerId, entity_type: 'Customer', entity_id: customerId,
+        details: `Repositório documental: ${before.provider} → ${provider}; localização «${before.root || defaultStorageRoot(customer)}» → «${storageRoot || defaultStorageRoot(customer)}». Os ficheiros existentes ficam onde estão.`,
+      });
+    }
+
+    return json({ success: true, provider, storage_root: storageRoot, effective_root: storageRoot || defaultStorageRoot(customer), changed });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: (error as Error).message }, 500);
   }
 }

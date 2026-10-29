@@ -56,6 +56,10 @@
     "change_note": {
       "type": "string",
       "description": "Optional note about what changed"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Cliente (tenant): partilha o registo com os colegas do mesmo cliente"
     }
   },
   "required": [
@@ -64,16 +68,9 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.changed_by": "{{user.email}}"
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "$or": [
@@ -84,6 +81,9 @@
         },
         {
           "data.changed_by": "{{user.email}}"
+        },
+        {
+          "data.customer_id": "{{user.data.customer_id}}"
         }
       ]
     },
@@ -99,3 +99,4 @@
     }
   }
 }
+

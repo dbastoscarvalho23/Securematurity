@@ -3,8 +3,11 @@ import { uploadFile } from '@/lib/cloudStorage';
 import { Paperclip, X, Loader2, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { toast } from 'sonner';
+import FileLink from '@/components/shared/FileLink';
 
-export default function EvidenceUploader({ attachments = [], onAttachmentsChange }) {
+// contextId = id da avaliação: o servidor usa-o para gravar no repositório do cliente da avaliação.
+export default function EvidenceUploader({ attachments = [], onAttachmentsChange, customerId, contextId }) {
   const { t } = useLanguage();
   const inputRef = useRef();
   const [uploading, setUploading] = useState(false);
@@ -13,11 +16,15 @@ export default function EvidenceUploader({ attachments = [], onAttachmentsChange
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await uploadFile(file);
-    const updated = [...attachments, { name: file.name, url: file_url }];
-    onAttachmentsChange(updated);
-    setUploading(false);
-    e.target.value = '';
+    try {
+      const { file_url } = await uploadFile(file, customerId, 'assessment', contextId);
+      onAttachmentsChange([...attachments, { name: file.name, url: file_url }]);
+    } catch (err) {
+      toast.error(err?.message || t('x_tool_error'));
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
   };
 
   const handleRemove = (index) => {
@@ -35,14 +42,14 @@ export default function EvidenceUploader({ attachments = [], onAttachmentsChange
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted text-xs text-muted-foreground border"
             >
               <FileText className="w-3 h-3 flex-shrink-0" />
-              <a
-                href={att.url}
+              <FileLink
+                url={att.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-foreground transition-colors max-w-[140px] truncate"
               >
                 {att.name}
-              </a>
+              </FileLink>
               <button
                 onClick={() => handleRemove(i)}
                 className="ml-0.5 hover:text-destructive transition-colors"

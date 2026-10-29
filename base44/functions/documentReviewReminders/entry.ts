@@ -1,9 +1,18 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml } from "../../shared/escapeHtml.ts";
+import { json, authorizeAutomationOrAdmin } from "../../shared/http.ts";
+import { logEmailSent } from "../../shared/audit.ts";
+import { sendMail } from '../../shared/mail.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Authorization: a platform admin — the identity a scheduled workflow runs as (app
+    // owner's session) — or a manual trigger by one. Anonymous external callers are
+    // rejected before any service-role query / email dispatch.
+    const forbidden = await authorizeAutomationOrAdmin(req, base44);
+    if (forbidden) return forbidden;
 
     // This is a scheduled/system function — use service role
     const today = new Date();
@@ -23,7 +32,7 @@ Deno.serve(async (req) => {
     });
 
     if (dueSoon.length === 0) {
-      return Response.json({ sent: 0, message: 'No documents due for review in the next 30 days.' });
+      return json({ sent: 0, message: 'Não há documentos com revisão prevista nos próximos 30 dias.' });
     }
 
     // Group by owner_email to send one email per owner
@@ -39,35 +48,34 @@ Deno.serve(async (req) => {
     for (const [ownerEmail, docs] of Object.entries(byOwner)) {
       const docList = docs.map(d => {
         const daysLeft = Math.ceil((new Date(d.review_date) - today) / (1000 * 60 * 60 * 24));
-        return `• <strong>${escapeHtml(d.title)}</strong> (${escapeHtml(d.level)}) — Review due: ${d.review_date} (<strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>)`;
+        return `• <strong>${escapeHtml(d.title)}</strong> (${escapeHtml(d.level)}) · Revisão até ${d.review_date} (<strong>${daysLeft} dia${daysLeft !== 1 ? 's' : ''}</strong>)`;
       }).join('<br/>');
 
       const body = `
         <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
           <div style="background: #1e3a5f; padding: 24px 32px; border-radius: 12px 12px 0 0;">
-            <h2 style="color: #fff; margin: 0; font-size: 20px;">📋 Document Review Reminder</h2>
-            <p style="color: #94a3b8; margin: 6px 0 0; font-size: 14px;">AnkoraOne Security Platform</p>
+            <h2 style="color: #fff; margin: 0; font-size: 20px;">Lembrete de revisão de documentos</h2>
+            <p style="color: #94a3b8; margin: 6px 0 0; font-size: 14px;">AnkoraOne</p>
           </div>
           <div style="background: #fff; padding: 28px 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
-            <p style="margin: 0 0 16px;">Hello,</p>
-            <p style="margin: 0 0 16px;">The following security document${docs.length > 1 ? 's are' : ' is'} due for review within the next <strong>30 days</strong>. Please review and update ${docs.length > 1 ? 'them' : 'it'} as needed.</p>
+            <p style="margin: 0 0 16px;">Olá,</p>
+            <p style="margin: 0 0 16px;">${docs.length > 1 ? 'Os documentos de segurança abaixo têm' : 'O documento de segurança abaixo tem'} revisão prevista nos próximos <strong>30 dias</strong>. Reveja e atualize ${docs.length > 1 ? 'os documentos' : 'o documento'} se for necessário.</p>
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; margin: 0 0 20px; line-height: 2;">
               ${docList}
             </div>
-            <p style="margin: 0 0 8px; font-size: 14px; color: #64748b;">Please log in to the platform to review and update these documents. If the document has already been reviewed, update the review date to avoid further reminders.</p>
-            <p style="margin: 20px 0 0; font-size: 13px; color: #94a3b8;">— AnkoraOne Platform · Automated Notification</p>
+            <p style="margin: 0 0 8px; font-size: 14px; color: #64748b;">Inicie sessão na plataforma para rever e atualizar. Se a revisão já foi feita, atualize a data de revisão para deixar de receber este lembrete.</p>
+            <p style="margin: 20px 0 0; font-size: 13px; color: #94a3b8;">AnkoraOne · Notificação automática</p>
           </div>
         </div>
       `;
 
       try {
-        await base44.asServiceRole.integrations.Core.SendEmail({
+        await sendMail(base44, {
           to: ownerEmail,
-          subject: `[Action Required] ${docs.length} security document${docs.length > 1 ? 's' : ''} due for review`,
+          subject: `[Ação necessária] ${docs.length} documento${docs.length > 1 ? 's' : ''} de segurança com revisão prevista`,
           body,
         });
-        await base44.asServiceRole.entities.AuditLog.create({
-          action: 'email_sent',
+        await logEmailSent(base44, {
           user_email: 'system',
           entity_type: 'SecurityDocument',
           details: `Review reminder sent to ${ownerEmail} for ${docs.length} document${docs.length > 1 ? 's' : ''}: ${docs.map(d => d.title).join(', ')}`,
@@ -78,12 +86,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({
+    return json({
       sent,
       total_docs: dueSoon.length,
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, 500);
   }
 });

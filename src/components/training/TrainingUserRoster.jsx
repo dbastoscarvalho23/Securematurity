@@ -53,7 +53,7 @@ export default function TrainingUserRoster({ customer }) {
       const result = exportTrainingReportPdf(u, userEnr, trainings, customer, t, language);
       if (result?.blob) {
         const file = new File([result.blob], result.filename, { type: 'application/pdf' });
-        const { file_url } = await uploadFile(file, customer?.id);
+        const { file_url } = await uploadFile(file, customer?.id, 'training', u.id);
         await base44.entities.TrainingReport.create({
           customer_id: customer.id,
           customer_name: customer.name,

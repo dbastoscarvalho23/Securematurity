@@ -1,0 +1,55 @@
+# Publica a app AnkoraOne_DC_Repo no Base44 (POST /api/apps/{app_id}/deploy).
+#
+# A app é nativa do Base44: o código é sincronizado deste repositório para a app (ver docs/deploy-base44.md)
+# e a publicação inclui frontend, funções, entidades e workflows agendados. Este workflow só publica a versão
+# que já está na app; não envia código. Corre à mão (Actions → Publicar no Base44 → Run workflow).
+#
+# Requer o segredo BASE44_API_KEY: token de acesso pessoal criado no workspace onde está a app (Enterprise), com
+# «Full access» e permissão para publicar. Um token de outro workspace recebe 404, porque não vê a app.
+
+name: Publicar no Base44
+
+on:
+  workflow_dispatch:
+    inputs:
+      checkpoint_id:
+        description: 'Checkpoint a publicar (vazio = versão atual da app)'
+        required: false
+        default: ''
+
+concurrency:
+  group: deploy-base44
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  BASE44_APP_ID: 6adf8df867faaf60a171efa5   # app "AnkoraOne_DC_Repo" no Base44
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Publicar
+        env:
+          BASE44_API_KEY: ${{ secrets.BASE44_API_KEY }}
+          CHECKPOINT_ID: ${{ inputs.checkpoint_id }}
+        run: |
+          if [ -z "$BASE44_API_KEY" ]; then echo "::error::Falta o segredo BASE44_API_KEY"; exit 1; fi
+          if [ -n "$CHECKPOINT_ID" ]; then body="{\"checkpoint_id\":\"${CHECKPOINT_ID}\"}"; else body='{}'; fi
+          status=$(curl -sS -o response.json -w '%{http_code}' -X POST \
+            "https://app.base44.com/api/apps/${BASE44_APP_ID}/deploy" \
+            -H "Authorization: Bearer ${BASE44_API_KEY}" -H 'Content-Type: application/json' -d "$body")
+          echo "HTTP ${status}"; cat response.json; echo
+          case "$status" in
+            2??) ;;
+            401) echo "::error::Token inválido ou expirado (HTTP 401): crie um novo token pessoal e grave-o no segredo BASE44_API_KEY"; exit 1 ;;
+            403) echo "::error::O token não tem permissão para publicar (HTTP 403): use um token com «Full access» de uma conta com permissão de publicar a app"; exit 1 ;;
+            404) echo "::error::A app ${BASE44_APP_ID} não é visível para este token (HTTP 404): o token tem de ser criado no workspace onde está a app"; exit 1 ;;
+            409) echo "::error::A app ainda está a gerar código ou há conflito (HTTP 409): tente de novo dentro de alguns minutos"; exit 1 ;;
+            *) echo "::error::Publicação recusada (HTTP ${status})"; exit 1 ;;
+          esac
+          echo "### Publicado no Base44" >> "$GITHUB_STEP_SUMMARY"
+          cat response.json >> "$GITHUB_STEP_SUMMARY"

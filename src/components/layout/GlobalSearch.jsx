@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 
 const ENTITY_CONFIG = [
   {
@@ -67,6 +68,9 @@ export default function GlobalSearch() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
+  // A página de clientes é só do admin: para os restantes, o resultado «cliente» levaria a um redirecionamento.
+  const sources = useMemo(() => ENTITY_CONFIG.filter((c) => c.key !== 'customers' || user?.role === 'admin'), [user?.role]);
   const [query, setQuery] = useState('');
   const [allData, setAllData] = useState({});
   const [loading, setLoading] = useState(false);
@@ -78,7 +82,7 @@ export default function GlobalSearch() {
   useEffect(() => {
     if (!open || Object.keys(allData).length > 0) return;
     setLoading(true);
-    Promise.allSettled(ENTITY_CONFIG.map(cfg => cfg.fetch().then(res => ({ key: cfg.key, data: res }))))
+    Promise.allSettled(sources.map(cfg => cfg.fetch().then(res => ({ key: cfg.key, data: res }))))
       .then(results => {
         const map = {};
         results.forEach(r => { if (r.status === 'fulfilled') map[r.value.key] = r.value.data; });
@@ -91,7 +95,7 @@ export default function GlobalSearch() {
     if (!query.trim() || query.length < 2) return [];
     const q = query.toLowerCase();
     const matches = [];
-    ENTITY_CONFIG.forEach(cfg => {
+    sources.forEach(cfg => {
       const items = allData[cfg.key] || [];
       items.forEach(item => {
         const title = cfg.getTitle(item) || '';
@@ -102,7 +106,7 @@ export default function GlobalSearch() {
       });
     });
     return matches.slice(0, 12);
-  }, [query, allData]);
+  }, [query, allData, sources]);
 
   useEffect(() => { setActiveIndex(0); }, [results]);
 
@@ -151,10 +155,11 @@ export default function GlobalSearch() {
       {/* Trigger button */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 h-8 pl-3 pr-4 rounded-lg border border-border bg-muted/50 hover:bg-muted text-muted-foreground text-sm transition-colors min-w-[180px]"
+        className="flex items-center gap-2 h-9 px-3 rounded-lg border border-input bg-transparent shadow-sm hover:bg-muted/60 text-muted-foreground text-sm transition-colors w-9 sm:w-[220px] lg:w-[280px] justify-center sm:justify-start"
+        aria-label={t('gs_search_placeholder')}
       >
-        <Search className="w-3.5 h-3.5 flex-shrink-0" />
-        <span className="flex-1 text-left text-xs">{t('gs_search_placeholder')}</span>
+        <Search className="w-4 h-4 flex-shrink-0" />
+        <span className="hidden sm:block flex-1 text-left text-sm">{t('gs_search_placeholder')}</span>
         <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 rounded border border-border bg-background px-1 text-[10px] font-mono text-muted-foreground">
           <span>⌘K</span>
         </kbd>

@@ -7,7 +7,8 @@ import {
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { TrendingDown, TrendingUp, Minus, Activity } from 'lucide-react';
-import { format, subMonths, parseISO } from 'date-fns';
+import { subMonths, parseISO } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { useLanguage } from '@/lib/LanguageContext';
 
 function buildMonthBuckets(n = 6) {

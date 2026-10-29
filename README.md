@@ -1,247 +1,103 @@
-# AnkoraOne — Plataforma de Maturidade de Segurança
+# AnkoraOne
 
-Plataforma de GRC (governação, risco e conformidade) para avaliação de maturidade em cibersegurança (NIS2, ISO 27001, DL 125/2025 e outros referenciais), gestão de riscos, documentos, fornecedores, incidentes, formação e RGPD.
+**[AnkoraOne: a infraestrutura inteligente de governação, risco e conformidade](https://neora.pt/servico-ankoraone.html)**
 
-A aplicação pode funcionar de duas formas, escolhidas por uma única variável (`VITE_BACKEND_MODE`):
+Plataforma de conformidade em cibersegurança (RJC/NIS2, ISO/IEC 27001, DORA, TISAX, RGPD) construída com Vite + React 18 sobre o backend do Base44.
 
-| Modo | Backend | Quando usar |
-|---|---|---|
-| **Base44** (por omissão) | Plataforma Base44 (cloud) | Desenvolvimento no Base44 Builder, ambiente atual |
-| **Servidor próprio** (`selfhosted`) | Pasta [`server/`](server/) — Node.js + PostgreSQL | Alojamento em infraestrutura própria, sem dependência da Base44 |
+- Produção: <https://app.ankoraone.com> — app nativa **AnkoraOne_DC_Repo** no Base44 (id `6adf8df867faaf60a171efa5`).
+- Documentação: [`docs/README.md`](docs/README.md) (arquitetura, publicação, domínio, email, IA, repositório documental, legal, onboarding).
 
-O frontend é o mesmo nos dois modos. No modo servidor próprio, o SDK da Base44 é substituído por um cliente com a mesma interface ([`src/api/selfHostedClient.js`](src/api/selfHostedClient.js)). Por isso as páginas e componentes não precisam de alterações.
+## Desenvolvimento local
 
----
-
-## Índice
-
-1. [Arquitetura](#1-arquitetura)
-2. [Instalação em servidor próprio (Docker)](#2-instalação-em-servidor-próprio-docker)
-3. [Migração dos dados da Base44](#3-migração-dos-dados-da-base44)
-4. [Configuração](#4-configuração)
-5. [Desenvolvimento local](#5-desenvolvimento-local)
-6. [Equivalência de funcionalidades](#6-equivalência-de-funcionalidades)
-7. [Segurança](#7-segurança)
-8. [Operação: cópias de segurança e atualizações](#8-operação-cópias-de-segurança-e-atualizações)
-9. [Limitações conhecidas](#9-limitações-conhecidas)
-10. [Modo Base44 (como até aqui)](#10-modo-base44-como-até-aqui)
-
----
-
-## 1. Arquitetura
-
-```
-                 ┌───────────────────────── docker-compose.selfhost.yml ─────────────────────────┐
-  Navegador ──►  │  web (Nginx)  ──/api──►  api (Node.js 22)  ──►  postgres (PostgreSQL 16)       │
-   HTTPS via     │   frontend React          ├─ entidades + RLS        └─ dados, utilizadores,     │
-   proxy externo │   compilado (Vite)        ├─ autenticação (JWT)        conversas, execuções     │
-                 │                           ├─ 16 funções base44/     ──►  minio (S3)             │
-                 │                           ├─ 8 workflows (cron)          └─ ficheiros            │
-                 │                           ├─ agente de IA          ──►  SMTP · Anthropic/OpenAI │
-                 │                           └─ tempo real (SSE)      ──►  Google/Microsoft OAuth  │
-                 └───────────────────────────────────────────────────────────────────────────────┘
-```
-
-O backend lê diretamente as definições da pasta [`base44/`](base44/). A Base44 continua a ser a fonte de verdade da lógica de negócio:
-
-| Pasta | Conteúdo | Como é usada no servidor próprio |
-|---|---|---|
-| `base44/entities/*.jsonc` | 34 entidades (esquema + regras RLS) | Validação, valores por omissão e controlo de acesso por registo |
-| `base44/functions/*/entry.ts` | 16 funções de backend | Executadas **sem alterações** em Node.js (emulação de `Deno.serve` e do SDK) |
-| `base44/workflows/*.jsonc` | 8 automatismos | Agendamentos cron e gatilhos por alteração de entidades |
-| `base44/agents/*.jsonc` | Agente `framework_guide` | Conversas com ferramentas sobre entidades, com as permissões do utilizador |
-| `base44/connectors/*.jsonc` | Google Drive, OneDrive | Ligação OAuth feita uma vez pelo administrador |
-
-Qualquer alteração feita no Base44 Builder a estes ficheiros passa a valer também no servidor próprio, após reconstruir a imagem.
-
----
-
-## 2. Instalação em servidor próprio (Docker)
-
-**Requisitos:** servidor Linux com Docker e Docker Compose v2, 2 vCPU, 4 GB RAM e um domínio com HTTPS.
-
-```bash
-git clone https://github.com/dbastoscarvalho23/Securematurity.git ankoraone
-cd ankoraone
-
-cp .env.selfhost.example .env.selfhost
-nano .env.selfhost        # preencher PUBLIC_URL, segredos, SMTP, chave de IA…
-
-docker compose -f docker-compose.selfhost.yml --env-file .env.selfhost up -d --build
-docker compose -f docker-compose.selfhost.yml logs -f api   # acompanhar o arranque
-```
-
-No primeiro arranque, o servidor cria as tabelas e o administrador indicado em `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD`. A aplicação fica em `http://<servidor>:8080`.
-
-### HTTPS
-
-Coloque um proxy com certificado à frente da porta `WEB_PORT`. Exemplo com [Caddy](https://caddyserver.com) (certificado Let's Encrypt automático):
-
-```caddyfile
-grc.exemplo.pt {
-    reverse_proxy 127.0.0.1:8080 {
-        flush_interval -1   # necessário para o tempo real (SSE)
-    }
-}
-```
-
-`PUBLIC_URL` tem de coincidir com o endereço HTTPS final, porque é usado nos emails, no OAuth e nos URLs dos ficheiros.
-
-### Criar ou repor um administrador
-
-```bash
-docker compose -f docker-compose.selfhost.yml exec api npm run create-admin -- admin@exemplo.pt 'Palavra-Passe-Forte' "Nome Apelido"
-```
-
----
-
-## 3. Migração dos dados da Base44
-
-O script [`server/scripts/import-from-base44.js`](server/scripts/import-from-base44.js) exporta todos os registos através da API da Base44 e importa-os mantendo os **ids, datas e autores originais**, o que preserva as referências entre registos. A importação é idempotente e pode repetir-se.
-
-1. Na Base44, obtenha o **App ID** e uma **chave de API** da aplicação.
-2. Exporte para um ficheiro, que serve também de cópia de segurança:
-   ```bash
-   docker compose -f docker-compose.selfhost.yml exec \
-     -e BASE44_APP_ID=xxxxxxxx -e BASE44_API_KEY=xxxxxxxx api \
-     node scripts/import-from-base44.js --export-only --out /data/base44-dump.json
-   ```
-3. Importe, copiando os ficheiros alojados na Base44 para o armazenamento próprio:
-   ```bash
-   docker compose -f docker-compose.selfhost.yml exec api \
-     node scripts/import-from-base44.js --from /data/base44-dump.json --rehost-files
-   ```
-
-Para guardar a exportação fora do contentor: `docker compose -f docker-compose.selfhost.yml cp api:/data/base44-dump.json .`
-
-Opções: `--entities Task,RiskItem` limita a importação a algumas entidades, e `--out` guarda a exportação. Use sempre `--rehost-files` ao reimportar; caso contrário, os URLs voltam a apontar para a Base44.
-
-**Palavras-passe:** a Base44 não as exporta. Os utilizadores importados entram com Google ou Microsoft (se configurado), ou definem uma palavra-passe nova em **"Esqueci-me da palavra-passe"** ou em **"Registar"** com o mesmo email. O email é verificado por código antes de a conta ficar ativa.
-
----
-
-## 4. Configuração
-
-Todas as variáveis estão documentadas em [`.env.selfhost.example`](.env.selfhost.example). As principais:
-
-| Variável | Obrigatória | Descrição |
-|---|---|---|
-| `PUBLIC_URL` | sim | Endereço público da aplicação (`https://…`) |
-| `JWT_SECRET`, `AUTOMATION_SECRET` | sim | Segredos aleatórios (`openssl rand -hex 32`); o servidor recusa arrancar sem eles em produção |
-| `POSTGRES_PASSWORD`, `S3_*` | sim | Credenciais da base de dados e do MinIO |
-| `SMTP_*`, `MAIL_FROM` | recomendada | Envio de notificações, códigos de verificação e convites. Sem SMTP, os emails não são enviados |
-| `LLM_PROVIDER` + chave | recomendada | `anthropic` ou `openai` (inclui Azure OpenAI, Ollama e vLLM via `OPENAI_BASE_URL`). Sem IA, as funcionalidades de IA devolvem um aviso |
-| `ALLOW_PUBLIC_SIGNUP` | não | `false` (recomendado) limita o registo a convidados |
-| `GOOGLE_*`, `MICROSOFT_*` | não | Login com Google/Microsoft e conectores Google Drive/OneDrive. O login Microsoft exige `MICROSOFT_ALLOWED_TENANT_IDS` |
-| `TRUST_PROXY_HOPS` | não | Proxies à frente da API (1 no compose; 2 com Caddy/Traefik à frente) |
-
-**Conectores Google Drive / OneDrive:** depois de configurar as credenciais OAuth, um administrador abre **Definições → Armazenamento** e clica em **Ligar conta**. Os tokens ficam guardados e são renovados automaticamente.
-
----
-
-## 5. Desenvolvimento local
-
-Requisitos: Node.js ≥ 22.18 e PostgreSQL 16 (local ou `docker run -p 5432:5432 -e POSTGRES_PASSWORD=dev postgres:16`).
-
-```bash
-# Backend
-cd server
-npm install
-DATABASE_URL=postgres://postgres:dev@localhost:5432/postgres \
-BOOTSTRAP_ADMIN_EMAIL=admin@local.test BOOTSTRAP_ADMIN_PASSWORD=admin12345 \
-npm run dev                      # API em http://localhost:3001
-
-# Frontend (noutro terminal, na raiz)
-npm install
-VITE_BACKEND_MODE=selfhosted npm run dev     # http://localhost:5173, /api encaminhado para :3001
-```
-
-Sem SMTP configurado, os códigos de verificação e as ligações de recuperação aparecem no registo do servidor (só fora de produção). Sem `STORAGE_DRIVER=s3`, os ficheiros ficam em `server/data/uploads`.
-
-### Testes
-
-```bash
-cd server
-npm test                                                        # testes unitários
-TEST_DATABASE_URL=postgres://…/ankoraone_test npm test          # + testes ponta a ponta (APAGA essa base de dados)
-```
-
-Os testes ponta a ponta arrancam o servidor real e cobrem: registo com código, isolamento entre clientes (RLS), filtros e operações em lote, ficheiros, funções, workflows, tempo real, recuperação de palavra-passe, convites, agente de IA e `InvokeLLM`. Os fornecedores de IA são simulados.
-
----
-
-## 6. Equivalência de funcionalidades
-
-| SDK Base44 usado pela aplicação | Servidor próprio |
-|---|---|
-| `entities.X.list / filter / get / create / bulkCreate / update / bulkUpdate / delete / deleteMany` | `GET/POST/PUT/DELETE /api/entities/X…` com os operadores `$in $nin $gt $gte $lt $lte $ne $or $and $exists $regex` |
-| `entities.X.subscribe` | Server-Sent Events em `/api/realtime`, filtrados pela RLS |
-| Regras RLS das entidades | Aplicadas em SQL (leituras) e verificadas em escritas, incluindo impedir mover registos entre clientes |
-| `auth.*` (email/palavra-passe, código, recuperação, Google, Microsoft) | `/api/auth/*`, JWT HS256, palavras-passe com scrypt |
-| `users.inviteUser` | `/api/users/invite` (envia email de convite) |
-| `functions.invoke` | `/api/functions/<nome>`, que executa `base44/functions/<nome>/entry.ts` |
-| `integrations.Core.InvokeLLM` | Anthropic ou API compatível com OpenAI, com `response_json_schema` e `file_urls` |
-| `integrations.Core.SendEmail` | SMTP |
-| `integrations.Core.UploadFile` | MinIO/S3 ou disco local; URL público impossível de adivinhar, como na Base44 |
-| `asServiceRole.connectors.getConnection` | OAuth com renovação automática de tokens |
-| `agents.*` (framework_guide) | Conversas persistidas e ferramentas sobre entidades com as permissões do utilizador |
-| Workflows agendados e por entidade | Motor próprio (cron com fuso horário, condições jq); histórico em `/api/workflows/runs` |
-
----
-
-## 7. Segurança
-
-- **Isolamento entre clientes:** as regras RLS de `base44/entities` são aplicadas em todas as leituras (incluindo tempo real e `deleteMany`) e escritas. Um utilizador não consegue criar, ler, alterar nem mover registos de outro cliente. Isto está coberto pelos testes.
-- **Perfil do utilizador:** um utilizador comum não pode alterar o próprio `role` nem `customer_id` (via `updateMe` ou `User.update`). Só um administrador o pode fazer, e a alteração de papel termina as sessões abertas.
-- **Carimbo de cliente:** quando um utilizador cria um registo sem `customer_id` numa entidade que o tenha, o servidor preenche-o com o cliente do utilizador (`AUTO_STAMP_CUSTOMER_ID`).
-- **Segredo de automação:** o valor que estava fixo no repositório (`base44/shared/automationSecret.ts`) **não é aceite** pelo servidor próprio, que usa `AUTOMATION_SECRET`. Esse valor é público no GitHub; trate-o como comprometido.
-- **Funções de backend:** por HTTP, só são executáveis as funções que a interface usa, e sempre com sessão iniciada. As funções de sistema (lembretes, notificações automáticas, purga de dados) exigem o segredo de automação. As notificações de tarefas e riscos usam o registo real da base de dados, e não os dados enviados pelo navegador.
-- **Registo:** voltar a registar um email existente nunca altera a conta. A palavra-passe só é definida por quem introduz o código recebido nesse email.
-- **Login Microsoft:** só são aceites contas dos tenants indicados em `MICROSOFT_ALLOWED_TENANT_IDS`. Com o tenant `common`, qualquer pessoa poderia criar um tenant com o email de outra.
-- **Proteções adicionais:** limite de tentativas em login, códigos e emails (por IP e por email); códigos de verificação de uso único com expiração; tokens de recuperação guardados apenas como hash; OAuth com PKCE e validação do destino de retorno; bloqueio de URLs internos em `file_urls` (SSRF); cabeçalhos de segurança no Nginx e na API.
-- **Ficheiros:** tal como na Base44, os URLs de ficheiros são públicos, mas contêm 128 bits aleatórios. Não partilhe os links de documentos sensíveis.
-
----
-
-## 8. Operação: cópias de segurança e atualizações
-
-```bash
-# Cópia da base de dados
-docker compose -f docker-compose.selfhost.yml exec postgres pg_dump -U ankoraone ankoraone | gzip > backup-$(date +%F).sql.gz
-# Cópia dos ficheiros (volume do MinIO)
-docker run --rm -v ankoraone_minio-data:/data -v "$PWD":/backup alpine tar czf /backup/ficheiros-$(date +%F).tgz -C /data .
-
-# Atualizar para a versão mais recente do repositório
-git pull
-docker compose -f docker-compose.selfhost.yml --env-file .env.selfhost up -d --build
-```
-
-As migrações da base de dados são aplicadas automaticamente no arranque.
-
----
-
-## 9. Limitações conhecidas
-
-- `InvokeLLM` com `add_context_from_internet` não pesquisa na web; o parâmetro é ignorado.
-- As funções de backend correm no mesmo processo da API. O tempo limite (`FUNCTION_TIMEOUT_MS`) devolve erro, mas não interrompe uma função bloqueada.
-- A página `OAuthConsent` (consentimento MCP gerido pela Base44) não se aplica ao servidor próprio.
-- O editor visual e as estatísticas do Base44 Builder só funcionam no modo Base44.
-- Proteção SSRF de `file_urls`: o endereço é validado por DNS antes do pedido, mas não fica fixo, pelo que um ataque de *DNS rebinding* continua teoricamente possível.
-- Regra herdada da aplicação: qualquer utilizador autenticado pode criar uma `Notification` dirigida a outro email (a regra RLS de criação só verifica o autor).
-- Os eventos de tempo real e os gatilhos de workflows são processados na instância que fez a alteração. Com várias instâncias da API, use `ENABLE_SCHEDULER=true` apenas numa.
-
----
-
-## 10. Modo Base44 (como até aqui)
-
-Sem `VITE_BACKEND_MODE`, a aplicação continua a usar a Base44:
-
-1. `npm install`
+1. Clonar este repositório e instalar dependências: `npm install` (Node 22).
 2. Criar `.env.local` com:
-   ```
-   VITE_BASE44_APP_ID=your_app_id
-   VITE_BASE44_APP_BASE_URL=your_backend_url
-   ```
-3. `npm run dev`
 
-Qualquer alteração enviada para o repositório é refletida no Base44 Builder. Para publicar, abra [Base44.com](https://base44.com) e clique em **Publish**. Documentação: [docs.base44.com](https://docs.base44.com/Integrations/Using-GitHub).
+```
+VITE_BASE44_APP_ID=6adf8df867faaf60a171efa5
+VITE_BASE44_APP_BASE_URL=https://ankora-one-dc-repo-a171efa5.base44.app
+```
+
+3. `npm run dev` (só frontend, contra o backend publicado) ou `base44 dev` (backend local, ver `AGENTS.md`).
+
+A entrada é feita com Google, Microsoft ou email e palavra-passe; a app só abre a utilizadores convidados. Publicação: [`docs/deploy-base44.md`](docs/deploy-base44.md).
+
+## Rotas
+
+| Rota | Página | Descrição |
+|---|---|---|
+| `/login`, `/register`, `/forgot-password`, `/reset-password` | Login/Register/… | Autenticação (público) |
+| `/` | Dashboard | Painel principal (autenticado) |
+| `/customers` | Customers | Gestão de clientes |
+| `/assessments`, `/assessments/:id` | Assessments / AssessmentDetail | Avaliações de conformidade |
+| `/recommendations` | Recommendations | Recomendações |
+| `/reports`, `/email-report` | Reports / EmailReport | Relatórios |
+| `/tasks`, `/task-analytics` | Tasks / TaskAnalytics | Tarefas e análise |
+| `/risk-assessment` | RiskAssessment | Gestão de risco |
+| `/security-documents` | SecurityDocuments | Documentos de segurança (ver abaixo) |
+| `/document-audit-trail` | DocumentAuditTrail | Auditoria de documentos |
+| `/action-plan` | ActionPlan | Plano de ação |
+| `/evidence` | EvidenceOverview | Evidências (ver abaixo) |
+| `/compliance-metrics` | ComplianceMetrics | Métricas de conformidade (ver abaixo) |
+| `/compliance-journey` | ComplianceJourney | Jornada de conformidade (RJC 2026) |
+| `/supply-chain`, `/suppliers` | SupplyChain / Suppliers | Cadeia de abastecimento |
+| `/ropa` | RoPA | Registo de atividades de tratamento |
+| `/incidents` | IncidentManagement | Gestão de incidentes (prazos NIS2) |
+| `/dsr` | DSRManagement | Pedidos de titulares |
+| `/vulnerabilities` | VulnerabilityManagement | Vulnerabilidades |
+| `/training` | Training | Formação |
+| `/legal-library` | LegalLibrary | Biblioteca legal (dados oficiais) |
+| `/framework-guide` | FrameworkGuide | Guia de frameworks (agente IA) |
+| `/question-bank` | QuestionBank | BD de perguntas |
+| `/settings` | Settings | Configurações |
+| `/backoffice` (+`customers`, `users`, `frameworks`, `audit`) | Backoffice | Área admin (`/admin` redireciona) |
+
+Todas as rotas autenticadas passam por `RouteGuard` (papéis por rota); visitantes não autenticados caem em `/login`.
+
+## Módulos principais
+
+### SecurityDocuments — `/security-documents` (`src/pages/SecurityDocuments.jsx`)
+
+- Documentos de segurança organizados em 4 níveis: Políticas, Normas, Procedimentos, Playbooks (`LEVEL_CONFIGS`).
+- Fluxo de ciclo de vida: rascunho → revisão → aprovação, com `PendingReviewsPanel` (aprovações pendentes), `ApprovalDialog` e `StatusBadge`; histórico de versões em `VersionHistoryDialog`.
+- `NominationsPanel` — nomeações e cargos de governação (RSI/CISO, mandatos, estatutos), filtrado pelo cliente efetivo.
+- Para platform admin, o seletor de clientes usa a sentinela `'all'` ("Todos os clientes" — Radix Select não aceita `null`); para utilizador de cliente, o filtro é o próprio tenant.
+- Pesquisa de texto, contadores por nível, auditoria via `writeAuditLog`.
+- Componentes em `src/components/documents/` (dialogs, painéis, gráficos e tabelas de auditoria).
+
+### Evidence — `/evidence` (`src/pages/EvidenceOverview.jsx`)
+
+- Resumo de lacunas de conformidade por cliente (`ComplianceGapsSummary`, `CustomerGapCard`): documentos em falta, revisões, rascunhos e prazos próximos (30 dias).
+- KPIs: total de ficheiros de evidência, avaliações com evidências, frameworks cobertos.
+- Agrupamento de ficheiros por avaliação com pesquisa por ficheiro/domínio/nota e filtros por avaliação, framework e domínio; descarregamento em lote ("Descarregar Todos").
+- Evidências vêm das respostas de avaliação (anexos + notas); estado de carregamento via `LoadingState`/`EmptyState`.
+
+### ComplianceMetrics — `/compliance-metrics` (`src/pages/ComplianceMetrics.jsx`)
+
+- KPIs agregados: incidentes abertos, vulnerabilidades abertas (SLA), pedidos de titulares (DSR) abertos, registos RoPA ativos.
+- Conformidade de notificação de incidentes NIS2: pré-alerta 24h, notificação completa 72h, relatório final 1 mês — cálculo de atrasos via `incidentDeadlines()`/`overdueIncidentPhases()` em `src/lib/complianceUtils.js`.
+- Gráficos Recharts: incidentes por estado e vulnerabilidades por gravidade.
+- Todos os rótulos passam por chaves de tradução (PT-PT, `useLanguage`).
+
+## Estrutura do projeto
+
+- `src/pages/` — páginas (32 rotas em `App.jsx`); `src/pages/backoffice/` — shell admin.
+- `src/components/` — componentes da app + primitivas shadcn/ui (`src/components/ui/`).
+- `base44/entities/` — definições de entidades (JSONC); `base44/functions/` — funções backend; `base44/workflows/` — automações agendadas; `base44/connectors/`, `base44/agents/`, `base44/shared/`.
+- `src/lib/` — contexto de auth, i18n, utilitários de conformidade, mapeamentos de frameworks.
+- `src/data/legal/` — biblioteca legal oficial (ver `docs/legal/README.md`; regeneração em `tools/legal/`).
+
+## Testes
+
+Vitest + jsdom + Testing Library (`vitest.config.js`, backend simulado — corre sem rede):
+
+```bash
+npx vitest run
+```
+
+Nota: 6 testes de `RouteGuard` estão desatualizados face às regras de navegação de outubro de 2026 e precisam de revisão.
+
+Documentação do Base44: <https://docs.base44.com>
+
+## Servidor próprio (em desenvolvimento)
+
+O ramo `feat/self-hosting` tem um backend próprio (Node.js + PostgreSQL) com a mesma API da Base44, para correr a app fora da plataforma. Instalação, migração dos dados e limitações: [`docs/self-hosting.md`](docs/self-hosting.md).

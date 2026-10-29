@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Clock, ArrowRight, PlusCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const STATUS_KEYS = {

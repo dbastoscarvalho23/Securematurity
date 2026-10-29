@@ -1,4 +1,5 @@
 import { base44 } from '@/api/base44Client';
+import { sendEmail } from '@/lib/mail';
 
 export const MIN_SEAT_LIMIT = 5;
 
@@ -17,8 +18,8 @@ export async function notifySeatChange({ customer, field, oldValue, newValue, ch
   const delta = newValue - oldValue;
   if (delta === 0) return;
 
-  const direction = delta > 0 ? 'increased' : 'decreased';
-  const fieldLabel = field === 'user_seat_addon_count' ? 'Add-on seats' : 'Base seat limit';
+  const direction = delta > 0 ? 'aumentado' : 'reduzido';
+  const fieldLabel = field === 'user_seat_addon_count' ? 'Lugares adicionais' : 'Limite base de lugares';
 
   const baseLimit = field === 'user_seat_limit'
     ? newValue
@@ -35,7 +36,7 @@ export async function notifySeatChange({ customer, field, oldValue, newValue, ch
       entity_type: 'Customer',
       entity_id: customer.id,
       customer_id: customer.id,
-      details: `${fieldLabel} ${direction} from ${oldValue} to ${newValue} (${delta > 0 ? '+' : ''}${delta}) for "${customer.name}". Total seats now: ${totalSeats}.`,
+      details: `${fieldLabel} ${direction} de ${oldValue} para ${newValue} (${delta > 0 ? '+' : ''}${delta}) em «${customer.name}». Total: ${totalSeats} lugares.`,
       user_email: changedBy || 'unknown',
     });
   } catch (e) {
@@ -56,41 +57,27 @@ export async function notifySeatChange({ customer, field, oldValue, newValue, ch
 
     if (recipients.length === 0) return;
 
-    const subject = `[Seat Adjustment] ${customer.name} — ${fieldLabel} ${direction}`;
+    const subject = `[Lugares] ${customer.name} — ${fieldLabel} ${direction}`;
     const body =
-`Hello,
+`Foi alterado o número de lugares de utilizador do cliente «${customer.name}».
 
-The user seat allocation for "${customer.name}" has been changed. Please adjust your finance records accordingly.
+Cliente:        ${customer.name}
+Alterado por:   ${changedBy || 'desconhecido'}
+Alteração:      ${fieldLabel} ${direction} de ${oldValue} para ${newValue} (${delta > 0 ? '+' : ''}${delta})
+Total:          ${totalSeats} lugares (base: ${baseLimit}, adicionais: ${addon})
 
-Customer:       ${customer.name}
-Changed by:     ${changedBy || 'unknown'}
-Change:         ${fieldLabel} ${direction} from ${oldValue} to ${newValue} (${delta > 0 ? '+' : ''}${delta})
-Total seats:    ${totalSeats}  (base: ${baseLimit}, add-on: ${addon})
+Atualize a faturação, se for o caso.
 
-Please review and update billing as needed.
-
-Best regards,
-CyberGovern Platform`;
+AnkoraOne`;
 
     await Promise.all(
       recipients.map(email =>
-        base44.integrations.Core.SendEmail({ to: email, subject, body })
+        sendEmail({ to: email, subject, html: body, customerId: customer.id, entityType: 'Customer', entityId: customer.id })
       )
     );
 
-    // Log each email to the audit trail so it appears in the Email Report
-    try {
-      await base44.entities.AuditLog.create({
-        action: 'email_sent',
-        user_email: changedBy || 'unknown',
-        entity_type: 'Customer',
-        entity_id: customer.id,
-        customer_id: customer.id,
-        details: `Seat adjustment notification sent to ${recipients.join(', ')} for customer: ${customer.name} (${fieldLabel} ${direction} from ${oldValue} to ${newValue})`,
-      });
-    } catch (e) {
-      console.warn('Seat-change email_sent audit log failed:', e);
-    }
+    // O registo «email_sent» é feito pela função sendEmail, um por envio.
+
   } catch (e) {
     console.warn('Seat-change email notification failed:', e);
   }

@@ -60,6 +60,10 @@
     "assessment_id": {
       "type": "string",
       "description": "If set, this question belongs exclusively to this assessment (not global)"
+    },
+    "source_ref": {
+      "type": "string",
+      "description": "Refer\u00eancia oficial de origem (ex.: Reg. 756/2026, Anexo I). Preenchido pela sincroniza\u00e7\u00e3o da Biblioteca Legal; vazio em perguntas criadas manualmente."
     }
   },
   "required": [
@@ -73,7 +77,25 @@
         "role": "admin"
       }
     },
-    "read": null,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "customer_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
     "update": {
       "user_condition": {
         "role": "admin"

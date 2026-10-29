@@ -1,0 +1,193 @@
+{
+  "name": "Asset",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Cliente (tenant)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "asset_code": {
+      "type": "string",
+      "description": "ID do ativo no inventário do cliente (único por cliente)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Nome do equipamento ou do software (Reg. 756/2026, art. 32.º, n.º 1, al. b))"
+    },
+    "asset_type": {
+      "type": "string",
+      "enum": [
+        "physical",
+        "software",
+        "network",
+        "supplier_service",
+        "data",
+        "service",
+        "facility"
+      ],
+      "description": "Tipo de ativo (QNRCS ID.GA-1 a ID.GA-6)"
+    },
+    "service": {
+      "type": "string",
+      "description": "Serviço suportado (art. 32.º, n.º 1, al. a); Reg. Exec. 2024/2690, 12.4.2)"
+    },
+    "description": {
+      "type": "string"
+    },
+    "manufacturer": {
+      "type": "string",
+      "description": "Fabricante (al. h))"
+    },
+    "model_version": {
+      "type": "string",
+      "description": "Modelo/Versão (al. c))"
+    },
+    "operating_system": {
+      "type": "string",
+      "description": "Sistema operativo (al. d))"
+    },
+    "app_server_software": {
+      "type": "string",
+      "description": "Software do servidor aplicacional (al. e))"
+    },
+    "location": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "string",
+      "description": "Responsável (proprietário do ativo)"
+    },
+    "supplier": {
+      "type": "string",
+      "description": "Fornecedor (QNRCS ID.GA-4)"
+    },
+    "internet_exposed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Diretamente acessível publicamente pela Internet (art. 32.º, n.º 1)"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "Endereço IP (al. f))"
+    },
+    "fqdn": {
+      "type": "string",
+      "description": "FQDN (al. g))"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Códigos de ativos de que este depende (al. i) e n.º 2)"
+    },
+    "confidentiality": {
+      "type": "number",
+      "description": "1 a 4 (Reg. Exec. 2024/2690, 12.1.2, al. b))"
+    },
+    "integrity": {
+      "type": "number"
+    },
+    "authenticity": {
+      "type": "number"
+    },
+    "availability": {
+      "type": "number"
+    },
+    "criticality": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "description": "Criticidade (QNRCS ID.GA-5)"
+    },
+    "rto_hours": {
+      "type": "number"
+    },
+    "rpo_hours": {
+      "type": "number"
+    },
+    "lifecycle": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "production",
+        "retiring",
+        "retired"
+      ],
+      "default": "production",
+      "description": "Fase do ciclo de vida (QNRCS ID.GA-7)"
+    },
+    "end_of_support": {
+      "type": "string",
+      "format": "date"
+    },
+    "logging_required": {
+      "type": "boolean",
+      "default": false,
+      "description": "Sujeito a registo de eventos (Reg. Exec. 2024/2690, 3.2.3)"
+    },
+    "last_review": {
+      "type": "string",
+      "format": "date",
+      "description": "Data da última revisão (12.4.3)"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "asset_code",
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
+

@@ -4,14 +4,13 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import MaturityRadar from '@/components/dashboard/MaturityRadar';
 import TrendChart from '@/components/dashboard/TrendChart';
 import FrameworkScoreCard from '@/components/dashboard/FrameworkScoreCard';
 import { Button } from '@/components/ui/button';
-import { BarChart3, TrendingUp, ChevronDown, ChevronUp, Loader2, Download } from 'lucide-react';
+import { ChevronDown, ChevronUp, Loader2, Download } from 'lucide-react';
 import { exportReportPdf } from '@/lib/exportReportPdf';
 import AnnualReport from '@/components/reports/AnnualReport';
 import RecordDetailDialog from '@/components/reports/RecordDetailDialog';
@@ -56,8 +55,8 @@ function AssessmentAnswersPanel({ assessmentId }) {
   // Group by framework then domain
   const grouped = {};
   responses.forEach(r => {
-    const fw = r.framework_code || 'Other';
-    const domain = r.domain || 'General';
+    const fw = r.framework_code || t('x_group_other');
+    const domain = r.domain || t('common_general');
     if (!grouped[fw]) grouped[fw] = {};
     if (!grouped[fw][domain]) grouped[fw][domain] = [];
     grouped[fw][domain].push(r);
@@ -181,10 +180,11 @@ export default function Reports() {
   return (
     <div className="space-y-6">
       <PageHeader
+        title={t('page_reports')}
         description={t('reports_subtitle')}
         actions={isAdmin && (
           <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-            <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-full sm:w-56 rounded-lg bg-card border-border shadow-none text-[11px] font-semibold"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('reports_all_customers')}</SelectItem>
               {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -193,15 +193,14 @@ export default function Reports() {
         )}
       />
 
-      {/* Current vs Previous */}
+      {/* Secção 1 — pontuações atuais vs período anterior */}
       {latest && (
-        <div>
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            {t('reports_current_framework_scores')}
-            {previous && <span className="text-sm font-normal text-muted-foreground">{t('reports_vs')} {previous.period}</span>}
+        <section className="space-y-3">
+          <h2 className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 font-semibold">
+            <span className="text-[15px] text-foreground">{t('reports_current_framework_scores')}</span>
+            {previous && <span className="text-[11px] text-muted-foreground">{t('reports_vs')} {previous.period}</span>}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
             {(latest.framework_scores || []).map(fs => {
               const prevScore = previous?.framework_scores?.find(p => p.framework_code === fs.framework_code)?.score;
               return (
@@ -215,78 +214,79 @@ export default function Reports() {
               );
             })}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Secção 2 — gráficos */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <MaturityRadar data={radarData} title={t('reports_domain_coverage')} />
-        <TrendChart data={trendData} frameworks={Object.keys(FRAMEWORK_NAMES)} title={t('reports_maturity_evolution')} />
+        <TrendChart data={trendData} frameworks={Object.keys(FRAMEWORK_NAMES)} />
       </div>
 
-      {/* Assessment History */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
-            {t('reports_assessment_history')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {completed.length === 0 ? (
-            <EmptyState compact title={t('reports_no_completed')} />
-          ) : (
-            <div className="space-y-2">
-              {completed.map(a => {
-                const isOpen = expandedId === a.id;
-                return (
-                  <div key={a.id} className="rounded-lg border overflow-hidden">
-                    <button
-                      className="w-full flex items-center justify-between p-3 hover:bg-muted/40 transition-colors text-left"
-                      onClick={() => setExpandedId(isOpen ? null : a.id)}
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{a.title}</p>
-                        <p className="text-xs text-muted-foreground">{a.customer_name} · {a.period}</p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex gap-2 flex-wrap justify-end">
-                          {(a.framework_scores || []).map(fs => (
-                            <Badge key={fs.framework_code} variant="outline" className="text-xs font-mono">
-                              {fs.framework_code}: {fs.score.toFixed(1)}
-                            </Badge>
-                          ))}
-                        </div>
-                        <span className="text-lg font-bold">{a.overall_score?.toFixed(1)}</span>
-                        <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs"
-                          onClick={(e) => handleExportPdf(a, e)}
-                          disabled={exportingId === a.id}>
-                          {exportingId === a.id
-                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            : <Download className="w-3.5 h-3.5" />}
-                          PDF
-                        </Button>
+      {/* Secção 3 — histórico de avaliações */}
+      <section className="bg-card border border-border rounded-[10px] p-5 space-y-4">
+        <h2 className="text-[13px] font-semibold text-foreground">{t('reports_assessment_history')}</h2>
+        {completed.length === 0 ? (
+          <EmptyState compact title={t('reports_no_completed')} />
+        ) : (
+          <div className="space-y-2">
+            {completed.map(a => {
+              const isOpen = expandedId === a.id;
+              return (
+                <div key={a.id} className="rounded-lg border border-border bg-card overflow-hidden">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={isOpen}
+                    className="w-full flex flex-col gap-3 px-4 py-3 text-left cursor-pointer hover:bg-muted/40 transition-colors md:flex-row md:items-center md:justify-between"
+                    onClick={() => setExpandedId(isOpen ? null : a.id)}
+                    onKeyDown={(e) => {
+                      if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setExpandedId(isOpen ? null : a.id); }
+                    }}
+                  >
+                    <div className="min-w-0 space-y-1 md:w-[280px] md:flex-shrink-0">
+                      <p className="text-[11px] font-semibold text-foreground truncate">{a.title}</p>
+                      <p className="text-[9px] text-muted-foreground truncate">{a.customer_name} · {a.period}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 md:justify-end md:flex-1 min-w-0">
+                      {(a.framework_scores || []).map(fs => (
+                        <span key={fs.framework_code} className="rounded-md bg-muted/60 px-2 py-[3px] text-[9px] font-semibold leading-none text-muted-foreground whitespace-nowrap">
+                          {fs.framework_code}: <span className="text-foreground">{fs.score.toFixed(1)}</span>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-4 md:gap-6 md:pl-6 flex-shrink-0">
+                      <span className="font-display text-base leading-none text-foreground">{a.overall_score?.toFixed(1)}</span>
+                      <Button size="sm" variant="outline"
+                        className="h-auto gap-1 rounded-md px-2 py-[3px] text-[9px] font-semibold shadow-none bg-transparent"
+                        onClick={(e) => handleExportPdf(a, e)}
+                        disabled={exportingId === a.id}>
+                        {exportingId === a.id
+                          ? <Loader2 className="w-3 h-3 animate-spin" />
+                          : <Download className="w-3 h-3" />}
+                        PDF
+                      </Button>
+                      <span className="ml-auto md:ml-0 flex h-4 w-4 items-center justify-center rounded-full bg-muted text-muted-foreground">
                         {isOpen
-                          ? <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                          : <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        }
-                      </div>
-                    </button>
-                    {isOpen && (
-                      <div className="px-4 pb-4 border-t bg-muted/20">
-                        <AssessmentAnswersPanel assessmentId={a.id} />
-                      </div>
-                    )}
+                          ? <ChevronUp className="w-3 h-3" />
+                          : <ChevronDown className="w-3 h-3" />}
+                      </span>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-        </Card>
+                  {isOpen && (
+                    <div className="px-4 pb-4 border-t border-border bg-muted/20">
+                      <AssessmentAnswersPanel assessmentId={a.id} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
-        {/* Annual Report */}
-        <AnnualReport selectedCustomer={selectedCustomer} />
-        </div>
-        );
-        }
+      {/* Secção 4 — relatório anual */}
+      <AnnualReport selectedCustomer={selectedCustomer} />
+    </div>
+  );
+}

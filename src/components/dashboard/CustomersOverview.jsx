@@ -48,7 +48,7 @@ export default function CustomersOverview({ customers }) {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{c.name}</p>
-                    <p className="text-xs text-muted-foreground capitalize truncate">{c.sector?.replace(/_/g, ' ')}</p>
+                    <p className="text-xs text-muted-foreground capitalize truncate">{c.sector ? (t(`sector_${c.sector}`) !== `sector_${c.sector}` ? t(`sector_${c.sector}`) : c.sector.replace(/_/g, ' ')) : ''}</p>
                   </div>
                 </div>
                 <Badge variant="outline" className={cn("text-xs border flex-shrink-0 capitalize", statusStyles[c.status])}>

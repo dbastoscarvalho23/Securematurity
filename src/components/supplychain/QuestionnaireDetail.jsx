@@ -1,11 +1,12 @@
+import { LEGAL_AI_CONTEXT } from '@/lib/legal/aiContext';
 import React, { useState, useRef, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Plus, Trash2, Sparkles, ChevronDown, ChevronRight, Send, Mail, Languages } from 'lucide-react';
 import AIQuestionsReviewDialog from './AIQuestionsReviewDialog';
@@ -14,6 +15,7 @@ import SendQuestionnaireEmailDialog from './SendQuestionnaireEmailDialog';
 import EmailAnswerImportDialog from './EmailAnswerImportDialog';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
+import { aiAssist, useAiSettings, aiEnabled } from '@/lib/ai';
 
 const ANSWER_TYPES = ['yes_no', 'scale_1_5', 'text', 'multiple_choice'];
 
@@ -190,6 +192,11 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [showEmailImport, setShowEmailImport] = useState(false);
   const [translating, setTranslating] = useState(false);
+  // Botões de IA só nos pontos ativos (Definições → Aplicação → Assistente de IA).
+  const { data: aiSettings, isSuccess: aiLoaded } = useAiSettings();
+  const aiGenerate = aiLoaded && aiEnabled(aiSettings, 'supplier_questionnaire_generation');
+  const aiTranslate = aiLoaded && aiEnabled(aiSettings, 'supplier_questionnaire_translation');
+  const aiEmailImport = aiLoaded && aiEnabled(aiSettings, 'supplier_email_answer_extraction');
 
   // Always fetch fresh questionnaire data
   const { data: questionnaire = initialQuestionnaire } = useQuery({
@@ -232,6 +239,7 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
     if (!newQuestion.trim()) return;
     await base44.entities.SupplierQuestion.create({
       questionnaire_id: qid,
+      ...(questionnaire?.customer_id ? { customer_id: questionnaire.customer_id } : {}),
       question_text: newQuestion.trim(),
       area: newArea || 'General',
       order_index: questions.length + 1,
@@ -248,13 +256,15 @@ export default function QuestionnaireDetail({ questionnaire: initialQuestionnair
       ? `covering these specific subjects: ${areas.join(', ')}`
       : `covering general cybersecurity topics such as Access Control, Data Protection, Incident Response, and Network Security`;
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await aiAssist('supplier_questionnaire_generation', {
+        customerId: questionnaire?.customer_id,
         prompt: `Generate a cybersecurity supply chain questionnaire for assessing a supplier named "${questionnaire.supplier_name || 'the supplier'}".
 The questionnaire should ${areaContext}.
 For EACH subject/area, generate EXACTLY ${count} practical, auditable questions.
 For EVERY question provide both the English version (question_text) and the European Portuguese translation (question_text_pt).
-Return a JSON object with this schema: { "questions": [{ "area": string, "question_text": string, "question_text_pt": string, "answer_type": "yes_no" | "scale_1_5" | "text" }] }`,
-        response_json_schema: {
+Return a JSON object with this schema: { "questions": [{ "area": string, "question_text": string, "question_text_pt": string, "answer_type": "yes_no" | "scale_1_5" | "text" }] }
+${LEGAL_AI_CONTEXT}`,
+        schema: {
           type: 'object',
           properties: {
             questions: {
@@ -290,6 +300,7 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
       accepted.map((q, i) =>
         base44.entities.SupplierQuestion.create({
           questionnaire_id: qid,
+          ...(questionnaire?.customer_id ? { customer_id: questionnaire.customer_id } : {}),
           question_text: q.question_text,
           question_text_pt: q.question_text_pt,
           area: q.area,
@@ -328,8 +339,9 @@ Return a JSON object with this schema: { "questions": [{ "area": string, "questi
         answer_type: q.answer_type,
         options: q.options || [],
       }));
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a professional translator. Translate the following cybersecurity questionnaire questions to European Portuguese (Portugal).
+      const result = await aiAssist('supplier_questionnaire_translation', {
+        customerId: questionnaire?.customer_id,
+        prompt: `You are a professional translator. Translate the following cybersecurity questionnaire questions to European Portuguese (Portugal, 1990 spelling agreement, never Brazilian forms), in a plain professional register.
 For each question, translate:
 - question_text → question_text_pt (the full question in Portuguese)
 - options → options_pt (translate each option string to Portuguese, keep same array length; empty array if no options)
@@ -338,7 +350,7 @@ Return ONLY a JSON object with a "translations" array. Each item must have: "id"
 
 Questions to translate:
 ${JSON.stringify(questionsPayload, null, 2)}`,
-        response_json_schema: {
+        schema: {
           type: 'object',
           properties: {
             translations: {
@@ -409,16 +421,20 @@ ${JSON.stringify(questionsPayload, null, 2)}`,
         }>
           {questionnaire.status?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
         </Badge>
-        <Button variant="outline" size="sm" onClick={handleTranslate} disabled={translating || questions.length === 0} className="gap-2">
-          <Languages className="w-4 h-4" />
-          {translating ? t('sc_translating') : `${t('sc_translate_to')} ${targetLang.toUpperCase()}`}
-        </Button>
+        {aiTranslate && (
+          <Button variant="outline" size="sm" onClick={handleTranslate} disabled={translating || questions.length === 0} className="gap-2">
+            <Languages className="w-4 h-4" />
+            {translating ? t('sc_translating') : `${t('sc_translate_to')} ${targetLang.toUpperCase()}`}
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={() => setShowSendEmail(true)} className="gap-2">
           <Send className="w-4 h-4" />{t('sc_send_to_supplier')}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setShowEmailImport(true)} className="gap-2">
-          <Mail className="w-4 h-4" />{t('sc_import_email_reply')}
-        </Button>
+        {aiEmailImport && (
+          <Button variant="outline" size="sm" onClick={() => setShowEmailImport(true)} className="gap-2">
+            <Mail className="w-4 h-4" />{t('sc_import_email_reply')}
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -445,10 +461,12 @@ ${JSON.stringify(questionsPayload, null, 2)}`,
 
       {/* AI Generate + Add Question */}
       <div className="flex gap-2 items-end">
-        <Button variant="outline" onClick={() => setShowOptionsDialog(true)} disabled={generating} className="gap-2">
-          <Sparkles className="w-4 h-4" />
-          {generating ? t('sc_generating') : t('sc_ai_generate')}
-        </Button>
+        {aiGenerate && (
+          <Button variant="outline" onClick={() => setShowOptionsDialog(true)} disabled={generating} className="gap-2">
+            <Sparkles className="w-4 h-4" />
+            {generating ? t('sc_generating') : t('sc_ai_generate')}
+          </Button>
+        )}
         <div className="flex gap-2 flex-1">
           {questionnaire.areas?.length > 0 && (
             <Select value={newArea} onValueChange={setNewArea}>
@@ -502,14 +520,15 @@ ${JSON.stringify(questionsPayload, null, 2)}`,
       />
 
       <EmailAnswerImportDialog
-        open={showEmailImport}
+        open={showEmailImport && aiEmailImport}
         onClose={() => setShowEmailImport(false)}
         questions={questions}
+        customerId={questionnaire?.customer_id}
         onImport={handleEmailImport}
       />
 
       <AIGenerateOptionsDialog
-        open={showOptionsDialog}
+        open={showOptionsDialog && aiGenerate}
         onClose={() => setShowOptionsDialog(false)}
         onGenerate={handleAIGenerate}
         preselectedAreas={questionnaire.areas || []}

@@ -4,13 +4,15 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { riskScore, riskLevelLabel } from '@/lib/riskEngine';
+import { useLanguage } from '@/lib/LanguageContext';
+import FileLink from '@/components/shared/FileLink';
 
 const TYPE_TITLES = {
-  risk: 'Risk Item',
-  task: 'Task',
-  recommendation: 'Recommendation',
-  assessment: 'Assessment',
-  assessment_response: 'Assessment Response',
+  risk: 'x_rd_type_risk',
+  task: 'x_rd_type_task',
+  recommendation: 'x_rd_type_recommendation',
+  assessment: 'x_rd_type_assessment',
+  assessment_response: 'x_rd_type_assessment_response',
 };
 
 const RISK_STATUS_COLORS = {
@@ -27,7 +29,7 @@ const PRIORITY_COLORS = {
   low: 'bg-chart-2/10 text-chart-2',
 };
 
-const MATURITY_LABELS = ['Not Implemented', 'Initial', 'Developing', 'Defined', 'Managed', 'Optimizing'];
+const MATURITY_LABELS = ['maturity_not_implemented', 'maturity_initial', 'maturity_developing', 'maturity_defined', 'maturity_managed', 'maturity_optimized'];
 const MATURITY_COLORS = [
   'bg-destructive/10 text-destructive',
   'bg-chart-4/10 text-chart-4',
@@ -50,9 +52,9 @@ function Field({ label, children }) {
   );
 }
 
-function maturityBadge(level) {
+function maturityBadge(level, t) {
   if (level === null || level === undefined) return null;
-  return <Badge className={`text-xs ${MATURITY_COLORS[level] || ''}`}>{level} — {MATURITY_LABELS[level] || ''}</Badge>;
+  return <Badge className={`text-xs ${MATURITY_COLORS[level] || ''}`}>{level} — {MATURITY_LABELS[level] ? t(MATURITY_LABELS[level]) : ''}</Badge>;
 }
 
 function formatDate(value) {
@@ -63,6 +65,7 @@ function formatDate(value) {
 }
 
 export default function RecordDetailDialog({ record, type, open, onOpenChange }) {
+  const { t } = useLanguage();
   if (!record) return null;
 
   const riskScoreValue = type === 'risk' ? riskScore(record.impact, record.likelihood) : null;
@@ -72,7 +75,7 @@ export default function RecordDetailDialog({ record, type, open, onOpenChange })
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">{TYPE_TITLES[type] || 'Record'}</Badge>
+            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">{t(TYPE_TITLES[type] || 'x_rd_record')}</Badge>
             {type === 'risk' && record.status && (
               <Badge variant="outline" className={`text-[10px] ${RISK_STATUS_COLORS[record.status] || ''}`}>{record.status}</Badge>
             )}
@@ -90,7 +93,7 @@ export default function RecordDetailDialog({ record, type, open, onOpenChange })
             )}
           </div>
           <DialogTitle className="text-lg pr-6">
-            {record.title || record.question_text || TYPE_TITLES[type] || 'Record'}
+            {record.title || record.question_text || t(TYPE_TITLES[type] || 'x_rd_record')}
           </DialogTitle>
           <DialogDescription className="text-xs font-mono break-all">
             {record.id || '—'}
@@ -101,87 +104,87 @@ export default function RecordDetailDialog({ record, type, open, onOpenChange })
         <dl className="mt-1">
           {type === 'risk' && (
             <>
-              {record.risk_id && <Field label="Risk ID">{record.risk_id}</Field>}
-              <Field label="Category">{record.category}</Field>
-              <Field label="Impact">{record.impact ?? null}</Field>
-              <Field label="Likelihood">{record.likelihood ?? null}</Field>
-              <Field label="Score / Level">
+              {record.risk_id && <Field label={t('x_rd_risk_id')}>{record.risk_id}</Field>}
+              <Field label={t('x_rd_category')}>{record.category}</Field>
+              <Field label={t('x_rd_impact')}>{record.impact ?? null}</Field>
+              <Field label={t('x_rd_likelihood')}>{record.likelihood ?? null}</Field>
+              <Field label={t('x_rd_score_level')}>
                 <Badge className="text-xs">
-                  {riskScoreValue} — {riskLevelLabel(riskScoreValue)}
+                  {riskScoreValue} — {t(`risk_level_${riskLevelLabel(riskScoreValue).toLowerCase()}`)}
                 </Badge>
               </Field>
-              <Field label="Owner Email">{record.owner_email}</Field>
-              <Field label="Due Date">{record.due_date}</Field>
-              <Field label="Linked Documents">
+              <Field label={t('x_rd_owner_email')}>{record.owner_email}</Field>
+              <Field label={t('x_rd_due_date')}>{record.due_date}</Field>
+              <Field label={t('x_rd_linked_documents')}>
                 {(record.linked_document_ids || []).length > 0
-                  ? `${record.linked_document_ids.length} linked: ${record.linked_document_ids.join(', ')}`
+                  ? t('x_rd_linked_count', { count: record.linked_document_ids.length, ids: record.linked_document_ids.join(', ') })
                   : null}
               </Field>
-              <Field label="Description">{record.description}</Field>
-              <Field label="Treatment Notes">{record.treatment_notes}</Field>
-              {record.created_date && <Field label="Created">{formatDate(record.created_date)}</Field>}
-              {record.updated_date && <Field label="Updated">{formatDate(record.updated_date)}</Field>}
+              <Field label={t('x_rd_description')}>{record.description}</Field>
+              <Field label={t('x_rd_treatment_notes')}>{record.treatment_notes}</Field>
+              {record.created_date && <Field label={t('x_rd_created')}>{formatDate(record.created_date)}</Field>}
+              {record.updated_date && <Field label={t('x_rd_updated')}>{formatDate(record.updated_date)}</Field>}
             </>
           )}
 
           {type === 'task' && (
             <>
-              <Field label="Priority">{record.priority && <Badge className={`text-xs ${PRIORITY_COLORS[record.priority] || ''}`}>{record.priority}</Badge>}</Field>
-              <Field label="Assigned To">{record.assigned_to}</Field>
-              <Field label="Due Date">{record.due_date}</Field>
-              <Field label="Customer">{record.customer_name}</Field>
-              <Field label="Framework">{record.framework_code}</Field>
-              <Field label="Domain">{record.domain}</Field>
-              <Field label="Assessment ID">{record.assessment_id}</Field>
-              <Field label="Recommendation ID">{record.recommendation_id}</Field>
-              <Field label="Description">{record.description}</Field>
-              <Field label="Notes">{record.notes}</Field>
-              <Field label="Attachments">
+              <Field label={t('x_rd_priority')}>{record.priority && <Badge className={`text-xs ${PRIORITY_COLORS[record.priority] || ''}`}>{record.priority}</Badge>}</Field>
+              <Field label={t('x_rd_assigned_to')}>{record.assigned_to}</Field>
+              <Field label={t('x_rd_due_date')}>{record.due_date}</Field>
+              <Field label={t('x_rd_customer')}>{record.customer_name}</Field>
+              <Field label={t('x_rd_framework')}>{record.framework_code}</Field>
+              <Field label={t('x_rd_domain')}>{record.domain}</Field>
+              <Field label={t('x_rd_assessment_id')}>{record.assessment_id}</Field>
+              <Field label={t('x_rd_recommendation_id')}>{record.recommendation_id}</Field>
+              <Field label={t('x_rd_description')}>{record.description}</Field>
+              <Field label={t('x_rd_notes')}>{record.notes}</Field>
+              <Field label={t('x_rd_attachments')}>
                 {(record.attachments || []).map((a, i) => (
                   <Badge key={i} variant="secondary" className="text-[10px] mr-1 mb-1">{a.name}</Badge>
                 ))}
               </Field>
-              {record.created_date && <Field label="Created">{formatDate(record.created_date)}</Field>}
-              {record.updated_date && <Field label="Updated">{formatDate(record.updated_date)}</Field>}
+              {record.created_date && <Field label={t('x_rd_created')}>{formatDate(record.created_date)}</Field>}
+              {record.updated_date && <Field label={t('x_rd_updated')}>{formatDate(record.updated_date)}</Field>}
             </>
           )}
 
           {type === 'recommendation' && (
             <>
-              {record.title_pt && record.title_pt !== record.title && <Field label="Title (PT)">{record.title_pt}</Field>}
-              <Field label="Framework">{record.framework_code}</Field>
-              <Field label="Domain">{record.domain}</Field>
-              <Field label="Control ID">{record.control_id}</Field>
-              <Field label="Current → Target">
+              {record.title_pt && record.title_pt !== record.title && <Field label={t('x_rd_title_pt')}>{record.title_pt}</Field>}
+              <Field label={t('x_rd_framework')}>{record.framework_code}</Field>
+              <Field label={t('x_rd_domain')}>{record.domain}</Field>
+              <Field label={t('x_rd_control_id')}>{record.control_id}</Field>
+              <Field label={t('x_rd_current_to_target')}>
                 {record.current_level ?? '—'} → {record.target_level ?? '—'}
               </Field>
-              <Field label="Effort">{record.effort}</Field>
-              <Field label="Timeline">{record.timeline}</Field>
-              <Field label="Assessment ID">{record.assessment_id}</Field>
-              <Field label="Description">{record.description}</Field>
+              <Field label={t('x_rd_effort')}>{record.effort}</Field>
+              <Field label={t('x_rd_timeline')}>{record.timeline}</Field>
+              <Field label={t('x_rd_assessment_id')}>{record.assessment_id}</Field>
+              <Field label={t('x_rd_description')}>{record.description}</Field>
               {record.description_pt && record.description_pt !== record.description && (
-                <Field label="Description (PT)">{record.description_pt}</Field>
+                <Field label={t('x_rd_description_pt')}>{record.description_pt}</Field>
               )}
-              {record.created_date && <Field label="Created">{formatDate(record.created_date)}</Field>}
-              {record.updated_date && <Field label="Updated">{formatDate(record.updated_date)}</Field>}
+              {record.created_date && <Field label={t('x_rd_created')}>{formatDate(record.created_date)}</Field>}
+              {record.updated_date && <Field label={t('x_rd_updated')}>{formatDate(record.updated_date)}</Field>}
             </>
           )}
 
           {type === 'assessment' && (
             <>
-              <Field label="Period">{record.period}</Field>
-              <Field label="Customer">{record.customer_name}</Field>
-              <Field label="Overall Score">
+              <Field label={t('x_rd_period')}>{record.period}</Field>
+              <Field label={t('x_rd_customer')}>{record.customer_name}</Field>
+              <Field label={t('x_rd_overall_score')}>
                 {record.overall_score != null
                   ? (typeof record.overall_score === 'number' ? record.overall_score.toFixed(2) : record.overall_score)
                   : '—'}
               </Field>
-              <Field label="Frameworks">{(record.frameworks || []).join(', ')}</Field>
-              <Field label="Completed Date">{record.completed_date}</Field>
-              <Field label="Assessor Email">{record.assessor_email}</Field>
-              <Field label="Notes">{record.notes}</Field>
+              <Field label={t('x_rd_frameworks')}>{(record.frameworks || []).join(', ')}</Field>
+              <Field label={t('x_rd_completed_date')}>{record.completed_date}</Field>
+              <Field label={t('x_rd_assessor_email')}>{record.assessor_email}</Field>
+              <Field label={t('x_rd_notes')}>{record.notes}</Field>
               {(record.framework_scores || []).length > 0 && (
-                <Field label="Framework Scores">
+                <Field label={t('x_rd_framework_scores')}>
                   <div className="space-y-2">
                     {record.framework_scores.map((fs, i) => (
                       <div key={i} className="rounded-md border p-2 bg-muted/20">
@@ -206,30 +209,30 @@ export default function RecordDetailDialog({ record, type, open, onOpenChange })
                   </div>
                 </Field>
               )}
-              {record.created_date && <Field label="Created">{formatDate(record.created_date)}</Field>}
-              {record.updated_date && <Field label="Updated">{formatDate(record.updated_date)}</Field>}
+              {record.created_date && <Field label={t('x_rd_created')}>{formatDate(record.created_date)}</Field>}
+              {record.updated_date && <Field label={t('x_rd_updated')}>{formatDate(record.updated_date)}</Field>}
             </>
           )}
 
           {type === 'assessment_response' && (
             <>
-              <Field label="Assessment ID">{record.assessment_id}</Field>
-              <Field label="Question ID">{record.question_id}</Field>
-              <Field label="Framework">{record.framework_code}</Field>
-              <Field label="Control ID">{record.control_id}</Field>
-              <Field label="Domain">{record.domain}</Field>
-              <Field label="Maturity Level">{maturityBadge(record.maturity_level)}</Field>
-              <Field label="Target Level">{maturityBadge(record.target_level)}</Field>
-              <Field label="Evidence Notes">{record.evidence_notes}</Field>
-              <Field label="Attachments">
+              <Field label={t('x_rd_assessment_id')}>{record.assessment_id}</Field>
+              <Field label={t('x_rd_question_id')}>{record.question_id}</Field>
+              <Field label={t('x_rd_framework')}>{record.framework_code}</Field>
+              <Field label={t('x_rd_control_id')}>{record.control_id}</Field>
+              <Field label={t('x_rd_domain')}>{record.domain}</Field>
+              <Field label={t('x_rd_maturity_level')}>{maturityBadge(record.maturity_level, t)}</Field>
+              <Field label={t('x_rd_target_level')}>{maturityBadge(record.target_level, t)}</Field>
+              <Field label={t('x_rd_evidence_notes')}>{record.evidence_notes}</Field>
+              <Field label={t('x_rd_attachments')}>
                 {(record.attachments || []).map((a, i) => (
-                  <a key={i} href={a.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline mr-2">
+                  <FileLink key={i} url={a.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline mr-2">
                     {a.name}
-                  </a>
+                  </FileLink>
                 ))}
               </Field>
-              {record.created_date && <Field label="Created">{formatDate(record.created_date)}</Field>}
-              {record.updated_date && <Field label="Updated">{formatDate(record.updated_date)}</Field>}
+              {record.created_date && <Field label={t('x_rd_created')}>{formatDate(record.created_date)}</Field>}
+              {record.updated_date && <Field label={t('x_rd_updated')}>{formatDate(record.updated_date)}</Field>}
             </>
           )}
         </dl>

@@ -1,6 +1,6 @@
 {
   "name": "Notify on Document Changes",
-  "description": "Creates in-app notifications when documents are approved or submitted for review",
+  "description": "Cria notifica\u00e7\u00f5es na aplica\u00e7\u00e3o quando documentos s\u00e3o aprovados ou enviados para revis\u00e3o",
   "trigger": {
     "condition": null,
     "config": {
@@ -12,26 +12,23 @@
     }
   },
   "definition": {
-    "document": {
-      "dsl": "1.0.0",
-      "name": "notify_on_document_changes",
-      "version": "1.0",
-      "namespace": "base44"
-    },
     "do": [
       {
         "run_function": {
           "call": "invoke_backend_function",
+          "then": "end",
           "with": {
-            "function_name": "createNotifications",
-            "args": {}
-          },
-          "then": "end"
+            "args": {},
+            "function_name": "createNotifications"
+          }
         }
       }
-    ]
-  },
-  "x-base44-migrated-from-automation": {
-    "legacy_payload_function": "createNotifications"
+    ],
+    "document": {
+      "dsl": "1.0.0",
+      "name": "notify_on_document_changes",
+      "namespace": "base44",
+      "version": "1.0"
+    }
   }
 }

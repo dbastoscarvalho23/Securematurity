@@ -66,7 +66,12 @@
         "ropa_created",
         "ropa_updated",
         "ropa_deleted",
-        "retention_purge_executed"
+        "retention_purge_executed",
+        "document_intake_uploaded",
+        "document_classified",
+        "document_indexed",
+        "document_intake_rejected",
+        "document_classification_refused"
       ],
       "description": "Action type"
     },

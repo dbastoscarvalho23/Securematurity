@@ -1,16 +1,9 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
-
-async function getSettings(base44ServiceRole, customerId) {
-  const all = await base44ServiceRole.entities.ReminderSettings.list();
-  const customerSpecific = customerId ? all.find(s => s.customer_id === customerId) : null;
-  const global = all.find(s => !s.customer_id);
-  return customerSpecific || global || {
-    notify_on_document_review: true,
-    notify_on_document_approval: true,
-    additional_recipients: '',
-  };
-}
+import { json, getAuthenticatedUser, isPlatformAdmin, canAccessRecord } from '../../shared/http.ts';
+import { logEmailSent } from '../../shared/audit.ts';
+import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
+import { sendMail } from '../../shared/mail.ts';
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
@@ -21,70 +14,80 @@ Deno.serve(async (req) => {
   let type, document, previousDocument, user;
 
   if (body.event && body.data) {
-    // Entity automation: triggered by SecurityDocument update
+    // Entity automation branch: only a platform automation — which runs with the
+    // app owner's admin session — may trigger this service-role email dispatch.
+    // Anonymous callers are rejected before any read/write.
+    if (!isPlatformAdmin(await getAuthenticatedUser(base44))) {
+      return json({ error: 'Unauthorized' }, 403);
+    }
+
     // Verify the document exists in the database to prevent spoofed payloads
     const docId = body.data.id;
-    if (!docId) return Response.json({ error: 'document id is required' }, { status: 400 });
+    if (!docId) return json({ error: 'document id is required' }, 400);
     const realDoc = await base44.asServiceRole.entities.SecurityDocument.get(docId);
-    if (!realDoc) return Response.json({ error: 'document not found' }, { status: 404 });
+    if (!realDoc) return json({ error: 'document not found' }, 404);
+
+    // old_data is caller-supplied, so only accept it when it references the
+    // same record — forged "previous" data can no longer skew the email.
+    const oldData = body.old_data?.id === docId ? body.old_data : null;
 
     const newStatus = realDoc.status;
-    const oldStatus = body.old_data?.status;
-    if (newStatus === oldStatus) return Response.json({ skipped: 'status unchanged' });
+    const oldStatus = oldData?.status;
+    if (newStatus === oldStatus) return json({ skipped: 'status unchanged' });
 
     document = realDoc;
-    previousDocument = body.old_data;
+    previousDocument = oldData;
 
     if (newStatus === 'under_review') type = 'sent_for_review';
     else if (newStatus === 'approved') type = 'approved';
-    else return Response.json({ skipped: `status ${newStatus} not actionable` });
+    else return json({ skipped: `status ${newStatus} not actionable` });
 
     // Use service role for automated calls (no user context)
-    user = { full_name: 'System', email: 'system' };
+    user = { full_name: 'Sistema', email: 'system' };
   } else {
     // Direct API call from frontend
-    user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    user = await getAuthenticatedUser(base44);
+    if (!user) return json({ error: 'Unauthorized' }, 401);
     type = body.type;
     previousDocument = body.previousDocument;
 
     // Do NOT trust body.document — fetch the real record from the database
-    // and verify the caller owns it / is authorized to trigger its notifications.
+    // and verify the caller is authorized to trigger its notifications.
     const docId = body.document_id || body.document?.id;
-    if (!docId) return Response.json({ error: 'document_id is required' }, { status: 400 });
-    const realDoc = await base44.asServiceRole.entities.SecurityDocument.get(docId);
-    if (!realDoc) return Response.json({ error: 'document not found' }, { status: 404 });
+    if (!docId) return json({ error: 'document_id is required' }, 400);
+    let realDoc = null;
+    try {
+      realDoc = await base44.asServiceRole.entities.SecurityDocument.get(docId);
+    } catch {
+      realDoc = null;
+    }
+    if (!realDoc) return json({ error: 'document not found' }, 404);
 
-    const isAuthorized = user.role === 'admin' ||
-      realDoc.created_by_id === user.id ||
-      realDoc.owner_email === user.email ||
-      realDoc.customer_id === user.data?.customer_id;
-    if (!isAuthorized) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    if (!canAccessRecord(user, realDoc)) return json({ error: 'Forbidden' }, 403);
+
+    // The requested type must match the document's actual stored status, so a
+    // caller cannot fire a false "approved" / "sent for review" email.
+    if (
+      (type === 'sent_for_review' && realDoc.status !== 'under_review') ||
+      (type === 'approved' && realDoc.status !== 'approved')
+    ) {
+      return json({ skipped: `document status ${realDoc.status} does not match type ${type}` });
+    }
 
     document = realDoc;
   }
 
-  if (!document) return Response.json({ error: 'document is required' }, { status: 400 });
+  if (!document) return json({ error: 'document is required' }, 400);
 
-  const settings = await getSettings(base44.asServiceRole, document.customer_id);
+  const settings = await getReminderSettings(base44.asServiceRole, document.customer_id);
 
-  const buildRecipients = (primary) => {
-    const list = primary ? [primary] : [];
-    if (settings.additional_recipients) {
-      settings.additional_recipients.split(',').map(e => e.trim()).filter(Boolean).forEach(e => {
-        if (!list.includes(e)) list.push(e);
-      });
-    }
-    return list;
-  };
-
-  const LEVEL_LABELS = { policy: 'Policy', standard: 'Standard', procedure: 'Procedure', playbook: 'Playbook' };
-  const STATUS_LABELS = { draft: 'Draft', under_review: 'Under Review', approved: 'Approved', deprecated: 'Deprecated' };
+  const LEVEL_LABELS = { policy: 'Política', standard: 'Norma', procedure: 'Procedimento', playbook: 'Playbook' };
+  const STATUS_LABELS = { draft: 'Rascunho', under_review: 'Em revisão', approved: 'Aprovado', deprecated: 'Obsoleto' };
 
   const headerHtml = (title) => `
-    <div style="background:#1e3a5f;padding:20px 28px;border-radius:10px 10px 0 0;">
-      <h2 style="color:#fff;margin:0;font-size:18px;">📄 ${title}</h2>
-      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px;">AnkoraOne Security Platform</p>
+    <div style="background:#070A13;padding:20px 28px;border-radius:10px 10px 0 0;">
+      <h2 style="color:#fff;margin:0;font-size:18px;">${title}</h2>
+      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px;">AnkoraOne</p>
     </div>`;
 
   const tableRow = (label, value) =>
@@ -93,91 +96,94 @@ Deno.serve(async (req) => {
   // ── 1. Document sent for review ──────────────────────────────────────────────
   if (type === 'sent_for_review') {
     if (settings.notify_on_document_review === false) {
-      return Response.json({ skipped: 'document review notifications disabled' });
+      return json({ skipped: 'document review notifications disabled' });
     }
 
-    const recipients = buildRecipients(document.owner_email);
-    if (recipients.length === 0) return Response.json({ skipped: 'no recipients' });
+    // Quem aprova são os administradores do cliente: o aviso vai para eles (e para os destinatários adicionais),
+    // não para o autor do documento.
+    const approvers = document.customer_id
+      ? (await base44.asServiceRole.entities.User.filter({ customer_id: document.customer_id, role: 'customer_admin' })).map((u) => u.email).filter(Boolean)
+      : [];
+    const recipients = [...new Set([...approvers, ...buildRecipients(null, settings)])].filter((e) => e && e !== user.email);
+    if (recipients.length === 0) return json({ skipped: 'no recipients' });
 
     const body = `
       <div style="font-family:sans-serif;max-width:580px;margin:0 auto;color:#1e293b;">
-        ${headerHtml('Document Sent for Review')}
+        ${headerHtml('Documento enviado para revisão')}
         <div style="background:#fff;padding:24px 28px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px;">
-          <p>Hello,</p>
-          <p>The following security document has been submitted for review and requires your attention:</p>
+          <p>Olá,</p>
+          <p>O documento de segurança abaixo foi enviado para revisão e aguarda a sua análise:</p>
           <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px;margin:12px 0;">
-            ${tableRow('Title', esc(document.title))}
-            ${tableRow('Level', LEVEL_LABELS[document.level] || esc(document.level) || '—')}
-            ${tableRow('Status', '<strong>Under Review</strong>')}
-            ${document.customer_name ? tableRow('Customer', esc(document.customer_name)) : ''}
-            ${document.review_date ? tableRow('Review Date', esc(document.review_date)) : ''}
-            ${document.description ? tableRow('Description', esc(document.description)) : ''}
+            ${tableRow('Título', esc(document.title))}
+            ${tableRow('Nível', LEVEL_LABELS[document.level] || esc(document.level) || '—')}
+            ${tableRow('Estado', '<strong>Em revisão</strong>')}
+            ${document.customer_name ? tableRow('Cliente', esc(document.customer_name)) : ''}
+            ${document.review_date ? tableRow('Data de revisão', esc(document.review_date)) : ''}
+            ${document.description ? tableRow('Descrição', esc(document.description)) : ''}
           </table>
-          <p>Please log in to the platform to review and approve or request changes.</p>
-          <p style="color:#6b7280;font-size:12px;">Submitted by: ${esc(user.full_name || user.email)}</p>
+          <p>Inicie sessão na plataforma para aprovar o documento ou pedir alterações.</p>
+          <p style="color:#6b7280;font-size:12px;">Enviado por: ${esc(user.full_name || user.email)}</p>
         </div>
       </div>`.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({
+      await sendMail(base44, {
         to,
-        subject: `[Review Required] ${esc(document.title)}`,
+        subject: `[Revisão pendente] ${esc(document.title)}`,
         body,
       });
     }
-    await base44.asServiceRole.entities.AuditLog.create({
-      action: 'email_sent',
+    await logEmailSent(base44, {
       user_email: user.email,
       entity_type: 'SecurityDocument',
       entity_id: document.id,
-      details: `Document review notification sent to ${recipients.join(', ')} for: ${document.title}`,
+      details: `Aviso de revisão do documento «${document.title}» enviado a ${recipients.join(', ')}`,
     });
-    return Response.json({ sent: 'sent_for_review', to: recipients });
+    return json({ sent: 'sent_for_review', to: recipients });
   }
 
   // ── 2. Document approved ────────────────────────────────────────────────────
   if (type === 'approved') {
     if (settings.notify_on_document_approval === false) {
-      return Response.json({ skipped: 'document approval notifications disabled' });
+      return json({ skipped: 'document approval notifications disabled' });
     }
 
-    const recipients = buildRecipients(document.owner_email);
-    if (recipients.length === 0) return Response.json({ skipped: 'no recipients' });
+    const recipients = buildRecipients(document.owner_email, settings);
+    if (recipients.length === 0) return json({ skipped: 'no recipients' });
 
     const body = `
       <div style="font-family:sans-serif;max-width:580px;margin:0 auto;color:#1e293b;">
-        ${headerHtml('Document Approved')}
+        ${headerHtml('Documento aprovado')}
         <div style="background:#fff;padding:24px 28px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px;">
-          <p>Hello,</p>
-          <p>The following security document has been <strong style="color:#16a34a;">approved</strong>:</p>
+          <p>Olá,</p>
+          <p>O documento de segurança abaixo foi <strong style="color:#16a34a;">aprovado</strong>:</p>
           <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px;margin:12px 0;">
-            ${tableRow('Title', esc(document.title))}
-            ${tableRow('Level', LEVEL_LABELS[document.level] || esc(document.level) || '—')}
-            ${tableRow('Status', '<strong style="color:#16a34a;">Approved</strong>')}
-            ${document.approved_by ? tableRow('Approved By', esc(document.approved_by)) : ''}
-            ${document.approved_date ? tableRow('Approval Date', esc(document.approved_date)) : ''}
-            ${document.customer_name ? tableRow('Customer', esc(document.customer_name)) : ''}
+            ${tableRow('Título', esc(document.title))}
+            ${tableRow('Nível', LEVEL_LABELS[document.level] || esc(document.level) || '—')}
+            ${tableRow('Estado', '<strong style="color:#16a34a;">Aprovado</strong>')}
+            ${document.approved_by ? tableRow('Aprovado por', esc(document.approved_by)) : ''}
+            ${document.approved_date ? tableRow('Data de aprovação', esc(document.approved_date)) : ''}
+            ${document.customer_name ? tableRow('Cliente', esc(document.customer_name)) : ''}
           </table>
-          <p style="color:#6b7280;font-size:12px;">Approved by: ${esc(user.full_name || user.email)}</p>
+          <p style="color:#6b7280;font-size:12px;">Aprovado por: ${esc(user.full_name || user.email)}</p>
         </div>
       </div>`.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({
+      await sendMail(base44, {
         to,
-        subject: `[Document Approved] ${esc(document.title)}`,
+        subject: `[Documento aprovado] ${esc(document.title)}`,
         body,
       });
     }
-    await base44.asServiceRole.entities.AuditLog.create({
-      action: 'email_sent',
+    await logEmailSent(base44, {
       user_email: user.email,
       entity_type: 'SecurityDocument',
       entity_id: document.id,
-      details: `Document approval notification sent to ${recipients.join(', ')} for: ${document.title}`,
+      details: `Aviso de aprovação do documento «${document.title}» enviado a ${recipients.join(', ')}`,
     });
-    return Response.json({ sent: 'approved', to: recipients });
+    return json({ sent: 'approved', to: recipients });
   }
 
-  return Response.json({ skipped: 'unknown type' });
+  return json({ skipped: 'unknown type' });
 });

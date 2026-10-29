@@ -48,7 +48,7 @@ export const customersEn = {
 };
 
 export const customersPt = {
-    customers_subtitle: 'Gerir as suas organizações cliente',
+    customers_subtitle: 'Gerir as organizações clientes',
     customers_add: 'Adicionar Cliente',
     customers_search_placeholder: 'Pesquisar por nome ou NIF...',
     customers_col_org: 'Organização',
@@ -59,7 +59,7 @@ export const customersPt = {
     customers_col_employees: 'Colaboradores',
     customers_col_status: 'Estado',
     customers_no_results: 'Nenhum cliente corresponde à pesquisa.',
-    customers_empty: 'Sem clientes. Adicione o seu primeiro cliente.',
+    customers_empty: 'Ainda não existem clientes. Adicione o primeiro cliente.',
     customers_status_active: 'Ativo',
     customers_status_inactive: 'Inativo',
     customers_status_onboarding: 'Em Integração',
@@ -70,10 +70,10 @@ export const customersPt = {
     customers_detail_website: 'Website',
     customers_detail_contact: 'Contacto Principal',
     customers_detail_contact_name: 'Nome do Contacto',
-    customers_detail_contact_email: 'E-mail do Contacto',
+    customers_detail_contact_email: 'Email do Contacto',
     customers_detail_contact_phone: 'Telefone do Contacto',
     customers_detail_csm_name: 'Nome',
-    customers_detail_csm_email: 'E-mail do Responsável',
+    customers_detail_csm_email: 'Email do Responsável',
     customers_detail_csm_phone: 'Telefone do Responsável',
     customers_detail_frameworks: 'Frameworks Permitidos',
     customers_form_new: 'Novo Cliente',

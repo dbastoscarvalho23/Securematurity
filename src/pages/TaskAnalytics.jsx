@@ -9,15 +9,17 @@ import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { AlertTriangle, CheckCircle2, Clock, Users, ListTodo } from 'lucide-react';
-import { format, isAfter, parseISO } from 'date-fns';
+import { isAfter, parseISO } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import StatusBadge from '@/components/shared/StatusBadge';
 import EmptyState from '@/components/shared/EmptyState';
 
-const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444'];
+const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--destructive))'];
 
 const STATUS_LABELS = { todo: 'To-Do', in_progress: 'In Progress', done: 'Done' };
 
 function TaskRow({ task }) {
+  const { t } = useLanguage();
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
       <div className="flex-1 min-w-0">
@@ -32,9 +34,9 @@ function TaskRow({ task }) {
         </div>
       </div>
       <div className="flex flex-col items-end gap-1 flex-shrink-0">
-        <StatusBadge status={task.status} label={STATUS_LABELS[task.status] || task.status} />
+        <StatusBadge status={task.status} label={STATUS_LABELS[task.status] ? t(`tasks_status_${task.status}`) : task.status} />
         {task.priority && (
-          <StatusBadge variant="severity" status={task.priority} label={task.priority} />
+          <StatusBadge variant="severity" status={task.priority} label={t(`tasks_priority_${task.priority}`)} />
         )}
       </div>
     </div>
@@ -42,6 +44,7 @@ function TaskRow({ task }) {
 }
 
 function DrillDownSheet({ open, onClose, title, description, tasks }) {
+  const { t } = useLanguage();
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
@@ -51,7 +54,7 @@ function DrillDownSheet({ open, onClose, title, description, tasks }) {
         </SheetHeader>
         <div className="space-y-2">
           {tasks.length === 0 ? (
-            <EmptyState compact title="No tasks to display" />
+            <EmptyState compact title={t('x_tasks_none_to_display')} />
           ) : (
             tasks.map(t => <TaskRow key={t.id} task={t} />)
           )}
@@ -109,9 +112,9 @@ export default function TaskAnalytics() {
       done: completedTasks,
     };
     const statusData = [
-      { name: STATUS_LABELS.todo, value: statusCounts.todo, color: COLORS[3] },
-      { name: STATUS_LABELS.in_progress, value: statusCounts.in_progress, color: COLORS[2] },
-      { name: STATUS_LABELS.done, value: statusCounts.done, color: COLORS[1] },
+      { name: t('tasks_status_todo'), value: statusCounts.todo, color: COLORS[3] },
+      { name: t('tasks_status_in_progress'), value: statusCounts.in_progress, color: COLORS[2] },
+      { name: t('tasks_status_done'), value: statusCounts.done, color: COLORS[1] },
     ].filter(s => s.value > 0);
 
     const priorityCounts = {};
@@ -228,7 +231,7 @@ export default function TaskAnalytics() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <EmptyState compact title="No tasks to display" />
+              <EmptyState compact title={t('x_tasks_none_to_display')} />
             )}
           </CardContent>
         </Card>
@@ -249,7 +252,7 @@ export default function TaskAnalytics() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <EmptyState compact title="No tasks to display" />
+              <EmptyState compact title={t('x_tasks_none_to_display')} />
             )}
           </CardContent>
         </Card>

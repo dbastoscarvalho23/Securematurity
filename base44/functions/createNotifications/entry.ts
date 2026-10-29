@@ -1,4 +1,5 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { json, getAuthenticatedUser, isPlatformAdmin, canAccessRecord } from "../../shared/http.ts";
 
 const ENTITY_MAP = {
   Task: 'Task',
@@ -11,15 +12,34 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const payload = await req.json();
 
-    const { event, data, old_data } = payload;
+    let { event, data, old_data } = payload;
+
+    const caller = await getAuthenticatedUser(base44);
+
+    // Autorização: workflows do Base44 (que correm com a sessão do proprietário da app, administrador) ou, nesta
+    // app importada onde os workflows por evento não correm, chamada direta de um utilizador autenticado depois de
+    // gravar («direct»). No modo direto o registo é lido da base de dados e o utilizador tem de ter acesso a ele;
+    // os destinatários vêm sempre do registo, nunca do pedido.
+    if (payload?.direct) {
+      if (!caller) return json({ error: 'Unauthorized' }, 401);
+      const entityName = String(payload.entity || '');
+      if (!ENTITY_MAP[entityName] || !payload.id) return json({ skipped: true, reason: 'invalid direct call' });
+      const rec = await base44.asServiceRole.entities[ENTITY_MAP[entityName]].get(String(payload.id)).catch(() => null);
+      if (!rec || !canAccessRecord(caller, rec)) return json({ error: 'Forbidden' }, 403);
+      event = { entity_name: entityName, entity_id: rec.id, type: payload.event === 'create' ? 'create' : 'update' };
+      data = rec;
+      old_data = payload.previous || null;
+    } else if (!isPlatformAdmin(caller)) {
+      return json({ error: 'Unauthorized' }, 403);
+    }
 
     // Only process trusted entity-automation events (create/update/delete).
     // Reject anything missing a valid automation event envelope.
     if (!event || !ENTITY_MAP[event.entity_name] || !['create', 'update', 'delete'].includes(event.type)) {
-      return Response.json({ skipped: true, reason: 'invalid automation event' });
+      return json({ skipped: true, reason: 'invalid automation event' });
     }
     if (!data) {
-      return Response.json({ skipped: true, reason: 'no data' });
+      return json({ skipped: true, reason: 'no data' });
     }
 
     // Do NOT trust caller-supplied data fields (target email, title, customer).
@@ -35,15 +55,20 @@ Deno.serve(async (req) => {
       }
     }
     if (!real) {
-      return Response.json({ skipped: true, reason: 'entity not found' });
+      return json({ skipped: true, reason: 'entity not found' });
     }
+
+    // old_data is caller-supplied, so only accept it when it references the
+    // same record — forged "previous" data can no longer suppress or skew
+    // notifications.
+    const previous = old_data?.id === event.entity_id ? old_data : null;
 
     const notifications = [];
 
     // ── Task changes ────────────────────────────────────────────────
     if (event.entity_name === 'Task') {
       const task = real;
-      const prevStatus = old_data?.status;
+      const prevStatus = previous?.status;
 
       // Task completed
       if (task.status === 'done' && prevStatus && prevStatus !== 'done') {
@@ -52,8 +77,8 @@ Deno.serve(async (req) => {
           notifications.push({
             user_email: task.assigned_to,
             type: 'task_completed',
-            title: 'Task Completed',
-            message: `Task "${task.title}" has been marked as done.`,
+            title: 'Tarefa concluída',
+            message: `A tarefa "${task.title}" foi marcada como concluída.`,
             entity_type: 'Task',
             entity_id: event.entity_id,
             link: '/tasks',
@@ -64,12 +89,12 @@ Deno.serve(async (req) => {
       }
 
       // Task assigned (new assignment or changed assignment)
-      if (task.assigned_to && task.assigned_to !== old_data?.assigned_to) {
+      if (task.assigned_to && task.assigned_to !== previous?.assigned_to) {
         notifications.push({
           user_email: task.assigned_to,
           type: 'task_assigned',
-          title: 'Task Assigned to You',
-          message: `You have been assigned to task "${task.title}".`,
+          title: 'Tarefa atribuída',
+          message: `Foi-lhe atribuída a tarefa "${task.title}".`,
           entity_type: 'Task',
           entity_id: event.entity_id,
           link: '/tasks',
@@ -81,16 +106,16 @@ Deno.serve(async (req) => {
       // Task status changed (notify assigned user)
       if (
         task.assigned_to &&
-        old_data?.status &&
-        task.status !== old_data.status &&
+        previous?.status &&
+        task.status !== previous?.status &&
         task.status !== 'done'
       ) {
-        const statusLabels = { todo: 'To Do', in_progress: 'In Progress', blocked: 'Blocked' };
+        const statusLabels = { todo: 'Por fazer', in_progress: 'Em curso', blocked: 'Bloqueada' };
         notifications.push({
           user_email: task.assigned_to,
           type: 'general',
-          title: 'Task Status Updated',
-          message: `Task "${task.title}" status changed to ${statusLabels[task.status] || task.status}.`,
+          title: 'Estado da tarefa alterado',
+          message: `A tarefa "${task.title}" passou para o estado ${statusLabels[task.status] || task.status}.`,
           entity_type: 'Task',
           entity_id: event.entity_id,
           link: '/tasks',
@@ -103,16 +128,16 @@ Deno.serve(async (req) => {
     // ── RiskItem changes ─────────────────────────────────────────────
     if (event.entity_name === 'RiskItem') {
       const risk = real;
-      const prevStatus = old_data?.status;
+      const prevStatus = previous?.status;
 
       // Risk status changed
       if (prevStatus && risk.status !== prevStatus && risk.owner_email) {
-        const statusLabels = { open: 'Open', in_treatment: 'In Treatment', accepted: 'Accepted', closed: 'Closed' };
+        const statusLabels = { open: 'Aberto', in_treatment: 'Em tratamento', accepted: 'Aceite', closed: 'Fechado' };
         notifications.push({
           user_email: risk.owner_email,
           type: 'risk_status',
-          title: 'Risk Status Updated',
-          message: `Risk "${risk.title}" status changed to ${statusLabels[risk.status] || risk.status}.`,
+          title: 'Estado do risco alterado',
+          message: `O risco "${risk.title}" passou para o estado ${statusLabels[risk.status] || risk.status}.`,
           entity_type: 'RiskItem',
           entity_id: event.entity_id,
           link: '/risk-assessment',
@@ -122,12 +147,12 @@ Deno.serve(async (req) => {
       }
 
       // Risk owner assigned
-      if (risk.owner_email && risk.owner_email !== old_data?.owner_email) {
+      if (risk.owner_email && risk.owner_email !== previous?.owner_email) {
         notifications.push({
           user_email: risk.owner_email,
           type: 'risk_status',
-          title: 'Risk Assigned to You',
-          message: `You are now the owner of risk "${risk.title}".`,
+          title: 'Risco atribuído',
+          message: `Passou a ser o responsável pelo risco "${risk.title}".`,
           entity_type: 'RiskItem',
           entity_id: event.entity_id,
           link: '/risk-assessment',
@@ -140,14 +165,14 @@ Deno.serve(async (req) => {
     // ── SecurityDocument changes ─────────────────────────────────────
     if (event.entity_name === 'SecurityDocument') {
       const doc = real;
-      const prevStatus = old_data?.status;
+      const prevStatus = previous?.status;
 
       if (doc.status === 'approved' && prevStatus !== 'approved' && doc.owner_email) {
         notifications.push({
           user_email: doc.owner_email,
           type: 'document_approved',
-          title: 'Document Approved',
-          message: `Document "${doc.title}" has been approved.`,
+          title: 'Documento aprovado',
+          message: `O documento "${doc.title}" foi aprovado.`,
           entity_type: 'SecurityDocument',
           entity_id: event.entity_id,
           link: '/security-documents',
@@ -156,18 +181,23 @@ Deno.serve(async (req) => {
         });
       }
 
-      if (doc.status === 'under_review' && prevStatus !== 'under_review' && doc.owner_email) {
-        notifications.push({
-          user_email: doc.owner_email,
-          type: 'document_review',
-          title: 'Document Submitted for Review',
-          message: `Document "${doc.title}" has been submitted for review.`,
-          entity_type: 'SecurityDocument',
-          entity_id: event.entity_id,
-          link: '/security-documents',
-          customer_id: doc.customer_id || null,
-          is_read: false,
-        });
+      if (doc.status === 'under_review' && prevStatus !== 'under_review' && doc.customer_id) {
+        // O aviso vai para quem aprova: os administradores do cliente.
+        const approvers = await base44.asServiceRole.entities.User.filter({ customer_id: doc.customer_id, role: 'customer_admin' });
+        for (const a of approvers) {
+          if (!a.email) continue;
+          notifications.push({
+            user_email: a.email,
+            type: 'document_review',
+            title: 'Documento para aprovar',
+            message: `O documento "${doc.title}" aguarda a sua revisão.`,
+            entity_type: 'SecurityDocument',
+            entity_id: event.entity_id,
+            link: '/security-documents',
+            customer_id: doc.customer_id,
+            is_read: false,
+          });
+        }
       }
     }
 
@@ -176,8 +206,8 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.Notification.bulkCreate(notifications);
     }
 
-    return Response.json({ created: notifications.length });
+    return json({ created: notifications.length });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, 500);
   }
 });

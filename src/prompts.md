@@ -1,6 +1,6 @@
 # AnkoraOne Platform — LLM Prompts
 
-All `InvokeLLM` prompts used across the project, organized by feature.
+All LLM prompts used across the project, organized by feature.
 
 ---
 
@@ -60,7 +60,7 @@ ${JSON.stringify(frameworkContext, null, 2)}
 
 Generate 6-10 new, high-quality assessment questions that fill coverage gaps.
 CRITICAL RULES:
-- Set "framework_code" to EXACTLY one of the codes listed above (e.g. "QNRC", "NIS2", "ISO27001", "NIST_CSF", "CIS_V8", "ENISA").
+- Set "framework_code" to EXACTLY one of the codes listed above (e.g. "QNRC", "NIS2", "ISO27001", "NIST_CSF", "CIS_V8", "DORA").
 - Set "domain" to EXACTLY one of the valid_domains listed for that framework_code. Do NOT invent new domain names.
 - For QNRC questions, use control_id format like "ID.GA-3", "PR.SD-3", "DE.MC-2", etc. matching the domain prefix.
 - For QNRC questions, provide both English (question_text) and European Portuguese (question_text_pt) translations.
@@ -108,8 +108,14 @@ Return only valid JSON with the translations.
 
 ---
 
+## Common legal context
+
+Prompts 1, 3 and 4 append `LEGAL_AI_CONTEXT` from `src/lib/legal/aiContext.js`: the official references (DL 125/2025 — RJC, Regulamento do CNCS n.º 756/2026 — QNRCS and Annexes III/IV, the 22-06-2028 effects date, RJC incident deadlines, DORA, Implementing Regulation 2024/2690, ISO/IEC 27001:2022 Annex A themes), the ENISA code deprecation and the European Portuguese rule. Prompt 4 also adds the customer's RJC profile (qualification, conformity level, public-entity group, DORA).
+
+The `framework_guide` agent (`base44/agents/framework_guide.jsonc`) carries the same references in its instructions and assesses QNRCS controls against the Annex III minimum measure and verification criterion of the customer's conformity level.
+
 ## Notes
 
-- All prompts use `base44.integrations.Core.InvokeLLM` with a `response_json_schema` to get structured JSON back.
+- All prompts go through `aiAssist(purpose, { prompt, schema, customerId })` (`src/lib/ai.js`), which calls the `aiAssist` backend function (auth, `ai_assistant` licence, `ai` quota, audit log, art. 32.º asset check) and gets structured JSON back. The browser never calls the LLM directly.
 - Prompts 1–4 use the default model. Prompt 5 (translation) also uses the default model but runs in batches to keep prompt size manageable.
-- No LLM prompts exist in backend functions — all AI calls are made from the frontend.
+- The model is chosen in `base44/shared/llm.ts`, shared with `aiDraft`: the `AiSettings` record (Settings → Application → AI assistant: Claude with Base44 fallback, Claude only, or Base44 only), or the secret `AI_PROVIDER` when there is no record. The same record lists the purposes where the assistant is active; a disabled purpose is refused by the server (403) and its button is hidden.

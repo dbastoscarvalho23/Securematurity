@@ -1,6 +1,7 @@
 #env
 .env
 .env.*
+!.env.base44-defaults
 
 # Logs
 /logs

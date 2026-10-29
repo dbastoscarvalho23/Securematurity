@@ -15,8 +15,9 @@ import GeneratedReportEditDialog from '@/components/genreports/GeneratedReportEd
 import { FileText, Download, Pencil, Trash2, Search, FileBarChart } from 'lucide-react';
 import { writeAuditLog } from '@/lib/auditLog';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { cn } from '@/lib/utils';
+import FileLink from '@/components/shared/FileLink';
 
 const STATUS_KEY = {
   draft: 'genreports_status_draft',
@@ -70,7 +71,7 @@ export default function GeneratedReportsPanel({ customers = [] }) {
       toast.success(t('genreports_saved'));
       setEditing(null);
     },
-    onError: (e) => toast.error(e?.message || 'Error'),
+    onError: (e) => toast.error(e?.message || t('x_tool_error')),
   });
 
   const deleteMut = useMutation({
@@ -83,7 +84,7 @@ export default function GeneratedReportsPanel({ customers = [] }) {
       toast.success(t('genreports_deleted'));
       setDeleting(null);
     },
-    onError: (e) => toast.error(e?.message || 'Error'),
+    onError: (e) => toast.error(e?.message || t('x_tool_error')),
   });
 
   return (
@@ -165,7 +166,7 @@ export default function GeneratedReportsPanel({ customers = [] }) {
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
                         <Button variant="ghost" size="sm" asChild title={t('genreports_view')}>
-                          <a href={r.file_url} target="_blank" rel="noopener noreferrer"><Download className="w-4 h-4" /></a>
+                          <FileLink url={r.file_url} target="_blank" rel="noopener noreferrer"><Download className="w-4 h-4" /></FileLink>
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => setEditing(r)} title={t('genreports_edit')}>
                           <Pencil className="w-4 h-4" />
