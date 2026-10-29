@@ -10,6 +10,14 @@ vi.mock('@/lib/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+// O RouteGuard também verifica a licença do cliente (LicensedRoute), que usa a língua e a API.
+let mockLicense = null;
+vi.mock('@/lib/LanguageContext', () => ({ useLanguage: () => ({ t: (key) => key }) }));
+vi.mock('@/lib/licensing', async (importOriginal) => ({
+  ...(await importOriginal()),
+  useLicense: () => ({ data: mockLicense }),
+}));
+
 const renderAt = (path, children = <div>ALLOWED_CHILD</div>) =>
   render(
     <MemoryRouter initialEntries={[path]}>
@@ -89,5 +97,17 @@ describe('RouteGuard — role matrix', () => {
     const { unmount } = renderAt('/evidence');
     expect(screen.getByText('REDIRECTED_HOME')).toBeTruthy();
     unmount();
+  });
+
+  it('módulo fora da licença: mostra o bloqueio em vez da página', () => {
+    mockUseAuth.mockReturnValue({ user: makeUser('customer_admin', 'c1') });
+    mockLicense = { state: 'active', effective: true, modules: [] };
+    try {
+      renderAt('/evidence');
+      expect(screen.queryByText('ALLOWED_CHILD')).toBeNull();
+      expect(screen.getByText('lic_blocked_title')).toBeTruthy();
+    } finally {
+      mockLicense = null;
+    }
   });
 });
