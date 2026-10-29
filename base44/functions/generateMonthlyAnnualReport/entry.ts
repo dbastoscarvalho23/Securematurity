@@ -82,7 +82,9 @@ Deno.serve(async (req) => {
       tags: doc.tags,
       approved_by: doc.approved_by,
       approved_date: doc.approved_date,
-      changed_by: isScheduled ? 'system@automated' : 'admin',
+      // A automação mensal corre com a sessão do proprietário (ver acima), por isso
+      // não se distingue de um pedido manual: regista-se quem estava autenticado.
+      changed_by: user?.email || 'admin',
       change_note: `Retrato mensal de ${monthLabelPt} gerado automaticamente.`,
     });
 

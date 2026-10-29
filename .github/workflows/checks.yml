@@ -1,0 +1,27 @@
+# Verificações em cada PR para main: testes do frontend e nomes por definir nas funções do Base44.
+name: Verificações
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Nomes por definir nas funções
+        run: node scripts/check-function-names.cjs
+      - name: Testes
+        run: npm test
