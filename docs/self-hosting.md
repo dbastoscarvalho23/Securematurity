@@ -234,7 +234,7 @@ As migrações da base de dados são aplicadas automaticamente no arranque.
 - Regras de acesso por campo: só são aplicadas à entidade `User`. As restantes entidades com regras por campo (na app atual, `storage_ref`) ficam sem essa proteção.
 - Workflows: só o passo `invoke_backend_function` é executado. Os passos de espera não são suportados.
 - `Core.ExtractDataFromUploadedFile` não existe.
-- Migração dos ficheiros: os ficheiros guardados na Base44 ainda não são copiados pelo script de importação.
+- Migração dos ficheiros: `--rehost-files` copia os ficheiros públicos (URL direto). Os ficheiros privados da Base44 (`file_uri`) precisam de uma ligação assinada pedida à Base44 e ainda não são copiados.
 
 ---
 
