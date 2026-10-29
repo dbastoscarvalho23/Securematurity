@@ -9,6 +9,14 @@ vi.mock('@/lib/AuthContext', () => ({
   useAuth: vi.fn(),
 }));
 
+// O RouteGuard também verifica a licença do cliente (LicensedRoute), que usa a língua e a API.
+const mockLicense = null;
+vi.mock('@/lib/LanguageContext', () => ({ useLanguage: () => ({ t: (key) => key }) }));
+vi.mock('@/lib/licensing', async (importOriginal) => ({
+  ...(await importOriginal()),
+  useLicense: () => ({ data: mockLicense }),
+}));
+
 const Home = () => <div>Home</div>;
 const Admin = () => <div>Admin</div>;
 const Customers = () => <div>Customers</div>;
