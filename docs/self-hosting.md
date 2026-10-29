@@ -128,6 +128,7 @@ Todas as variáveis estão documentadas em [`.env.selfhost.example`](.env.selfho
 |---|---|---|
 | `PUBLIC_URL` | sim | Endereço público da aplicação (`https://…`) |
 | `JWT_SECRET`, `AUTOMATION_SECRET` | sim | Segredos aleatórios (`openssl rand -hex 32`); o servidor recusa arrancar sem eles em produção |
+| `WORKFLOW_OWNER_EMAIL` | não | Conta de administrador com que correm os workflows, como o proprietário da app na Base44. Vazio: o primeiro administrador ativo |
 | `POSTGRES_PASSWORD`, `S3_*` | sim | Credenciais da base de dados e do MinIO |
 | `SMTP_*`, `MAIL_FROM` | recomendada | Envio de notificações, códigos de verificação e convites. Sem SMTP, os emails não são enviados |
 | `LLM_PROVIDER` + chave | recomendada | `anthropic` ou `openai` (inclui Azure OpenAI, Ollama e vLLM via `OPENAI_BASE_URL`). Sem IA, as funcionalidades de IA devolvem um aviso |
@@ -194,7 +195,8 @@ Os testes ponta a ponta arrancam o servidor real e cobrem: registo com código, 
 - **Isolamento entre clientes:** as regras RLS de `base44/entities` são aplicadas em todas as leituras (incluindo tempo real e `deleteMany`) e escritas. Um utilizador não consegue criar, ler, alterar nem mover registos de outro cliente. Isto está coberto pelos testes.
 - **Perfil do utilizador:** um utilizador comum não pode alterar o próprio `role` nem `customer_id` (via `updateMe` ou `User.update`). Só um administrador o pode fazer, e a alteração de papel termina as sessões abertas.
 - **Carimbo de cliente:** quando um utilizador cria um registo sem `customer_id` numa entidade que o tenha, o servidor preenche-o com o cliente do utilizador (`AUTO_STAMP_CUSTOMER_ID`).
-- **Segredo de automação:** o valor que estava fixo no repositório (`base44/shared/automationSecret.ts`) **não é aceite** pelo servidor próprio, que usa `AUTOMATION_SECRET`. Esse valor é público no GitHub; trate-o como comprometido.
+- **Workflows:** correm com a sessão de um administrador (`WORKFLOW_OWNER_EMAIL`), como na Base44, onde correm com a sessão do proprietário. O segredo de automação fixo no repositório deixou de existir no PR #45.
+- **Ficheiros privados:** `UploadPrivateFile` guarda o ficheiro marcado como privado; `CreateFileSignedUrl` devolve uma ligação assinada (HMAC, validade máxima de uma hora). Sem assinatura válida, o download é recusado com 403.
 - **Funções de backend:** por HTTP, só são executáveis as funções que a interface usa, e sempre com sessão iniciada. As funções de sistema (lembretes, notificações automáticas, purga de dados) exigem o segredo de automação. As notificações de tarefas e riscos usam o registo real da base de dados, e não os dados enviados pelo navegador.
 - **Registo:** voltar a registar um email existente nunca altera a conta. A palavra-passe só é definida por quem introduz o código recebido nesse email.
 - **Login Microsoft:** só são aceites contas dos tenants indicados em `MICROSOFT_ALLOWED_TENANT_IDS`. Com o tenant `common`, qualquer pessoa poderia criar um tenant com o email de outra.
@@ -229,6 +231,10 @@ As migrações da base de dados são aplicadas automaticamente no arranque.
 - Proteção SSRF de `file_urls`: o endereço é validado por DNS antes do pedido, mas não fica fixo, pelo que um ataque de *DNS rebinding* continua teoricamente possível.
 - Regra herdada da aplicação: qualquer utilizador autenticado pode criar uma `Notification` dirigida a outro email (a regra RLS de criação só verifica o autor).
 - Os eventos de tempo real e os gatilhos de workflows são processados na instância que fez a alteração. Com várias instâncias da API, use `ENABLE_SCHEDULER=true` apenas numa.
+- Regras de acesso por campo: só são aplicadas à entidade `User`. As restantes entidades com regras por campo (na app atual, `storage_ref`) ficam sem essa proteção.
+- Workflows: só o passo `invoke_backend_function` é executado. Os passos de espera não são suportados.
+- `Core.ExtractDataFromUploadedFile` não existe.
+- Migração dos ficheiros: os ficheiros guardados na Base44 ainda não são copiados pelo script de importação.
 
 ---
 

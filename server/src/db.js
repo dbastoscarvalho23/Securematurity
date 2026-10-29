@@ -129,6 +129,12 @@ const MIGRATIONS = [
       CREATE UNIQUE INDEX IF NOT EXISTS workflow_runs_trigger_idx ON workflow_runs (workflow, trigger_key) WHERE trigger_key IS NOT NULL;
     `,
   },
+  {
+    version: 2,
+    name: 'ficheiros privados',
+    // Ficheiros guardados com UploadPrivateFile: só se descarregam com ligação assinada.
+    sql: `ALTER TABLE files ADD COLUMN IF NOT EXISTS private boolean NOT NULL DEFAULT false;`,
+  },
 ];
 
 export async function migrate() {

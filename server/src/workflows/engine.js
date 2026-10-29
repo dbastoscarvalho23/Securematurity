@@ -5,7 +5,7 @@ import { query } from '../db.js';
 import { bus } from '../events.js';
 import { readJsoncDir, HttpError } from '../util.js';
 import { invokeFunction } from '../functions/runtime.js';
-import { requireRole } from '../auth/routes.js';
+import { requireRole, issueToken } from '../auth/routes.js';
 import { parseCron, cronMatches } from './cron.js';
 import { evaluateJq, jqTruthy } from './jq-lite.js';
 
@@ -37,8 +37,21 @@ function resolveArgs(args) {
   return out;
 }
 
+/**
+ * Na Base44, os workflows correm com a sessão do proprietário da app. Aqui o proprietário é o
+ * utilizador de WORKFLOW_OWNER_EMAIL ou, sem essa variável, o primeiro administrador ativo.
+ */
+async function ownerToken() {
+  const { rows } = config.workflowOwnerEmail
+    ? await query("SELECT * FROM users WHERE lower(email) = lower($1) AND role = 'admin' AND NOT disabled", [config.workflowOwnerEmail])
+    : await query("SELECT * FROM users WHERE role = 'admin' AND NOT disabled ORDER BY created_date ASC LIMIT 1");
+  if (!rows[0]) console.warn('[workflows] sem administrador ativo: as funções correm sem sessão');
+  return rows[0] ? issueToken(rows[0]) : null;
+}
+
 async function runSteps(wf, payloadBase) {
   const results = [];
+  const token = await ownerToken();
   for (const step of wf.steps) {
     for (const [stepName, def] of Object.entries(step)) {
       if (def?.call !== 'invoke_backend_function') {
@@ -47,7 +60,7 @@ async function runSteps(wf, payloadBase) {
       }
       const fnName = def.with?.function_name;
       const args = resolveArgs(def.with?.args);
-      const res = await invokeFunction(fnName, { ...payloadBase, args });
+      const res = await invokeFunction(fnName, { ...payloadBase, args }, { token });
       results.push({ step: stepName, function: fnName, status: res.status, data: res.data });
       if (res.status >= 400) throw Object.assign(new Error(`Função ${fnName} devolveu ${res.status}`), { results });
       if (def.then === 'end') return results;

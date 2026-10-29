@@ -7,19 +7,13 @@ import { getSchema, entityNames } from './entities/schemas.js';
 import { requireUser } from './auth/routes.js';
 import { invokeLLM, llmConfigured } from './integrations/llm.js';
 import { sendEmail, emailConfigured } from './integrations/email.js';
-import { putFile, getFileMeta, readFileStream } from './integrations/storage.js';
+import { putFile, getFileMeta, readFileStream, privateAccessAllowed } from './integrations/storage.js';
 import { invokeFunction, functionNames } from './functions/runtime.js';
+import { HTTP_FUNCTIONS } from './functions/http-functions.js';
 import { pool } from './db.js';
 import { createRateLimiter, safeEqual } from './util.js';
 import { authenticateToken } from './auth/routes.js';
 
-/** Funções que a interface invoca diretamente (base44.functions.invoke). As restantes são de sistema. */
-const HTTP_FUNCTIONS = new Set([
-  'adminDeleteUser', 'adminUpdateUser', 'getStorageProviders', 'listUsers', 'logUserLogin',
-  'riskNotifications', 'searchDocuments', 'storeFileToCloud', 'taskNotifications', 'updateCustomerStorage',
-  // execução manual por administradores (as próprias funções verificam o papel)
-  'generateMonthlyAnnualReport', 'dataRetentionPurge',
-]);
 
 const parseJsonParam = (value, fallback) => {
   if (value === undefined || value === '') return fallback;
@@ -100,6 +94,7 @@ export function registerApiRoutes(router) {
   router.get('/files/:key', async (ctx) => {
     const meta = await getFileMeta(ctx.params.key);
     if (!meta) throw new HttpError(404, 'Ficheiro não encontrado');
+    if (!privateAccessAllowed(meta, new URLSearchParams(ctx.query || {}))) throw new HttpError(403, 'Ligação expirada ou inválida');
     const stream = await readFileStream(meta.key);
     const safeName = (meta.filename || meta.key).replace(/["\r\n]/g, '');
     const inlineTypes = /^(image\/(png|jpeg|gif|webp)|application\/pdf|text\/plain)/;

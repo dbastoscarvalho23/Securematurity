@@ -64,7 +64,7 @@ function s3Request(method, key, { body, contentType } = {}) {
 // ---------------------------------------------------------------------------
 
 /** Guarda um ficheiro e devolve { key, file_url }. */
-export async function putFile(buffer, { filename, contentType, createdBy } = {}) {
+export async function putFile(buffer, { filename, contentType, createdBy, isPrivate = false } = {}) {
   const key = `${crypto.randomBytes(16).toString('hex')}${safeExtension(filename)}`;
   const type = contentType || 'application/octet-stream';
   if (config.storage.driver === 's3') {
@@ -74,8 +74,8 @@ export async function putFile(buffer, { filename, contentType, createdBy } = {})
     await fs.promises.mkdir(config.storage.localDir, { recursive: true });
     await fs.promises.writeFile(path.join(config.storage.localDir, key), buffer);
   }
-  await query('INSERT INTO files (key, filename, content_type, size, created_by) VALUES ($1, $2, $3, $4, $5)',
-    [key, filename ? String(filename).slice(0, 255) : null, type, buffer.length, createdBy || null]);
+  await query('INSERT INTO files (key, filename, content_type, size, created_by, private) VALUES ($1, $2, $3, $4, $5, $6)',
+    [key, filename ? String(filename).slice(0, 255) : null, type, buffer.length, createdBy || null, Boolean(isPrivate)]);
   return { key, file_url: fileUrl(key) };
 }
 
@@ -136,4 +136,39 @@ export async function fetchFileUrl(url) {
   const res = await fetch(url, { redirect: 'error' });
   if (!res.ok) throw new HttpError(502, `Não foi possível obter ${url} (${res.status})`);
   return { buffer: Buffer.from(await res.arrayBuffer()), contentType: res.headers.get('content-type') || 'application/octet-stream', filename: path.basename(new URL(url).pathname) };
+}
+
+// ---------------------------------------------------------------------------
+// Ficheiros privados (equivalente a UploadPrivateFile e CreateFileSignedUrl)
+// ---------------------------------------------------------------------------
+
+export const PRIVATE_PREFIX = 'private/';
+const MAX_SIGNED_SECONDS = 3600;
+// Chave própria, derivada do segredo JWT, para que uma assinatura de ficheiro nunca valha como token.
+const signingKey = () => crypto.createHmac('sha256', config.jwtSecret).update('ankoraone:private-files').digest();
+const signatureOf = (key, exp) => crypto.createHmac('sha256', signingKey()).update(`${key}.${exp}`).digest('hex');
+
+/** Guarda um ficheiro privado e devolve { file_uri } no formato private/<chave>. */
+export async function putPrivateFile(buffer, opts = {}) {
+  const { key } = await putFile(buffer, { ...opts, isPrivate: true });
+  return { file_uri: `${PRIVATE_PREFIX}${key}` };
+}
+
+/** Ligação temporária para um ficheiro privado (validade entre 1 s e 1 hora; 5 minutos por omissão). */
+export function signedUrlFor(fileUri, expiresIn = 300, now = Date.now()) {
+  const key = String(fileUri || '').startsWith(PRIVATE_PREFIX) ? String(fileUri).slice(PRIVATE_PREFIX.length) : String(fileUri || '');
+  if (!KEY_RE.test(key)) throw new HttpError(400, 'file_uri inválido');
+  const seconds = Math.min(Math.max(Math.floor(Number(expiresIn)) || 300, 1), MAX_SIGNED_SECONDS);
+  const exp = Math.floor(now / 1000) + seconds;
+  return `${fileUrl(key)}?exp=${exp}&sig=${signatureOf(key, exp)}`;
+}
+
+/** Um ficheiro público descarrega-se sempre; um privado só com assinatura válida e dentro do prazo. */
+export function privateAccessAllowed(meta, searchParams, now = Date.now()) {
+  if (!meta?.private) return true;
+  const exp = Number(searchParams.get('exp'));
+  const sig = String(searchParams.get('sig') || '');
+  if (!Number.isInteger(exp) || exp < now / 1000) return false;
+  const want = signatureOf(meta.key, exp);
+  return sig.length === want.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(want));
 }

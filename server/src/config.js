@@ -43,6 +43,8 @@ export const config = {
   jwtSecret: secret('JWT_SECRET'),
   jwtExpiresIn: int(env.JWT_EXPIRES_IN_SECONDS, 7 * 24 * 3600),
   automationSecret: secret('AUTOMATION_SECRET'),
+  // Conta com que correm os workflows (vazio = primeiro administrador ativo).
+  workflowOwnerEmail: env.WORKFLOW_OWNER_EMAIL || '',
 
   allowPublicSignup: bool(env.ALLOW_PUBLIC_SIGNUP, true),
   requireEmailVerification: bool(env.REQUIRE_EMAIL_VERIFICATION, true),
