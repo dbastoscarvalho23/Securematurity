@@ -26,4 +26,13 @@ jobs:
       - name: Nomes por definir nas funções
         run: node scripts/check-function-names.cjs
       - name: Testes
-        run: npm test
+        run: |
+          set +e
+          npm test > test-output.txt 2>&1; status=$?
+          cat test-output.txt
+          if [ $status -ne 0 ]; then
+            # As falhas também vão para uma anotação, legível pela API do GitHub.
+            msg=$(grep -E "FAIL|not ok|Error|expected|actual|✗|×|AssertionError" test-output.txt | head -60 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Testes falharam::${msg}"
+          fi
+          exit $status
