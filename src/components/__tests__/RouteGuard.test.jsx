@@ -51,7 +51,7 @@ describe('RouteGuard — role matrix', () => {
 
   it('customer_admin: blocked from admin-only routes', () => {
     mockUseAuth.mockReturnValue({ user: makeUser('customer_admin', 'c1') });
-    const blocked = ['/admin', '/audit-log', '/customers', '/question-bank', '/ropa', '/incidents', '/dsr', '/vulnerabilities', '/compliance-metrics', '/training'];
+    const blocked = ['/admin', '/backoffice', '/backoffice/customers', '/backoffice/users', '/backoffice/audit', '/audit-log', '/customers', '/question-bank', '/ropa', '/dsr', '/compliance-metrics', '/training'];
     for (const path of blocked) {
       const { unmount } = renderAt(path);
       expect(screen.getByText('REDIRECTED_HOME')).toBeTruthy();
@@ -59,12 +59,23 @@ describe('RouteGuard — role matrix', () => {
     }
   });
 
-  it('user without customer: only "/" allowed, everything else redirects to "/"', () => {
+  it('customer_admin: incidentes e vulnerabilidades dependem só da licença', () => {
+    mockUseAuth.mockReturnValue({ user: makeUser('customer_admin', 'c1') });
+    for (const path of ['/incidents', '/vulnerabilities']) {
+      const { unmount } = renderAt(path);
+      expect(screen.getByText('ALLOWED_CHILD')).toBeTruthy();
+      unmount();
+    }
+  });
+
+  it('user without customer: only "/" and "/settings" allowed, everything else redirects to "/"', () => {
     mockUseAuth.mockReturnValue({ user: makeUser('user', null) });
-    const { unmount } = renderAt('/');
-    expect(screen.getByText('ALLOWED_CHILD')).toBeTruthy();
-    unmount();
-    for (const path of ['/evidence', '/compliance-metrics', '/assessments', '/settings']) {
+    for (const path of ['/', '/settings']) {
+      const { unmount } = renderAt(path);
+      expect(screen.getByText('ALLOWED_CHILD')).toBeTruthy();
+      unmount();
+    }
+    for (const path of ['/evidence', '/compliance-metrics', '/assessments', '/tasks']) {
       const { unmount } = renderAt(path);
       expect(screen.getByText('REDIRECTED_HOME')).toBeTruthy();
       unmount();
