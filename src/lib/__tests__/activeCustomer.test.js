@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { effectiveUser, withActiveCustomer, writeActiveCustomer, readActiveCustomer, delegatedLevels } from '@/lib/activeCustomer';
+import { effectiveUser, withActiveCustomer, writeActiveCustomer, readActiveCustomer, delegatedLevels, setConsultantSession } from '@/lib/activeCustomer';
 
 const consultant = {
   id: 'k1', email: 'rui@neora.pt', role: 'consultant', customer_id: 'neora',
@@ -31,9 +31,12 @@ describe('cliente ativo dos consultores', () => {
     expect(delegatedLevels({ role: 'consultant', delegated_view_customer_ids: ['c1'], delegated_admin_customer_ids: ['c1'] }).c1).toBe('admin');
   });
 
-  it('pedidos às funções levam o cliente ativo, sem substituir o indicado', () => {
+  it('pedidos às funções levam o cliente ativo, sem substituir o indicado (só em sessão de consultor)', () => {
     expect(withActiveCustomer({ op: 'list' })).toEqual({ op: 'list' });
     writeActiveCustomer('c2');
+    setConsultantSession(false);
+    expect(withActiveCustomer({ op: 'list' })).toEqual({ op: 'list' }, 'valor deixado no navegador não é enviado');
+    setConsultantSession(true);
     expect(readActiveCustomer()).toBe('c2');
     expect(withActiveCustomer({ op: 'list' })).toEqual({ op: 'list', customer_id: 'c2' });
     expect(withActiveCustomer({ customer_id: 'c4' })).toEqual({ customer_id: 'c4' });

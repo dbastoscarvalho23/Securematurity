@@ -8,7 +8,7 @@
 //   - alternativa de qualquer membro → leitura: viewer, contributor e admin; escrita: contributor e admin.
 // As restantes condições da alternativa (ex.: restricted == false) mantêm-se. Alternativas com outras condições de
 // papel ficam como estão. As leituras abertas ao papel `user` (referenciais, perguntas, licenças) abrem-se também ao
-// papel `consultant`. A transformação é idempotente: correr de novo não muda nada.
+// papel `consultant`. Os convites (InvitedUser) ficam só do cliente. A transformação é idempotente.
 //
 // Uso: node tools/rls/delegation.mjs           aplica às entidades
 //      node tools/rls/delegation.mjs --check   sai com 1 se alguma entidade não estiver atualizada
@@ -65,8 +65,14 @@ export function delegateRule(rule, op, entityName) {
   return { $or: [...alts, ...extra] };
 }
 
+/**
+ * Entidades que ficam só do cliente: os convites decidem quem entra no cliente e com que papel (o início de sessão
+ * confia no criador do convite), por isso nenhum acesso delegado os pode criar ou alterar.
+ */
+export const CUSTOMER_ONLY = new Set(['InvitedUser']);
+
 export function delegateEntity(entity) {
-  if (!isObj(entity?.rls)) return entity;
+  if (!isObj(entity?.rls) || CUSTOMER_ONLY.has(entity.name)) return entity;
   const rls = { ...entity.rls };
   for (const op of OPS) if (op in rls) rls[op] = delegateRule(rls[op], op, entity.name);
   return { ...entity, rls };
