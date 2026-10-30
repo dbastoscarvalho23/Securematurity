@@ -1,3 +1,5 @@
+import { isPlatformAdmin, userCustomerId } from './http.ts';
+
 /**
  * Shared ReminderSettings lookup + recipient resolution.
  *
@@ -27,9 +29,16 @@ export async function getReminderSettings(base44ServiceRole, customerId) {
   }
 }
 
-/** [primary, ...additional_recipients from settings], deduplicated. */
-export function buildRecipients(primary, settings) {
+/**
+ * [primary, ...additional_recipients from settings], deduplicated.
+ *
+ * Os destinatários adicionais são endereços externos escolhidos nas configurações, por isso só entram quando
+ * `allowAdditional` é verdadeiro — ver canUseAdditionalRecipients(). Sem isso, quem desencadeia o aviso
+ * transformava a plataforma num relay de mensagens para estranhos em nome da AnkoraOne.
+ */
+export function buildRecipients(primary, settings, allowAdditional = false) {
   const list = primary ? [primary] : [];
+  if (!allowAdditional) return list;
   (settings?.additional_recipients || '')
     .split(',')
     .map(e => e.trim())
@@ -38,4 +47,17 @@ export function buildRecipients(primary, settings) {
       if (!list.includes(e)) list.push(e);
     });
   return list;
+}
+
+/**
+ * Quem pode usar os destinatários adicionais das ReminderSettings: o administrador da plataforma, o administrador
+ * do cliente a que o aviso pertence, ou uma automação agendada (que já passou a verificação de administrador e
+ * usa `allowAdditional` diretamente). Qualquer outro utilizador do cliente só faz chegar o aviso ao destinatário
+ * principal, retirado do registo na base de dados.
+ */
+export function canUseAdditionalRecipients(user, customerId) {
+  if (!user) return false;
+  if (isPlatformAdmin(user)) return true;
+  const own = userCustomerId(user);
+  return user.role === 'customer_admin' && Boolean(own) && own === customerId;
 }

@@ -14,6 +14,37 @@ export const AI_REQUESTS_PER_MINUTE = 30;
 const AI_ACTIONS = ['ai_assist', 'ai_draft_created', 'document_classified', 'ai_questionnaire'];
 
 /**
+ * Limite de avisos por hora e por utilizador nas funções de notificação (tarefas, riscos e documentos).
+ *
+ * Essas funções enviam em nome da AnkoraOne a pedido de um utilizador autenticado; sem travão, uma conta podia
+ * repetir o pedido sem fim e usar a plataforma para inundar caixas de correio. O limite é o mesmo de sendEmail
+ * e folgado para os avisos reais (cada alteração de estado gera um envio por destinatário).
+ */
+export const NOTIFICATION_EMAILS_PER_HOUR = 30;
+
+/**
+ * Verdadeiro quando o utilizador já esgotou os avisos da última hora. O registo de auditoria de envios
+ * (`logEmailSent`) serve de contador. Falha em aberto: o limite trava abusos, não é uma regra de acesso, e um
+ * aviso legítimo não deve perder-se por o registo estar indisponível.
+ */
+export async function notificationLimitReached(base44, user) {
+  if (!user?.email) return false;
+  const since = new Date(Date.now() - 3600_000).toISOString();
+  let rows;
+  try {
+    rows = await base44.asServiceRole.entities.AuditLog.filter(
+      { user_email: user.email, action: 'email_sent', created_date: { $gte: since } },
+      '-created_date',
+      NOTIFICATION_EMAILS_PER_HOUR + 1,
+    );
+  } catch (e) {
+    console.warn('Notification email rate limit check failed:', e?.message || e);
+    return false;
+  }
+  return (rows?.length || 0) >= NOTIFICATION_EMAILS_PER_HOUR;
+}
+
+/**
  * Recusa (429) quando o utilizador já esgotou o limite de pedidos de IA do último minuto.
  * Falha em aberto se a contagem não puder ser feita: o limite de ritmo é um travão de custo, não uma regra de acesso,
  * e a quota mensal continua a valer.

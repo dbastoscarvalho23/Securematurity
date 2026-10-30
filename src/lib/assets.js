@@ -86,7 +86,7 @@ const FQDN = /^(?=.{1,253}$)([a-z0-9](-?[a-z0-9])*\.)+[a-z]{2,}$/i;
  * «Ativos» (ou da primeira folha) e, se existir, da folha «Ferramentas».
  */
 export async function readWorkbook(file) {
-  const mod = await import('xlsx');
+  const mod = await import('@/lib/xlsx');
   const XLSX = mod.read ? mod : mod.default;
   const isText = /\.(csv|tsv|txt)$/i.test(file.name || '');
   const wb = isText
@@ -201,7 +201,7 @@ export function article32Rows(assets) {
 }
 
 export async function downloadXlsx(fileName, sheetName, aoa, note) {
-  const mod = await import('xlsx');
+  const mod = await import('@/lib/xlsx');
   const XLSX = mod.utils ? mod : mod.default;
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(note ? [[note], [], ...aoa] : aoa);

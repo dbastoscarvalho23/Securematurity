@@ -244,7 +244,7 @@ export async function syncLegalLibrary(base44, { onProgress } = {}) {
  * O texto fica apenas no espaço de quem o importa (licença CC BY-NC-ND 4.0 do CIS).
  */
 export async function importCisXlsx(base44, file) {
-  const mod = await import('xlsx');
+  const mod = await import('@/lib/xlsx');
   const XLSX = mod.read ? mod : mod.default;
   const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
   const sheetName = wb.SheetNames.find((n) => /^Controls v8/i.test(n));

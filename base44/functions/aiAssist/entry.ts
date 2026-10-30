@@ -5,6 +5,7 @@ import { requireModule, getEntitlements, checkQuota, consumeQuota, LicenseError 
 import { assertAiRateLimit } from '../../shared/rateLimit.ts';
 import { callLLM, parseJson, getAiSettings, aiPurposeEnabled, aiProvider, AI_DISABLED_MESSAGE } from '../../shared/llm.ts';
 import { containsExposedAsset } from '../../shared/exposedAssets.ts';
+import { assertPublicHttpsUrl } from '../../shared/storage.ts';
 
 /**
  * Pedidos de IA feitos a partir da interface (módulo «ai_assistant»).
@@ -53,10 +54,13 @@ export default async function (req) {
     // Endereços arbitrários levariam o servidor a descarregar URLs à escolha do utilizador (SSRF) e a enviar à IA
     // ficheiros sem o filtro de ativos expostos. Só o administrador da plataforma pode anexar ficheiros por URL.
     if (fileUrls.length && !admin) return json({ error: 'Só o administrador da plataforma pode anexar ficheiros por endereço' }, 403);
+    // Não basta exigir https: um endereço interno (localhost, rede privada, metadados da nuvem) também o é.
     for (const u of fileUrls) {
-      let ok = false;
-      try { ok = new URL(String(u)).protocol === 'https:'; } catch { ok = false; }
-      if (!ok) return json({ error: 'Os ficheiros têm de ser indicados por um endereço https' }, 400);
+      try {
+        await assertPublicHttpsUrl(String(u));
+      } catch {
+        return json({ error: 'Os ficheiros têm de ser indicados por um endereço https público' }, 400);
+      }
     }
 
     // Cliente: o admin pode indicar qualquer um (ou nenhum, em trabalho global); os outros, só o seu.

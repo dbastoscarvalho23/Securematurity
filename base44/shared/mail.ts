@@ -8,8 +8,6 @@ import { secrets } from "base44:runtime";
  *    (ou o domínio de email configurado na app); só o nome do remetente muda.
  *  - "resend": API da Resend com domínio próprio verificado (ex.: ankoraone.com).
  *      RESEND_API_KEY obrigatório.
- *  - "smtp": servidor SMTP do domínio (Microsoft 365, Google Workspace, …).
- *      SMTP_HOST, SMTP_PORT (587), SMTP_USER, SMTP_PASS obrigatórios.
  *
  * Remetente: MAIL_FROM («Daniel Carvalho <daniel.carvalho@ankoraone.com>»),
  * resposta: MAIL_REPLY_TO (opcional). Sem MAIL_FROM usa-se DEFAULT_FROM.
@@ -108,15 +106,6 @@ async function sendViaResend(cfg: ReturnType<typeof mailConfig>, to: string[], s
   if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 200)}`);
 }
 
-async function sendViaSmtp(cfg: ReturnType<typeof mailConfig>, to: string[], subject: string, html: string) {
-  const host = secret("SMTP_HOST"), user = secret("SMTP_USER"), pass = secret("SMTP_PASS");
-  if (!host || !user || !pass) throw new Error("SMTP_HOST, SMTP_USER e SMTP_PASS em falta");
-  const port = Number(secret("SMTP_PORT") || 587);
-  const nodemailer = (await import("npm:nodemailer@6.9.16")).default;
-  const transport = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass }, requireTLS: port !== 465 });
-  await transport.sendMail({ from: cfg.from, to, subject, html, replyTo: cfg.replyTo });
-}
-
 /**
  * Envia um email com a moldura AnkoraOne. Nunca lança exceções: devolve quantos seguiram e os erros.
  */
@@ -128,15 +117,14 @@ export async function sendMail(base44: any, input: MailInput): Promise<MailResul
   const html = wrapHtml(toHtmlFragment(input.body), input.heading);
   const errors: string[] = [];
 
-  const own = cfg.provider === "resend" || cfg.provider === "smtp";
+  const own = cfg.provider === "resend";
   let sent = 0;
   let fellBack = false;
   // Um envio por destinatário: ninguém vê os endereços dos outros, e uma falha não repete os já enviados.
   for (const to of recipients) {
     if (own) {
       try {
-        if (cfg.provider === "resend") await sendViaResend(cfg, [to], subject, html);
-        else await sendViaSmtp(cfg, [to], subject, html);
+        await sendViaResend(cfg, [to], subject, html);
         sent++;
         continue;
       } catch (e) {
