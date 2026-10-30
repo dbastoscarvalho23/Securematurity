@@ -315,7 +315,10 @@ if (!DB) {
 
   test('workflow agendado e função com jsPDF executados manualmente', async () => {
     const res = await api('POST', '/workflows/Monthly%20Annual%20Report%20Snapshot/run', {}, tokens.admin);
-    assert.equal(res.success, true, JSON.stringify(res));
+    if (!res.success) {
+      const runs = await api('GET', '/workflows/runs', null, tokens.admin);
+      assert.fail(`workflow falhou: ${JSON.stringify(runs.find((r) => r.workflow === 'Monthly Annual Report Snapshot'))}\n${logs.slice(-1500)}`);
+    }
     assert.equal(res.results[0].data.success, true);
     const docs = await api('GET', '/entities/SecurityDocument', null, tokens.admin);
     assert.equal(docs.length, 1);
