@@ -4,6 +4,7 @@ import { json, authorizeAutomationOrAdmin } from '../../shared/http.ts';
 import { logEmailSent } from '../../shared/audit.ts';
 import { riskScore, scoreLevel } from '../../shared/riskLevel.ts';
 import { buildRecipients } from '../../shared/reminderSettings.ts';
+import { recipientLookup } from '../../shared/recipients.ts';
 import { sendMail } from '../../shared/mail.ts';
 
 const LEVEL_PT = { Critical: 'Crítico', High: 'Alto', Medium: 'Médio', Low: 'Baixo' };
@@ -45,6 +46,11 @@ Deno.serve(async (req) => {
   let sent = 0;
   let skipped = 0;
 
+  // Contactos registados por cliente, calculados uma vez por cliente em cada execução. A automação corre como
+  // administrador da plataforma e o conteúdo é gerado no servidor, por isso inclui os contactos externos
+  // (fornecedores, formandos) que os administradores registaram.
+  const allowedFor = recipientLookup(base44, { includeExternal: true });
+
   for (const risk of risks) {
     const settings = getSettings(risk);
 
@@ -62,7 +68,12 @@ Deno.serve(async (req) => {
     const level = scoreLevel(score);
     const urgencyLabel = daysLeft === 1 ? 'amanhã' : `daqui a ${daysLeft} dias`;
 
-    const recipients = buildRecipients(risk.owner_email, settings);
+    // Automação agendada: os destinatários adicionais configurados pelos administradores seguem nos lembretes.
+    // O responsável é texto livre escrito pelo utilizador: só recebe o lembrete se constar nos contactos do cliente.
+    const allowed = await allowedFor(risk.customer_id);
+    const ownerOk = allowed.has(String(risk.owner_email).trim().toLowerCase());
+    const recipients = buildRecipients(ownerOk ? risk.owner_email : null, settings, true);
+    if (recipients.length === 0) { skipped++; continue; }
 
     const body = `
 <p>Olá,</p>

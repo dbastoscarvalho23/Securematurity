@@ -2,8 +2,14 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
 import { json, getAuthenticatedUser, isPlatformAdmin, canAccessRecord } from '../../shared/http.ts';
 import { logEmailSent } from '../../shared/audit.ts';
-import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
+import { getReminderSettings, buildRecipients, canUseAdditionalRecipients } from '../../shared/reminderSettings.ts';
+import { isAllowedRecipient } from '../../shared/recipients.ts';
+import { notificationLimitReached, NOTIFICATION_EMAILS_PER_HOUR } from '../../shared/rateLimit.ts';
 import { sendMail } from '../../shared/mail.ts';
+
+/** Limite por hora por utilizador; a automação agendada (sessão de administrador) não é limitada. */
+const rateLimited = async (base44, user, isAutomation) =>
+  !isAutomation && (await notificationLimitReached(base44, user));
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
@@ -12,6 +18,10 @@ Deno.serve(async (req) => {
 
   // Support both direct API call (type/document) and entity automation payload (event/data)
   let type, document, previousDocument, user;
+  // Automação agendada = chamador é o administrador da plataforma. Os destinatários adicionais só são usados por
+  // quem os pode configurar: administrador da plataforma, administrador do cliente, ou essa automação.
+  let isAutomation = false;
+  let allowAdditional = false;
 
   if (body.event && body.data) {
     // Entity automation branch: only a platform automation — which runs with the
@@ -44,6 +54,8 @@ Deno.serve(async (req) => {
 
     // Use service role for automated calls (no user context)
     user = { full_name: 'Sistema', email: 'system' };
+    isAutomation = true;
+    allowAdditional = true;
   } else {
     // Direct API call from frontend
     user = await getAuthenticatedUser(base44);
@@ -75,6 +87,7 @@ Deno.serve(async (req) => {
     }
 
     document = realDoc;
+    allowAdditional = canUseAdditionalRecipients(user, realDoc.customer_id);
   }
 
   if (!document) return json({ error: 'document is required' }, 400);
@@ -104,8 +117,11 @@ Deno.serve(async (req) => {
     const approvers = document.customer_id
       ? (await base44.asServiceRole.entities.User.filter({ customer_id: document.customer_id, role: 'customer_admin' })).map((u) => u.email).filter(Boolean)
       : [];
-    const recipients = [...new Set([...approvers, ...buildRecipients(null, settings)])].filter((e) => e && e !== user.email);
+    const recipients = [...new Set([...approvers, ...buildRecipients(null, settings, allowAdditional)])].filter((e) => e && e !== user.email);
     if (recipients.length === 0) return json({ skipped: 'no recipients' });
+    if (await rateLimited(base44, user, isAutomation)) {
+      return json({ error: `Atingiu o limite de ${NOTIFICATION_EMAILS_PER_HOUR} avisos por hora. Tente mais tarde.` }, 429);
+    }
 
     const body = `
       <div style="font-family:sans-serif;max-width:580px;margin:0 auto;color:#1e293b;">
@@ -148,8 +164,14 @@ Deno.serve(async (req) => {
       return json({ skipped: 'document approval notifications disabled' });
     }
 
-    const recipients = buildRecipients(document.owner_email, settings);
+    // O autor é um endereço de texto livre escrito por quem cria o documento: só recebe o aviso se constar nos
+    // contactos registados do cliente (mesma regra de sendEmail).
+    const ownerOk = await isAllowedRecipient(base44, document.customer_id, document.owner_email, { includeExternal: allowAdditional });
+    const recipients = buildRecipients(ownerOk ? document.owner_email : null, settings, allowAdditional);
     if (recipients.length === 0) return json({ skipped: 'no recipients' });
+    if (await rateLimited(base44, user, isAutomation)) {
+      return json({ error: `Atingiu o limite de ${NOTIFICATION_EMAILS_PER_HOUR} avisos por hora. Tente mais tarde.` }, 429);
+    }
 
     const body = `
       <div style="font-family:sans-serif;max-width:580px;margin:0 auto;color:#1e293b;">

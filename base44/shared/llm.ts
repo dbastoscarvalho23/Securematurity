@@ -1,4 +1,5 @@
 import { secrets } from 'base44:runtime';
+import { assertPublicHttpsUrl } from './storage.ts';
 
 /**
  * Chamada ao modelo de linguagem — ponto único para todas as funções (aiDraft, aiAssist).
@@ -87,13 +88,30 @@ export async function aiProvider(base44) {
   return secrets.get('ANTHROPIC_API_KEY') ? 'anthropic' : 'base44';
 }
 
+/**
+ * Bytes de um ficheiro indicado por endereço. O URL vem do chamador (anexo por URL em aiAssist) ou de um link
+ * assinado do repositório; antes de o descarregar aplica-se a mesma verificação de https e host público usada nas
+ * ligações WebDAV, para o servidor nunca ser levado a pedir a serviços internos nem a metadados da nuvem (SSRF).
+ */
+async function fetchFileBytes(url) {
+  let safe;
+  try {
+    safe = await assertPublicHttpsUrl(String(url));
+  } catch {
+    throw new Error('O ficheiro indicado não está num endereço https público.');
+  }
+  const res = await fetch(safe.href, { redirect: 'error' });
+  if (!res.ok) throw new Error(`Não foi possível obter o ficheiro indicado (${res.status}).`);
+  return new Uint8Array(await res.arrayBuffer());
+}
+
 async function callClaude(prompt, schema, file, textFile) {
   const key = secrets.get('ANTHROPIC_API_KEY');
   if (!key) throw new Error('Falta o segredo ANTHROPIC_API_KEY');
   const model = DEFAULT_CLAUDE_MODEL;
   const content = [];
   if (file && !textFile) {
-    const bytes = file.bytes || new Uint8Array(await (await fetch(file.url, { redirect: 'error' })).arrayBuffer());
+    const bytes = file.bytes || await fetchFileBytes(file.url);
     if (file.mime === 'application/pdf') content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: toB64(bytes) } });
     else if (/^image\/(png|jpeg|gif|webp)$/.test(file.mime)) content.push({ type: 'image', source: { type: 'base64', media_type: file.mime, data: toB64(bytes) } });
     else throw new Error('Tipo de ficheiro não suportado na análise');
@@ -114,7 +132,7 @@ export async function callLLM(base44, prompt, schema, file = null) {
   const provider = await aiProvider(base44);
   let textFile = '';
   if (file && file.mime.startsWith('text/')) {
-    const bytes = file.bytes || new Uint8Array(await (await fetch(file.url, { redirect: 'error' })).arrayBuffer());
+    const bytes = file.bytes || await fetchFileBytes(file.url);
     textFile = `\n\nCONTEÚDO DO FICHEIRO:\n${new TextDecoder().decode(bytes.subarray(0, 200000))}`;
   }
   // PDF ou imagem sem URL (repositório externo): só o Claude os recebe em base64.

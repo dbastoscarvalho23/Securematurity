@@ -8,7 +8,7 @@
     },
     "user_email": {
       "type": "string",
-      "description": "User who performed the action"
+      "description": "User who performed the action. Rows written from the browser can only be attributed to the signed-in user (see create rule): the field counts email rate limits, so it cannot be chosen by the caller."
     },
     "action": {
       "type": "string",
@@ -101,7 +101,14 @@
           }
         },
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$and": [
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            },
+            {
+              "data.user_email": "{{user.email}}"
+            }
+          ]
         }
       ]
     },

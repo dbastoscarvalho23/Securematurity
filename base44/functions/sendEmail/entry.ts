@@ -4,6 +4,8 @@ import { sendMail, mailConfig } from '../../shared/mail.ts';
 import { logEmailSent } from '../../shared/audit.ts';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
 import { sanitizeHtml } from '../../shared/sanitizeHtml.ts';
+import { allowedRecipients } from '../../shared/recipients.ts';
+import { canUseAdditionalRecipients } from '../../shared/reminderSettings.ts';
 
 // Envio de email pedido pela interface. O browser deixa de chamar Core.SendEmail diretamente:
 // o envio passa pelo remetente da AnkoraOne (shared/mail.ts), fica no registo de auditoria e
@@ -33,41 +35,6 @@ function bodyOf(html: string): string {
   const s = String(html || '');
   const m = s.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   return (m ? m[1] : s).replace(/<script[\s\S]*?<\/script>/gi, '');
-}
-
-/**
- * Destinatários autorizados a um utilizador de cliente: apenas endereços que já constam nos registos desse cliente —
- * colegas, administradores da plataforma, contactos do próprio cliente, fornecedores, colaboradores e questionários.
- * Sem isto, qualquer pessoa com conta podia lançar mensagens a estranhos em nome da AnkoraOne (phishing e queima do
- * domínio); com isto os envios reais (questionários a fornecedores, convocatórias, avisos internos) continuam a passar.
- */
-async function allowedRecipients(base44, customerId) {
-  const db = base44.asServiceRole.entities;
-  const [users, customer, suppliers, enrollments, questionnaires] = await Promise.all([
-    db.User.list().catch(() => []),
-    db.Customer.get(customerId).catch(() => null),
-    db.Supplier.filter({ customer_id: customerId }, '-created_date', 500).catch(() => []),
-    db.TrainingEnrollment.filter({ customer_id: customerId }, '-created_date', 1000).catch(() => []),
-    db.SupplierQuestionnaire.filter({ customer_id: customerId }, '-created_date', 500).catch(() => []),
-  ]);
-  const out = new Set();
-  const add = (value) => {
-    const email = String(value || '').trim().toLowerCase();
-    if (email) out.add(email);
-  };
-  // Colegas do mesmo cliente e administradores da plataforma (avisos internos).
-  for (const u of users) {
-    if (u.role === 'admin' || userCustomerId(u) === customerId) add(u.email);
-  }
-  if (customer) {
-    add(customer.contact_email);
-    add(customer.permanent_contact_email);
-    add(customer.cybersecurity_manager_email);
-  }
-  for (const s of suppliers) add(s.contact_email);
-  for (const e of enrollments) add(e.user_email);
-  for (const q of questionnaires) add(q.supplier_email);
-  return out;
 }
 
 Deno.serve(async (req) => {
@@ -132,9 +99,11 @@ Deno.serve(async (req) => {
     // Utilizadores de cliente só registam envios no próprio cliente.
     const customerId = admin ? (body.customer_id || null) : own;
 
-    // Utilizadores de cliente: os destinatários têm de constar nos contactos do cliente.
+    // Utilizadores de cliente: os destinatários têm de constar nos contactos do cliente. Contactos externos
+    // (fornecedores, formandos, questionários) só ficam disponíveis a administradores: esses registos são texto
+    // livre escrito por qualquer colega e serviriam de relay para endereços externos arbitrários.
     if (!admin) {
-      const allowed = await allowedRecipients(base44, own);
+      const allowed = await allowedRecipients(base44, own, { includeExternal: canUseAdditionalRecipients(user, own) });
       const refused = to.filter((email: string) => !allowed.has(email.toLowerCase()));
       if (refused.length) {
         await logEmailSent(base44, {
@@ -144,7 +113,7 @@ Deno.serve(async (req) => {
           details: `Envio recusado: destinatários fora dos contactos do cliente (${refused.slice(0, 5).join(', ')})`,
         });
         return json({
-          error: `Destinatário não autorizado: ${refused.join(', ')}. Só é possível enviar para utilizadores e contactos registados no cliente (colegas, contactos do cliente, fornecedores ou colaboradores).`,
+          error: `Destinatário não autorizado: ${refused.join(', ')}. Só é possível enviar para utilizadores e contactos registados do cliente; contactos externos (fornecedores, formandos) exigem que o envio seja feito por um administrador do cliente.`,
         }, 403);
       }
     }

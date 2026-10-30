@@ -44,7 +44,7 @@
     },
     "additional_recipients": {
       "type": "string",
-      "description": "Comma-separated extra email addresses to CC on all notifications"
+      "description": "Comma-separated extra email addresses to CC on all notifications. Configurable only by platform or customer administrators."
     }
   },
   "required": [],
@@ -57,7 +57,16 @@
           }
         },
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
         }
       ]
     },
@@ -81,7 +90,16 @@
           }
         },
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
         }
       ]
     },
@@ -93,7 +111,16 @@
           }
         },
         {
-          "data.customer_id": "{{user.data.customer_id}}"
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
         }
       ]
     }

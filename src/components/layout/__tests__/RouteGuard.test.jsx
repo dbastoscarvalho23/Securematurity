@@ -9,12 +9,14 @@ vi.mock('@/lib/AuthContext', () => ({
   useAuth: vi.fn(),
 }));
 
-// O RouteGuard também verifica a licença do cliente (LicensedRoute), que usa a língua e a API.
-const mockLicense = null;
-vi.mock('@/lib/LanguageContext', () => ({ useLanguage: () => ({ t: (key) => key }) }));
+// O âmbito destes testes é a matriz de papéis: a licença não limita (hasModule real com licença nula) e a
+// tradução devolve a própria chave, sem provedores nem chamadas de rede.
 vi.mock('@/lib/licensing', async (importOriginal) => ({
   ...(await importOriginal()),
-  useLicense: () => ({ data: mockLicense }),
+  useLicense: () => ({ data: null }),
+}));
+vi.mock('@/lib/LanguageContext', () => ({
+  useLanguage: () => ({ language: 'en', t: (key) => key }),
 }));
 
 const Home = () => <div>Home</div>;

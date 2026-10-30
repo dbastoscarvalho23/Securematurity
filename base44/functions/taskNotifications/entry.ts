@@ -2,7 +2,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
 import { json, getAuthenticatedUser, canAccessRecord } from '../../shared/http.ts';
 import { logEmailSent } from '../../shared/audit.ts';
-import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
+import { getReminderSettings, buildRecipients, canUseAdditionalRecipients } from '../../shared/reminderSettings.ts';
+import { isAllowedRecipient } from '../../shared/recipients.ts';
+import { notificationLimitReached, NOTIFICATION_EMAILS_PER_HOUR } from '../../shared/rateLimit.ts';
 import { sendMail } from '../../shared/mail.ts';
 
 const STATUS_LABELS = {
@@ -55,6 +57,15 @@ Deno.serve(async (req) => {
 
   if (!assignedTo) return json({ skipped: 'no assigned_to email' });
 
+  // O responsável é texto livre escrito por quem cria a tarefa: só recebe o aviso se o endereço constar nos
+  // contactos registados do cliente (mesma regra de sendEmail). Sem isto, a plataforma servia de relay de email
+  // para qualquer endereço externo escolhido pelo utilizador.
+  // Destinatários adicionais (e contactos externos de fornecedores/formandos) só para quem os pode configurar
+  // (administrador da plataforma ou do cliente).
+  const allowAdditional = canUseAdditionalRecipients(user, task.customer_id);
+
+  const assigneeOk = await isAllowedRecipient(base44, task.customer_id, assignedTo, { includeExternal: allowAdditional });
+
   const settings = await getReminderSettings(base44.asServiceRole, task.customer_id);
 
   // ── 1. New assignment ──────────────────────────────────────────────────────
@@ -64,7 +75,11 @@ Deno.serve(async (req) => {
     const wasAssigned = previousTask?.assigned_to;
     if (wasAssigned === assignedTo) return json({ skipped: 'assignee unchanged' });
 
-    const recipients = buildRecipients(assignedTo, settings);
+    const recipients = buildRecipients(assigneeOk ? assignedTo : null, settings, allowAdditional);
+    if (recipients.length === 0) return json({ skipped: 'no authorized recipients' });
+    if (await notificationLimitReached(base44, user)) {
+      return json({ error: `Atingiu o limite de ${NOTIFICATION_EMAILS_PER_HOUR} avisos por hora. Tente mais tarde.` }, 429);
+    }
     const body = `
 <p>Olá,</p>
 <p>Foi-lhe atribuída a seguinte tarefa:</p>
@@ -100,7 +115,11 @@ Deno.serve(async (req) => {
     const newStatus = task.status;
     if (!oldStatus || oldStatus === newStatus) return json({ skipped: 'status unchanged' });
 
-    const recipients = buildRecipients(assignedTo, settings);
+    const recipients = buildRecipients(assigneeOk ? assignedTo : null, settings, allowAdditional);
+    if (recipients.length === 0) return json({ skipped: 'no authorized recipients' });
+    if (await notificationLimitReached(base44, user)) {
+      return json({ error: `Atingiu o limite de ${NOTIFICATION_EMAILS_PER_HOUR} avisos por hora. Tente mais tarde.` }, 429);
+    }
     const body = `
 <p>Olá,</p>
 <p>O estado de uma tarefa que lhe está atribuída foi alterado:</p>

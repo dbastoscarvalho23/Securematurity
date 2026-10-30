@@ -21,9 +21,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      # npm install e não npm ci: o package-lock.json está desalinhado do package.json desde o PR #45
-      # (versões subidas pelo editor da Base44). Voltar a npm ci quando o lock for regenerado.
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - name: Nomes por definir nas funções
         run: node scripts/check-function-names.cjs
       - name: Testes
