@@ -4,13 +4,14 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
+import { UserPlus, Mail, Lock, Loader2, Info } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import MicrosoftIcon from "@/components/MicrosoftIcon";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { useAuth } from "@/lib/AuthContext";
 import { useLanguage } from "@/lib/LanguageContext";
+import { isNotInvitedError } from "@/lib/authInvite";
 
 export default function Register() {
   const { t } = useLanguage();
@@ -46,7 +47,7 @@ export default function Register() {
       await base44.auth.register({ email: email.trim(), password });
       setStep("otp");
     } catch (err) {
-      setError(err.message || t("register_err_email"));
+      setError(isNotInvitedError(err) ? t("x_register_err_not_invited") : (err.message || t("register_err_email")));
     } finally {
       setLoading(false);
     }
@@ -66,7 +67,7 @@ export default function Register() {
       await checkAppState();
       window.location.href = returnTo;
     } catch (err) {
-      setError(err.message || t("register_err_otp"));
+      setError(isNotInvitedError(err) ? t("x_register_err_not_invited") : (err.message || t("register_err_otp")));
     } finally {
       setLoading(false);
     }
@@ -142,6 +143,11 @@ export default function Register() {
         </>
       }
     >
+      <div className="mb-6 flex gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-foreground" role="note">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+        <p>{t("x_register_invite_only")}</p>
+      </div>
+
       <Button
         variant="outline"
         className="w-full h-12 text-sm font-medium mb-6"
