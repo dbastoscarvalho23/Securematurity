@@ -52,6 +52,10 @@ test('regras RLS', () => {
   const nested = { $or: [{ user_condition: { role: 'admin' } }, { $and: [{ user_condition: { role: 'customer_admin' } }, { 'data.customer_id': '{{user.data.customer_id}}' }] }] };
   assert.equal(ruleToFilter(nested, user), false);
   assert.deepEqual(ruleToFilter(nested, { ...user, role: 'customer_admin' }), { customer_id: 'c1' });
+  // Regras booleanas e papel inexistente (trilha de auditoria): ninguém passa, nem o administrador.
+  assert.equal(ruleToFilter(false, { ...user, role: 'admin' }), false);
+  assert.equal(ruleToFilter(true, null), true);
+  assert.equal(ruleToFilter({ user_condition: { role: 'service_only' } }, { ...user, role: 'admin' }), false);
 });
 
 test('InvokeLLM e conversa com API compatível com OpenAI', async () => {

@@ -14,6 +14,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
+import AuditChainCard from '@/components/audit/AuditChainCard';
 
 const formatLocalTimestamp = (dateStr) => {
   if (!dateStr) return '';
@@ -66,6 +67,10 @@ const actionColors = {
   report_exported: 'bg-muted text-muted-foreground',
   user_login: 'bg-muted text-muted-foreground',
   settings_changed: 'bg-chart-4/10 text-chart-4',
+  audit_chain_sealed: 'bg-primary/10 text-primary',
+  audit_chain_verified: 'bg-chart-2/10 text-chart-2',
+  audit_chain_anchor_review: 'bg-chart-3/10 text-chart-3',
+  audit_chain_broken: 'bg-destructive/10 text-destructive',
 };
 
 export default function AuditLog() {
@@ -136,6 +141,8 @@ export default function AuditLog() {
           </Button>
         )}
       />
+
+      <AuditChainCard />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">

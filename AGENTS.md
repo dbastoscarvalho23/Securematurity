@@ -7,7 +7,9 @@ Base44 app (Vite + React 18 frontend) that connects to the Base44 cloud backend.
 - Backend URL is provided via `VITE_BASE44_APP_BASE_URL` (proxied by the base44 vite-plugin under `/api`).
 - Vite + React 18 SPA (`src/`), react-router-dom routes in `src/App.jsx`, auth via `src/lib/AuthContext.jsx` (Base44 cloud auth — email/password + OTP email registration; Google/Microsoft SSO redirects only work on a published URL, not in preview).
 - Backend = Base44 entities (`base44/entities/*.jsonc`, RLS inside) + functions invoked via `base44.functions.invoke(...)`.
-- i18n via `src/lib/LanguageContext` (`t(key)`); audit log via `src/lib/auditLog.js`.
+- i18n via `src/lib/LanguageContext` (`t(key)`); audit log via `src/lib/auditLog.js` → function `audit` (server-only writer,
+  SHA-256 hash chain in `base44/shared/auditChain.ts`; `AuditLog` RLS denies create/update to every user session and delete to all).
+  Never write `AuditLog` directly: functions use `logAudit` from `base44/shared/audit.ts`.
 
 ## Running the app (sandbox)
 ```
@@ -80,6 +82,9 @@ docker compose -f docker-compose.base44.yml up -d
 - Official data only, in `src/data/legal/*.json` (DL 125/2025 + RJC, Reg. CNCS 756/2026 with QNRCS and Annexes III/IV,
   NIS2, Reg. Exec. 2024/2690, DORA + RTS/ITS, VDA ISA 6/2027, TISAX facts, CIS identifiers). Sources, hashes and licences:
   `docs/legal/README.md`. Regeneration: `tools/legal/README.md`. Never hand-edit legal texts.
+- Integrity: `docs/legal/manifesto.sha256` + `scripts/check-legal-integrity.cjs` (CI). Any change to legal data, the generated
+  legal packs, `docs/legal` or the templates fails CI until the manifest is updated with `--update` after a reviewed
+  regeneration from the official documents. Never run `--update` to silence an unexplained change.
 - Access via `src/lib/legal/index.js` (`loadLegal(key)` lazy-loads; `catalog` is eager). Mapping graph:
   `src/lib/frameworkMappings.js`. Framework names/domains: `src/lib/frameworkConstants.js`.
 - `src/lib/legal/sync.js` upserts Framework/FrameworkControl/Question by `source_ref` (admin button in Settings →

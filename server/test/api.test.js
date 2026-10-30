@@ -260,6 +260,31 @@ if (!DB) {
     assert.equal(await ok.text(), 'evidência privada');
   });
 
+  test('trilha de auditoria: só o servidor escreve, encadeada e verificável', async () => {
+    const forbidden = async (method, path, body) => {
+      try { await api(method, path, body, tokens.admin); return false; } catch (e) { return /^403/.test(e.message); }
+    };
+    assert.equal(await forbidden('POST', '/entities/AuditLog', { action: 'task_created', user_email: ADMIN.email }), true, 'administrador não escreve diretamente');
+    const rec = await fn('audit', { op: 'record', action: 'task_created', entity_type: 'Task', entity_id: 't1', details: 'teste', user_email: 'forjado@x.pt' }, tokens.b);
+    assert.equal(rec.status, 200, JSON.stringify(rec.data));
+    const row = await api('GET', `/entities/AuditLog/${rec.data.id}`, null, tokens.admin);
+    assert.equal(row.user_email, 'bruno@cliente2.pt', 'autoria da sessão, nunca a enviada');
+    assert.equal(row.customer_id, ids.c2);
+    assert.match(row.entry_hash, /^[a-f0-9]{64}$/);
+    assert.equal((await fn('audit', { op: 'record', action: 'user_login' }, tokens.b)).status, 403, 'ação reservada ao servidor');
+    assert.equal(await forbidden('PUT', `/entities/AuditLog/${rec.data.id}`, { details: 'alterado' }), true, 'administrador não altera');
+    assert.equal(await forbidden('DELETE', `/entities/AuditLog/${rec.data.id}`), true, 'administrador não apaga');
+    assert.equal((await fn('audit', { op: 'verify' }, tokens.b)).status, 403, 'só o administrador verifica');
+    assert.equal((await fn('audit', { op: 'verify' }, tokens.admin)).data.sealed, false);
+    const seal = await fn('audit', { op: 'seal' }, tokens.admin);
+    assert.equal(seal.data.sealed, true, JSON.stringify(seal.data));
+    await fn('audit', { op: 'record', action: 'task_updated', entity_type: 'Task', entity_id: 't1', details: 'depois do selo' }, tokens.b);
+    const verified = await fn('audit', { op: 'verify' }, tokens.admin);
+    assert.equal(verified.data.verdict, 'verified', JSON.stringify(verified.data));
+    const status = await fn('audit', { op: 'status' }, tokens.admin);
+    assert.equal(status.data.last_verification.action, 'audit_chain_verified');
+  });
+
   test('funções de backend', async () => {
     const list = await fn('listUsers', {}, tokens.a);
     assert.equal(list.status, 200);

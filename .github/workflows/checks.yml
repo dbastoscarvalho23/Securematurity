@@ -1,5 +1,6 @@
-# Verificações em cada PR: testes do frontend, nomes por definir nas funções do Base44
-# e, no servidor próprio, os testes ponta a ponta com PostgreSQL.
+# Verificações em cada PR: testes do frontend, nomes por definir nas funções do Base44, integridade da
+# Biblioteca Legal (manifesto SHA-256, ficheiros proibidos, pacotes gerados) e, no servidor próprio, os testes
+# ponta a ponta com PostgreSQL.
 name: Verificações
 
 on:
@@ -24,6 +25,17 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Nomes por definir nas funções
         run: node scripts/check-function-names.cjs
+      - name: Integridade da Biblioteca Legal
+        run: node scripts/check-legal-integrity.cjs
+      - name: Pacotes legais gerados iguais aos dados oficiais
+        run: |
+          python3 tools/legal/build_ai_pack.py
+          node tools/legal/build_classify_catalog.mjs
+          if ! git diff --quiet -- base44/shared/legalPack.ts base44/shared/classifyCatalog.ts; then
+            git diff --stat -- base44/shared/legalPack.ts base44/shared/classifyCatalog.ts
+            echo "::error title=Pacotes legais desatualizados::legalPack.ts ou classifyCatalog.ts não correspondem a src/data/legal. Regenere-os com tools/legal (ver tools/legal/README.md)."
+            exit 1
+          fi
       - name: Testes
         run: |
           set +e

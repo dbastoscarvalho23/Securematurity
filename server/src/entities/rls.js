@@ -84,6 +84,9 @@ const or = (parts) => {
  */
 export function ruleToFilter(rule, user, { nullMatchesUnresolved = false } = {}) {
   if (rule === null || rule === undefined) return true;
+  // Uma regra booleana vale como está: `"delete": false` proíbe a todos (ex.: a trilha de auditoria).
+  if (rule === false) return false;
+  if (rule === true) return true;
   if (!isPlainObject(rule) || Object.keys(rule).length === 0) return true;
   const ctx = userTemplateContext(user);
   const walk = (node) => {
