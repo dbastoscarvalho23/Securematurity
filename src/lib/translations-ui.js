@@ -2,7 +2,7 @@
 // Merged into translations via Object.assign at the bottom of translations.js.
 
 export const uiEn = {
-  register_title: 'Create your account',
+  register_title: 'Activate your access',
   register_subtitle: 'Set up your password to activate your access',
   register_email: 'Email',
   register_password: 'Password',
@@ -375,7 +375,7 @@ export const uiEn = {
 };
 
 export const uiPt = {
-  register_title: 'Criar a sua conta',
+  register_title: 'Ativar o seu acesso',
   register_subtitle: 'Defina a sua palavra-passe para ativar o acesso',
   register_email: 'Email',
   register_password: 'Palavra-passe',
