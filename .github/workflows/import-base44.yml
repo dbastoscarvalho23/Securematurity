@@ -5,7 +5,8 @@
 # e abre um PR para rever. Ficheiros que só existem no GitHub (CI, servidor próprio, scripts) não são
 # apagados; os que existem no GitHub e já não existem na app ficam listados no PR.
 #
-# Arranque: enviar um ramo sync/base44-<data> criado a partir de main, ou Actions → Run workflow.
+# Arranque: criar e enviar um ramo sync/base44-<data> a partir de main, ou Actions → Run workflow.
+# Se o GitHub Actions não puder criar PRs neste repositório, o commit fica no ramo e o PR abre-se à mão.
 # Requer o segredo BASE44_API_KEY (o mesmo do workflow «Publicar no Base44»).
 name: Trazer código da app Base44
 
@@ -27,8 +28,9 @@ env:
 
 jobs:
   importar:
-    # Os commits do próprio workflow têm o prefixo [app] e não voltam a disparar a importação.
-    if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, '[app]')
+    # Só na criação do ramo (ou à mão). Envios seguintes para o mesmo ramo, como correções durante a
+    # revisão, não voltam a importar: uma nova importação reporia por cima o código da app.
+    if: github.event_name == 'workflow_dispatch' || github.event.created
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
