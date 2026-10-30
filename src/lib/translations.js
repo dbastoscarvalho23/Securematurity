@@ -13,6 +13,13 @@ import { customersEn, customersPt } from './translations-customers';
 import { trainingEn, trainingPt } from './translations-training';
 import { genReportsEn, genReportsPt } from './translations-genreports';
 import { storageEn, storagePt } from './translations-storage';
+import { intakeEn, intakePt } from './translations-intake';
+import { legalEn, legalPt } from './translations-legal';
+import { assetsEn, assetsPt } from './translations-assets';
+import { licensingEn, licensingPt } from './translations-licensing';
+import { aiEn, aiPt } from './translations-ai';
+import { extraEn, extraPt } from './translations-extra';
+import { onboardingEn, onboardingPt } from './translations-onboarding';
 export const translations = {
   en: {
     // assessments
@@ -53,6 +60,9 @@ export const translations = {
     // common
     common_loading: 'Loading...',
     common_save: 'Save',
+    common_prev: 'Previous',
+    common_next: 'Next',
+    common_page_of: 'Page {current} of {total}',
     common_cancel: 'Cancel',
     common_delete: 'Delete',
     common_edit: 'Edit',
@@ -91,20 +101,23 @@ export const translations = {
     common_delete_error: 'Failed to delete',
     common_update_error: 'Failed to update',
     // compliance
-    compliance_journey_title: 'Compliance Journey — RJCS',
-    compliance_journey_subtitle: 'Legal Framework for Cybersecurity — Step-by-step compliance checklist',
+    compliance_journey_title: 'Compliance Journey — RJC',
+    compliance_journey_subtitle: 'Cybersecurity Legal Framework (Decree-Law 125/2025) and CNCS Regulation 756/2026 — step-by-step checklist',
+    compliance_legacy_title: 'This journey was created with the previous checklist (RJCS)',
+    compliance_legacy_desc: 'It remains available for reference. Create the new journey, based on Decree-Law 125/2025 and Regulation 756/2026, to follow the obligations in force.',
+    compliance_create_new_journey: 'Create RJC 2026 journey',
     compliance_select_customer: 'Select a customer...',
     compliance_select_customer_prompt: 'Select a customer to view the checklist',
     compliance_not_initialised: 'Checklist not yet initialised',
-    compliance_not_initialised_desc: 'Click below to create the full RJCS checklist for',
-    compliance_init_button: 'Initialise RJCS Checklist',
+    compliance_not_initialised_desc: 'Click below to create the full RJC checklist (Decree-Law 125/2025 and Regulation 756/2026) for',
+    compliance_init_button: 'Initialise RJC Checklist',
     compliance_total_tasks: 'Total Tasks',
     compliance_completed: 'Completed',
     compliance_in_progress: 'In Progress',
     compliance_overall_progress: 'Overall Progress',
     compliance_reinit: 'Reinitialise Checklist',
     compliance_reinit_confirm: 'Are you sure you want to reinitialise the checklist? All data will be lost.',
-    compliance_init_success: 'RJCS checklist initialised successfully!',
+    compliance_init_success: 'RJC checklist initialised.',
     compliance_section_completed_of: 'completed',
     // maturity
     maturity_initial: 'Initial',
@@ -139,6 +152,12 @@ export const translations = {
     nav_action_plan: 'Action Plan',
     nav_question_bank: 'Question DB',
     nav_admin: 'Admin',
+    nav_backoffice: 'Backoffice',
+    backoffice_tab_overview: 'Overview',
+    backoffice_tab_customers: 'Customers',
+    backoffice_tab_users: 'Users',
+    backoffice_tab_frameworks: 'Frameworks',
+    backoffice_tab_audit: 'Audit',
     nav_audit_log: 'Audit Log',
     nav_email_report: 'Email Report',
     nav_settings: 'Settings',
@@ -158,6 +177,7 @@ export const translations = {
     page_action_plan: 'Action Plan',
     page_reports: 'Reports & Analytics',
     page_admin: 'Admin Dashboard',
+    page_backoffice: 'Backoffice',
     page_audit_log: 'Audit Log',
     page_settings: 'Settings',
     page_risk_assessment: 'Risk Assessment',
@@ -229,7 +249,7 @@ export const translations = {
     assessments_col_frameworks: 'Frameworks',
     assessments_col_score: 'Pontuação',
     assessments_col_status: 'Estado',
-    assessments_no_results: 'Nenhuma avaliação corresponde.',
+    assessments_no_results: 'Nenhuma avaliação corresponde à pesquisa.',
     assessments_empty: 'Sem avaliações.',
     assessments_view_results: 'Ver Resultados',
     assessments_continue: 'Continuar',
@@ -257,6 +277,9 @@ export const translations = {
     // common
     common_loading: 'A carregar...',
     common_save: 'Guardar',
+    common_prev: 'Anterior',
+    common_next: 'Seguinte',
+    common_page_of: 'Página {current} de {total}',
     common_cancel: 'Cancelar',
     common_delete: 'Eliminar',
     common_edit: 'Editar',
@@ -290,25 +313,28 @@ export const translations = {
     common_not_assigned: 'Não atribuído',
     common_active: 'Ativo',
     common_inactive: 'Inativo',
-    common_no_permission: 'Não tem permissão para visualizar esta página.',
-    common_save_error: 'Erro ao guardar',
-    common_delete_error: 'Erro ao eliminar',
-    common_update_error: 'Erro ao atualizar',
+    common_no_permission: 'Não tem permissão para ver esta página.',
+    common_save_error: 'Não foi possível guardar',
+    common_delete_error: 'Não foi possível eliminar',
+    common_update_error: 'Não foi possível atualizar',
     // compliance
-    compliance_journey_title: 'Jornada de Conformidade — RJCS',
-    compliance_journey_subtitle: 'Regime Jurídico da Cibersegurança — Checklist passo a passo',
+    compliance_journey_title: 'Jornada de Conformidade — RJC',
+    compliance_journey_subtitle: 'Regime Jurídico da Cibersegurança (Decreto-Lei n.º 125/2025) e Regulamento do CNCS n.º 756/2026: checklist passo a passo',
+    compliance_legacy_title: 'Esta jornada foi criada com a checklist anterior (RJCS)',
+    compliance_legacy_desc: 'Mantém-se disponível para consulta. Crie a nova jornada, baseada no Decreto-Lei n.º 125/2025 e no Regulamento do CNCS n.º 756/2026, para acompanhar as obrigações em vigor.',
+    compliance_create_new_journey: 'Criar jornada RJC 2026',
     compliance_select_customer: 'Selecionar cliente...',
     compliance_select_customer_prompt: 'Selecione um cliente para ver a checklist',
     compliance_not_initialised: 'Checklist ainda não inicializada',
-    compliance_not_initialised_desc: 'Clique abaixo para criar a checklist RJCS completa para',
-    compliance_init_button: 'Inicializar Checklist RJCS',
+    compliance_not_initialised_desc: 'Clique abaixo para criar a checklist RJC completa (Decreto-Lei n.º 125/2025 e Regulamento do CNCS n.º 756/2026) para',
+    compliance_init_button: 'Inicializar checklist RJC',
     compliance_total_tasks: 'Total de Tarefas',
     compliance_completed: 'Concluídas',
-    compliance_in_progress: 'Em Progresso',
+    compliance_in_progress: 'Em Curso',
     compliance_overall_progress: 'Progresso Global',
     compliance_reinit: 'Reinicializar Checklist',
-    compliance_reinit_confirm: 'Tem a certeza que quer reinicializar a checklist? Todos os dados serão perdidos.',
-    compliance_init_success: 'Checklist RJCS inicializada com sucesso!',
+    compliance_reinit_confirm: 'Tem a certeza de que pretende reinicializar a checklist? Todos os dados serão perdidos.',
+    compliance_init_success: 'Checklist RJC inicializada.',
     compliance_section_completed_of: 'concluídas',
     // maturity
     maturity_initial: 'Inicial',
@@ -317,7 +343,7 @@ export const translations = {
     maturity_managed: 'Gerido',
     maturity_optimized: 'Otimizado',
     maturity_level: 'Nível de Maturidade',
-    maturity_na: 'N/D',
+    maturity_na: 'N/A',
     maturity_not_implemented: 'Não Implementado',
     // my
     my_profile: 'O Meu Perfil',
@@ -329,24 +355,30 @@ export const translations = {
     nav_development: 'Desenvolvimento',
     nav_dashboard: 'Painel',
     nav_customers: 'Clientes',
-    nav_compliance_journey: 'Jornada Conformidade',
+    nav_compliance_journey: 'Jornada de Conformidade',
     nav_assessments: 'Avaliações',
     nav_evidence: 'Evidências',
     nav_tasks: 'Tarefas',
     nav_task_analytics: 'Análise de Tarefas',
     nav_risk_assessment: 'Gestão de Risco',
     nav_documents: 'Documentos',
-    nav_doc_audit_trail: 'Auditoria de Docs',
-    nav_supply_chain: 'Cadeia de Fornecimento',
+    nav_doc_audit_trail: 'Auditoria de Documentos',
+    nav_supply_chain: 'Cadeia de Abastecimento',
     nav_suppliers: 'Fornecedores',
     nav_reports: 'Relatórios',
     nav_action_plan: 'Plano de Ação',
-    nav_question_bank: 'BD de Perguntas',
+    nav_question_bank: 'Banco de Perguntas',
     nav_admin: 'Administração',
+    nav_backoffice: 'Backoffice',
+    backoffice_tab_overview: 'Visão geral',
+    backoffice_tab_customers: 'Clientes',
+    backoffice_tab_users: 'Utilizadores',
+    backoffice_tab_frameworks: 'Frameworks',
+    backoffice_tab_audit: 'Auditoria',
     nav_audit_log: 'Registo de Auditoria',
-    nav_email_report: 'Relatório de E-mails',
+    nav_email_report: 'Relatório de Emails',
     nav_settings: 'Definições',
-    nav_ropa: 'Registo RAP',
+    nav_ropa: 'Registo de Tratamentos',
     nav_incidents: 'Incidentes',
     nav_dsr: 'Pedidos de Titulares',
     nav_vulnerabilities: 'Vulnerabilidades',
@@ -355,13 +387,14 @@ export const translations = {
     page_dashboard: 'Painel',
     page_customers: 'Clientes',
     page_assessments: 'Avaliações',
-    page_question_bank: 'Base de Perguntas',
+    page_question_bank: 'Banco de Perguntas',
     page_recommendations: 'Recomendações',
     page_tasks: 'Tarefas',
     page_task_analytics: 'Análise de Tarefas',
     page_action_plan: 'Plano de Ação',
     page_reports: 'Relatórios e Análises',
     page_admin: 'Painel de Administração',
+    page_backoffice: 'Backoffice',
     page_audit_log: 'Registo de Auditoria',
     page_settings: 'Definições',
     page_risk_assessment: 'Avaliação de Risco',
@@ -369,7 +402,7 @@ export const translations = {
     page_document_audit_trail: 'Auditoria de Documentos',
     page_compliance_journey: 'Jornada de Conformidade',
     page_evidence: 'Evidências',
-    page_email_report: 'Relatório de Notificações por E-mail',
+    page_email_report: 'Relatório de Notificações por Email',
     page_ropa: 'Registo de Atividades de Tratamento',
     page_incidents: 'Gestão de Incidentes',
     page_dsr: 'Pedidos de Titulares de Dados',
@@ -379,7 +412,7 @@ export const translations = {
     profile_title: 'O Meu Perfil',
     profile_full_name: 'Nome Completo',
     profile_full_name_placeholder: 'O seu nome completo',
-    profile_email: 'E-mail',
+    profile_email: 'Email',
     profile_role: 'Função',
     profile_local_time: 'Hora Local',
     profile_customer: 'Cliente',
@@ -391,7 +424,7 @@ export const translations = {
     profile_theme_dark: 'Escuro',
     profile_theme_system: 'Sistema',
     profile_updated: 'Perfil atualizado',
-    profile_update_failed: 'Erro ao atualizar perfil',
+    profile_update_failed: 'Não foi possível atualizar o perfil',
     // qb
     qb_subtitle: 'Gerir perguntas de avaliação em todos os frameworks',
     qb_translating: 'A traduzir',
@@ -411,14 +444,14 @@ export const translations = {
     qb_col_weight: 'Peso',
     qb_col_language: 'Idioma',
     // role
-    role_admin: 'Admin da Plataforma',
-    role_customer_admin: 'Admin do Cliente',
+    role_admin: 'Administrador da Plataforma',
+    role_customer_admin: 'Administrador do Cliente',
     role_user: 'Utilizador',
     // sign
     sign_out: 'Terminar Sessão',
     // status
     status_pending: 'Pendente',
-    status_in_progress: 'Em Progresso',
+    status_in_progress: 'Em Curso',
     status_done: 'Concluída',
     status_not_applicable: 'N/A',
   },
@@ -454,3 +487,17 @@ Object.assign(translations.en, genReportsEn);
 Object.assign(translations.pt, genReportsPt);
 Object.assign(translations.en, storageEn);
 Object.assign(translations.pt, storagePt);
+Object.assign(translations.en, intakeEn);
+Object.assign(translations.pt, intakePt);
+Object.assign(translations.en, legalEn);
+Object.assign(translations.pt, legalPt);
+Object.assign(translations.en, assetsEn);
+Object.assign(translations.pt, assetsPt);
+Object.assign(translations.en, licensingEn);
+Object.assign(translations.pt, licensingPt);
+Object.assign(translations.en, aiEn);
+Object.assign(translations.pt, aiPt);
+Object.assign(translations.en, extraEn);
+Object.assign(translations.pt, extraPt);
+Object.assign(translations.en, onboardingEn);
+Object.assign(translations.pt, onboardingPt);

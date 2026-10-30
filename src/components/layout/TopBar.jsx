@@ -39,10 +39,12 @@ const PAGE_TITLE_KEYS = {
   '/action-plan': 'page_action_plan',
   '/reports': 'page_reports',
   '/admin': 'page_admin',
+  '/backoffice': 'page_backoffice',
   '/audit-log': 'page_audit_log',
   '/settings': 'page_settings',
   '/risk-assessment': 'page_risk_assessment',
   '/security-documents': 'page_security_documents',
+  '/repository': 'page_repository',
   '/document-audit-trail': 'page_document_audit_trail',
   '/compliance-journey': 'page_compliance_journey',
   '/evidence': 'page_evidence',
@@ -53,6 +55,11 @@ const PAGE_TITLE_KEYS = {
   '/vulnerabilities': 'page_vulnerabilities',
   '/compliance-metrics': 'page_compliance_metrics',
   '/suppliers': 'suppliers_title',
+  '/supply-chain': 'nav_supply_chain',
+  '/training': 'nav_training',
+  '/legal-library': 'nav_legal_library',
+  '/assets': 'nav_assets_tools',
+  '/framework-guide': 'nav_framework_guide',
 };
 
 export default function TopBar({ onMenuClick }) {
@@ -71,7 +78,7 @@ export default function TopBar({ onMenuClick }) {
   )?.[1];
   const pageTitle = pageTitleKey ? t(pageTitleKey) : 'AnkoraOne';
 
-  const displayName = user?.display_name || user?.full_name || user?.email || 'User';
+  const displayName = user?.display_name || user?.full_name || user?.email || t('x_topbar_user_fallback');
   const initials = displayName
     ? displayName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : 'U';
@@ -116,34 +123,34 @@ export default function TopBar({ onMenuClick }) {
 
   return (
     <>
-      <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0">
+      <header className="sticky top-0 z-30 h-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border flex items-center justify-between gap-4 px-4 md:px-8 flex-shrink-0">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
             className="md:hidden h-9 w-9"
             onClick={onMenuClick}
-            aria-label="Menu"
+            aria-label={t('x_topbar_menu')}
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <h2 className="text-base font-semibold text-foreground">{pageTitle}</h2>
+          <h2 className="text-sm font-semibold text-foreground truncate">{pageTitle}</h2>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-4">
           <GlobalSearch />
           <NotificationBell />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2.5 text-sm font-medium h-9 px-3">
-                <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-                  {initials}
-                </div>
-                <div className="hidden md:flex flex-col items-start leading-tight">
-                  <span className="text-sm font-medium">{displayName}</span>
+              <Button variant="ghost" className="gap-2.5 h-10 px-2">
+                <div className="hidden md:flex flex-col items-end leading-tight">
+                  <span className="text-[11px] font-semibold text-foreground">{displayName}</span>
                   {!isAdmin && customerName && (
-                    <span className="text-xs text-muted-foreground">{customerName}</span>
+                    <span className="text-[10px] text-muted-foreground">{customerName}</span>
                   )}
+                </div>
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">
+                  {initials}
                 </div>
               </Button>
             </DropdownMenuTrigger>

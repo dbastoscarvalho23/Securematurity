@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2, ArrowRight, CalendarDays, User, Paperclip } from 'lucide-react';
-import { format, isPast, parseISO } from 'date-fns';
+import { isPast, parseISO } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 

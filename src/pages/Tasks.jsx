@@ -13,6 +13,7 @@ import TaskCalendar from '@/components/tasks/TaskCalendar';
 import BulkActionBar from '@/components/tasks/BulkActionBar';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
+import { notifyEntityChange } from '@/lib/notifications';
 import { useLanguage } from '@/lib/LanguageContext';
 import PageHeader from '@/components/shared/PageHeader';
 
@@ -44,6 +45,7 @@ export default function Tasks() {
         const previousTask = tasks.find(t => t.id === form.id);
         const result = await base44.entities.Task.update(form.id, form);
         await writeAuditLog({ action: 'task_updated', entity_type: 'Task', entity_id: form.id, details: `Updated task: ${form.title}` });
+        notifyEntityChange('Task', form.id, 'update', previousTask);
 
         if (form.assigned_to) {
           const assigneeChanged = previousTask?.assigned_to !== form.assigned_to;
@@ -59,6 +61,7 @@ export default function Tasks() {
       }
       const result = await base44.entities.Task.create(form);
       await writeAuditLog({ action: 'task_created', entity_type: 'Task', entity_id: result?.id, details: `Created task: ${form.title}` });
+      notifyEntityChange('Task', result?.id, 'create');
       if (result?.assigned_to) {
         base44.functions.invoke('taskNotifications', { type: 'assigned', task: result, previousTask: null }).catch(() => {});
       }
@@ -78,6 +81,7 @@ export default function Tasks() {
       await writeAuditLog({ action: 'task_status_changed', entity_type: 'Task', entity_id: id, details: `Task status changed to "${status}"${title ? `: ${title}` : ''}` });
       if (previousTask?.assigned_to) {
         base44.functions.invoke('taskNotifications', { type: 'status_changed', task: { ...previousTask, status }, previousTask }).catch(() => {});
+        notifyEntityChange('Task', previousTask?.id, 'update', previousTask);
       }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),

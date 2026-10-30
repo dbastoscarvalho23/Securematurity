@@ -15,6 +15,7 @@ import { HttpError } from '../util.js';
 import { keyFromUrl, getFileMeta, readFileBuffer } from '../integrations/storage.js';
 
 const shimUrl = new URL('./sdk-shim.js', import.meta.url).href;
+const runtimeShimUrl = new URL('./runtime-shim.js', import.meta.url).href;
 const serverPackageUrl = new URL('../../package.json', import.meta.url).href;
 
 function npmSpecifierToBare(spec) {
@@ -33,6 +34,7 @@ function installHooks() {
   module.registerHooks({
     resolve(specifier, context, nextResolve) {
       if (specifier.startsWith('npm:@base44/sdk')) return { url: shimUrl, shortCircuit: true };
+      if (specifier === 'base44:runtime') return { url: runtimeShimUrl, shortCircuit: true };
       if (specifier.startsWith('npm:')) return nextResolve(npmSpecifierToBare(specifier), { ...context, parentURL: serverPackageUrl });
       if (specifier.startsWith('jsr:')) throw new Error(`Importações jsr: não são suportadas (${specifier})`);
       return nextResolve(specifier, context);

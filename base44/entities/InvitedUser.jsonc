@@ -10,11 +10,10 @@
       "type": "string",
       "enum": [
         "user",
-        "admin",
         "customer_admin"
       ],
       "default": "user",
-      "description": "Assigned role"
+      "description": "Papel pretendido no cliente (só user ou customer_admin; administradores da plataforma não se criam por convite)"
     },
     "status": {
       "type": "string",
@@ -27,7 +26,7 @@
     },
     "invited_by": {
       "type": "string",
-      "description": "Email of the admin who sent the invite"
+      "description": "Email de quem convidou (informativo; a autorização usa created_by_id e o customer_id do convite)"
     },
     "customer_id": {
       "type": "string",
@@ -79,32 +78,16 @@
               }
             },
             {
-              "data.invited_by": "{{user.email}}"
+              "data.customer_id": "{{user.data.customer_id}}"
             }
           ]
         }
       ]
     },
     "update": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "customer_admin"
-              }
-            },
-            {
-              "data.invited_by": "{{user.email}}"
-            }
-          ]
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
       "$or": [
@@ -121,7 +104,7 @@
               }
             },
             {
-              "data.invited_by": "{{user.email}}"
+              "data.customer_id": "{{user.data.customer_id}}"
             }
           ]
         }
@@ -129,3 +112,4 @@
     }
   }
 }
+

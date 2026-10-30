@@ -8,7 +8,7 @@ import { Building2, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 
-const ALL_PROVIDERS = ['base44', 'google_drive', 'one_drive'];
+const ALL_PROVIDERS = ['base44', 'google_drive', 'one_drive', 'webdav'];
 
 export default function CustomerStorageAssignmentsPanel() {
   const { t } = useLanguage();
@@ -48,6 +48,7 @@ export default function CustomerStorageAssignmentsPanel() {
   const providerLabel = (id) => {
     if (id === 'google_drive') return t('storage_provider_google_drive');
     if (id === 'one_drive') return t('storage_provider_one_drive');
+    if (id === 'webdav') return t('storage_provider_webdav');
     return t('storage_provider_base44');
   };
 

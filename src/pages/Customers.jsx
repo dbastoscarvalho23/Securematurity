@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, ExternalLink, X } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, ExternalLink, X, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,10 +17,13 @@ import {
 } from '@/components/ui/table';
 import CustomerForm from '@/components/customers/CustomerForm';
 import CustomerDetailPanel from '@/components/customers/CustomerDetailPanel';
+import QualificationWizard from '@/components/customers/QualificationWizard';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { writeAuditLog } from '@/lib/auditLog';
+import { applyCustomerStorage } from '@/lib/repository';
 import { toast } from 'sonner';
 
 export default function Customers() {
@@ -30,6 +33,9 @@ export default function Customers() {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [search, setSearch] = useState('');
+  // Enquadramento (RJC) proposto logo após criar o cliente; também disponível no menu de cada cliente.
+  const [offerCustomer, setOfferCustomer] = useState(null);
+  const [wizardCustomer, setWizardCustomer] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: customers = [], isLoading } = useQuery({
@@ -37,23 +43,39 @@ export default function Customers() {
     queryFn: () => base44.entities.Customer.list('-created_date'),
   });
 
+  // Repositório documental: aplicado depois de o cliente existir (a ligação ao NAS precisa do id do cliente).
+  // Uma falha aqui não desfaz a gravação do cliente: fica no repositório anterior e o aviso é mostrado.
+  const applyStorage = async (customerId, storage) => {
+    if (!storage) return;
+    try {
+      const res = await applyCustomerStorage(customerId, storage);
+      if (!res.ok) toast.warning(`${t('repo_apply_nas_failed')} ${t(res.warning) || res.warning}`);
+    } catch (e) {
+      toast.warning(`${t('repo_apply_failed')} ${e?.message || ''}`);
+    }
+    queryClient.invalidateQueries({ queryKey: ['nas-connection', customerId] });
+  };
+
   const createMutation = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: async ({ data, storage }) => {
       const result = await base44.entities.Customer.create(data);
       await writeAuditLog({ action: 'customer_created', entity_type: 'Customer', entity_id: result?.id, details: `Created customer: ${data.name}` });
+      if (result?.id) await applyStorage(result.id, storage);
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setShowForm(false);
+      if (created?.id) setOfferCustomer(created);
     },
-    onError: (err) => toast.error(err?.message || 'Failed to create customer'),
+    onError: (err) => toast.error(err?.message || t('x_customer_create_failed')),
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
+    mutationFn: async ({ id, data, storage }) => {
       const result = await base44.entities.Customer.update(id, data);
       await writeAuditLog({ action: 'customer_updated', entity_type: 'Customer', entity_id: id, details: `Updated customer: ${data.name}` });
+      await applyStorage(id, storage);
       return result;
     },
     onSuccess: () => {
@@ -61,7 +83,7 @@ export default function Customers() {
       setShowForm(false);
       setEditingCustomer(null);
     },
-    onError: (err) => toast.error(err?.message || 'Failed to update customer'),
+    onError: (err) => toast.error(err?.message || t('x_customer_update_failed')),
   });
 
   const deleteMutation = useMutation({
@@ -73,7 +95,7 @@ export default function Customers() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setSelectedCustomer(null);
     },
-    onError: (err) => toast.error(err?.message || 'Failed to delete customer'),
+    onError: (err) => toast.error(err?.message || t('x_customer_delete_failed')),
   });
 
   const filtered = customers.filter(c =>
@@ -81,11 +103,11 @@ export default function Customers() {
     c.nif?.includes(search)
   );
 
-  const handleSubmit = (data) => {
+  const handleSubmit = (data, storage) => {
     if (editingCustomer) {
-      updateMutation.mutate({ id: editingCustomer.id, data });
+      updateMutation.mutate({ id: editingCustomer.id, data, storage });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate({ data, storage });
     }
   };
 
@@ -205,6 +227,9 @@ export default function Customers() {
                           <DropdownMenuItem onClick={() => handleEdit(c)}>
                                             <Pencil className="w-4 h-4 mr-2" /> {t('customers_menu_edit')}
                                           </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => { if (editingCustomer?.id === c.id) { setShowForm(false); setEditingCustomer(null); } setWizardCustomer(c); }}>
+                                            <Scale className="w-4 h-4 mr-2" /> {c.rjc_qualification && c.rjc_qualification !== 'por_determinar' ? t('qw_review') : t('qw_start')}
+                                          </DropdownMenuItem>
                                           {c.website && (
                                             <DropdownMenuItem onClick={() => window.open(c.website, '_blank')}>
                                               <ExternalLink className="w-4 h-4 mr-2" /> {t('customers_menu_website')}
@@ -243,6 +268,33 @@ export default function Customers() {
           </div>
         )}
       </div>
+
+      <Dialog open={Boolean(offerCustomer)} onOpenChange={(v) => { if (!v) setOfferCustomer(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Scale className="w-5 h-5 text-primary" /> {t('qw_offer_title')}</DialogTitle>
+            <DialogDescription><strong className="text-foreground">{offerCustomer?.name}</strong> — {t('qw_offer_desc')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setOfferCustomer(null)}>{t('qw_offer_later')}</Button>
+            <Button className="gap-2" onClick={() => { setWizardCustomer(offerCustomer); setOfferCustomer(null); }}><Scale className="w-4 h-4" /> {t('qw_offer_now')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {wizardCustomer && (
+        <QualificationWizard
+          open={Boolean(wizardCustomer)}
+          onOpenChange={(v) => { if (!v) setWizardCustomer(null); }}
+          customer={wizardCustomer}
+          onDone={async () => {
+            if (selectedCustomer?.id === wizardCustomer.id) {
+              const fresh = await base44.entities.Customer.get(wizardCustomer.id).catch(() => null);
+              if (fresh) setSelectedCustomer(fresh);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

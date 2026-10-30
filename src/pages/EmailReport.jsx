@@ -11,7 +11,8 @@ import { Mail, Send, AlertCircle, CheckCircle2, Search, TrendingUp, Users, FileT
 import PageHeader from '@/components/shared/PageHeader';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
-import { format, subDays, isAfter } from 'date-fns';
+import { subDays, isAfter } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
 

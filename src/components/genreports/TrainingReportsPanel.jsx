@@ -15,8 +15,9 @@ import TrainingReportEditDialog from '@/components/genreports/TrainingReportEdit
 import { Search, Download, Pencil, Trash2, FileText, GraduationCap } from 'lucide-react';
 import { writeAuditLog } from '@/lib/auditLog';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { cn } from '@/lib/utils';
+import FileLink from '@/components/shared/FileLink';
 
 const STATUS_KEY = {
   draft: 'genreports_status_draft',
@@ -61,7 +62,7 @@ export default function TrainingReportsPanel() {
       toast.success(t('treports_saved'));
       setEditing(null);
     },
-    onError: (e) => toast.error(e?.message || 'Error'),
+    onError: (e) => toast.error(e?.message || t('x_tool_error')),
   });
 
   const deleteMut = useMutation({
@@ -74,7 +75,7 @@ export default function TrainingReportsPanel() {
       toast.success(t('treports_deleted'));
       setDeleting(null);
     },
-    onError: (e) => toast.error(e?.message || 'Error'),
+    onError: (e) => toast.error(e?.message || t('x_tool_error')),
   });
 
   return (
@@ -159,7 +160,7 @@ export default function TrainingReportsPanel() {
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
                         <Button variant="ghost" size="sm" asChild title={t('treports_download_again')}>
-                          <a href={r.file_url} target="_blank" rel="noopener noreferrer" download={r.file_name || undefined}><Download className="w-4 h-4" /></a>
+                          <FileLink url={r.file_url} target="_blank" rel="noopener noreferrer" download={r.file_name || undefined}><Download className="w-4 h-4" /></FileLink>
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => setEditing(r)} title={t('treports_edit')}>
                           <Pencil className="w-4 h-4" />

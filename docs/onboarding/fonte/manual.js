@@ -1,0 +1,353 @@
+const fs = require('fs');
+const path = require('path');
+const { Packer } = require('docx');
+const { DIR, MUTED, t, p, P, note, H1, H2, H3, B, N, gap, table, callout, tip, cover, toc, makeDocument } = require('./estilo');
+const TEALT = 'E6F5F3', TEAL = '26A699';
+
+const coverChildren = cover({
+  kicker: 'MANUAL DE ONBOARDING',
+  title: 'Começar a trabalhar na AnkoraOne',
+  summary: 'Para novos clientes que adotam o Regime Jurídico da Cibersegurança (NIS2), a ISO/IEC 27001 e a ISO/IEC 42001: criação da conta, navegação, uso diário e guia de cada referencial disponível na plataforma.',
+  version: 'Versão 1.2 · outubro de 2026',
+});
+
+// ── Conteúdo ────────────────────────────────────────────────────────────────────────────────────────
+const body = [];
+const add = (...x) => body.push(...x);
+
+add(...toc());
+
+// 1
+add(H1('1. A AnkoraOne em resumo'),
+  P('A AnkoraOne é a plataforma onde a sua organização organiza, comprova e acompanha a conformidade em cibersegurança. Junta num só sítio o enquadramento legal, as medidas a cumprir, as evidências, os documentos, os riscos, os incidentes e os fornecedores.'),
+  P('A base legal de tudo o que a plataforma pede vem dos textos oficiais: o **Decreto-Lei n.º 125/2025** e o Regime Jurídico da Cibersegurança (RJC) em anexo, o **Regulamento do CNCS n.º 756/2026** e a **Diretiva (UE) 2022/2555 (NIS2)**. Cada tarefa e cada medida indica a disposição de onde vem.'),
+  H2('O que vai conseguir fazer'),
+  B('Saber se a entidade está abrangida pelo RJC e com que qualificação e nível.'),
+  B('Seguir uma jornada de conformidade com as tarefas por ordem e com os prazos legais.'),
+  B('Ver as medidas mínimas aplicáveis ao seu nível e o que guardar como evidência de cada uma.'),
+  B('Guardar evidências e documentos de forma privada, com versões, validade e aprovação, no repositório que escolher.'),
+  B('Carregar documentos que já tem e deixar a plataforma propor a que medida, tarefa ou controlo pertencem.'),
+  B('Medir a maturidade por referencial (NIS2, ISO/IEC 27001, ISO/IEC 42001 e outros) e transformar as lacunas num plano de ação.'),
+  B('Preparar a Declaração de Aplicabilidade e a análise de lacunas da ISO/IEC 27001 e da ISO/IEC 42001.'),
+  B('Preparar notificações de incidentes, relatórios e a supervisão do CNCS.'),
+  H2('Quem faz o quê'),
+  table(['Perfil', 'Quem é', 'O que pode fazer'], [
+    ['Consultor (administrador da plataforma)', 'Equipa AnkoraOne ou parceiro', 'Cria o cliente e a licença, faz ou valida o enquadramento, cria avaliações, aceita ou rejeita evidências, mantém a Biblioteca Legal.'],
+    ['Administrador do cliente', 'Responsável de cibersegurança ou de conformidade da entidade', 'Gere a jornada e as medidas, carrega evidências, aprova documentos, convida utilizadores, gere riscos, incidentes, fornecedores e ativos, usa o assistente de IA (se incluído na licença).'],
+    ['Utilizador', 'Restantes colaboradores envolvidos', 'Consulta a jornada e a Biblioteca Legal, responde a avaliações, trata as tarefas atribuídas, propõe documentos e carrega evidências gerais.'],
+  ], [2.2, 2.2, 5]),
+);
+
+// 2
+add(H1('2. Antes de começar'),
+  P('Ter esta informação à mão encurta a criação da conta para uma reunião de 30 a 45 minutos com o consultor.'),
+  table(['Informação', 'Para quê'], [
+    ['NIF, nome, setor, sítio web e número de trabalhadores', 'Ficha do cliente'],
+    ['Atividades exercidas e onde a entidade está estabelecida', 'Verificar se está abrangida (Anexos I e II do RJC, art. 4.º)'],
+    ['Volume de negócios e balanço anual; grupo empresarial, se existir', 'Calcular a dimensão (grande, média, pequena)'],
+    ['Natureza pública, se aplicável', 'Enquadrar como entidade pública relevante (Grupo A ou B)'],
+    ['Datas: início de atividade, autoidentificação no CNCS e notificação de qualificação, se já existirem', 'Calcular prazos e registar o que o CNCS já decidiu'],
+    ['Responsável de cibersegurança e ponto de contacto permanente (nome, email, telefone)', 'Tarefas B.3 e B.5 da jornada'],
+    ['Lista de pessoas a convidar e respetivo perfil', 'Convites e número de licenças de utilizador'],
+    ['Onde quer guardar os ficheiros', 'Repositório privado da plataforma, Google Drive, OneDrive ou NAS por WebDAV'],
+    ['Referenciais a seguir (por exemplo NIS2, ISO/IEC 27001 e, se a entidade desenvolve ou usa IA, ISO/IEC 42001)', 'Referenciais permitidos e licença'],
+    ['Se usa ou desenvolve sistemas de IA: lista dos sistemas e do papel da entidade em cada um (fornecedor, utilizador…)', 'Âmbito da ISO/IEC 42001'],
+  ], [4.5, 5]),
+);
+
+// 3
+add(H1('3. Processo de criação'),
+  P('A criação segue cinco passos. Os três primeiros são feitos pelo consultor, com a sua ajuda; os dois últimos ficam do seu lado.'),
+  table(['Passo', 'Quem', 'Resultado'], [
+    ['1. Criar o cliente', 'Consultor', 'Ficha da entidade, referenciais permitidos e repositório de ficheiros'],
+    ['2. Fazer o enquadramento no RJC', 'Consultor com o cliente', 'Qualificação, nível de conformidade, prazos e jornada criada'],
+    ['3. Atribuir a licença', 'Consultor', 'Bundle (Core, PRO ou Enterprise), referenciais e número de utilizadores'],
+    ['4. Convidar a equipa', 'Consultor ou administrador do cliente', 'Contas ativas, com o perfil certo'],
+    ['5. Primeira avaliação e plano', 'Consultor e cliente', 'Ponto de partida da maturidade e primeiras tarefas'],
+  ], [3, 2.5, 4.5]),
+  H2('3.1 Criar o cliente'),
+  P('O consultor preenche a ficha em **Clientes → Novo cliente**: NIF, nome, setor, dimensão, contactos, responsável de cibersegurança, referenciais permitidos e repositório de ficheiros. No fim, a plataforma propõe fazer logo o enquadramento.'),
+  H2('3.2 Enquadramento no Regime Jurídico da Cibersegurança'),
+  P('O assistente de enquadramento faz as perguntas do RJC por esta ordem e explica cada conclusão com a base legal:'),
+  N('**Atividade:** escolha das linhas de setor, subsetor e tipo de entidade dos Anexos I e II.'),
+  N('**Estabelecimento:** onde está estabelecida e se tem estabelecimento principal ou representante em Portugal (art. 4.º).'),
+  N('**Dimensão:** trabalhadores, volume de negócios e balanço, com a regra dos grupos.'),
+  N('**Casos especiais:** prestadores de serviços de confiança, entidades críticas, prestador único de um serviço essencial, impacto na segurança ou saúde públicas, risco sistémico, ensino superior.'),
+  N('**Entidade pública:** natureza e critérios do Grupo A ou B.'),
+  N('**Prazos e CNCS:** datas e decisões já notificadas, que prevalecem sobre o cálculo.'),
+  N('**Resultado:** qualificação, nível, pontos a confirmar e prazo de autoidentificação.'),
+  gap(),
+  table(['Resultado possível', 'O que significa na plataforma'], [
+    ['Entidade essencial ou importante', 'Jornada completa e medidas mínimas do nível de conformidade (Básico, Substancial ou Elevado), cumulativas com os níveis inferiores'],
+    ['Entidade pública relevante — Grupo A ou B', 'Jornada e medidas do Anexo IV; o Grupo A inclui as do Grupo B'],
+    ['Não abrangida', 'Pode usar a plataforma para boas práticas (por exemplo ISO/IEC 27001), sem obrigações do RJC'],
+    ['Por determinar', 'Faltam dados; os pontos em aberto ficam listados para confirmar com o CNCS ou o consultor'],
+  ], [3.2, 6]),
+  gap(),
+  callout('Importante', [
+    'O nível de conformidade só fica definido quando o CNCS o notifica. Até lá, a plataforma mostra o cálculo como indicativo.',
+    'Ao confirmar o enquadramento, a plataforma cria a jornada, marca as primeiras tarefas da secção A e guarda o **relatório de enquadramento em PDF** como evidência privada.',
+  ]),
+  H2('3.3 Licença e módulos'),
+  P('A licença define os módulos disponíveis, os referenciais (NIS2, QNRCS, ISO/IEC 27001, ISO/IEC 42001, DORA e outros) e o número de utilizadores (mínimo de 5).'),
+  table(['Bundle', 'Módulos incluídos'], [
+    ['Core', 'Jornada de Conformidade · Avaliações e Plano de Ação · Documentos e Evidências · Conhecimento e Orientação (Biblioteca Legal) · Gestão de Risco · Relatórios · Ativos e Ferramentas'],
+    ['PRO', 'Core + Gestão de Incidentes · Gestão de Fornecedores · Alertas de vulnerabilidades (CVE)'],
+    ['Enterprise', 'PRO + Assistente de IA (com quota mensal) · Privacidade (quando disponível)'],
+  ], [2, 7.5]),
+  H2('3.4 Convidar a equipa'),
+  B('O convite chega por email, com uma ligação para entrar pela primeira vez.'),
+  B('Na primeira entrada, a conta fica associada ao cliente e recebe o perfil pedido.'),
+  B('O administrador do cliente convida utilizadores em **Definições → Utilizadores**. Se faltarem licenças, o botão **Pedir mais lugares** avisa o consultor.'),
+  H2('3.5 Repositório de ficheiros'),
+  table(['Opção', 'Como funciona'], [
+    ['Repositório privado da plataforma', 'Por omissão. Os ficheiros nunca têm ligação pública.'],
+    ['Google Drive ou OneDrive', 'Pasta própria da entidade, sem partilhas públicas.'],
+    ['NAS da entidade (WebDAV)', 'Só HTTPS; as credenciais ficam cifradas. FTP não é suportado.'],
+  ], [3, 6.5]),
+  P('Na ficha do cliente escolhe-se também a **localização** (por omissão, AnkoraOne/<nome da entidade>). Dentro dela, a plataforma usa sempre as mesmas 13 pastas, de «00 Por classificar» a «99 Outros», para que a estrutura seja igual em todos os clientes. Mudar de repositório ou de localização só afeta os ficheiros novos.'),
+);
+
+// 4
+add(H1('4. Entrar e navegar'),
+  H2('4.1 Entrar'),
+  P('Abra **app.ankoraone.com** e entre com a conta Google, a conta Microsoft ou o email e a palavra-passe definidos no convite. A plataforma só abre a utilizadores convidados.'),
+  H2('4.2 O menu'),
+  P('O menu lateral está organizado em grupos, pela ordem em que o trabalho normalmente acontece. Só aparecem os itens incluídos na licença e permitidos ao seu perfil.'),
+  table(['Grupo', 'Itens', 'Para que serve'], [
+    ['Visão geral', 'Painel', 'Estado da conformidade, tarefas, riscos e alertas'],
+    ['Avaliar e comprovar', 'Jornada de Conformidade · Avaliações · Evidências · Biblioteca Legal · Guia de referenciais · Ativos e ferramentas', 'Saber o que cumprir e comprovar que se cumpre'],
+    ['Melhorar e gerir', 'Plano de Ação · Recomendações · Tarefas · Análise de Tarefas · Gestão de Risco · Incidentes · Vulnerabilidades', 'Corrigir lacunas e gerir o dia a dia'],
+    ['Governar', 'Documentos · Repositório documental · Auditoria de Documentos · Cadeia de Abastecimento · Fornecedores', 'Políticas aprovadas, todos os ficheiros num sítio e relação com terceiros'],
+    ['Analisar', 'Relatórios', 'Resultados por referencial, evolução e relatório anual'],
+    ['Sistema', 'Relatório de Emails · Definições', 'Comunicações enviadas, perfil, utilizadores, lembretes e repositório'],
+  ], [2, 4.5, 3.5]),
+  gap(),
+  callout('Dica', ['A barra de pesquisa no topo encontra riscos, documentos, tarefas e páginas pelo nome. O tema claro ou escuro e a língua (português ou inglês) mudam-se em Definições.'], TEALT, TEAL),
+);
+
+// 5
+add(H1('5. Uso no dia a dia'),
+  H2('5.1 Jornada de Conformidade'),
+  P('A jornada é a lista de tarefas que a lei pede, por ordem. Cada tarefa tem um título simples, a base legal por baixo e, quando é o caso, a etiqueta **Obrigatória a partir de 22-06-2028**.'),
+  table(['Secção', 'Exemplos de tarefas'], [
+    ['A. Âmbito, autoidentificação e qualificação', 'Confirmar se está abrangida; criar conta na plataforma do CNCS; autoidentificação; registo definitivo'],
+    ['B. Governação e responsáveis', 'Aprovação das medidas pela gestão; responsável de cibersegurança e ponto de contacto em 20 dias úteis'],
+    ['C. Gestão dos riscos', 'Gestão de riscos em prática; análise anual de todos os ativos; risco residual'],
+    ['D. Medidas de cibersegurança', 'Medidas mínimas do nível; as nove áreas do art. 27.º; lista de ativos acessíveis pela Internet'],
+    ['E. Cadeia de abastecimento', 'Fornecedores críticos e avaliação anual do seu risco'],
+    ['F. Incidentes', 'Critérios de incidente significativo; notificações em 24 h, 72 h e 30 dias úteis'],
+    ['G. Formação e sensibilização', 'Plano de formação; formação das equipas técnicas e da gestão; exercícios'],
+    ['H. Relatórios, certificação e supervisão', 'Relatório anual; evidências organizadas para a supervisão'],
+  ], [3.6, 6]),
+  P('Para cada tarefa defina o estado (pendente, em curso, concluída, não aplicável), o responsável, a data-alvo e notas, e ligue as evidências que a comprovam.'),
+  H2('5.2 Medidas mínimas (Biblioteca Legal › Conformidade)'),
+  P('Aqui estão as medidas do Regulamento n.º 756/2026 aplicáveis ao seu nível ou grupo. Cada medida mostra:'),
+  B('**Título:** a frase curta do controlo do Quadro Nacional de Referência (Anexo I) ou a área da medida (Anexo IV).'),
+  B('**O que guardar como evidência:** o critério de verificação oficial (Anexos III e IV).'),
+  B('**Base legal:** anexo e código do controlo; o texto completo da medida fica no detalhe.'),
+  P('O progresso aparece por objetivo (Gerir, Identificar, Proteger, Detetar, Responder, Recuperar) e pode ser exportado em CSV.'),
+  H2('5.3 Evidências'),
+  table(['Campo', 'Opções'], [
+    ['Tipo', 'Captura de ecrã · Relatório da ferramenta · Contrato ou licença · Política ou procedimento · Registo (log) · Relatório de teste ou auditoria · Outro'],
+    ['Método de verificação', 'Análise documental · Entrevista · Teste'],
+    ['Estados', 'Por rever · Aceite e válida · Expirada · Rejeitada · Substituída'],
+    ['Ficheiro', 'Até 8 MB; PDF, imagens, texto, CSV, ZIP, Office e email. O tipo é confirmado pelo conteúdo.'],
+  ], [2.4, 7.2]),
+  B('Indique a data de recolha e a validade: uma evidência fora da validade passa a **Expirada**.'),
+  B('Para atualizar, carregue uma **nova versão**: a anterior fica como Substituída, com o histórico.'),
+  B('Só o consultor aceita ou rejeita evidências. Cada abertura de ficheiro fica registada.'),
+  B('As evidências de ativos e componentes são restritas ao administrador do cliente e ao consultor.'),
+  H2('5.4 Documentos de segurança'),
+  table(['Nível', 'Tipo de documento'], [['L1', 'Política'], ['L2', 'Norma'], ['L3', 'Procedimento'], ['L4', 'Playbook']], [1.5, 8]),
+  P('Os documentos passam por **Rascunho → Em revisão → Aprovado → Obsoleto**. A aprovação exige a assinatura do aprovador (nome completo ou email) e fica no histórico. Se um documento aprovado for alterado, volta a Em revisão. A plataforma avisa por email os responsáveis dos documentos com revisão nos 30 dias seguintes.'),
+  H2('5.5 Repositório documental e documentos por classificar'),
+  P('**Governar › Repositório documental** mostra todos os ficheiros do cliente (evidências, documentos, relatórios) arrumados pelas 13 pastas, abertos sempre pela plataforma e com registo de cada abertura.'),
+  P('Na área **Por classificar** (administradores) pode carregar documentos que já existem na organização, ou pô-los diretamente na pasta «00 Por classificar» do Google Drive, OneDrive ou NAS e carregar em **Procurar na pasta**. Depois:'),
+  N('A plataforma pré-seleciona, sem IA, as medidas, tarefas da jornada e controlos ISO com texto parecido.', 'n4'),
+  N('Com o assistente de IA, **Classificar** (ou **Classificar todos**, até 25 de cada vez) propõe o tipo de documento e até 8 ligações, cada uma com um excerto do documento que a justifica e uma confiança.', 'n4'),
+  N('Uma pessoa revê, marca as ligações certas e indexa. O documento passa a evidência **Por rever**; nenhuma medida ou tarefa muda de estado sozinha.', 'n4'),
+  P('O painel **Qualidade das propostas** mostra quantas ligações propostas as pessoas mantêm, por nível de confiança, para saber até que ponto pode confiar nas propostas.'),
+  callout('Limites', [
+    'PDF e imagens seguem para o modelo como ficheiro; DOCX, XLSX, PPTX e texto seguem como texto extraído. Formatos antigos (.doc, .xls, .ppt) não são lidos.',
+    'Documentos com endereços de ativos expostos à Internet (lista do art. 32.º) nunca seguem para a IA.',
+  ]),
+  H2('5.6 Avaliações de maturidade'),
+  P('O consultor cria a avaliação com os referenciais escolhidos (por exemplo NIS2, ISO/IEC 27001 e ISO/IEC 42001). A equipa responde a cada pergunta com a escala:'),
+  table(['Nível', 'Significado'], [['0', 'Inexistente'], ['1', 'Inicial'], ['2', 'Em desenvolvimento'], ['3', 'Definido'], ['4', 'Gerido (nível-alvo por omissão)'], ['5', 'Otimizado']], [1.5, 8]),
+  P('Ao concluir, a plataforma calcula a pontuação por domínio, por referencial e global, e propõe recomendações com prioridade, esforço e prazo. As recomendações passam para o **Plano de Ação**, onde se transformam em tarefas. Os domínios abaixo de 3,5 aparecem no Painel como riscos de lacuna.'),
+  H2('5.7 Riscos, incidentes e vulnerabilidades'),
+  B('**Riscos:** pontuação = impacto (1 a 5) × probabilidade (1 a 5). Baixo abaixo de 4, médio de 4 a 8, alto de 9 a 15, crítico a partir de 16. Cada risco tem tratamento, risco residual e tarefas de mitigação.'),
+  B('**Incidentes:** a plataforma calcula os prazos de notificação do RJC e prepara os textos das notificações.'),
+  B('**Vulnerabilidades:** prazo de correção de 7, 30, 90 ou 180 dias para crítica, alta, média ou baixa. Com o módulo de alertas, a plataforma vigia os fabricantes do seu inventário na base de dados NVD e no catálogo KEV da CISA.'),
+  H2('5.8 Fornecedores e cadeia de abastecimento'),
+  P('Classifique os fornecedores por nível (Tier 1 estratégico ou crítico, Tier 2 importante, Tier 3 normal), indique se acedem a dados pessoais ou a sistemas críticos e envie questionários de segurança por email. As respostas recebidas por email podem ser lidas pelo assistente de IA.'),
+  H2('5.9 Ativos e lista do art. 32.º'),
+  P('O inventário de ativos indica a criticidade e se o ativo está exposto à Internet. A exportação da **lista de ativos acessíveis pela Internet** (Reg. 756/2026, art. 32.º) é classificada como reservada, fica registada e **nunca é enviada ao assistente de IA**.'),
+  H2('5.10 Relatórios'),
+  P('Os relatórios mostram a pontuação por referencial, a evolução face ao período anterior e o radar por domínio. O **Relatório Anual** reúne medidas, riscos, incidentes e próximos passos, e a plataforma guarda uma cópia em PDF no dia 1 de cada mês.'),
+  H2('5.11 Assistente de IA'),
+  P('Com a licença Enterprise, o assistente prepara rascunhos onde há documentos para construir ou analisar:'),
+  B('políticas, procedimentos, modelos de registo e planos de evidências para cada medida ou tarefa;'),
+  B('análise de uma evidência face ao critério de verificação da medida (cumpre, cumpre em parte, não cumpre);'),
+  B('notificações de incidentes e o relatório anual;'),
+  B('questionários a fornecedores, leitura de respostas por email e recomendações de melhoria;'),
+  B('classificação de documentos carregados em «Por classificar».'),
+  callout('Regras do assistente', [
+    'Usa apenas os textos oficiais da Biblioteca Legal e assinala citações ou prazos que não encontre.',
+    'O resultado é sempre um **rascunho**: só passa a documento depois de revisto e aprovado por uma pessoa.',
+    'Não recebe contactos pessoais, o inventário de ativos nem evidências restritas.',
+    'Cada pedido fica no registo de auditoria e conta para a quota mensal; há um limite de 30 pedidos por minuto por utilizador.',
+  ], TEALT, TEAL),
+);
+
+// 6
+add(H1('6. Guia por referencial'),
+  P('A plataforma inclui os referenciais abaixo. Cada cliente usa os que estiverem na sua licença. As correspondências entre referenciais permitem reaproveitar a mesma evidência em vários. Para a NIS2, a ISO/IEC 27001 e a ISO/IEC 42001 há também um **guia de implementação próprio**, entregue com este manual.'),
+  table(['Referencial', 'Fonte', 'Conteúdo na plataforma'], [
+    ['RJC (NIS2 em Portugal)', 'DL 125/2025; Reg. CNCS 756/2026', 'Jornada, enquadramento, 107 controlos do QNRCS, medidas por nível (Anexo III) e por grupo (Anexo IV), prazos'],
+    ['NIS2', 'Diretiva (UE) 2022/2555', 'Medidas do art. 21.º, n.º 2, alíneas a) a j), e prazos do art. 23.º'],
+    ['Requisitos técnicos NIS2', 'Reg. de Execução (UE) 2024/2690', '161 requisitos do anexo'],
+    ['ISO/IEC 27001:2022', 'Norma ISO (não reproduzida)', 'Guia com as cláusulas 4 a 10 e os 93 controlos do Anexo A, Declaração de Aplicabilidade, análise de lacunas e ligações ao QNRCS'],
+    ['ISO/IEC 42001:2023', 'Norma ISO (não reproduzida)', 'Guia do sistema de gestão da IA: cláusulas 4 a 10, 38 controlos do Anexo A, objetivos e fontes de risco, ligações à ISO/IEC 27001'],
+    ['DORA', 'Reg. (UE) 2022/2554 e atos delegados', '111 obrigações e prazos de incidentes'],
+    ['TISAX', 'VDA ISA 6.0.3 e 2027.1', '80 e 78 controlos, maturidade 0 a 5'],
+    ['CIS Controls v8.1', 'CIS', 'Identificadores (18 controlos, 153 salvaguardas); o texto entra se a entidade importar o ficheiro oficial'],
+    ['NIST CSF 2.0', 'NIST', 'Correspondências a partir das referências oficiais do QNRCS'],
+    ['RGPD', 'Reg. (UE) 2016/679', 'Registo de tratamentos e pedidos de titulares (módulo Privacidade)'],
+  ], [2.4, 3, 4.6]),
+
+  H2('6.1 RJC e NIS2'),
+  P('O RJC transpõe a Diretiva NIS2 para Portugal. O **DL 125/2025 entrou em vigor a 3 de abril de 2026**; o Regulamento n.º 756/2026 do CNCS, publicado a 22 de junho de 2026, fixa as medidas mínimas e os procedimentos. Algumas obrigações (arts. 27.º, n.os 1 e 2, 28.º a 30.º e 33.º do RJC) só produzem efeitos a **22 de junho de 2028**.'),
+  H3('Como trabalhar este referencial na AnkoraOne'),
+  N('Faça o enquadramento e confirme a qualificação e o nível.', 'n2'),
+  N('Siga a Jornada por secções, começando pela A e pela B.', 'n2'),
+  N('Abra Biblioteca Legal › Conformidade e trate as medidas do seu nível, guardando o que é pedido em «O que guardar como evidência».', 'n2'),
+  N('Faça uma avaliação NIS2 para medir a maturidade e gerar o plano de ação.', 'n2'),
+  N('Prepare os procedimentos de incidentes e o relatório anual com antecedência.', 'n2'),
+  H3('Prazos a conhecer'),
+  table(['Obrigação', 'Prazo', 'Base legal'], [
+    ['Autoidentificação no CNCS', '30 dias após o início de atividade; 60 dias após a plataforma do CNCS ficar disponível, se já estiver em atividade', 'RJC, art. 8.º, n.º 1; Reg. 756/2026, art. 8.º'],
+    ['Resposta ao projeto de qualificação', '10 dias úteis', 'Reg. 756/2026, art. 9.º'],
+    ['Responsável de cibersegurança e ponto de contacto permanente', '20 dias úteis', 'RJC, arts. 31.º e 32.º; Reg. 756/2026, arts. 14.º e 15.º'],
+    ['Alteração de dados do registo', '30 dias úteis (3 meses para os prestadores digitais do art. 35.º, n.º 4)', 'RJC, art. 35.º, n.os 3 e 4; Reg. 756/2026, art. 11.º'],
+    ['Notificação inicial de incidente significativo', '24 horas', 'RJC, arts. 41.º e 42.º; Reg. 756/2026, art. 20.º'],
+    ['Atualização da notificação', 'Até 72 horas', 'RJC, art. 42.º'],
+    ['Fim do impacto', '24 horas após o fim do impacto', 'RJC, art. 43.º'],
+    ['Relatório final do incidente', '30 dias úteis', 'RJC, art. 44.º'],
+    ['Lista de ativos acessíveis pela Internet', 'Até 31 de janeiro do ano seguinte à qualificação ou em 6 meses (o que ocorrer primeiro); depois, anual', 'Reg. 756/2026, art. 32.º'],
+    ['Relatório anual (entidades essenciais)', 'Último dia útil de janeiro do ano seguinte; o primeiro em janeiro de 2029, relativo a 2028', 'RJC, art. 30.º; Reg. 756/2026, art. 13.º'],
+    ['Adaptação a nova qualificação ou novas medidas', '6 meses', 'RJC, art. 26.º, n.º 8'],
+  ], [3.4, 3.6, 3]),
+
+  H2('6.2 ISO/IEC 27001:2022'),
+  callout('Antes de começar', [
+    'A AnkoraOne inclui um **guia de preparação** para a ISO/IEC 27001:2022, com a emenda de 2024. A norma é protegida por direitos de autor e **não está reproduzida**: os títulos, as descrições e as evidências sugeridas são da AnkoraOne.',
+    'A estrutura (cláusulas 4 a 10 e os 93 controlos) foi conferida com o texto oficial em outubro de 2026. A plataforma organiza o trabalho e guarda as evidências; não substitui a norma, que a entidade deve adquirir, nem a auditoria de certificação por uma entidade acreditada.',
+  ]),
+  gap(),
+  P('O guia está em **Biblioteca Legal › ISO/IEC 27001** e tem duas partes:'),
+  table(['Parte', 'Conteúdo', 'O que a entidade regista'], [
+    ['Requisitos do sistema de gestão', 'Cláusulas 4 a 10: contexto, liderança, planeamento, suporte, operação, avaliação do desempenho e melhoria (25 requisitos)', 'Estado, responsável, data-alvo, notas e evidências. Estas cláusulas não podem ser excluídas.'],
+    ['Controlos do Anexo A', '93 controlos: 37 organizacionais, 8 de pessoas, 14 físicos e 34 tecnológicos', 'Aplicável ou não, justificação, método de implementação, estado, responsável e evidências. Estas escolhas formam a Declaração de Aplicabilidade.'],
+  ], [2.4, 4, 3.6]),
+  gap(),
+  P('As cláusulas que exigem **informação documentada** estão assinaladas e há um filtro para as ver todas. A **análise de lacunas** mostra o sistema de gestão e os controlos em separado (conforme, parcialmente conforme, não conforme, não aplicável) e exporta-se em CSV.'),
+  P('Cada requisito e cada controlo mostra o que guardar como evidência e os **controlos do QNRCS ligados**. Estas ligações vêm das referências oficiais do Regulamento n.º 756/2026 (Anexo I), que cobrem 92 dos 93 controlos do Anexo A. Por isso, uma evidência guardada para uma medida do RJC conta também para o controlo ISO correspondente.'),
+  H3('Como trabalhar este referencial na AnkoraOne'),
+  N('Abra **Biblioteca Legal › ISO/IEC 27001** e comece pelas cláusulas 4 a 6: âmbito, política, metodologia de riscos e objetivos.', 'n3'),
+  N('Faça a avaliação de riscos em **Gestão de Risco** e decida o tratamento.', 'n3'),
+  N('Percorra os 93 controlos do Anexo A: marque cada um como aplicável ou não aplicável, escreva a justificação e, nos aplicáveis, o método de implementação.', 'n3'),
+  N('Exporte a **Declaração de Aplicabilidade** e submeta-a à aprovação da gestão em **Documentos**.', 'n3'),
+  N('Ligue as evidências a cada controlo; as que já existem nos controlos QNRCS ligados aparecem indicadas. Exporte a análise de lacunas para acompanhar o progresso.', 'n3'),
+  N('Peça ao consultor uma avaliação de maturidade ISO/IEC 27001 (pode ser em conjunto com NIS2) e trate as lacunas no **Plano de Ação**.', 'n3'),
+  N('Antes da certificação, faça a auditoria interna (9.2) e a revisão pela gestão (9.3) e guarde os relatórios como evidência.', 'n3'),
+  H3('O que a NIS2 e a ISO/IEC 27001 têm em comum'),
+  table(['Tema', 'RJC / NIS2', 'ISO/IEC 27001'], [
+    ['Gestão dos riscos', 'Obrigatória (RJC, arts. 26.º e 29.º)', 'Base do sistema de gestão'],
+    ['Políticas e responsabilidades', 'Aprovação pela gestão (art. 25.º)', 'Liderança e políticas'],
+    ['Incidentes', 'Notificação ao CNCS com prazos', 'Gestão de incidentes, sem notificação legal'],
+    ['Fornecedores', 'Segurança da cadeia de abastecimento (art. 28.º)', 'Relações com fornecedores'],
+    ['Continuidade e cópias de segurança', 'Art. 27.º, n.º 1, alínea b)', 'Continuidade e redundância'],
+    ['Formação', 'Gestão e pessoal (art. 25.º e QNRCS)', 'Consciencialização e competência'],
+  ], [2.6, 3.6, 3.4]),
+
+  H2('6.3 ISO/IEC 42001:2023 — sistema de gestão da inteligência artificial'),
+  callout('Antes de começar', [
+    'A ISO/IEC 42001 é a norma para gerir de forma responsável o desenvolvimento, o fornecimento ou a utilização de sistemas de IA. Tal como na 27001, a AnkoraOne inclui um **guia de preparação** com textos próprios; a estrutura foi conferida com o texto oficial e a norma **não está reproduzida**.',
+    'Não substitui as obrigações do Regulamento (UE) 2024/1689 (Regulamento da IA), mas ajuda a organizá-las.',
+  ]),
+  gap(),
+  P('O guia está em **Biblioteca Legal › ISO/IEC 42001**:'),
+  table(['Parte', 'Conteúdo', 'Particularidade'], [
+    ['Requisitos do sistema de gestão', 'Cláusulas 4 a 10 (27 requisitos), com a mesma estrutura da 27001', 'Acrescenta a **avaliação de impacto dos sistemas de IA** (6.1.4 e 8.4), sem equivalente na 27001'],
+    ['Controlos do Anexo A', '38 controlos em 9 domínios: políticas, organização, recursos, avaliação de impactos, ciclo de vida, dados, informação a partes interessadas, utilização e terceiros', '33 apoiam-se em requisitos da 27001; 5 são próprios da IA'],
+    ['Anexo C', '11 objetivos e 7 fontes de risco de referência', 'Ajudam a definir objetivos (6.2) e a avaliar riscos (6.1.2)'],
+  ], [2.4, 4.2, 3.4]),
+  gap(),
+  P('Se a entidade já segue a ISO/IEC 27001, trabalhe as duas como **um só sistema de gestão**: a mesma análise de contexto, o mesmo controlo documental, uma auditoria interna e uma revisão pela gestão. Cada controlo da 42001 mostra os requisitos da 27001 em que se apoia e conta as evidências que já lá estão. A **Declaração de Aplicabilidade é separada** para cada norma.'),
+  H3('Como trabalhar este referencial na AnkoraOne'),
+  N('Faça o inventário dos sistemas de IA e defina o papel da entidade em cada um (cláusula 4).', 'n5'),
+  N('Aprove a política de IA e as responsabilidades (5.2 e 5.3).', 'n5'),
+  N('Avalie os riscos de IA e, para cada sistema, o impacto em pessoas e na sociedade (6.1.2 e 6.1.4).', 'n5'),
+  N('Percorra os 38 controlos: aplicabilidade, justificação e método de implementação; exporte a Declaração de Aplicabilidade.', 'n5'),
+  N('Ligue as evidências; nos controlos com base na 27001, reaproveite o que já existe e acrescente o que é próprio da IA.', 'n5'),
+  N('Inclua a IA na auditoria interna e na revisão pela gestão (9.2 e 9.3).', 'n5'),
+
+  H2('6.4 Outros referenciais disponíveis'),
+  B('**QNRCS (Reg. 756/2026, Anexo I):** 107 controlos organizados em seis objetivos (Gerir, Identificar, Proteger, Detetar, Responder, Recuperar), com a medida e a verificação por nível.'),
+  B('**Reg. de Execução (UE) 2024/2690:** requisitos técnicos para prestadores de serviços digitais (por exemplo centros de dados, nuvem e serviços geridos).'),
+  B('**DORA:** para entidades financeiras; inclui os prazos próprios de notificação de incidentes.'),
+  B('**TISAX (VDA ISA):** para a indústria automóvel; texto oficial em inglês, reproduzido com atribuição.'),
+  B('**CIS Controls e NIST CSF:** usados como correspondências; o texto do CIS só entra se a entidade importar o ficheiro oficial que lhe pertence.'),
+);
+
+// 7
+add(H1('7. Os primeiros 90 dias'),
+  table(['Período', 'O que fazer', 'Na AnkoraOne'], [
+    ['Semana 1', 'Criar a conta, fazer o enquadramento, convidar a equipa', 'Clientes · Enquadramento · Definições → Utilizadores'],
+    ['Semanas 2 a 4', 'Nomear o responsável e o ponto de contacto; autoidentificação no CNCS; primeira avaliação NIS2 e ISO/IEC 27001', 'Jornada (A e B) · Avaliações'],
+    ['Mês 2', 'Políticas base aprovadas; inventário de ativos (e de sistemas de IA, se aplicável); fornecedores críticos identificados; Declarações de Aplicabilidade ISO em rascunho; documentos existentes carregados em Por classificar', 'Documentos · Repositório documental · Ativos e ferramentas · Fornecedores · Biblioteca Legal › ISO'],
+    ['Mês 3', 'Medidas mínimas em curso com evidências; procedimento de incidentes testado; plano de ação revisto', 'Biblioteca Legal › Conformidade · Incidentes · Plano de Ação'],
+    ['Depois', 'Revisão trimestral da maturidade e anual dos riscos; preparação do relatório anual', 'Relatórios · Gestão de Risco'],
+  ], [1.8, 4.4, 3.6]),
+  gap(),
+  callout('Lista de verificação de arranque', [
+    '☐ Enquadramento confirmado e relatório guardado',
+    '☐ Equipa convidada com os perfis certos',
+    '☐ Repositório de ficheiros e localização escolhidos',
+    '☐ Responsável de cibersegurança e ponto de contacto registados',
+    '☐ Primeira avaliação concluída e plano de ação criado',
+    '☐ Lembretes de revisão e de prazos configurados em Definições',
+  ]),
+);
+
+// 8
+add(H1('8. Glossário'),
+  table(['Termo', 'Significado'], [
+    ['RJC', 'Regime Jurídico da Cibersegurança, em anexo ao DL 125/2025'],
+    ['CNCS', 'Centro Nacional de Cibersegurança, autoridade nacional de cibersegurança'],
+    ['QNRCS', 'Quadro Nacional de Referência para a Cibersegurança (Reg. 756/2026, Anexo I)'],
+    ['Nível de conformidade', 'Básico, Substancial ou Elevado; define as medidas mínimas de entidades essenciais e importantes'],
+    ['Entidade pública relevante', 'Entidade da Administração Pública abrangida, no Grupo A ou B'],
+    ['Evidência', 'Prova de que uma medida ou tarefa está cumprida (documento, registo, captura, relatório)'],
+    ['Ponto de contacto permanente', 'Pessoa ou serviço contactável pelo CNCS, 24/7 em períodos de ativação'],
+    ['Incidente significativo', 'Incidente que cumpre os critérios do art. 40.º do RJC e obriga a notificação'],
+    ['Declaração de Aplicabilidade', 'Lista dos controlos do Anexo A de uma norma ISO, com a decisão de aplicar ou não cada um e a justificação'],
+    ['Análise de lacunas', 'Comparação entre o que a norma pede e o que já existe, requisito a requisito'],
+    ['Avaliação de impacto de IA', 'Análise dos efeitos de um sistema de IA em pessoas e na sociedade (ISO/IEC 42001, 6.1.4)'],
+  ], [3, 6.5]),
+  H2('Contactos'),
+  P('Plataforma: **app.ankoraone.com**'),
+  P('Apoio ao cliente: **daniel.carvalho@ankoraone.com**'),
+  p([t('Este manual (versão 1.2) descreve a plataforma em outubro de 2026. As referências legais remetem para os textos publicados no Diário da República e no EUR-Lex, disponíveis na Biblioteca Legal da plataforma.', { italics: true, color: MUTED, size: 18 })]),
+);
+
+const doc = makeDocument({
+  title: 'AnkoraOne — Manual de onboarding',
+  description: 'Manual de onboarding para novos clientes (NIS2, ISO/IEC 27001 e ISO/IEC 42001)',
+  headerText: 'Manual de onboarding · NIS2, ISO/IEC 27001 e ISO/IEC 42001',
+  coverChildren, body,
+});
+
+Packer.toBuffer(doc).then((buf) => { fs.writeFileSync(path.join(DIR, 'AnkoraOne-Manual-Onboarding.docx'), buf); console.log('ok'); });

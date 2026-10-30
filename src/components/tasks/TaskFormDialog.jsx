@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import TaskComments from './TaskComments';
 import TaskAttachments from './TaskAttachments';
 import UserSelect from '@/components/shared/UserSelect';
@@ -36,9 +37,12 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
 
   const customerUsers = useCustomerUsers(form.customer_id);
 
+  // Tarefa nova de um utilizador de cliente: o cliente é o do próprio utilizador (as regras de acesso exigem-no).
+  const { user } = useAuth();
+  const ownCustomer = user?.customer_id || user?.data?.customer_id || '';
   useEffect(() => {
-    setForm(task ? { ...DEFAULT_TASK, ...task } : DEFAULT_TASK);
-  }, [task, open]);
+    setForm(task ? { ...DEFAULT_TASK, ...task } : { ...DEFAULT_TASK, ...(user?.role !== 'admin' && ownCustomer ? { customer_id: ownCustomer } : {}) });
+  }, [task, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -128,13 +132,15 @@ export default function TaskFormDialog({ open, onOpenChange, task, onSave }) {
           </div>
           <div className="border-t pt-4">
             <TaskAttachments
+              customerId={form.customer_id || task?.customer_id}
+              taskId={task?.id}
               attachments={form.attachments || []}
               onChange={val => set('attachments', val)}
             />
           </div>
           {task?.id && (
             <div className="border-t pt-4">
-              <TaskComments taskId={task.id} />
+              <TaskComments taskId={task.id} customerId={task.customer_id} />
             </div>
           )}
         </div>

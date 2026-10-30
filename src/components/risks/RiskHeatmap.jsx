@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { X, Pencil, ShieldCheck, ClipboardList, ChevronRight, AlertTriangle, Plus } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 

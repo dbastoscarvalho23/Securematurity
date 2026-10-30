@@ -2,6 +2,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import ErrorBoundary from '@/components/shared/ErrorBoundary';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/lib/LanguageContext';
@@ -19,7 +21,12 @@ import Assessments from '@/pages/Assessments';
 import AssessmentDetail from '@/pages/AssessmentDetail';
 import Recommendations from '@/pages/Recommendations';
 import Reports from '@/pages/Reports';
-import Admin from '@/pages/Admin';
+// Backoffice modules are lazy-loaded so they ship in separate chunks, outside the main bundle.
+const BackofficeLayout = lazy(() => import('@/pages/backoffice/BackofficeLayout'));
+const BackofficeOverview = lazy(() => import('@/pages/backoffice/BackofficeOverview'));
+const UserManagementPanel = lazy(() => import('@/components/backoffice/UserManagementPanel'));
+const FrameworksPanel = lazy(() => import('@/components/backoffice/FrameworksPanel'));
+const LicensingPanel = lazy(() => import('@/components/licensing/LicensingPanel'));
 import AuditLog from '@/pages/AuditLog';
 import Settings from '@/pages/Settings';
 import QuestionBank from '@/pages/QuestionBank';
@@ -27,6 +34,7 @@ import Tasks from '@/pages/Tasks';
 import ActionPlan from '@/pages/ActionPlan';
 import TaskAnalytics from '@/pages/TaskAnalytics';
 import SecurityDocuments from '@/pages/SecurityDocuments';
+import Repository from '@/pages/Repository';
 import DocumentAuditTrail from '@/pages/DocumentAuditTrail';
 import RiskAssessment from '@/pages/RiskAssessment';
 import EvidenceOverview from '@/pages/EvidenceOverview';
@@ -41,7 +49,22 @@ import VulnerabilityManagement from '@/pages/VulnerabilityManagement';
 import ComplianceMetrics from '@/pages/ComplianceMetrics';
 import Training from '@/pages/Training';
 import FrameworkGuide from '@/pages/FrameworkGuide';
+import LegalLibrary from '@/pages/LegalLibrary';
+import AssetsTools from '@/pages/AssetsTools';
 import RouteGuard from '@/components/layout/RouteGuard';
+
+// Suspense + ErrorBoundary wrapper for lazy-loaded backoffice routes.
+const LazySection = ({ children }) => (
+  <ErrorBoundary>
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+      </div>
+    }>
+      {children}
+    </Suspense>
+  </ErrorBoundary>
+);
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings } = useAuth();
@@ -73,7 +96,19 @@ const AuthenticatedApp = () => {
           <Route path="/assessments/:id" element={<RouteGuard path="/assessments"><AssessmentDetail /></RouteGuard>} />
           <Route path="/recommendations" element={<RouteGuard path="/recommendations"><Recommendations /></RouteGuard>} />
           <Route path="/reports" element={<RouteGuard path="/reports"><Reports /></RouteGuard>} />
-          <Route path="/admin" element={<RouteGuard path="/admin"><Admin /></RouteGuard>} />
+          <Route path="/backoffice" element={
+            <RouteGuard path="/backoffice">
+              <LazySection><BackofficeLayout /></LazySection>
+            </RouteGuard>
+          }>
+            <Route index element={<LazySection><BackofficeOverview /></LazySection>} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="users" element={<LazySection><UserManagementPanel /></LazySection>} />
+            <Route path="frameworks" element={<LazySection><FrameworksPanel /></LazySection>} />
+            <Route path="licensing" element={<LazySection><LicensingPanel /></LazySection>} />
+            <Route path="audit" element={<AuditLog />} />
+          </Route>
+          <Route path="/admin" element={<RouteGuard path="/admin"><Navigate to="/backoffice" replace /></RouteGuard>} />
           <Route path="/audit-log" element={<RouteGuard path="/audit-log"><AuditLog /></RouteGuard>} />
           <Route path="/settings" element={<RouteGuard path="/settings"><Settings /></RouteGuard>} />
           <Route path="/question-bank" element={<RouteGuard path="/question-bank"><QuestionBank /></RouteGuard>} />
@@ -81,6 +116,7 @@ const AuthenticatedApp = () => {
           <Route path="/task-analytics" element={<RouteGuard path="/task-analytics"><TaskAnalytics /></RouteGuard>} />
           <Route path="/risk-assessment" element={<RouteGuard path="/risk-assessment"><RiskAssessment /></RouteGuard>} />
           <Route path="/security-documents" element={<RouteGuard path="/security-documents"><SecurityDocuments /></RouteGuard>} />
+          <Route path="/repository" element={<RouteGuard path="/repository"><Repository /></RouteGuard>} />
           <Route path="/document-audit-trail" element={<RouteGuard path="/document-audit-trail"><DocumentAuditTrail /></RouteGuard>} />
           <Route path="/action-plan" element={<RouteGuard path="/action-plan"><ActionPlan /></RouteGuard>} />
           <Route path="/evidence" element={<RouteGuard path="/evidence"><EvidenceOverview /></RouteGuard>} />
@@ -93,6 +129,8 @@ const AuthenticatedApp = () => {
           <Route path="/vulnerabilities" element={<RouteGuard path="/vulnerabilities"><VulnerabilityManagement /></RouteGuard>} />
           <Route path="/compliance-metrics" element={<RouteGuard path="/compliance-metrics"><ComplianceMetrics /></RouteGuard>} />
           <Route path="/training" element={<RouteGuard path="/training"><Training /></RouteGuard>} />
+          <Route path="/legal-library" element={<RouteGuard path="/legal-library"><LegalLibrary /></RouteGuard>} />
+          <Route path="/assets" element={<RouteGuard path="/assets"><AssetsTools /></RouteGuard>} />
           <Route path="/framework-guide" element={<RouteGuard path="/framework-guide"><FrameworkGuide /></RouteGuard>} />
           <Route path="/email-report" element={<RouteGuard path="/email-report"><EmailReport /></RouteGuard>} />
         </Route>

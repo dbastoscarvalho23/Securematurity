@@ -1,0 +1,354 @@
+{
+  "name": "DocumentIntake",
+  "type": "object",
+  "description": "Documento em «00 Por classificar»: carregado pela função documentIntake, pré-selecionado sem IA, classificado pelo modelo e confirmado por uma pessoa antes de passar a evidência. Escritas só pela função (service role).",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Cliente (tenant) dono do documento",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Nome original do ficheiro",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "mime_type": {
+      "type": "string",
+      "description": "Tipo confirmado pelo servidor (primeiros bytes)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "size_bytes": {
+      "type": "number",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "sha256": {
+      "type": "string",
+      "description": "Impressão digital do conteúdo, calculada no servidor",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "stored_file_id": {
+      "type": "string",
+      "description": "Ficheiro privado (StoredFile, contexto «intake») no repositório do cliente",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "classifying",
+        "proposed",
+        "accepted",
+        "rejected",
+        "error"
+      ],
+      "default": "pending",
+      "description": "pending = por classificar; classifying = a classificar; proposed = proposta pronta para revisão; accepted = indexado como evidência; rejected = rejeitado; error = a classificação falhou",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "uploaded_by": {
+      "type": "string",
+      "description": "Email de quem carregou",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "upload",
+        "folder_scan"
+      ],
+      "default": "upload",
+      "description": "upload = carregado na plataforma; folder_scan = encontrado na pasta «00 Por classificar» do repositório externo",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "accepted_candidates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ids dos candidatos escolhidos ao indexar (para medir a qualidade das propostas)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "description": "Proposta validada no servidor (tipo, nível, título, resumo, datas, pasta, ligações com confiança e excerto, avisos, motor usado)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Candidatos pré-selecionados sem IA (ids: measure:…, iso27001:…, journey:…, doc_level:…)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "candidate_scores": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Pontuação lexical de cada candidato pré-selecionado",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "text_method": {
+      "type": "string",
+      "description": "Como foi lido o texto: text, docx, xlsx, pptx, odf, native (PDF/imagem, lido pelo modelo) ou none",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "text_chars": {
+      "type": "number",
+      "description": "Caracteres de texto extraídos localmente (máximo 60 000)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "error_message": {
+      "type": "string",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "rejection_reason": {
+      "type": "string",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "decided_by": {
+      "type": "string",
+      "description": "Quem indexou ou rejeitou",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "decided_at": {
+      "type": "string",
+      "format": "date-time",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "evidence_id": {
+      "type": "string",
+      "description": "Evidência criada ao indexar",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "security_document_id": {
+      "type": "string",
+      "description": "Documento de segurança em rascunho criado ao indexar (opcional)",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "accepted_links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Ligações gravadas na evidência",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "customer_id",
+    "file_name",
+    "stored_file_id",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

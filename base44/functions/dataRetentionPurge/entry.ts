@@ -1,5 +1,5 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-import { getAutomationSecret } from "../../shared/automationSecret.ts";
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { json, authorizeAutomationOrAdmin } from "../../shared/http.ts";
 
 /**
  * Scheduled data retention automation.
@@ -18,22 +18,11 @@ Deno.serve(async (req) => {
   const now = new Date().toISOString();
   const results = { executed_at: now, purged: 0, archived: 0, errors: [] };
 
-  // Authorization: scheduled automation passes the shared secret (body.args.automation_secret
-  // or x-automation-secret header); manual admin triggers authenticate via base44.auth.me().
-  // Anonymous external callers are rejected before any destructive service-role operation.
-  const automationSecret = await getAutomationSecret(req);
-  let authorized = !!automationSecret;
-  if (!authorized) {
-    try {
-      const user = await base44.auth.me();
-      authorized = user?.role === 'admin';
-    } catch {
-      authorized = false;
-    }
-  }
-  if (!authorized) {
-    return Response.json({ error: 'Unauthorized' }, { status: 403 });
-  }
+  // Authorization: a platform admin — the identity a scheduled workflow runs as (app
+  // owner's session) — or a manual trigger by one. Anonymous external callers are
+  // rejected before any destructive service-role operation.
+  const forbidden = await authorizeAutomationOrAdmin(req, base44);
+  if (forbidden) return forbidden;
 
   try {
     // ── 1. DataProcessingActivity retention ──────────────────────────────
@@ -108,5 +97,5 @@ Deno.serve(async (req) => {
     results.errors.push(`Fatal: ${e.message}`);
   }
 
-  return Response.json(results);
+  return json(results);
 });

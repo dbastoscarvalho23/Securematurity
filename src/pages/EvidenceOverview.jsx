@@ -8,11 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Paperclip, Download, FileText, ExternalLink, FolderOpen } from 'lucide-react';
-import { format } from 'date-fns';
 import { useLanguage } from '@/lib/LanguageContext';
 import LoadingState from '@/components/shared/LoadingState';
 import EmptyState from '@/components/shared/EmptyState';
 import ComplianceGapsSummary from '@/components/evidence/ComplianceGapsSummary';
+import EvidenceRegister from '@/components/evidence/EvidenceRegister';
+import AiWorkspace from '@/components/ai/AiWorkspace';
+import FileLink from '@/components/shared/FileLink';
+import { isPrivateFile } from '@/lib/cloudStorage';
 
 function fileIcon(name = '') {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -131,6 +134,9 @@ export default function EvidenceOverview() {
 
   return (
     <div className="space-y-6">
+      <EvidenceRegister />
+      <AiWorkspace />
+
       {/* Compliance Gaps Summary */}
       <div className="space-y-3">
         <div>
@@ -176,7 +182,7 @@ export default function EvidenceOverview() {
           />
         </div>
         <Select value={filterAssessment} onValueChange={setFilterAssessment}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Assessment" /></SelectTrigger>
+          <SelectTrigger className="w-48"><SelectValue placeholder={t('x_evidence_ph_assessment')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('evidence_all_assessments')}</SelectItem>
             {assessments.map(a => (
@@ -186,7 +192,7 @@ export default function EvidenceOverview() {
         </Select>
         {frameworks.length > 0 && (
           <Select value={filterFramework} onValueChange={setFilterFramework}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="Framework" /></SelectTrigger>
+            <SelectTrigger className="w-40"><SelectValue placeholder={t('x_evidence_ph_framework')} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('evidence_all_frameworks')}</SelectItem>
               {frameworks.map(fw => <SelectItem key={fw} value={fw}>{fw}</SelectItem>)}
@@ -195,7 +201,7 @@ export default function EvidenceOverview() {
         )}
         {domains.length > 0 && (
           <Select value={filterDomain} onValueChange={setFilterDomain}>
-            <SelectTrigger className="w-44"><SelectValue placeholder="Domain" /></SelectTrigger>
+            <SelectTrigger className="w-44"><SelectValue placeholder={t('x_evidence_ph_domain')} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('evidence_all_domains')}</SelectItem>
               {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
@@ -257,9 +263,9 @@ export default function EvidenceOverview() {
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{f.evidence_notes}</p>
                         )}
                       </div>
-                      {f.url && isSafeUrl(f.url) && (
-                        <a
-                          href={f.url}
+                      {f.url && (isPrivateFile(f.url) || isSafeUrl(f.url)) && (
+                        <FileLink
+                          url={f.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex-shrink-0"
@@ -267,7 +273,7 @@ export default function EvidenceOverview() {
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
                             <ExternalLink className="w-3.5 h-3.5" />
                           </Button>
-                        </a>
+                        </FileLink>
                       )}
                     </div>
                   ))}

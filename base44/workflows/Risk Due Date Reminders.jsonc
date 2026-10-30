@@ -1,6 +1,6 @@
 {
   "name": "Risk Due Date Reminders",
-  "description": "",
+  "description": "Lembra os respons\u00e1veis dos riscos com prazo pr\u00f3ximo ou ultrapassado",
   "trigger": {
     "condition": null,
     "config": {
@@ -19,28 +19,23 @@
     }
   },
   "definition": {
-    "document": {
-      "dsl": "1.0.0",
-      "name": "risk_due_date_reminders",
-      "version": "1.0",
-      "namespace": "base44"
-    },
     "do": [
       {
         "run_function": {
           "call": "invoke_backend_function",
+          "then": "end",
           "with": {
-            "function_name": "riskDueDateReminders",
-            "args": {
-              "automation_secret": "cm-automation-7f3a9b2e1d8c4a6f0b5e2c9d1a7f4e3b"
-            }
-          },
-          "then": "end"
+            "args": {},
+            "function_name": "riskDueDateReminders"
+          }
         }
       }
-    ]
-  },
-  "x-base44-migrated-from-automation": {
-    "legacy_payload_function": "riskDueDateReminders"
+    ],
+    "document": {
+      "dsl": "1.0.0",
+      "name": "risk_due_date_reminders",
+      "namespace": "base44",
+      "version": "1.0"
+    }
   }
 }

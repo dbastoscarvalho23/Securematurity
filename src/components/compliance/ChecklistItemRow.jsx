@@ -12,13 +12,28 @@ import { CheckCircle2, Circle, Clock, MinusCircle, CalendarDays, User, Pencil, X
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
+import { useLicense, hasModule } from '@/lib/licensing';
+import { MEASURE_KINDS, useAiEnabled } from '@/lib/ai';
+import EvidencePanel from '@/components/evidence/EvidencePanel';
+import AiDraftDialog from '@/components/ai/AiDraftDialog';
+import { Sparkles, Paperclip } from 'lucide-react';
 
-export default function ChecklistItemRow({ item, queryKey, displayText, customerUsers = [] }) {
+export default function ChecklistItemRow({ item, queryKey, displayText, basis, from2028 = false, customerUsers = [] }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ status: item.status, owner: item.owner || '', due_date: item.due_date || '', notes: item.notes || '' });
   const [calOpen, setCalOpen] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const { data: license } = useLicense(isAdmin ? item.customer_id : undefined);
+  const canManage = isAdmin || user?.role === 'customer_admin';
+  // Ponto de uso «documents» (Definições → Aplicação → Assistente de IA); a licença continua a ser verificada à parte.
+  const aiDocs = useAiEnabled('documents');
+  const aiAllowed = canManage && hasModule(license, user, 'ai_assistant') && aiDocs;
+  const [showEvidence, setShowEvidence] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const STATUS_CONFIG = {
     pending:        { labelKey: 'status_pending',        icon: Circle,       color: 'text-muted-foreground', bg: 'bg-muted/50 border-border' },
@@ -52,13 +67,19 @@ export default function ChecklistItemRow({ item, queryKey, displayText, customer
   return (
     <div className={cn('rounded-lg border p-3 transition-colors', cfg.bg)}>
       <div className="flex items-start gap-3">
-        <button onClick={cycleStatus} className="mt-0.5 flex-shrink-0" title="Click to change status">
+        <button onClick={cycleStatus} className="mt-0.5 flex-shrink-0" title={t('x_checklist_change_status')}>
           <StatusIcon className={cn('w-4 h-4', cfg.color)} />
         </button>
         <div className="flex-1 min-w-0">
           <p className={cn('text-sm leading-snug', item.status === 'done' && 'line-through text-muted-foreground', item.status === 'not_applicable' && 'text-muted-foreground')}>
             {displayText || item.task_text}
           </p>
+          {(basis || from2028) && (
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              {basis && <span className="text-[11px] text-muted-foreground" title={t('x_journey_basis')}>{basis}</span>}
+              {from2028 && <Badge variant="outline" className="text-[10px] font-normal text-chart-4 border-chart-4/30">{t('x_journey_from_2028')}</Badge>}
+            </div>
+          )}
           {!editing && (item.owner || item.due_date || item.notes) && (
             <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-muted-foreground">
               {item.owner && <span className="flex items-center gap-1"><User className="w-3 h-3" />{item.owner}</span>}
@@ -137,6 +158,14 @@ export default function ChecklistItemRow({ item, queryKey, displayText, customer
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <Badge variant="outline" className={cn('text-xs border', cfg.bg, cfg.color)}>{t(cfg.labelKey)}</Badge>
+          <Button size="icon" variant="ghost" className="w-6 h-6" title={t('ev_title')} onClick={() => setShowEvidence((v) => !v)}>
+            <Paperclip className="w-3 h-3" />
+          </Button>
+          {aiAllowed && (
+            <Button size="icon" variant="ghost" className="w-6 h-6" title={t('ai_measure_button')} onClick={() => setAiOpen(true)}>
+              <Sparkles className="w-3 h-3" />
+            </Button>
+          )}
           {!editing && (
             <Button size="icon" variant="ghost" className="w-6 h-6" onClick={() => { setForm({ status: item.status, owner: item.owner || '', due_date: item.due_date || '', notes: item.notes || '' }); setEditing(true); }}>
               <Pencil className="w-3 h-3" />
@@ -144,6 +173,15 @@ export default function ChecklistItemRow({ item, queryKey, displayText, customer
           )}
         </div>
       </div>
+      {showEvidence && item.customer_id && (
+        <EvidencePanel customerId={item.customer_id} canUpload={canManage} className="mt-2"
+          links={[{ type: 'checklist', id: item.id, label: (displayText || item.task_text || '').slice(0, 120) }]} />
+      )}
+      {aiAllowed && (
+        <AiDraftDialog open={aiOpen} onOpenChange={setAiOpen} customerId={item.customer_id}
+          target={{ type: 'checklist', id: item.id }} kinds={['evidence_plan', ...MEASURE_KINDS.filter((k) => k !== 'evidence_plan')]}
+          title={`${t('ai_title')} — ${(displayText || item.task_text || '').slice(0, 60)}`} />
+      )}
     </div>
   );
 }

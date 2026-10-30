@@ -1,0 +1,41 @@
+{
+  "name": "CVE Monitor",
+  "description": "Verifica a cada 4 horas no NVD os CVE cr\u00edticos/elevados dos fabricantes vigiados de cada cliente",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "17 */4 * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "then": "end",
+          "with": {
+            "args": {},
+            "function_name": "cveMonitor"
+          }
+        }
+      }
+    ],
+    "document": {
+      "dsl": "1.0.0",
+      "name": "cve_monitor",
+      "namespace": "base44",
+      "version": "1.0"
+    }
+  }
+}

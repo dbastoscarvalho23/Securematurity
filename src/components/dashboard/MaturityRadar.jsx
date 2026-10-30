@@ -9,9 +9,9 @@ export default function MaturityRadar({ data }) {
 
   if (!data || data.length === 0) {
     return (
-      <Card className="h-full flex flex-col">
-        <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
-        <CardContent className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+      <Card className="h-full flex flex-col rounded-[10px] shadow-none">
+        <CardHeader className="p-5 pb-4"><CardTitle className="text-[13px] font-semibold">{title}</CardTitle></CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center p-5 pt-0 text-muted-foreground text-xs">
           {t('dashboard_radar_empty')}
         </CardContent>
       </Card>
@@ -19,41 +19,42 @@ export default function MaturityRadar({ data }) {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
+    <Card className="h-full flex flex-col rounded-[10px] shadow-none">
+      <CardHeader className="p-5 pb-4">
+        <CardTitle className="text-[13px] font-semibold">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex items-center justify-center">
+      <CardContent className="flex-1 flex items-center justify-center p-5 pt-0">
         <ResponsiveContainer width="100%" height={240}>
           <RadarChart data={data}>
-            <PolarGrid stroke="hsl(var(--border))" />
+            <PolarGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
             <PolarAngleAxis
               dataKey="domain"
-              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
             />
             <PolarRadiusAxis
               angle={30}
               domain={[0, 5]}
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={false}
+              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
             />
             <Radar
-              name={t('maturity_initial') === 'Inicial' ? 'Atual' : 'Current'}
-              dataKey="current"
-              stroke="hsl(var(--chart-1))"
-              fill="hsl(var(--chart-1))"
-              fillOpacity={0.2}
-              strokeWidth={2}
-            />
-            <Radar
-              name={t('maturity_initial') === 'Inicial' ? 'Objetivo' : 'Target'}
+              name={t('x_radar_target')}
               dataKey="target"
-              stroke="hsl(var(--chart-2))"
-              fill="hsl(var(--chart-2))"
-              fillOpacity={0.1}
-              strokeWidth={2}
-              strokeDasharray="5 5"
+              stroke="hsl(var(--primary))"
+              fill="none"
+              fillOpacity={0}
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
             />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Radar
+              name={t('x_radar_current')}
+              dataKey="current"
+              stroke="hsl(var(--primary))"
+              fill="hsl(var(--primary))"
+              fillOpacity={0.35}
+              strokeWidth={1.5}
+            />
+            <Legend iconSize={8} wrapperStyle={{ fontSize: 10, color: 'hsl(var(--muted-foreground))' }} />
           </RadarChart>
         </ResponsiveContainer>
       </CardContent>

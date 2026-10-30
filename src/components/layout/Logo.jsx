@@ -1,17 +1,15 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-
-const LOGO_URL = 'https://media.base44.com/images/public/69ca8d95ddfd46a45ba76ea6/d1d427ae1_generated_image.png';
+import officialLogo from '@/assets/logo-official.png';
 
 export default function Logo({ size = 28, className, rounded = 'rounded-lg' }) {
   return (
     <img
-      src={LOGO_URL}
+      src={officialLogo}
       alt="AnkoraOne"
-      width={size}
       height={size}
-      className={cn('flex-shrink-0 object-contain bg-white p-0.5', rounded, className)}
-      style={{ width: size, height: size }}
+      className={cn('flex-shrink-0 object-contain bg-white p-0.5 h-auto', rounded, className)}
+      style={{ height: size, width: 'auto' }}
     />
   );
 }

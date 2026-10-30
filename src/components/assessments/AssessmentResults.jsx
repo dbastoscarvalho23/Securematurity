@@ -11,14 +11,9 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { exportReportPdf } from '@/lib/exportReportPdf';
 import { useLanguage } from '@/lib/LanguageContext';
+import { FRAMEWORK_NAMES } from '@/lib/frameworkConstants';
+import FileLink from '@/components/shared/FileLink';
 
-const FRAMEWORK_NAMES = {
-  NIS2: 'NIS2 / DL 125/2025',
-  ISO27001: 'ISO/IEC 27001',
-  NIST_CSF: 'NIST CSF',
-  CIS_V8: 'CIS Controls v8',
-  GDPR: 'GDPR',
-};
 
 const PRIORITY_KEYS = {
   critical: 'tasks_priority_critical',
@@ -161,16 +156,16 @@ export default function AssessmentResults({ assessment, responses }) {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {r.attachments.map((att, i) => (
-                      <a
+                      <FileLink
                         key={i}
-                        href={att.url}
+                        url={att.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-muted text-xs text-muted-foreground border hover:text-foreground hover:border-foreground/30 transition-colors"
                       >
                         <FileText className="w-3 h-3 flex-shrink-0" />
                         <span className="max-w-[180px] truncate">{att.name}</span>
-                      </a>
+                      </FileLink>
                     ))}
                   </div>
                   {r.evidence_notes && (

@@ -9,8 +9,10 @@ import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import MicrosoftIcon from "@/components/MicrosoftIcon";
 import { safeReturnTo } from "@/lib/authReturnTo";
+import { useLanguage } from "@/lib/LanguageContext";
 
 export default function Login() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   // Erros devolvidos pelo início de sessão com Google/Microsoft chegam em ?error=
@@ -26,9 +28,10 @@ export default function Login() {
     setLoading(true);
     try {
       await base44.auth.loginViaEmailPassword(email, password);
+      base44.analytics.track({ eventName: "trial_login" });
       window.location.href = returnTo;
     } catch (err) {
-      setError(err.message || "Invalid email or password");
+      setError(err.message || t("x_login_err_invalid"));
     } finally {
       setLoading(false);
     }
@@ -45,16 +48,16 @@ export default function Login() {
   return (
     <AuthLayout
       icon={LogIn}
-      title="Welcome back"
-      subtitle="Log in to your account"
+      title={t("x_login_title")}
+      subtitle={t("x_login_subtitle")}
       footer={
         <>
-          Don't have an account?{" "}
+          {t("x_login_no_account")}{" "}
           <Link
             to={"/register" + (returnTo !== "/" ? "?returnTo=" + encodeURIComponent(returnTo) : "")}
             className="text-primary font-medium hover:underline"
           >
-            Create one
+            {t("x_login_create_one")}
           </Link>
         </>
       }
@@ -65,7 +68,7 @@ export default function Login() {
         onClick={handleGoogle}
       >
         <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
+        {t("x_login_google")}
       </Button>
 
       <Button
@@ -74,7 +77,7 @@ export default function Login() {
         onClick={handleMicrosoft}
       >
         <MicrosoftIcon className="w-5 h-5 mr-2" />
-        Continue with Microsoft
+        {t("x_login_microsoft")}
       </Button>
 
       <div className="relative mb-6">
@@ -82,7 +85,7 @@ export default function Login() {
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">or</span>
+          <span className="bg-card px-3 text-muted-foreground">{t("x_login_or")}</span>
         </div>
       </div>
 
@@ -94,7 +97,7 @@ export default function Login() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("x_auth_email")}</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
@@ -102,7 +105,7 @@ export default function Login() {
               type="email"
               autoComplete="email"
               autoFocus
-              placeholder="you@example.com"
+              placeholder={t("x_auth_email_placeholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="pl-10 h-12"
@@ -112,9 +115,9 @@ export default function Login() {
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("x_auth_password")}</Label>
             <Link to="/forgot-password" className="text-xs text-primary hover:underline">
-              Forgot password?
+              {t("x_login_forgot")}
             </Link>
           </div>
           <div className="relative">
@@ -135,10 +138,10 @@ export default function Login() {
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Logging in...
+              {t("x_login_loading")}
             </>
           ) : (
-            "Log in"
+            t("x_login_button")
           )}
         </Button>
       </form>

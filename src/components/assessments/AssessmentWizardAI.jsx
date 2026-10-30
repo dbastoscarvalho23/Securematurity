@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles, Loader2, CheckSquare, Square, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { aiAssist } from '@/lib/ai';
 
 const SECTOR_LABELS = {
   financial_services: 'Financial Services',
@@ -70,7 +71,8 @@ export default function AssessmentWizardAI({ meta, selectedCustomer, onBack, onF
       question_text: q.question_text,
     }));
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await aiAssist('assessment_question_selection', {
+      customerId: selectedCustomer?.id,
       prompt: `You are a cybersecurity compliance expert. Select the most relevant questions for this assessment.
 
 Customer: ${selectedCustomer?.name || 'Unknown'}
@@ -83,7 +85,7 @@ Aim for good coverage across domains. Return ONLY the question IDs you select (u
 
 Available questions:
 ${JSON.stringify(questionList)}`,
-      response_json_schema: {
+      schema: {
         type: 'object',
         properties: {
           selected_ids: {

@@ -50,6 +50,12 @@ module.exports = {
   				DEFAULT: 'hsl(var(--destructive))',
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
+  			risk: {
+  				low: 'hsl(var(--risk-low))',
+  				medium: 'hsl(var(--risk-medium))',
+  				high: 'hsl(var(--risk-high))',
+  				critical: 'hsl(var(--risk-critical))'
+  			},
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
@@ -68,7 +74,8 @@ module.exports = {
   				accent: 'hsl(var(--sidebar-accent))',
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
-  				ring: 'hsl(var(--sidebar-ring))'
+  				ring: 'hsl(var(--sidebar-ring))',
+  				muted: 'hsl(var(--sidebar-muted))'
   			}
   		},
   		keyframes: {

@@ -1,6 +1,6 @@
 {
   "name": "Monthly Annual Report Snapshot",
-  "description": "Automatically generates and saves a PDF snapshot of the Annual Cybersecurity Report on the 1st of every month to the Document Audit Trail.",
+  "description": "Gera no dia 1 de cada m\u00eas o instant\u00e2neo do relat\u00f3rio anual de ciberseguran\u00e7a",
   "trigger": {
     "condition": null,
     "config": {
@@ -19,28 +19,23 @@
     }
   },
   "definition": {
-    "document": {
-      "dsl": "1.0.0",
-      "name": "monthly_annual_report_snapshot",
-      "version": "1.0",
-      "namespace": "base44"
-    },
     "do": [
       {
         "run_function": {
           "call": "invoke_backend_function",
+          "then": "end",
           "with": {
-            "function_name": "generateMonthlyAnnualReport",
-            "args": {
-              "automation_secret": "cm-automation-7f3a9b2e1d8c4a6f0b5e2c9d1a7f4e3b"
-            }
-          },
-          "then": "end"
+            "args": {},
+            "function_name": "generateMonthlyAnnualReport"
+          }
         }
       }
-    ]
-  },
-  "x-base44-migrated-from-automation": {
-    "legacy_payload_function": "generateMonthlyAnnualReport"
+    ],
+    "document": {
+      "dsl": "1.0.0",
+      "name": "monthly_annual_report_snapshot",
+      "namespace": "base44",
+      "version": "1.0"
+    }
   }
 }

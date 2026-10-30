@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,15 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLanguage } from '@/lib/LanguageContext';
+import RegulatoryProfileFields, { REGULATORY_FIELDS } from '@/components/legal/RegulatoryProfileFields';
+import { FRAMEWORK_NAMES, DEFAULT_CUSTOMER_FRAMEWORKS, SELECTABLE_FRAMEWORKS } from '@/lib/frameworkConstants';
+import RepositorySettings, {
+  initialRepositoryValue, repositoryPayload, repositoryChanged, repositoryValueError,
+} from '@/components/storage/RepositorySettings';
+import { toast } from 'sonner';
 
-const FRAMEWORKS = [
-  { code: 'NIS2', name: 'NIS2 / DL 125/2025' },
-  { code: 'ISO27001', name: 'ISO/IEC 27001' },
-  { code: 'NIST_CSF', name: 'NIST Cybersecurity Framework' },
-  { code: 'CIS_V8', name: 'CIS Controls v8' },
-  { code: 'QNRC', name: 'QNRC' },
-  { code: 'GDPR', name: 'GDPR' },
-];
+
+const FRAMEWORKS = SELECTABLE_FRAMEWORKS.map((code) => ({ code, name: FRAMEWORK_NAMES[code] }));
 
 const SECTORS = [
   { value: 'financial_services', label: 'Financial Services' },
@@ -35,6 +37,13 @@ const SECTORS = [
 const EMPLOYEE_RANGES = ['1-50', '51-250', '251-1000', '1001-5000', '5000+'];
 
 export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }) {
+  // Com subscrição atribuída, os lugares são geridos em Backoffice → Licenciamento.
+  const { data: subs = [] } = useQuery({
+    queryKey: ['lic-sub-of', customer?.id],
+    queryFn: () => base44.entities.TenantSubscription.filter({ customer_id: customer.id }),
+    enabled: Boolean(customer?.id),
+  });
+  const licensed = subs.some((x) => x.status !== 'closed');
   const { t } = useLanguage();
   const [form, setForm] = useState({
     nif: customer?.nif || '',
@@ -49,11 +58,11 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
     cybersecurity_manager_phone: customer?.cybersecurity_manager_phone || '',
     num_employees: customer?.num_employees || '',
     status: customer?.status || 'onboarding',
-    allowed_frameworks: customer?.allowed_frameworks || ['NIS2', 'ISO27001', 'NIST_CSF', 'CIS_V8', 'QNRC', 'GDPR'],
+    allowed_frameworks: customer?.allowed_frameworks || DEFAULT_CUSTOMER_FRAMEWORKS,
     notes: customer?.notes || '',
     user_seat_limit: customer?.user_seat_limit ?? 5,
     user_seat_addon_count: customer?.user_seat_addon_count ?? 0,
-    storage_provider: customer?.storage_provider || 'base44',
+    ...Object.fromEntries(REGULATORY_FIELDS.map((f) => [f, customer?.[f] ?? (f === 'rjc_qualification' ? 'por_determinar' : (f.endsWith('_applicable') ? false : ''))])),
   });
 
   const toggleFramework = (code) => {
@@ -65,9 +74,15 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
     }));
   };
 
+  // Repositório documental: gravado pela função updateCustomerStorage (valida a localização) depois de o cliente
+  // existir, nunca diretamente na entidade.
+  const [repository, setRepository] = useState(() => initialRepositoryValue(customer));
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(form);
+    const rootError = repositoryValueError(repository);
+    if (rootError) { toast.error(t(rootError)); return; }
+    onSubmit(form, repositoryChanged(customer, repository) ? repositoryPayload(repository) : null);
   };
 
   const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
@@ -82,7 +97,7 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>NIF *</Label>
-              <Input value={form.nif} onChange={e => set('nif', e.target.value)} required placeholder="Tax ID" />
+              <Input value={form.nif} onChange={e => set('nif', e.target.value)} required placeholder={t('x_customer_nif_placeholder')} />
             </div>
             <div className="space-y-1.5 md:col-span-2">
               <Label>{t('customers_form_org_name')} *</Label>
@@ -96,7 +111,7 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
               <Select value={form.sector} onValueChange={v => set('sector', v)}>
                 <SelectTrigger><SelectValue placeholder={t('customers_form_select_sector')} /></SelectTrigger>
                 <SelectContent>
-                  {SECTORS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  {SECTORS.map(s => <SelectItem key={s.value} value={s.value}>{t(`sector_${s.value}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -137,13 +152,15 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
             </div>
             <div className="space-y-1.5">
               <Label>{t('customers_detail_csm_email')}</Label>
-              <Input type="email" value={form.cybersecurity_manager_email} onChange={e => set('cybersecurity_manager_email', e.target.value)} placeholder="manager@company.com" />
+              <Input type="email" value={form.cybersecurity_manager_email} onChange={e => set('cybersecurity_manager_email', e.target.value)} placeholder={t('x_customer_manager_placeholder')} />
             </div>
             <div className="space-y-1.5">
               <Label>{t('customers_detail_csm_phone')}</Label>
               <Input value={form.cybersecurity_manager_phone} onChange={e => set('cybersecurity_manager_phone', e.target.value)} placeholder="+351 900 000 000" />
             </div>
           </div>
+
+          <RegulatoryProfileFields form={form} set={set} />
 
           <div className="space-y-2">
             <Label>{t('customers_detail_frameworks')}</Label>
@@ -160,20 +177,14 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label>{t('storage_provider_label')}</Label>
-              <Select value={form.storage_provider} onValueChange={v => set('storage_provider', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="base44">{t('storage_provider_base44')}</SelectItem>
-                  <SelectItem value="google_drive">{t('storage_provider_google_drive')}</SelectItem>
-                  <SelectItem value="one_drive">{t('storage_provider_one_drive')}</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">{t('storage_provider_help')}</p>
-            </div>
-          </div>
+          <RepositorySettings
+            customer={customer}
+            customerName={form.name}
+            value={repository}
+            onChange={setRepository}
+            canEditNas
+          />
+          <p className="text-xs text-muted-foreground -mt-2">{t('storage_provider_ftp_note')}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
@@ -188,13 +199,16 @@ export default function CustomerForm({ customer, onSubmit, onCancel, isLoading }
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>User Seat Limit (min. 5)</Label>
+              <Label>{t('x_customer_seat_limit')}</Label>
               <Input
                 type="number"
                 min={5}
+                disabled={licensed}
+                title={licensed ? t('lic_seats_managed') : undefined}
                 value={form.user_seat_limit}
                 onChange={e => set('user_seat_limit', Math.max(5, parseInt(e.target.value) || 5))}
               />
+              {licensed && <p className="text-[11px] text-muted-foreground">{t('lic_seats_managed')}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>{t('common_notes')}</Label>

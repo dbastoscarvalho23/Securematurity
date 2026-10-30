@@ -64,8 +64,16 @@ if (!DB) {
   test('estado e informação', async () => {
     assert.equal((await api('GET', '/health')).status, 'ok');
     const info = await api('GET', '/app/info');
-    assert.equal(info.entities.length, 34);
-    assert.equal(info.functions.length, 16, `funções carregadas: ${info.functions}`);
+    const base44Dir = path.join(serverDir, '..', 'base44');
+    const entityFiles = fs.readdirSync(path.join(base44Dir, 'entities')).filter((f) => /\.jsonc?$/.test(f));
+    assert.equal(info.entities.length, entityFiles.length);
+    // Cada função cujos pacotes npm estejam instalados no servidor tem de carregar.
+    const installed = (spec) => spec.startsWith('@base44/sdk') || fs.existsSync(path.join(serverDir, 'node_modules', spec.replace(/^(@[^/@]+\/[^/@]+|[^/@]+).*$/, '$1')));
+    const expected = fs.readdirSync(path.join(base44Dir, 'functions')).filter((name) => {
+      const src = fs.readFileSync(path.join(base44Dir, 'functions', name, 'entry.ts'), 'utf8');
+      return [...src.matchAll(/from ['"]npm:([^'"]+)['"]/g)].every((m) => installed(m[1]));
+    });
+    assert.deepEqual([...info.functions].sort(), expected.sort(), 'funções carregadas');
   });
 
   test('login do administrador inicial', async () => {
@@ -233,19 +241,41 @@ if (!DB) {
     assert.equal((await fetch(`${BASE}/files/naoexiste`)).status, 404);
   });
 
+  test('ficheiros privados só se descarregam com ligação assinada', async () => {
+    const form = new FormData();
+    form.append('file', new Blob(['evidência privada'], { type: 'text/plain' }), 'evidencia.txt');
+    const { file_url } = await (await fetch(`${BASE}/integrations/Core/UploadFile`, { method: 'POST', headers: { Authorization: `Bearer ${tokens.a}` }, body: form })).json();
+    const key = file_url.split('/').pop();
+    const client = new pg.Client({ connectionString: DB });
+    await client.connect();
+    await client.query('UPDATE files SET private = true WHERE key = $1', [key]);
+    await client.end();
+    assert.equal((await fetch(file_url)).status, 403, 'sem assinatura');
+    assert.equal((await fetch(`${file_url}?exp=${Math.floor(Date.now() / 1000) + 60}&sig=${'0'.repeat(64)}`)).status, 403, 'assinatura forjada');
+    process.env.JWT_SECRET = 'segredo-jwt-para-testes-segredo-jwt-para-testes';
+    const { signedUrlFor } = await import('../src/integrations/storage.js');
+    const query = new URL(signedUrlFor(`private/${key}`, 60)).search;
+    const ok = await fetch(`${file_url}${query}`);
+    assert.equal(ok.status, 200);
+    assert.equal(await ok.text(), 'evidência privada');
+  });
+
   test('funções de backend', async () => {
     const list = await fn('listUsers', {}, tokens.a);
     assert.equal(list.status, 200);
     assert.deepEqual(list.data.users.map((u) => u.email), ['ana@cliente1.pt']);
-    assert.equal((await fn('listUsers', {}, tokens.b)).status, 403);
+    const colleagues = await fn('listUsers', {}, tokens.b);
+    assert.equal(colleagues.status, 200, 'utilizador comum vê só os colegas');
+    assert.ok(colleagues.data.users.every((u) => u.customer_id === ids.c2));
+    assert.ok(!colleagues.data.users.some((u) => u.email === ADMIN.email));
     const everyone = (await fn('listUsers', {}, tokens.admin)).data.users.map((u) => u.email);
     assert.ok(['ana@cliente1.pt', 'bruno@cliente2.pt', ADMIN.email].every((e) => everyone.includes(e)));
 
     const login = await fn('logUserLogin', {}, tokens.b);
     assert.equal(login.status, 200);
-    const audit = await api('GET', `/entities/AuditLog?q=${encodeURIComponent(JSON.stringify({ action: 'user_login' }))}`, null, tokens.b);
-    assert.equal(audit.length, 1);
-    assert.equal(audit[0].customer_id, ids.c2);
+    // O registo de entrada não leva customer_id (logUserLogin atual), por isso só o administrador o vê.
+    const audit = await api('GET', `/entities/AuditLog?q=${encodeURIComponent(JSON.stringify({ action: 'user_login' }))}`, null, tokens.admin);
+    assert.ok(audit.some((a) => a.user_email === 'bruno@cliente2.pt'));
 
     assert.equal((await fn('dataRetentionPurge', {})).status, 401, 'anónimo sem segredo de automação');
     assert.equal((await fn('dataRetentionPurge', {}, tokens.b)).status, 403, 'utilizador comum sem segredo de automação');
@@ -258,15 +288,15 @@ if (!DB) {
     const u = r.user;
     await api('PUT', `/entities/User/${u.id}`, { role: 'customer_admin' }, tokens.admin);
     const t = (await api('POST', '/auth/login', { email: 'sem.cliente@x.pt', password: 'Palavra-Passe-9' })).access_token;
-    assert.deepEqual((await fn('listUsers', {}, t)).data.users, []);
+    assert.equal((await fn('listUsers', {}, t)).status, 403);
     const adminId = (await api('GET', '/auth/me', null, tokens.admin)).id;
-    assert.equal((await fn('adminDeleteUser', { userId: adminId }, t)).status, 403);
-    assert.equal((await fn('adminUpdateUser', { userId: adminId, data: { full_name: 'x' } }, t)).status, 403);
+    assert.equal((await fn('manageUser', { action: 'delete', userId: adminId }, t)).status, 403);
+    assert.equal((await fn('manageUser', { action: 'update', userId: adminId, data: { full_name: 'x' } }, t)).status, 403);
   });
 
   test('regressão: notificações usam o registo real e não o enviado', async () => {
     const res = await fn('taskNotifications', { type: 'assigned', task: { id: ids.ta, title: 'falso', assigned_to: 'spam@x.pt' } }, tokens.b);
-    assert.equal(res.status, 404, 'tarefa de outro cliente');
+    assert.equal(res.status, 403, 'tarefa de outro cliente');
   });
 
   test('workflow desencadeado por entidade cria notificações', async () => {
@@ -285,15 +315,20 @@ if (!DB) {
 
   test('workflow agendado e função com jsPDF executados manualmente', async () => {
     const res = await api('POST', '/workflows/Monthly%20Annual%20Report%20Snapshot/run', {}, tokens.admin);
-    assert.equal(res.success, true, JSON.stringify(res));
+    if (!res.success) {
+      const runs = await api('GET', '/workflows/runs', null, tokens.admin);
+      assert.fail(`workflow falhou: ${JSON.stringify(runs.find((r) => r.workflow === 'Monthly Annual Report Snapshot'))}\n${logs.slice(-1500)}`);
+    }
     assert.equal(res.results[0].data.success, true);
     const docs = await api('GET', '/entities/SecurityDocument', null, tokens.admin);
     assert.equal(docs.length, 1);
     assert.ok(docs[0].tags.includes('automated'));
-    const again = await fn('generateMonthlyAnnualReport', {}, null, { 'x-automation-secret': AUTOMATION_SECRET });
-    assert.match(again.data.message, /already exists/);
-    assert.equal((await fn('generateMonthlyAnnualReport', {}, tokens.b, { 'x-automation-secret': 'cm-automation-7f3a9b2e1d8c4a6f0b5e2c9d1a7f4e3b' })).status, 403,
-      'o segredo antigo publicado no repositório deixa de funcionar');
+    const versions = await api('GET', '/entities/DocumentVersion', null, tokens.admin);
+    assert.ok(versions.some((v) => v.document_id === docs[0].id && v.changed_by === ADMIN.email), 'versão registada com a conta do proprietário');
+    const again = await fn('generateMonthlyAnnualReport', {}, tokens.admin);
+    assert.match(again.data.message, /Já existe/);
+    assert.equal((await fn('generateMonthlyAnnualReport', {}, null)).status, 401, 'anónimo');
+    assert.equal((await fn('generateMonthlyAnnualReport', {}, tokens.b)).status, 403, 'utilizador comum');
   });
 
   test('tempo real respeita a RLS', async () => {

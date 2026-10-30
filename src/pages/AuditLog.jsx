@@ -223,7 +223,7 @@ export default function AuditLog() {
         <div className="flex justify-center">
           <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage} className="gap-2">
             {isFetchingNextPage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronDown className="w-4 h-4" />}
-            {isFetchingNextPage ? 'Loading...' : 'Load More'}
+            {isFetchingNextPage ? t('common_loading') : t('x_load_more')}
           </Button>
         </div>
       )}
@@ -231,7 +231,7 @@ export default function AuditLog() {
       <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="capitalize">{selectedLog?.action?.replace(/_/g, ' ') || 'Audit log entry'}</DialogTitle>
+            <DialogTitle className="capitalize">{selectedLog?.action?.replace(/_/g, ' ') || t('x_audit_entry')}</DialogTitle>
           </DialogHeader>
           {selectedLog && (
             <div className="space-y-3 text-sm">
@@ -242,17 +242,17 @@ export default function AuditLog() {
                 <span className="text-xs font-mono text-muted-foreground">{formatLocalTimestamp(selectedLog.created_date)}</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
-                <div className="text-muted-foreground">User</div>
+                <div className="text-muted-foreground">{t('x_audit_user')}</div>
                 <div className="col-span-2 font-medium break-all">{selectedLog.user_email || '—'}</div>
-                <div className="text-muted-foreground">Entity type</div>
+                <div className="text-muted-foreground">{t('x_audit_entity_type')}</div>
                 <div className="col-span-2 font-medium">{selectedLog.entity_type || '—'}</div>
-                <div className="text-muted-foreground">Entity ID</div>
+                <div className="text-muted-foreground">{t('x_audit_entity_id')}</div>
                 <div className="col-span-2 font-mono text-xs break-all">{selectedLog.entity_id || '—'}</div>
-                <div className="text-muted-foreground">Customer ID</div>
+                <div className="text-muted-foreground">{t('x_audit_customer_id')}</div>
                 <div className="col-span-2 font-mono text-xs break-all">{selectedLog.customer_id || '—'}</div>
               </div>
               <div>
-                <div className="text-muted-foreground mb-1">Details</div>
+                <div className="text-muted-foreground mb-1">{t('x_audit_details')}</div>
                 <div className="rounded-md border bg-muted/40 p-3 text-sm whitespace-pre-wrap break-words">{selectedLog.details || '—'}</div>
               </div>
             </div>

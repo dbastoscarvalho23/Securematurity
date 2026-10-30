@@ -1,15 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { invokeFn } from '@/lib/invokeFn';
 
 /**
- * Returns the list of users belonging to a given customer.
- * Falls back to an empty array while loading or when no customerId is provided.
+ * Utilizadores de um cliente (para escolher responsáveis). Passa pela função «listUsers», porque as regras de acesso
+ * não deixam ler a entidade User diretamente a quem não é administrador da plataforma.
  */
 export function useCustomerUsers(customerId) {
   const { data: users = [] } = useQuery({
     queryKey: ['users-for-customer', customerId],
-    queryFn: () => base44.entities.User.filter({ customer_id: customerId }),
+    queryFn: async () => {
+      const r = await invokeFn('listUsers', { customer_id: customerId });
+      return (r.users || []).filter((u) => (u.customer_id || u.data?.customer_id) === customerId);
+    },
     enabled: !!customerId,
+    staleTime: 60 * 1000,
   });
   return users;
 }

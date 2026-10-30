@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, Clock, Circle, Loader2, Plus, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, Plus, RefreshCw, ChevronDown, ChevronUp, AlertTriangle, Scale } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChecklistItemRow from '@/components/compliance/ChecklistItemRow';
 import { toast } from 'sonner';
@@ -17,8 +17,15 @@ import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import LoadingState from '@/components/shared/LoadingState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import { JOURNEY_FRAMEWORK, LEGACY_JOURNEY_FRAMEWORK, JOURNEY_TEMPLATE_PT, JOURNEY_TEMPLATE_EN, journeyTask } from '@/lib/legal/journeyTemplate';
+import { buildJourneyRecords, findScopeItem } from '@/lib/legal/qualification';
+import QualificationWizard from '@/components/customers/QualificationWizard';
+import { useCustomerEvidence } from '@/components/evidence/EvidencePanel';
 
-const RJCS_TEMPLATE_EN = [
+// Modelos anteriores (framework 'RJCS'): mantidos apenas para apresentar jornadas já criadas antes da
+// atualização para o RJC (DL 125/2025) e o Regulamento n.º 756/2026.
+
+const LEGACY_TEMPLATE_EN = [
   {
     section: 'A. Framework and CNCS Registration',
     section_order: 1,
@@ -108,7 +115,7 @@ const RJCS_TEMPLATE_EN = [
   },
 ];
 
-const RJCS_TEMPLATE_PT = [
+const LEGACY_TEMPLATE_PT = [
   {
     section: 'A. Enquadramento e registo no CNCS',
     section_order: 1,
@@ -201,10 +208,10 @@ const RJCS_TEMPLATE_PT = [
 function SectionCard({ section, items, queryKey, template, customerUsers }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(true);
-  // Build a map from task_order -> translated text using the template for this section
+  // Tarefa do modelo por ordem (título simples + base legal; os modelos anteriores são só texto).
   const translatedTasks = {};
   if (template) {
-    template.tasks.forEach((text, idx) => { translatedTasks[idx + 1] = text; });
+    template.tasks.forEach((task, idx) => { translatedTasks[idx + 1] = journeyTask(task); });
   }
   const total = items.length;
   const done = items.filter(i => i.status === 'done').length;
@@ -241,7 +248,8 @@ function SectionCard({ section, items, queryKey, template, customerUsers }) {
       {expanded && (
         <CardContent className="pt-0 space-y-2">
           {[...items].sort((a, b) => (a.task_order ?? 0) - (b.task_order ?? 0)).map(item => (
-            <ChecklistItemRow key={item.id} item={item} queryKey={queryKey} displayText={translatedTasks[item.task_order]} customerUsers={customerUsers} />
+            <ChecklistItemRow key={item.id} item={item} queryKey={queryKey} displayText={translatedTasks[item.task_order]?.title}
+              basis={translatedTasks[item.task_order]?.basis} from2028={translatedTasks[item.task_order]?.from2028} customerUsers={customerUsers} />
           ))}
         </CardContent>
       )}
@@ -257,8 +265,12 @@ export default function ComplianceJourney() {
   const [selectedCustomerId, setSelectedCustomerId] = useState(isAdmin ? '' : user?.customer_id);
   const [initializing, setInitializing] = useState(false);
   const [reinitConfirm, setReinitConfirm] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  // Enquadramento: admin da plataforma e customer_admin do próprio cliente.
+  const canReview = isAdmin || user?.role === 'customer_admin';
 
-  const RJCS_TEMPLATE = language === 'pt' ? RJCS_TEMPLATE_PT : RJCS_TEMPLATE_EN;
+  const NEW_TEMPLATE = language === 'pt' ? JOURNEY_TEMPLATE_PT : JOURNEY_TEMPLATE_EN;
+  const LEGACY_TEMPLATE = language === 'pt' ? LEGACY_TEMPLATE_PT : LEGACY_TEMPLATE_EN;
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -271,29 +283,28 @@ export default function ComplianceJourney() {
 
   const customerUsers = useCustomerUsers(activeCustomerId);
 
-  const { data: items = [], isLoading } = useQuery({
+  // Jornada atual (RJC 2026); se ainda não existir, apresenta-se a jornada anterior (RJCS), se houver.
+  const { data: journey = { framework: JOURNEY_FRAMEWORK, items: [] }, isLoading } = useQuery({
     queryKey,
-    queryFn: () => base44.entities.ComplianceChecklist.filter({ customer_id: activeCustomerId, framework: 'RJCS' }, 'section_order', 500),
+    queryFn: async () => {
+      const current = await base44.entities.ComplianceChecklist.filter({ customer_id: activeCustomerId, framework: JOURNEY_FRAMEWORK }, 'section_order', 500);
+      if (current.length > 0) return { framework: JOURNEY_FRAMEWORK, items: current };
+      const legacy = await base44.entities.ComplianceChecklist.filter({ customer_id: activeCustomerId, framework: LEGACY_JOURNEY_FRAMEWORK }, 'section_order', 500);
+      return { framework: legacy.length > 0 ? LEGACY_JOURNEY_FRAMEWORK : JOURNEY_FRAMEWORK, items: legacy };
+    },
     enabled: !!activeCustomerId,
   });
+  const items = journey.items;
+  const isLegacy = journey.framework === LEGACY_JOURNEY_FRAMEWORK;
+  const shownTemplate = isLegacy ? LEGACY_TEMPLATE : NEW_TEMPLATE;
 
   const initMutation = useMutation({
     mutationFn: async () => {
       setInitializing(true);
-      const records = [];
-      RJCS_TEMPLATE.forEach(sec => {
-        sec.tasks.forEach((task, idx) => {
-          records.push({
-            customer_id: activeCustomerId,
-            customer_name: customers.find(c => c.id === activeCustomerId)?.name || '',
-            framework: 'RJCS',
-            section: sec.section,
-            section_order: sec.section_order,
-            task_text: task,
-            task_order: idx + 1,
-            status: 'pending',
-          });
-        });
+      const records = buildJourneyRecords(NEW_TEMPLATE, {
+        customerId: activeCustomerId,
+        customerName: selectedCustomer?.name || '',
+        framework: JOURNEY_FRAMEWORK,
       });
       await base44.entities.ComplianceChecklist.bulkCreate(records);
     },
@@ -302,7 +313,7 @@ export default function ComplianceJourney() {
       setInitializing(false);
       toast.success(t('compliance_init_success'));
     },
-    onError: () => setInitializing(false),
+    onError: (e) => { setInitializing(false); toast.error(e?.message || t('x_error_generic')); },
   });
 
   const grouped = items.reduce((acc, item) => {
@@ -321,7 +332,25 @@ export default function ComplianceJourney() {
   const active = total - na;
   const overallProgress = active > 0 ? Math.round((done / active) * 100) : 0;
 
-  const selectedCustomer = customers.find(c => c.id === activeCustomerId);
+  // O cliente do utilizador (não admin) lê-se pelo id — a RLS permite ler apenas o próprio cliente.
+  const { data: ownCustomer } = useQuery({
+    queryKey: ['qw-customer', activeCustomerId],
+    queryFn: () => base44.entities.Customer.get(activeCustomerId),
+    enabled: Boolean(activeCustomerId) && !isAdmin,
+  });
+  const selectedCustomer = isAdmin ? customers.find(c => c.id === activeCustomerId) : ownCustomer;
+
+  // Data do último enquadramento: relatório guardado como evidência e ligado à tarefa A.1 da jornada.
+  const { data: customerEvidence = [] } = useCustomerEvidence(canReview ? activeCustomerId : undefined);
+  const scopeItem = journey.framework === JOURNEY_FRAMEWORK ? findScopeItem(items) : null;
+  const lastQualification = scopeItem
+    ? customerEvidence
+        .filter((e) => !e.superseded && e.evidence_type === 'test_audit_report' && e.method === 'interview' && (e.link_keys || []).includes(`checklist:${scopeItem.id}`))
+        .map((e) => e.collected_at || e.created_date?.slice(0, 10))
+        .filter(Boolean).sort().pop()
+    : null;
+  const qualification = selectedCustomer?.rjc_qualification || 'por_determinar';
+  const fmtDate = (iso) => (iso ? iso.slice(0, 10).split('-').reverse().join('/') : '');
 
   return (
     <div className="space-y-6">
@@ -340,6 +369,33 @@ export default function ComplianceJourney() {
           </Select>
         )}
       />
+
+      {activeCustomerId && selectedCustomer && (
+        <Card>
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3 min-w-0">
+              <Scale className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">{t('qw_current')}</p>
+                <p className="text-sm font-semibold">
+                  {t(`legal_q_${qualification}`)}
+                  {qualification === 'publica_relevante' && selectedCustomer.epr_group ? ` — ${t('legal_epr_group')} ${selectedCustomer.epr_group}` : ''}
+                  {['essencial', 'importante'].includes(qualification) && selectedCustomer.conformity_level ? ` · ${t('legal_conformity_level')}: ${t(`legal_level_${selectedCustomer.conformity_level}`)}` : ''}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {lastQualification ? t('qw_assessed_on', { date: fmtDate(lastQualification) }) : t('qw_not_assessed')}
+                  {selectedCustomer.cncs_qualification_date ? ` · ${t('legal_profile_qualification_date')}: ${fmtDate(selectedCustomer.cncs_qualification_date)}` : ''}
+                </p>
+              </div>
+            </div>
+            {canReview && (
+              <Button size="sm" variant="outline" className="gap-2 shrink-0" onClick={() => setWizardOpen(true)}>
+                <Scale className="w-4 h-4" /> {lastQualification || qualification !== 'por_determinar' ? t('qw_review') : t('qw_start')}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {!activeCustomerId ? (
         <Card><CardContent className="p-0">
@@ -361,6 +417,25 @@ export default function ComplianceJourney() {
         </CardContent></Card>
       ) : (
         <>
+          {isLegacy && (
+            <Card className="border-amber-500/40 bg-amber-500/5">
+              <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">{t('compliance_legacy_title')}</p>
+                    <p className="text-xs text-muted-foreground">{t('compliance_legacy_desc')}</p>
+                  </div>
+                </div>
+                {isAdmin && (
+                  <Button size="sm" className="gap-2 shrink-0" onClick={() => initMutation.mutate()} disabled={initializing}>
+                    {initializing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    {t('compliance_create_new_journey')}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">{t('compliance_total_tasks')}</p><p className="text-2xl font-bold mt-1">{total}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">{t('compliance_completed')}</p><p className="text-2xl font-bold mt-1 text-accent">{done}</p></CardContent></Card>
@@ -371,14 +446,14 @@ export default function ComplianceJourney() {
           <div className="space-y-4">
             {sections.map(sec => {
               const secOrder = grouped[sec][0]?.section_order;
-              const templateSection = RJCS_TEMPLATE.find(t => t.section_order === secOrder);
+              const templateSection = shownTemplate.find(tpl => tpl.section_order === secOrder);
               return (
                 <SectionCard key={sec} section={templateSection?.section || sec} items={grouped[sec]} queryKey={queryKey} template={templateSection} customerUsers={customerUsers} />
               );
             })}
           </div>
 
-          {isAdmin && (
+          {isAdmin && !isLegacy && (
             <div className="flex justify-end">
               <Button
                 variant="outline"
@@ -392,6 +467,10 @@ export default function ComplianceJourney() {
             </div>
           )}
         </>
+      )}
+
+      {canReview && selectedCustomer && wizardOpen && (
+        <QualificationWizard open={wizardOpen} onOpenChange={setWizardOpen} customer={selectedCustomer} />
       )}
 
       <ConfirmDialog

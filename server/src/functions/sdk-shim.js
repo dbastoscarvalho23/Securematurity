@@ -4,7 +4,7 @@ import { EntityService } from '../entities/service.js';
 import { authenticateToken } from '../auth/routes.js';
 import { invokeLLM } from '../integrations/llm.js';
 import { sendEmail } from '../integrations/email.js';
-import { putFile } from '../integrations/storage.js';
+import { putFile, putPrivateFile, signedUrlFor } from '../integrations/storage.js';
 import { getConnection } from '../connectors.js';
 import { HttpError } from '../util.js';
 
@@ -54,6 +54,12 @@ function integrations(getUser) {
       const { file_url } = await putFile(buffer, { filename, contentType, createdBy: user?.email || 'system' });
       return { file_url };
     },
+    UploadPrivateFile: async ({ file }) => {
+      const { buffer, filename, contentType } = await toBuffer(file);
+      const user = await getUser();
+      return putPrivateFile(buffer, { filename, contentType, createdBy: user?.email || 'system' });
+    },
+    CreateFileSignedUrl: async ({ file_uri, expires_in }) => ({ signed_url: signedUrlFor(file_uri, expires_in) }),
   };
   return {
     Core: new Proxy(Core, {

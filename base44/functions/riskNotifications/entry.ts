@@ -1,133 +1,142 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
+import { json, getAuthenticatedUser, canAccessRecord } from '../../shared/http.ts';
+import { logEmailSent } from '../../shared/audit.ts';
+import { getReminderSettings, buildRecipients, canUseAdditionalRecipients } from '../../shared/reminderSettings.ts';
+import { isAllowedRecipient } from '../../shared/recipients.ts';
+import { riskScore, scoreLevel, RISK_STATUS_LABELS as STATUS_LABELS } from '../../shared/riskLevel.ts';
+import { notificationLimitReached, NOTIFICATION_EMAILS_PER_HOUR } from '../../shared/rateLimit.ts';
+import { sendMail } from '../../shared/mail.ts';
 
-const STATUS_LABELS = {
-  open: 'Open',
-  in_treatment: 'In Treatment',
-  accepted: 'Accepted',
-  closed: 'Closed',
-};
-
-function scoreLevel(score) {
-  if (score >= 16) return 'Critical';
-  if (score >= 9)  return 'High';
-  if (score >= 4)  return 'Medium';
-  return 'Low';
-}
-
-async function getSettings(base44, customerId) {
-  const all = await base44.asServiceRole.entities.ReminderSettings.list();
-  const customerSpecific = customerId ? all.find(s => s.customer_id === customerId) : null;
-  const global = all.find(s => !s.customer_id);
-  return customerSpecific || global || {
-    notify_on_assignment: true,
-    notify_on_status_change: true,
-    additional_recipients: '',
-  };
-}
+const LEVEL_PT = { Critical: 'Crítico', High: 'Alto', Medium: 'Médio', Low: 'Baixo' };
+const STATUS_PT = { open: 'Aberto', in_treatment: 'Em tratamento', accepted: 'Aceite', closed: 'Fechado' };
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const user = await base44.auth.me();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const user = await getAuthenticatedUser(base44);
+  if (!user) return json({ error: 'Unauthorized' }, 401);
 
-  const { type, risk: submittedRisk, previousRisk } = await req.json();
-  // Never trust the risk sent by the caller: load the real record with the caller's own
-  // permissions, so notifications only go out for risks they can access, with real data.
-  const risk = submittedRisk?.id
-    ? await base44.entities.RiskItem.get(submittedRisk.id).catch(() => null)
-    : null;
-  if (!risk) return Response.json({ error: 'Risk not found' }, { status: 404 });
-  const score = (risk.impact || 0) * (risk.likelihood || 0);
+  const body = await req.json();
+  const { type, previousRisk: payloadPreviousRisk } = body;
+  let risk = body.risk;
+
+  // Never trust the caller-supplied record: only its id is used to fetch the
+  // real record from the database, and the caller must be authorized on it
+  // (admin, same customer, creator or owner) before any email is sent.
+  const riskId = risk?.id;
+  if (!riskId) return json({ error: 'risk.id is required' }, 400);
+  let real = null;
+  try {
+    real = await base44.asServiceRole.entities.RiskItem.get(riskId);
+  } catch {
+    real = null;
+  }
+  if (!real) return json({ error: 'risk not found' }, 404);
+
+  if (!canAccessRecord(user, real)) return json({ error: 'Forbidden' }, 403);
+
+  // All email content and recipients are derived from the real record.
+  risk = real;
+
+  // The previous state is also client-supplied, so only accept it when it
+  // references the same record; otherwise ignore it (prevents forged
+  // "previous" data from suppressing or injecting content into emails).
+  const previousRisk = payloadPreviousRisk?.id === riskId ? payloadPreviousRisk : null;
+
+  const score = riskScore(risk.impact, risk.likelihood);
   const level = scoreLevel(score);
   const ownerEmail = risk.owner_email;
 
-  if (!ownerEmail) return Response.json({ skipped: 'no owner email' });
+  if (!ownerEmail) return json({ skipped: 'no owner email' });
 
-  const settings = await getSettings(base44, risk.customer_id);
+  // O responsável é texto livre escrito por quem cria o risco: só recebe o aviso se o endereço constar nos
+  // contactos registados do cliente (mesma regra de sendEmail). Sem isto, a plataforma servia de relay de email
+  // para qualquer endereço externo escolhido pelo utilizador.
+  // Destinatários adicionais (e contactos externos de fornecedores/formandos) só para quem os pode configurar
+  // (administrador da plataforma ou do cliente).
+  const allowAdditional = canUseAdditionalRecipients(user, risk.customer_id);
 
-  // Build recipient list
-  const buildRecipients = (primary) => {
-    const list = [primary];
-    if (settings.additional_recipients) {
-      settings.additional_recipients.split(',').map(e => e.trim()).filter(Boolean).forEach(e => {
-        if (!list.includes(e)) list.push(e);
-      });
-    }
-    return list;
-  };
+  const ownerOk = await isAllowedRecipient(base44, risk.customer_id, ownerEmail, { includeExternal: allowAdditional });
+
+  const settings = await getReminderSettings(base44.asServiceRole, risk.customer_id);
 
   // ── 1. New assignment ──────────────────────────────────────────────────────
   if (type === 'assigned') {
-    if (!settings.notify_on_assignment) return Response.json({ skipped: 'assignment notifications disabled' });
+    if (!settings.notify_on_assignment) return json({ skipped: 'assignment notifications disabled' });
 
     const wasOwner = previousRisk?.owner_email;
-    if (wasOwner === ownerEmail) return Response.json({ skipped: 'owner unchanged' });
+    if (wasOwner === ownerEmail) return json({ skipped: 'owner unchanged' });
 
-    const recipients = buildRecipients(ownerEmail);
+    const recipients = buildRecipients(ownerOk ? ownerEmail : null, settings, allowAdditional);
+    if (recipients.length === 0) return json({ skipped: 'no authorized recipients' });
+    if (await notificationLimitReached(base44, user)) {
+      return json({ error: `Atingiu o limite de ${NOTIFICATION_EMAILS_PER_HOUR} avisos por hora. Tente mais tarde.` }, 429);
+    }
     const body = `
-<p>Hello,</p>
-<p>You have been assigned as the owner of the following risk:</p>
+<p>Olá,</p>
+<p>Foi designado responsável pelo seguinte risco:</p>
 <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:sans-serif;font-size:14px;">
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Risk ID</td><td style="padding:6px 12px;">${esc(risk.risk_id || '—')}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Title</td><td style="padding:6px 12px;">${esc(risk.title)}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Level</td><td style="padding:6px 12px;">${esc(level)} (score ${esc(score)})</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Status</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[risk.status] || risk.status)}</td></tr>
-  ${risk.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;">${esc(risk.due_date)}</td></tr>` : ''}
-  ${risk.description ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Description</td><td style="padding:6px 12px;">${esc(risk.description)}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">ID do risco</td><td style="padding:6px 12px;">${esc(risk.risk_id || '—')}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Título</td><td style="padding:6px 12px;">${esc(risk.title)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Nível</td><td style="padding:6px 12px;">${esc(LEVEL_PT[level] || level)} (pontuação ${esc(score)})</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Estado</td><td style="padding:6px 12px;">${esc(STATUS_PT[risk.status] || STATUS_LABELS[risk.status] || risk.status)}</td></tr>
+  ${risk.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Data-limite</td><td style="padding:6px 12px;">${esc(risk.due_date)}</td></tr>` : ''}
+  ${risk.description ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Descrição</td><td style="padding:6px 12px;">${esc(risk.description)}</td></tr>` : ''}
 </table>
-<p>Please review this risk and take appropriate action.</p>
-<p style="color:#6b7280;font-size:12px;">Assigned by: ${esc(user.full_name || user.email)}</p>
+<p>Analise o risco e defina o tratamento adequado.</p>
+<p style="color:#6b7280;font-size:12px;">Atribuído por: ${esc(user.full_name || user.email)}</p>
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Risk Assigned] ${esc(risk.title)}`, body });
+      await sendMail(base44, { to, subject: `[Risco atribuído] ${esc(risk.title)}`, body });
     }
-    await base44.asServiceRole.entities.AuditLog.create({
-      action: 'email_sent',
+    await logEmailSent(base44, {
       user_email: user.email,
       entity_type: 'RiskItem',
       entity_id: risk.id,
       details: `Risk assignment email sent to ${recipients.join(', ')} for risk: ${risk.title}`,
     });
-    return Response.json({ sent: 'assigned', to: recipients });
+    return json({ sent: 'assigned', to: recipients });
   }
 
   // ── 2. Status change ───────────────────────────────────────────────────────
   if (type === 'status_changed') {
-    if (!settings.notify_on_status_change) return Response.json({ skipped: 'status change notifications disabled' });
+    if (!settings.notify_on_status_change) return json({ skipped: 'status change notifications disabled' });
 
     const oldStatus = previousRisk?.status;
     const newStatus = risk.status;
-    if (!oldStatus || oldStatus === newStatus) return Response.json({ skipped: 'status unchanged' });
+    if (!oldStatus || oldStatus === newStatus) return json({ skipped: 'status unchanged' });
 
-    const recipients = buildRecipients(ownerEmail);
+    const recipients = buildRecipients(ownerOk ? ownerEmail : null, settings, allowAdditional);
+    if (recipients.length === 0) return json({ skipped: 'no authorized recipients' });
+    if (await notificationLimitReached(base44, user)) {
+      return json({ error: `Atingiu o limite de ${NOTIFICATION_EMAILS_PER_HOUR} avisos por hora. Tente mais tarde.` }, 429);
+    }
     const body = `
-<p>Hello,</p>
-<p>The status of a risk you own has been updated:</p>
+<p>Olá,</p>
+<p>O estado de um risco pelo qual é responsável foi alterado:</p>
 <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:sans-serif;font-size:14px;">
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">Risk ID</td><td style="padding:6px 12px;">${esc(risk.risk_id || '—')}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Title</td><td style="padding:6px 12px;">${esc(risk.title)}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Old Status</td><td style="padding:6px 12px;">${esc(STATUS_LABELS[oldStatus] || oldStatus)}</td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">New Status</td><td style="padding:6px 12px;"><strong>${esc(STATUS_LABELS[newStatus] || newStatus)}</strong></td></tr>
-  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Risk Level</td><td style="padding:6px 12px;">${esc(level)} (score ${esc(score)})</td></tr>
-  ${risk.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Due Date</td><td style="padding:6px 12px;">${esc(risk.due_date)}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;width:140px;">ID do risco</td><td style="padding:6px 12px;">${esc(risk.risk_id || '—')}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Título</td><td style="padding:6px 12px;">${esc(risk.title)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Estado anterior</td><td style="padding:6px 12px;">${esc(STATUS_PT[oldStatus] || STATUS_LABELS[oldStatus] || oldStatus)}</td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Novo estado</td><td style="padding:6px 12px;"><strong>${esc(STATUS_PT[newStatus] || STATUS_LABELS[newStatus] || newStatus)}</strong></td></tr>
+  <tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Nível de risco</td><td style="padding:6px 12px;">${esc(LEVEL_PT[level] || level)} (pontuação ${esc(score)})</td></tr>
+  ${risk.due_date ? `<tr><td style="padding:6px 12px;background:#f4f4f5;font-weight:600;">Data-limite</td><td style="padding:6px 12px;">${esc(risk.due_date)}</td></tr>` : ''}
 </table>
-<p style="color:#6b7280;font-size:12px;">Updated by: ${esc(user.full_name || user.email)}</p>
+<p style="color:#6b7280;font-size:12px;">Atualizado por: ${esc(user.full_name || user.email)}</p>
     `.trim();
 
     for (const to of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({ to, subject: `[Risk Update] Status changed — ${esc(risk.title)}`, body });
+      await sendMail(base44, { to, subject: `[Risco] Estado alterado: ${esc(risk.title)}`, body });
     }
-    await base44.asServiceRole.entities.AuditLog.create({
-      action: 'email_sent',
+    await logEmailSent(base44, {
       user_email: user.email,
       entity_type: 'RiskItem',
       entity_id: risk.id,
       details: `Risk status change email sent to ${recipients.join(', ')} for risk: ${risk.title} (${STATUS_LABELS[oldStatus] || oldStatus} → ${STATUS_LABELS[newStatus] || newStatus})`,
     });
-    return Response.json({ sent: 'status_changed', to: recipients });
+    return json({ sent: 'status_changed', to: recipients });
   }
 
-  return Response.json({ skipped: 'unknown type' });
+  return json({ skipped: 'unknown type' });
 });

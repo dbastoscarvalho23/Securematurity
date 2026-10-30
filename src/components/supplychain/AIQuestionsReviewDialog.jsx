@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +32,7 @@ export default function AIQuestionsReviewDialog({ open, questions, onConfirm, on
   };
 
   const answerTypeBadge = (type) => {
-    const map = { yes_no: 'Yes/No', scale_1_5: 'Scale 1–5', text: 'Text', multiple_choice: 'Multiple' };
+    const map = { yes_no: t('sc_answer_type_yes_no'), scale_1_5: t('sc_answer_type_scale'), text: t('sc_answer_type_text'), multiple_choice: t('sc_answer_type_multiple_choice') };
     return map[type] || type;
   };
 

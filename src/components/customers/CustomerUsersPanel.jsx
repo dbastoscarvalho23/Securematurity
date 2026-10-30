@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { requestMoreSeats } from '@/lib/mail';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -90,7 +91,8 @@ export default function CustomerUsersPanel({ customer }) {
   };
 
   const handleRemove = async (userId) => {    try {
-      await base44.entities.User.update(userId, { customer_id: null });
+      const res = await base44.functions.invoke('manageUser', { action: 'update', userId, data: { customer_id: null } });
+      if (res.data?.error) throw new Error(res.data.error);
       toast.success(t('cup_user_removed'));
       queryClient.invalidateQueries({ queryKey: ['customerUsers', customer.id] });
     } catch {
@@ -101,18 +103,8 @@ export default function CustomerUsersPanel({ customer }) {
   const handleRequestMoreSeats = async () => {
     setRequestingSeat(true);
     try {
-      // Find platform admins to notify
-      const admins = await base44.entities.User.filter({ role: 'admin' });
-      const adminEmails = admins.map(a => a.email).filter(Boolean);
-
-      // Send email to each admin
-      await Promise.all(adminEmails.map(adminEmail =>
-        base44.integrations.Core.SendEmail({
-          to: adminEmail,
-          subject: `[Seat Request] ${customer.name} needs more user seats`,
-          body: `Hello,\n\nThe customer "${customer.name}" (ID: ${customer.id}) has reached their user seat limit.\n\nCurrent usage: ${usedSeats} / ${seatLimit} seats used.\n\nThey are requesting additional seats to onboard more users.\n\nPlease review and adjust the seat limit in the Admin panel > Seat Management section.\n\nThis request was triggered by: ${currentUser?.email || 'unknown'}\n\nBest regards,\nCyberGovern Platform`,
-        })
-      ));
+      // Os administradores a notificar são escolhidos no servidor (o RLS não deixa o cliente ler utilizadores).
+      await requestMoreSeats({ customerId: customer.id, used: usedSeats, limit: seatLimit });
 
       toast.success(t('cup_seat_request_sent'));
     } catch (err) {
@@ -169,7 +161,7 @@ export default function CustomerUsersPanel({ customer }) {
           <div className="flex-1 min-w-[160px]">
             <Input
               type="email"
-              placeholder="user@company.com"
+              placeholder={t('x_user_email_placeholder')}
               value={email}
               onChange={e => setEmail(e.target.value)}
               className="h-8 text-xs"

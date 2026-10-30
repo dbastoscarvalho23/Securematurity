@@ -1,0 +1,73 @@
+# Verificações em cada PR: testes do frontend, nomes por definir nas funções do Base44
+# e, no servidor próprio, os testes ponta a ponta com PostgreSQL.
+name: Verificações
+
+on:
+  pull_request:
+    branches: [main, feat/self-hosting]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Nomes por definir nas funções
+        run: node scripts/check-function-names.cjs
+      - name: Testes
+        run: |
+          set +e
+          npm test > test-output.txt 2>&1; status=$?
+          cat test-output.txt
+          if [ $status -ne 0 ]; then
+            # As falhas também vão para uma anotação, legível pela API do GitHub.
+            msg=$(grep -iE "FAIL|not ok|error|expected|actual|message:|at .*test\.js|✗|×" test-output.txt | sed "s/\x1b\[[0-9;]*m//g" | head -60 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Testes falharam::${msg}"
+          fi
+          exit $status
+
+  server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ankoraone
+          POSTGRES_PASSWORD: ankoraone
+          POSTGRES_DB: ankoraone_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U ankoraone" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Dependências do servidor
+        working-directory: server
+        run: npm install --no-audit --no-fund
+      - name: Testes do servidor
+        working-directory: server
+        env:
+          TEST_DATABASE_URL: postgres://ankoraone:ankoraone@localhost:5432/ankoraone_test
+        run: |
+          set +e
+          npm test > test-output.txt 2>&1; status=$?
+          cat test-output.txt
+          if [ $status -ne 0 ]; then
+            # As falhas também vão para uma anotação, legível pela API do GitHub.
+            msg=$(grep -iE -A4 "FAIL|not ok|error|expected|actual|message:|at .*test\.js|✗|×" test-output.txt | sed "s/\x1b\[[0-9;]*m//g" | head -60 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Testes falharam::${msg}"
+          fi
+          exit $status

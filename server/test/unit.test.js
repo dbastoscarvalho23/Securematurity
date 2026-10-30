@@ -90,3 +90,45 @@ test('InvokeLLM e conversa com API compatível com OpenAI', async () => {
     server.close();
   }
 });
+
+test('a interface só chama funções permitidas', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { HTTP_FUNCTIONS } = await import('../src/functions/http-functions.js');
+  const srcDir = process.env.APP_SRC_DIR || path.join(import.meta.dirname, '..', '..', 'src');
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : /\.(jsx?|tsx?)$/.test(e.name) ? [path.join(d, e.name)] : []));
+  const called = new Set();
+  for (const file of walk(srcDir)) {
+    for (const m of fs.readFileSync(file, 'utf8').matchAll(/\b(?:functions\.invoke|invokeFn)\(\s*['"]([A-Za-z0-9_]+)['"]/g)) called.add(m[1]);
+  }
+  assert.ok(called.size > 0, `nenhuma chamada encontrada em ${srcDir}`);
+  const missing = [...called].filter((name) => !HTTP_FUNCTIONS.has(name));
+  assert.deepEqual(missing, [], 'acrescente estas funções a server/src/functions/http-functions.js');
+});
+
+test('ligações assinadas para ficheiros privados', async () => {
+  const { signedUrlFor, privateAccessAllowed } = await import('../src/integrations/storage.js');
+  const key = 'a'.repeat(32) + '.pdf';
+  const now = Date.UTC(2026, 9, 29, 12, 0, 0);
+  const params = (url) => new URL(url).searchParams;
+  const url = signedUrlFor(`private/${key}`, 300, now);
+  const meta = { key, private: true };
+  assert.equal(privateAccessAllowed(meta, params(url), now), true, 'assinatura válida');
+  assert.equal(privateAccessAllowed(meta, params(url), now + 301_000), false, 'expirada');
+  assert.equal(privateAccessAllowed(meta, new URLSearchParams(), now), false, 'sem assinatura');
+  const forged = params(url); forged.set('exp', String(Number(forged.get('exp')) + 3600));
+  assert.equal(privateAccessAllowed(meta, forged, now), false, 'prazo alterado');
+  assert.equal(privateAccessAllowed({ key: 'b'.repeat(32), private: true }, params(url), now), false, 'assinatura de outro ficheiro');
+  assert.equal(privateAccessAllowed({ key, private: false }, new URLSearchParams(), now), true, 'ficheiro público');
+  const longest = Number(params(signedUrlFor(key, 999_999, now)).get('exp'));
+  assert.equal(longest, now / 1000 + 3600, 'validade máxima de uma hora');
+  assert.throws(() => signedUrlFor('private/../../etc/passwd', 60, now), /file_uri inválido/);
+});
+
+test("módulo 'base44:runtime' lê os segredos do ambiente", async () => {
+  const { secrets } = await import('../src/functions/runtime-shim.js');
+  process.env.ANKORA_TESTE_SEGREDO = 'valor';
+  assert.equal(secrets.get('ANKORA_TESTE_SEGREDO'), 'valor');
+  assert.equal(secrets.get('ANKORA_SEGREDO_INEXISTENTE'), undefined);
+  delete process.env.ANKORA_TESTE_SEGREDO;
+});

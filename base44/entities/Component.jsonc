@@ -1,0 +1,125 @@
+{
+  "name": "Component",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "category": {
+      "type": "string",
+      "description": "Categoria do catálogo de ferramentas (src/lib/legal/toolCatalog.js)"
+    },
+    "product": {
+      "type": "string",
+      "description": "Produto ou ferramenta"
+    },
+    "vendor": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "asset_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ativos protegidos ou suportados"
+    },
+    "nis2_letters": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Alíneas do art. 21.º, n.º 2, da NIS2 cobertas"
+    },
+    "regexec_points": {
+      "type": "string",
+      "description": "Pontos do Anexo do Reg. Exec. (UE) 2024/2690"
+    },
+    "qnrcs_controls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Controlos do QNRCS"
+    },
+    "coverage_confirmed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Cobertura confirmada pelo consultor",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "owner": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "retired"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "category",
+    "product"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
+

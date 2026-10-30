@@ -7,7 +7,8 @@
       "enum": [
         "base44",
         "google_drive",
-        "one_drive"
+        "one_drive",
+        "webdav"
       ],
       "default": "base44",
       "description": "Application-wide storage provider used for uploaded and generated files"
@@ -33,7 +34,25 @@
         "role": "admin"
       }
     },
-    "read": {},
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "customer_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
     "update": {
       "user_condition": {
         "role": "admin"

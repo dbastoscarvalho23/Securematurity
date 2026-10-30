@@ -18,24 +18,26 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoadingAuth(true);
       setAuthError(null);
-      const currentUser = await base44.auth.me();
+      // Log user login to audit trail (may also auto-assign customer_id / promote
+      // role for previously-invited users). Resolve the FINAL user record BEFORE
+      // the first setUser: rendering with the stale pre-assignment record made
+      // RouteGuard see a 'user' without customer_id and intermittently redirect
+      // to the Dashboard.
+      const initialUser = await base44.auth.me();
+      await base44.functions.invoke('logUserLogin', {}).catch(() => {});
+      let currentUser = initialUser;
+      try {
+        currentUser = await base44.auth.me();
+      } catch (_) {}
       setUser(currentUser);
       setIsAuthenticated(true);
-      // Log user login to audit trail (may also auto-assign customer_id / promote
-      // role for previously-invited users). Re-fetch the user afterwards so the
-      // frontend reflects those updates instead of staying with the stale record.
-      await base44.functions.invoke('logUserLogin', {}).catch(() => {});
-      try {
-        const refreshedUser = await base44.auth.me();
-        setUser(refreshedUser);
-      } catch (_) {}
     } catch (error) {
       setIsAuthenticated(false);
       setUser(null);
       if (error?.status === 403 && error?.data?.extra_data?.reason === 'user_not_registered') {
-        setAuthError({ type: 'user_not_registered', message: 'User not registered for this app' });
+        setAuthError({ type: 'user_not_registered', message: 'Utilizador não registado nesta aplicação' });
       } else if (error?.status === 401 || error?.status === 403) {
-        setAuthError({ type: 'auth_required', message: 'Authentication required' });
+        setAuthError({ type: 'auth_required', message: 'É necessário iniciar sessão' });
       }
     } finally {
       setIsLoadingAuth(false);
