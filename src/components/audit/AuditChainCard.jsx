@@ -39,6 +39,8 @@ export default function AuditChainCard() {
   const last = status?.last_verification;
   const broken = last?.action === 'audit_chain_broken';
   const review = last?.action === 'audit_chain_anchor_review';
+  // A verificação corre todos os dias: sem resultado há mais de 36 horas, algo falhou (por exemplo, o tempo da função).
+  const stale = !!status?.seal && (!last || Date.now() - new Date(last.at).getTime() > 36 * 3600 * 1000);
   const Icon = broken ? ShieldAlert : ShieldCheck;
 
   return (
@@ -54,6 +56,7 @@ export default function AuditChainCard() {
                   {status?.seal ? t('audit_chain_seal_info', { date: when(status.seal.at), count: status.seal.covered }) : t('audit_chain_not_sealed')}
                 </p>
                 {last && <p className={`text-xs ${broken ? 'text-destructive' : 'text-muted-foreground'}`}>{t('audit_chain_last_check', { date: when(last.at) })} {last.details}</p>}
+                {stale && <p className="text-xs text-chart-3">{t('audit_chain_stale')}</p>}
               </>
             )}
           </div>

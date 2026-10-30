@@ -27,26 +27,28 @@ export const VERIFIED_ACTION = 'audit_chain_verified';
 export const BROKEN_ACTION = 'audit_chain_broken';
 export const ANCHOR_ACTION = 'audit_chain_anchor_review';
 /**
- * Ações que só o servidor escreve, porque registam atos que só uma função pratica (envios, IA, ficheiros,
- * evidências, licenças, purgas, entradas na plataforma) ou servem de contador aos limites de ritmo. O pedido de
- * registo vindo da interface recusa-as.
+ * Ações que a interface pode pedir à função `audit` (lista fechada). Tudo o resto só o servidor regista: envios, IA,
+ * ficheiros, evidências, licenças, purgas, entradas na plataforma e a própria cadeia. Uma ação nova registada pela
+ * interface tem de entrar aqui; o teste src/lib/__tests__/auditChain.test.js compara esta lista com as chamadas.
  */
-export const SERVER_ONLY_ACTIONS = [
-  SEAL_ACTION, VERIFIED_ACTION, BROKEN_ACTION, ANCHOR_ACTION,
-  'email_sent', 'report_email_sent', 'user_login', 'data_purged', 'data_archived', 'retention_purge_executed',
-  'license_certificate_issued', 'license_changed', 'ai_assist', 'ai_assist_refused', 'ai_draft_created',
-  'ai_draft_approved', 'ai_questionnaire', 'document_classified', 'document_indexed', 'document_intake_scanned',
-  'document_intake_rejected', 'document_classification_refused', 'evidence_accessed', 'evidence_created',
-  'evidence_deleted', 'evidence_reviewed', 'file_accessed', 'file_uploaded', 'cve_alert_converted',
-  'cve_alerts_created', 'cve_watch_deleted',
+export const CLIENT_ACTIONS = [
+  'assessment_completed', 'assessment_deleted', 'asset_inventory_exported', 'asset_list_exported',
+  'customer_created', 'customer_deleted', 'customer_qualified', 'customer_updated', 'data_deleted', 'data_exported',
+  'document_created', 'document_deleted', 'document_updated', 'dsr_completed', 'dsr_created', 'dsr_updated',
+  'framework_created', 'framework_status_changed', 'incident_created', 'incident_updated', 'question_created',
+  'question_deleted', 'question_generated', 'question_updated', 'questions_deduplicated', 'questions_translated',
+  'recommendation_created', 'recommendation_generated', 'recommendation_updated', 'risk_created', 'risk_deleted',
+  'risk_updated', 'ropa_created', 'ropa_deleted', 'ropa_updated', 'settings_changed', 'task_created', 'task_deleted',
+  'task_status_changed', 'task_updated', 'vulnerability_created', 'vulnerability_remediated', 'vulnerability_updated',
 ];
 /** Máximo de registos por minuto que um utilizador pode pedir pela interface. */
-export const RECORD_PER_MINUTE = 120;
+export const RECORD_PER_MINUTE = 60;
 
 const PAGE_SIZE = 500;
-// 100 000 entradas. Acima disto a verificação diz que a leitura ficou incompleta e não dá a cadeia como verificada.
-const MAX_PAGES = 200;
-const ATTEMPTS = 3;
+// 50 000 entradas, lidas em sequência dentro do tempo de uma função. Acima disto a verificação diz que a leitura
+// ficou incompleta e não dá a cadeia como verificada (veredito «review»).
+const MAX_PAGES = 100;
+const ATTEMPTS = 3; // tentativas do selo de partida
 export const DETAILS_MAX = 1200;
 
 /** Serialização estável: a mesma entrada dá sempre o mesmo texto, qualquer que seja a ordem das chaves. */
@@ -225,6 +227,10 @@ export async function latestSeal(base44: any): Promise<any | null> {
 /**
  * O escritor único. `values.user_email` tem de vir do servidor (a sessão resolvida, ou 'system' numa automação).
  * Erros propagam-se: quem chama decide se a operação principal continua (logAudit engole-os).
+ *
+ * Limitação conhecida: remover ao mesmo tempo as entradas mais recentes e a última verificação não se deteta sem uma
+ * âncora fora da plataforma (por exemplo, o resumo mensal enviado por email); a âncora interna cobre as verificações
+ * que ficam.
  */
 export async function appendAuditEntry(base44: any, values: any): Promise<any> {
   const db = base44.asServiceRole.entities.AuditLog;
@@ -246,22 +252,10 @@ export async function appendAuditEntry(base44: any, values: any): Promise<any> {
   if (values.customer_id) entry.customer_id = String(values.customer_id);
   if (values.chain_count !== undefined) entry.chain_count = Number(values.chain_count) || 0;
 
-  let digest = await sha256(`${contentOf(entry)}|${previous || CHAIN_ORIGIN}`);
+  // Nenhuma entrada muda depois de escrita. Duas escritas simultâneas que leram a mesma «última» ficam como
+  // bifurcação: a verificação assinala-a para revisão, sem a confundir com uma alteração ou uma remoção.
+  const digest = await sha256(`${contentOf(entry)}|${previous || CHAIN_ORIGIN}`);
   const row = await db.create({ ...entry, entry_hash: digest });
-
-  // Escritas simultâneas podem ler a mesma «última» e bifurcar a cadeia. Enquanto esta entrada for a última,
-  // refaz-se a ligação sobre a que ficou imediatamente antes; uma entrada que já tem sucessora não se altera.
-  for (let attempt = 0; attempt < ATTEMPTS && row?.id; attempt += 1) {
-    const tail = ordered((await db.list('-created_date', 30)) || []);
-    const index = tail.findIndex((item) => item.id === row.id);
-    if (index <= 0 || index !== tail.length - 1) break;
-    const prior = tail[index - 1];
-    const priorHash = prior.entry_hash || (await digestOf(prior, sealAt));
-    if (String(entry.prev_hash || '') === String(priorHash)) break;
-    entry.prev_hash = priorHash;
-    digest = await sha256(`${contentOf(entry)}|${priorHash}`);
-    await db.update(row.id, { prev_hash: priorHash, entry_hash: digest });
-  }
   return { id: row?.id, entry_hash: digest, prev_hash: entry.prev_hash };
 }
 

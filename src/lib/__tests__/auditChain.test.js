@@ -1,7 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
-  stable, sha256, appendAuditEntry, sealChain, verifyChain, verifyRows, readTrail, SEAL_ACTION,
+  stable, sha256, appendAuditEntry, sealChain, verifyChain, verifyRows, readTrail, SEAL_ACTION, CLIENT_ACTIONS,
 } from '../../../base44/shared/auditChain.ts';
 
 /** Entidade AuditLog em memória, com a mesma forma de chamada que o SDK (list/filter/create/update). */
@@ -190,5 +192,19 @@ describe('trilha de auditoria encadeada', () => {
     const r = await verifyRows([{ id: '1', action: 'user_login', created_date: '2026-10-30T00:00:00Z' }]);
     expect(r.integrity_ok).toBe(false);
     expect(SEAL_ACTION).toBe('audit_chain_sealed');
+  });
+
+  it('a interface só regista ações da lista fechada (CLIENT_ACTIONS)', () => {
+    const root = path.resolve(import.meta.dirname, '../..');
+    const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (e.name === '__tests__' ? [] : walk(path.join(d, e.name))) : /\.(jsx?)$/.test(e.name) ? [path.join(d, e.name)] : []));
+    const used = new Set();
+    for (const file of walk(root)) {
+      const src = fs.readFileSync(file, 'utf8');
+      for (const m of src.matchAll(/writeAuditLog\(\{[\s\S]{0,400}?action:([^,]+),/g)) for (const a of m[1].matchAll(/'([a-z]+_[a-z_]+)'/g)) used.add(a[1]);
+      for (const m of src.matchAll(/invokeFn\('audit',\s*\{[\s\S]{0,200}?action:\s*'([a-z_]+)'/g)) used.add(m[1]);
+    }
+    expect(used.size > 20).toBe(true);
+    const missing = [...used].filter((a) => !CLIENT_ACTIONS.includes(a));
+    expect(missing.join(',')).toBe('');
   });
 });

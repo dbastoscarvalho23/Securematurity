@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
 import {
   appendAuditEntry, verifyChain, sealChain, latestSeal,
-  SERVER_ONLY_ACTIONS, VERIFIED_ACTION, BROKEN_ACTION, ANCHOR_ACTION, DETAILS_MAX, RECORD_PER_MINUTE,
+  CLIENT_ACTIONS, VERIFIED_ACTION, BROKEN_ACTION, ANCHOR_ACTION, DETAILS_MAX, RECORD_PER_MINUTE,
 } from '../../shared/auditChain.ts';
 
 /**
@@ -12,7 +12,7 @@ import {
  *
  * - `record` (qualquer utilizador autenticado): regista um ato feito na interface. A autoria é a da sessão; um
  *   `user_email` enviado pelo cliente é ignorado. Quem não é administrador da plataforma só regista no seu cliente.
- *   Ações reservadas ao servidor (SERVER_ONLY_ACTIONS) são recusadas; há um limite de RECORD_PER_MINUTE por minuto.
+ *   Só as ações de CLIENT_ACTIONS são aceites; as restantes são do servidor. Limite de RECORD_PER_MINUTE por minuto.
  * - `verify` (administrador; também o workflow diário, que corre com a sessão do proprietário): recalcula a cadeia e
  *   regista o veredito na própria trilha, com o resumo da última entrada vista (a cabeça) em `entity_id`.
  * - `seal` (administrador): selo de partida, uma vez. Substituir um selo que deixou de conferir exige
@@ -35,10 +35,10 @@ Deno.serve(async (req) => {
     if (op === 'record') {
       const action = String(input.action || '');
       if (!ACTION_RE.test(action)) return json({ error: 'Ação de auditoria inválida' }, 400);
-      if (SERVER_ONLY_ACTIONS.includes(action)) return json({ error: 'Esta ação só é registada pelo servidor' }, 403);
+      if (!CLIENT_ACTIONS.includes(action)) return json({ error: 'Esta ação só é registada pelo servidor' }, 403);
       const since = new Date(Date.now() - 60_000).toISOString();
       const recent = await base44.asServiceRole.entities.AuditLog
-        .filter({ user_email: user.email, created_date: { $gte: since } }, '-created_date', RECORD_PER_MINUTE + 1)
+        .filter({ user_email: user.email, origin: 'session', action: { $in: CLIENT_ACTIONS }, created_date: { $gte: since } }, '-created_date', RECORD_PER_MINUTE + 1)
         .catch(() => []);
       if ((recent?.length || 0) >= RECORD_PER_MINUTE) return json({ error: 'Demasiados registos seguidos. Aguarde um minuto.' }, 429);
       const own = userCustomerId(user);

@@ -102,7 +102,9 @@
         "asset_deleted",
         "assets_imported",
         "component_deleted",
-        "report_email_sent"
+        "report_email_sent",
+        "cve_watch_created",
+        "cve_watch_updated"
       ],
       "description": "Action type"
     },
