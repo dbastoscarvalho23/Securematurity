@@ -29,6 +29,8 @@ export function rowToRecord(row) {
 const USER_UI_FIELDS = new Set(['theme']);
 
 const USER_PROTECTED = new Set(['role', 'customer_id', 'customer_name', 'email', 'is_verified', 'disabled', 'password', 'password_hash', 'token_version']);
+/** Listas de acesso delegado: só o servidor (papel de serviço) as escreve, nem o administrador (regra service_only). */
+export const USER_SERVICE_ONLY = new Set(['delegated_view_customer_ids', 'delegated_edit_customer_ids', 'delegated_admin_customer_ids']);
 
 export function rowToUser(row) {
   if (!row) return null;
@@ -330,10 +332,14 @@ export class EntityService {
       if (k === 'email') { if (admin) columns.email = String(v).trim().toLowerCase(); continue; }
       if (!schemaFields.has(k) && !USER_UI_FIELDS.has(k)) continue;
       if (!admin && USER_PROTECTED.has(k)) continue; // utilizadores comuns não alteram papel nem cliente
+      if (USER_SERVICE_ONLY.has(k)) {
+        if (this.serviceRole && Array.isArray(v)) dataPatch[k] = v.map(String).slice(0, 1000);
+        continue;
+      }
       if (v !== null && typeof v === 'object') continue; // só valores simples
       dataPatch[k] = v;
     }
-    if (columns.role !== undefined && !['admin', 'customer_admin', 'user'].includes(columns.role)) {
+    if (columns.role !== undefined && !['admin', 'customer_admin', 'user', 'consultant'].includes(columns.role)) {
       throw new HttpError(422, `Papel inválido: ${columns.role}`);
     }
     const sets = ['data = data || $2::jsonb', 'updated_date = now()'];

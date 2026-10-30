@@ -285,6 +285,73 @@ if (!DB) {
     assert.equal(status.data.last_verification.action, 'audit_chain_verified');
   });
 
+  test('acesso delegado: o cliente concede, o consultor só chega ao que lhe foi concedido', async () => {
+    const email = 'rui@neora.pt';
+    await api('POST', '/auth/register', { email, password: 'Palavra-Passe-7' });
+    const code = await waitForLog(new RegExp(`código de verificação para ${email}: (\\d{6})`));
+    await api('POST', '/auth/verify-otp', { email, otpCode: code });
+    const login = async () => (await api('POST', '/auth/login', { email, password: 'Palavra-Passe-7' })).access_token;
+    const kid = (await api('POST', '/auth/login', { email, password: 'Palavra-Passe-7' })).user.id;
+    await api('PUT', `/entities/User/${kid}`, { role: 'consultant' }, tokens.admin);
+    let k = await login();
+    const denied = async (method, path, body, token) => { try { await api(method, path, body, token); return false; } catch (e) { return /^(403|404)/.test(e.message); } };
+    const taskC1 = await api('POST', '/entities/Task', { title: 'Tarefa do cliente um', customer_id: ids.c1, status: 'todo', priority: 'medium' }, tokens.admin);
+    const taskC2 = await api('POST', '/entities/Task', { title: 'Tarefa do cliente dois', customer_id: ids.c2, status: 'todo', priority: 'medium' }, tokens.admin);
+
+    // Sem atribuição: nada.
+    assert.deepEqual(await api('GET', '/entities/Customer', null, k), []);
+    assert.deepEqual(await api('GET', '/entities/Task', null, k), []);
+
+    // A plataforma pede; não decide. Ninguém decide o próprio acesso.
+    const until = (ms) => new Date(Date.now() + ms).toISOString();
+    const req = await fn('access', { op: 'request', customer_id: ids.c1, user_email: email, access_level: 'viewer', reason: 'Acompanhamento RJC do cliente um', expires_at: until(30 * 86400000) }, tokens.admin);
+    assert.equal(req.status, 200, JSON.stringify(req.data));
+    const aid = req.data.assignment.id;
+    assert.equal(req.data.assignment.status, 'requested');
+    assert.equal((await fn('access', { op: 'approve', id: aid }, tokens.admin)).status, 403, 'a plataforma não aprova');
+    assert.equal((await fn('access', { op: 'approve', id: aid }, k)).status, 403, 'ninguém aprova o próprio acesso');
+    assert.equal((await fn('access', { op: 'approve', id: aid }, tokens.b)).status, 403, 'outro cliente não decide');
+    assert.deepEqual(await api('GET', '/entities/Task', null, k), [], 'pedido pendente não dá acesso');
+
+    // O cliente aprova: leitura no cliente um, e só nele.
+    assert.equal((await fn('access', { op: 'approve', id: aid }, tokens.a)).status, 200);
+    k = await login();
+    assert.deepEqual((await api('GET', '/entities/Customer', null, k)).map((c) => c.id), [ids.c1]);
+    const visible = (await api('GET', '/entities/Task', null, k)).map((t) => t.id);
+    assert.ok(visible.includes(taskC1.id));
+    assert.ok(!visible.includes(taskC2.id), 'nunca o cliente dois');
+    assert.equal(await denied('POST', '/entities/Task', { title: 'x', customer_id: ids.c1, status: 'todo', priority: 'low' }, k), true, 'leitor não escreve');
+    assert.equal(await denied('PUT', `/entities/Task/${taskC1.id}`, { title: 'alterada' }, k), true, 'leitor não altera');
+    assert.equal((await fn('listUsers', { customer_id: ids.c1 }, k)).status, 200);
+    assert.equal((await fn('listUsers', { customer_id: ids.c2 }, k)).status, 403);
+
+    // O próprio não altera as suas listas, nem o administrador as escreve à mão.
+    await api('PUT', '/auth/me', { delegated_edit_customer_ids: [ids.c2] }, k);
+    await api('PUT', `/entities/User/${kid}`, { delegated_admin_customer_ids: [ids.c2] }, tokens.admin);
+    assert.equal(await denied('POST', '/entities/Task', { title: 'x', customer_id: ids.c2, status: 'todo', priority: 'low' }, k), true);
+
+    // Revogação: efeito imediato. O cliente concede depois como colaborador: escreve no cliente um e não no dois.
+    assert.equal((await fn('access', { op: 'revoke', id: aid }, tokens.a)).status, 200);
+    assert.deepEqual(await api('GET', '/entities/Task', null, k), [], 'revogado');
+    const grant = await fn('access', { op: 'grant', customer_id: ids.c1, user_email: email, access_level: 'contributor', reason: 'Implementação das medidas mínimas', expires_at: until(3000) }, tokens.a);
+    assert.equal(grant.status, 200, JSON.stringify(grant.data));
+    const created = await api('POST', '/entities/Task', { title: 'Criada pelo consultor', customer_id: ids.c1, status: 'todo', priority: 'low' }, k);
+    assert.equal(created.customer_id, ids.c1);
+    assert.equal(await denied('POST', '/entities/Task', { title: 'x', customer_id: ids.c2, status: 'todo', priority: 'low' }, k), true);
+    assert.equal((await fn('access', { op: 'grant', customer_id: ids.c1, user_email: email, access_level: 'admin', reason: 'Segundo acesso em paralelo', expires_at: until(86400000) }, tokens.a)).status, 409, 'um acesso de cada vez');
+
+    // Prazo: depois de terminar, a sincronização (de hora a hora) retira o acesso.
+    await sleep(3500);
+    assert.equal((await fn('access', { op: 'sync' }, tokens.admin)).status, 200);
+    assert.deepEqual(await api('GET', '/entities/Task', null, k), [], 'expirado');
+    const mine = await fn('access', { op: 'list' }, k);
+    assert.deepEqual(mine.data.assignments.map((a) => a.status).sort(), ['expired', 'revoked']);
+
+    // Trilha: cada decisão ficou registada.
+    const trail = (await api('GET', `/entities/AuditLog?q=${encodeURIComponent(JSON.stringify({ entity_type: 'UserCustomerAssignment' }))}`, null, tokens.admin)).map((r) => r.action);
+    for (const action of ['access_requested', 'access_approved', 'access_revoked', 'access_granted']) assert.ok(trail.includes(action), action);
+  });
+
   test('funções de backend', async () => {
     const list = await fn('listUsers', {}, tokens.a);
     assert.equal(list.status, 200);
@@ -333,7 +400,8 @@ if (!DB) {
     }
     assert.equal(notes.length, 1, logs.slice(-2000));
     assert.equal(notes[0].type, 'task_assigned');
-    assert.deepEqual(await api('GET', '/entities/Notification', null, tokens.a), []);
+    // (a Ana tem a notificação do pedido de acesso delegado; de tarefas, nenhuma)
+    assert.deepEqual((await api('GET', '/entities/Notification', null, tokens.a)).filter((n) => n.entity_type === 'Task'), []);
     const runs = await api('GET', '/workflows/runs', null, tokens.admin);
     assert.ok(runs.some((r) => r.workflow === 'Notify on Task Changes' && r.status === 'success'));
   });
