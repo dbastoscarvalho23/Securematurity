@@ -15,7 +15,8 @@ export default function Login() {
   const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  // Erros devolvidos pelo início de sessão com Google/Microsoft chegam em ?error=
+  const [error, setError] = useState(() => new URLSearchParams(window.location.search).get("error") || "");
   const [loading, setLoading] = useState(false);
   // Post-login destination (e.g. the MCP OAuth consent page sends users here
   // with returnTo so the grant flow can resume). Same-origin paths only.

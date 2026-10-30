@@ -97,3 +97,7 @@ npx vitest run
 Nota: 6 testes de `RouteGuard` estão desatualizados face às regras de navegação de outubro de 2026 e precisam de revisão.
 
 Documentação do Base44: <https://docs.base44.com>
+
+## Servidor próprio (em desenvolvimento)
+
+O ramo `feat/self-hosting` tem um backend próprio (Node.js + PostgreSQL) com a mesma API da Base44, para correr a app fora da plataforma. Instalação, migração dos dados e limitações: [`docs/self-hosting.md`](docs/self-hosting.md).
