@@ -25,13 +25,13 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
   }, [user]);
 
   const isPlatformAdmin = currentUserRole === 'admin';
-  const needsCustomer = role === 'customer_admin' || role === 'user';
+  const needsCustomer = role === 'customer_admin' || role === 'user' || role === 'consultant';
 
   const handleSave = () => {
     const values = { fullName, customerId, role };
     const schema = {
       fullName: [validators.required, (v) => validators.minLength(v, 2), (v) => validators.maxLength(v, 100)],
-      role: (v) => validators.enum(v, ['user', 'customer_admin', 'admin']),
+      role: (v) => validators.enum(v, ['user', 'customer_admin', 'consultant', 'admin']),
       ...(isPlatformAdmin && role === 'customer_admin' && { customerId: validators.required }),
     };
     const formErrors = validateForm(values, schema);
@@ -113,6 +113,7 @@ export default function EditUserDialog({ open, onOpenChange, user, customers, on
                 <SelectContent>
                   <SelectItem value="user">{t('user_dlg_role_user')}</SelectItem>
                   <SelectItem value="customer_admin">{t('user_dlg_role_customer_admin')}</SelectItem>
+                  <SelectItem value="consultant">{t('acc_role_consultant')}</SelectItem>
                   <SelectItem value="admin">{t('user_dlg_role_admin')}</SelectItem>
                 </SelectContent>
               </Select>

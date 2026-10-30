@@ -20,6 +20,7 @@ import { licensingEn, licensingPt } from './translations-licensing';
 import { aiEn, aiPt } from './translations-ai';
 import { extraEn, extraPt } from './translations-extra';
 import { onboardingEn, onboardingPt } from './translations-onboarding';
+import { accessEn, accessPt } from './translations-access';
 export const translations = {
   en: {
     // assessments
@@ -521,3 +522,5 @@ Object.assign(translations.en, extraEn);
 Object.assign(translations.pt, extraPt);
 Object.assign(translations.en, onboardingEn);
 Object.assign(translations.pt, onboardingPt);
+Object.assign(translations.en, accessEn);
+Object.assign(translations.pt, accessPt);

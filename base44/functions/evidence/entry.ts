@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId, resolveCustomer, customerRole, roleCanManage, delegatedCustomerIds } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, LicenseError } from '../../shared/license.ts';
 import { checkFile } from '../../shared/fileCheck.ts';
@@ -38,9 +38,10 @@ export default async function (req) {
 
     if (action === 'provider') {
       // Repositório efetivo do cliente (respeita os fornecedores ativos na plataforma).
-      const customerId = admin ? (body.customer_id || userCustomerId(user)) : userCustomerId(user);
+      const scope = admin ? null : resolveCustomer(user, body.customer_id);
+      if (!admin && body.customer_id && !scope) return json({ error: 'Forbidden' }, 403);
+      const customerId = admin ? (body.customer_id || userCustomerId(user)) : scope?.customerId;
       if (!customerId) return json({ error: 'Sem cliente associado' }, 403);
-      if (!admin && body.customer_id && body.customer_id !== customerId) return json({ error: 'Forbidden' }, 403);
       const customer = await base44.asServiceRole.entities.Customer.get(customerId).catch(() => null);
       if (!customer) return json({ error: 'Cliente inexistente' }, 404);
       const effective = await resolveProvider(base44, customer);
@@ -59,9 +60,11 @@ export default async function (req) {
       // Cliente da evidência: o do utilizador; o administrador da plataforma indica o cliente ou este sai dos
       // registos ligados. Nunca se usa o cliente do próprio administrador por omissão (o ficheiro iria para o
       // repositório errado).
-      const customerId = admin ? (str(body.customer_id, 64) || await customerFromLinks(base44, body.links)) : userCustomerId(user);
+      // Consultores: só num cliente delegado com escrita (contributor ou admin).
+      const scope = admin ? null : resolveCustomer(user, body.customer_id, { write: true });
+      if (!admin && body.customer_id && !scope) return json({ error: 'Forbidden' }, 403);
+      const customerId = admin ? (str(body.customer_id, 64) || await customerFromLinks(base44, body.links)) : scope?.customerId;
       if (!customerId) return json({ error: admin ? 'Indique o cliente da evidência' : 'Sem cliente associado' }, admin ? 400 : 403);
-      if (!admin && body.customer_id && body.customer_id !== customerId) return json({ error: 'Forbidden' }, 403);
       const customer = await base44.asServiceRole.entities.Customer.get(customerId).catch(() => null);
       if (!customer) return json({ error: 'Cliente inexistente' }, 404);
       await requireModule(base44, user, customerId, 'documents_evidence');
@@ -110,9 +113,10 @@ export default async function (req) {
 
     const ev = body.evidence_id ? await base44.asServiceRole.entities.Evidence.get(String(body.evidence_id)).catch(() => null) : null;
     if (!ev) return json({ error: 'Evidência inexistente' }, 404);
-    const sameTenant = userCustomerId(user) && userCustomerId(user) === ev.customer_id;
-    if (!admin && !sameTenant) return json({ error: 'Forbidden' }, 403);
-    if (!admin && ev.restricted && user.role !== 'customer_admin') return json({ error: 'Forbidden' }, 403);
+    // Cliente próprio ou delegado; evidências restritas só para quem administra esse cliente.
+    const role = customerRole(user, ev.customer_id);
+    if (!admin && !role) return json({ error: 'Forbidden' }, 403);
+    if (!admin && ev.restricted && !roleCanManage(role)) return json({ error: 'Forbidden' }, 403);
 
     if (action === 'download') {
       const file = await getFile(base44, ev.customer_id, ev.storage_provider, ev.storage_ref, ev.mime_type);
@@ -124,7 +128,10 @@ export default async function (req) {
       return json({ content_base64: toBase64(file.bytes), mime_type: file.mimeType, file_name: ev.file_name, sha256: ev.sha256 });
     }
 
-    if (!admin) return json({ error: 'Forbidden' }, 403);
+    // Revisão: a plataforma ou um consultor com delegação de nível admin neste cliente (o papel de revisor externo).
+    const delegatedReviewer = delegatedCustomerIds(user, 'admin').includes(String(ev.customer_id));
+    if (action === 'review' && !admin && !delegatedReviewer) return json({ error: 'Forbidden' }, 403);
+    if (action !== 'review' && !admin) return json({ error: 'Forbidden' }, 403);
 
     if (action === 'review') {
       if (!['accepted', 'rejected'].includes(body.status)) return json({ error: 'Estado inválido' }, 400);

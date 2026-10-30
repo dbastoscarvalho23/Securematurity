@@ -104,7 +104,12 @@
         "component_deleted",
         "report_email_sent",
         "cve_watch_created",
-        "cve_watch_updated"
+        "cve_watch_updated",
+        "access_requested",
+        "access_granted",
+        "access_approved",
+        "access_rejected",
+        "access_revoked"
       ],
       "description": "Action type"
     },
@@ -167,6 +172,21 @@
         },
         {
           "data.customer_id": "{{user.data.customer_id}}"
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_view_customer_ids}}"
+          }
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_edit_customer_ids}}"
+          }
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_admin_customer_ids}}"
+          }
         }
       ]
     },

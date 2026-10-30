@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, readJson, getAuthenticatedUser, isPlatformAdmin, isStaffRole, userCustomerId } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, isPlatformAdmin, isStaffRole, userCustomerId, resolveCustomer, delegatedCustomerIds } from '../../shared/http.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -8,16 +8,18 @@ Deno.serve(async (req) => {
 
     if (!currentUser) return json({ error: 'Unauthorized' }, 401);
     // Utilizadores comuns só recebem nome e email dos colegas do mesmo cliente (para escolher responsáveis).
+    // Consultores: os colegas de um cliente delegado (o pedido ou o único), mais os consultores com acesso a ele.
+    const body = await readJson(req);
     if (!isStaffRole(currentUser)) {
-      const own = userCustomerId(currentUser);
+      const own = resolveCustomer(currentUser, body.customer_id)?.customerId || null;
       if (!own) return json({ error: 'Forbidden' }, 403);
-      const colleagues = (await base44.asServiceRole.entities.User.filter({ customer_id: own })).map((u) => ({
-        id: u.id, email: u.email, full_name: u.full_name, display_name: u.display_name, customer_id: own,
-      }));
+      const all = await base44.asServiceRole.entities.User.list();
+      const colleagues = (all || [])
+        .filter((u) => String(userCustomerId(u) || '') === own || delegatedCustomerIds(u).includes(own))
+        .map((u) => ({ id: u.id, email: u.email, full_name: u.full_name, display_name: u.display_name, customer_id: own }));
       return json({ users: colleagues });
     }
 
-    const body = await readJson(req);
     const page = Number.isInteger(body.page) && body.page >= 0 ? body.page : null;
     const pageSize = Number.isInteger(body.pageSize) && body.pageSize > 0 && body.pageSize <= 200 ? body.pageSize : null;
 

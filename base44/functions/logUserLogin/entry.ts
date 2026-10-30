@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { json, getAuthenticatedUser, userCustomerId } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
+import { syncUserScope } from '../../shared/delegation.ts';
 
 const TENANT_ROLES = ['user', 'customer_admin'];
 
@@ -33,6 +34,11 @@ Deno.serve(async (req) => {
       entity_id: user.id,
       details: `User ${user.full_name || user.email} logged in`,
     });
+
+    // Consultores: as listas de acesso delegado voltam a derivar-se a cada entrada (um acesso fora do prazo cai já).
+    if (user.role === 'consultant') {
+      await syncUserScope(base44, user).catch((e) => console.error('Delegated scope sync failed:', e?.message || e));
+    }
 
     // Auto-assign customer_id/role for previously-invited users on first login.
     // This keeps the customer "Users" panel coherent with the Settings "Users" list,

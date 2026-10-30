@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId, resolveCustomer } from '../../shared/http.ts';
 import { sendMail, mailConfig } from '../../shared/mail.ts';
 import { logEmailSent } from '../../shared/audit.ts';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
@@ -89,7 +89,9 @@ Deno.serve(async (req) => {
     }
 
     if (action !== 'send') return json({ error: 'Ação desconhecida' }, 400);
-    if (!admin && !own) return json({ error: 'Forbidden' }, 403);
+    // Cliente do envio: o próprio, ou um cliente delegado com escrita (consultores).
+    const tenant = admin ? null : (resolveCustomer(user, body.customer_id, { write: true })?.customerId || null);
+    if (!admin && !tenant) return json({ error: 'Forbidden' }, 403);
     const to = (Array.isArray(body.to) ? body.to : [body.to]).map((x: unknown) => String(x || '').trim()).filter(Boolean);
     if (!to.length) return json({ error: 'Sem destinatários' }, 400);
     if (to.length > MAX_RECIPIENTS) return json({ error: `Máximo de ${MAX_RECIPIENTS} destinatários por envio` }, 400);
@@ -97,19 +99,19 @@ Deno.serve(async (req) => {
     const html = bodyOf(String(body.html || body.body || ''));
     if (!subject || !html.trim()) return json({ error: 'Assunto e mensagem são obrigatórios' }, 400);
     // Utilizadores de cliente só registam envios no próprio cliente.
-    const customerId = admin ? (body.customer_id || null) : own;
+    const customerId = admin ? (body.customer_id || null) : tenant;
 
     // Utilizadores de cliente: os destinatários têm de constar nos contactos do cliente. Contactos externos
     // (fornecedores, formandos, questionários) só ficam disponíveis a administradores: esses registos são texto
     // livre escrito por qualquer colega e serviriam de relay para endereços externos arbitrários.
     if (!admin) {
-      const allowed = await allowedRecipients(base44, own, { includeExternal: canUseAdditionalRecipients(user, own) });
+      const allowed = await allowedRecipients(base44, tenant, { includeExternal: canUseAdditionalRecipients(user, tenant) });
       const refused = to.filter((email: string) => !allowed.has(email.toLowerCase()));
       if (refused.length) {
         await logEmailSent(base44, {
           user_email: user.email,
           entity_type: 'Email',
-          customer_id: own,
+          customer_id: tenant,
           details: `Envio recusado: destinatários fora dos contactos do cliente (${refused.slice(0, 5).join(', ')})`,
         });
         return json({
@@ -126,7 +128,7 @@ Deno.serve(async (req) => {
       if ((await customerSendsLastHour(base44, user.email)) >= CUSTOMER_SENDS_PER_HOUR) {
         return json({ error: `Atingiu o limite de ${CUSTOMER_SENDS_PER_HOUR} envios por hora. Tente mais tarde.` }, 429);
       }
-      const customer = await base44.asServiceRole.entities.Customer.get(own).catch(() => null);
+      const customer = await base44.asServiceRole.entities.Customer.get(tenant).catch(() => null);
       finalHtml = `${sanitizeHtml(html)}<hr><p style="color:#64748b;font-size:12px;">Mensagem enviada por ${esc(user.email)}${customer?.name ? ` (${esc(customer.name)})` : ''} através da plataforma AnkoraOne.</p>`;
       finalSubject = finalSubject.replace(/[\r\n]+/g, ' ');
     }
