@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@base44/sdk": "^0.8.57",
-    "@base44/vite-plugin": "^1.0.48",
+    "@base44/vite-plugin": "^1.0.50",
     "@hello-pangea/dnd": "^17.0.0",
     "@hookform/resolvers": "^4.1.2",
     "@radix-ui/react-accordion": "^1.2.3",
@@ -77,8 +77,7 @@
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.171.0",
-    "vaul": "^1.1.2",
-    "xlsx": "^0.18.5"
+    "vaul": "^1.1.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",

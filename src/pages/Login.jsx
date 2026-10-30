@@ -27,6 +27,7 @@ export default function Login() {
     setLoading(true);
     try {
       await base44.auth.loginViaEmailPassword(email, password);
+      base44.analytics.track({ eventName: "trial_login" });
       window.location.href = returnTo;
     } catch (err) {
       setError(err.message || t("x_login_err_invalid"));

@@ -2,8 +2,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { escapeHtml as esc } from '../../shared/escapeHtml.ts';
 import { json, getAuthenticatedUser, canAccessRecord } from '../../shared/http.ts';
 import { logEmailSent } from '../../shared/audit.ts';
-import { getReminderSettings, buildRecipients } from '../../shared/reminderSettings.ts';
+import { getReminderSettings, buildRecipients, canUseAdditionalRecipients } from '../../shared/reminderSettings.ts';
+import { isAllowedRecipient } from '../../shared/recipients.ts';
 import { riskScore, scoreLevel, RISK_STATUS_LABELS as STATUS_LABELS } from '../../shared/riskLevel.ts';
+import { notificationLimitReached, NOTIFICATION_EMAILS_PER_HOUR } from '../../shared/rateLimit.ts';
 import { sendMail } from '../../shared/mail.ts';
 
 const LEVEL_PT = { Critical: 'Crítico', High: 'Alto', Medium: 'Médio', Low: 'Baixo' };
@@ -47,6 +49,15 @@ Deno.serve(async (req) => {
 
   if (!ownerEmail) return json({ skipped: 'no owner email' });
 
+  // O responsável é texto livre escrito por quem cria o risco: só recebe o aviso se o endereço constar nos
+  // contactos registados do cliente (mesma regra de sendEmail). Sem isto, a plataforma servia de relay de email
+  // para qualquer endereço externo escolhido pelo utilizador.
+  // Destinatários adicionais (e contactos externos de fornecedores/formandos) só para quem os pode configurar
+  // (administrador da plataforma ou do cliente).
+  const allowAdditional = canUseAdditionalRecipients(user, risk.customer_id);
+
+  const ownerOk = await isAllowedRecipient(base44, risk.customer_id, ownerEmail, { includeExternal: allowAdditional });
+
   const settings = await getReminderSettings(base44.asServiceRole, risk.customer_id);
 
   // ── 1. New assignment ──────────────────────────────────────────────────────
@@ -56,7 +67,11 @@ Deno.serve(async (req) => {
     const wasOwner = previousRisk?.owner_email;
     if (wasOwner === ownerEmail) return json({ skipped: 'owner unchanged' });
 
-    const recipients = buildRecipients(ownerEmail, settings);
+    const recipients = buildRecipients(ownerOk ? ownerEmail : null, settings, allowAdditional);
+    if (recipients.length === 0) return json({ skipped: 'no authorized recipients' });
+    if (await notificationLimitReached(base44, user)) {
+      return json({ error: `Atingiu o limite de ${NOTIFICATION_EMAILS_PER_HOUR} avisos por hora. Tente mais tarde.` }, 429);
+    }
     const body = `
 <p>Olá,</p>
 <p>Foi designado responsável pelo seguinte risco:</p>
@@ -92,7 +107,11 @@ Deno.serve(async (req) => {
     const newStatus = risk.status;
     if (!oldStatus || oldStatus === newStatus) return json({ skipped: 'status unchanged' });
 
-    const recipients = buildRecipients(ownerEmail, settings);
+    const recipients = buildRecipients(ownerOk ? ownerEmail : null, settings, allowAdditional);
+    if (recipients.length === 0) return json({ skipped: 'no authorized recipients' });
+    if (await notificationLimitReached(base44, user)) {
+      return json({ error: `Atingiu o limite de ${NOTIFICATION_EMAILS_PER_HOUR} avisos por hora. Tente mais tarde.` }, 429);
+    }
     const body = `
 <p>Olá,</p>
 <p>O estado de um risco pelo qual é responsável foi alterado:</p>

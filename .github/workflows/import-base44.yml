@@ -1,0 +1,92 @@
+# Traz o código da app AnkoraOne_DC_Repo (Base44) para o GitHub, num PR.
+#
+# A app não está ligada ao GitHub: o editor da Base44 guarda as alterações no repositório interno da
+# plataforma. Este workflow exporta o código pela API (coding/export-to-zip), aplica-o por cima de main
+# e abre um PR para rever. Ficheiros que só existem no GitHub (CI, servidor próprio, scripts) não são
+# apagados; os que existem no GitHub e já não existem na app ficam listados no PR.
+#
+# Arranque: enviar um ramo sync/base44-<data> criado a partir de main, ou Actions → Run workflow.
+# Requer o segredo BASE44_API_KEY (o mesmo do workflow «Publicar no Base44»).
+name: Trazer código da app Base44
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['sync/base44-*']
+
+concurrency:
+  group: import-base44
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  BASE44_APP_ID: 6adf8df867faaf60a171efa5
+
+jobs:
+  importar:
+    # Os commits do próprio workflow têm o prefixo [app] e não voltam a disparar a importação.
+    if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, '[app]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Exportar o código da app
+        env:
+          BASE44_API_KEY: ${{ secrets.BASE44_API_KEY }}
+        run: |
+          if [ -z "$BASE44_API_KEY" ]; then echo "::error::Falta o segredo BASE44_API_KEY"; exit 1; fi
+          status=$(curl -sS -o app.zip -w '%{http_code}' \
+            -H "Authorization: Bearer ${BASE44_API_KEY}" \
+            "https://app.base44.com/api/apps/${BASE44_APP_ID}/coding/export-to-zip")
+          echo "HTTP ${status}"
+          if [ "${status}" != "200" ]; then head -c 500 app.zip; echo; echo "::error::Exportação recusada (HTTP ${status})"; exit 1; fi
+          mkdir -p "$RUNNER_TEMP/app" && unzip -q app.zip -d "$RUNNER_TEMP/app" && rm app.zip
+          # O zip pode trazer uma pasta de topo; nesse caso, usa-se o conteúdo dela.
+          root="$RUNNER_TEMP/app"
+          if [ "$(ls -A "$root" | wc -l)" = "1" ] && [ -d "$root/$(ls -A "$root")" ]; then root="$root/$(ls -A "$root")"; fi
+          echo "APP_ROOT=$root" >> "$GITHUB_ENV"
+          echo "Ficheiros exportados: $(find "$root" -type f | wc -l)"
+
+      - name: Aplicar por cima do repositório
+        run: |
+          # Nunca importar segredos locais nem artefactos de build.
+          rsync -a --exclude '.git/' --exclude 'node_modules/' --exclude 'dist/' --exclude '.env*' "$APP_ROOT"/ ./
+          # Ficheiros que existem no GitHub mas não na app (fora das pastas que só existem no GitHub).
+          git ls-files | grep -vE '^(\.github/|server/|scripts/|docs/self-hosting\.md$|docker-compose)' | while read -r f; do
+            [ -e "$APP_ROOT/$f" ] || echo "$f"
+          done > "$RUNNER_TEMP/so-no-github.txt"
+          git status --short | tee "$RUNNER_TEMP/alteracoes.txt"
+
+      - name: Commit e PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then echo "O GitHub já tem o código da app."; exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898+github-actions[bot]@users.noreply.github.com'
+          branch="${GITHUB_REF_NAME}"
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then branch="sync/base44-$(date -u +%Y-%m-%d-%H%M)"; git checkout -b "$branch"; fi
+          git add -A
+          git commit -q -m "[app] Código da app Base44 de $(date -u +%Y-%m-%d)"
+          git push -q origin "HEAD:${branch}"
+          {
+            echo "Código exportado da app Base44 (\`${BASE44_APP_ID}\`) e aplicado por cima de \`main\`."
+            echo
+            echo "### Ficheiros alterados ou novos"
+            echo '```'; cat "$RUNNER_TEMP/alteracoes.txt"; echo '```'
+            echo
+            echo "### Ficheiros que estão no GitHub e já não estão na app"
+            echo "Não foram apagados. Confirmar, um a um, se devem sair."
+            echo '```'; cat "$RUNNER_TEMP/so-no-github.txt"; echo '```'
+          } > "$RUNNER_TEMP/pr.md"
+          if gh pr view "$branch" --json number >/dev/null 2>&1; then
+            gh pr edit "$branch" --body-file "$RUNNER_TEMP/pr.md"
+          else
+            gh pr create --base main --head "$branch" --title "Trazer o código da app Base44 ($(date -u +%Y-%m-%d))" --body-file "$RUNNER_TEMP/pr.md"
+          fi
