@@ -1,10 +1,22 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
+import { effectiveUser, readActiveCustomer, writeActiveCustomer, setConsultantSession } from '@/lib/activeCustomer';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  // Registo devolvido pelo servidor; `user` é o que a interface vê (para consultores, o cliente ativo).
+  const [rawUser, setUser] = useState(null);
+  const [activeCustomerId, setActiveCustomerState] = useState(() => readActiveCustomer());
+  const user = useMemo(() => {
+    // Marcado aqui (e não num efeito) para valer já nos primeiros pedidos das páginas, cujos efeitos correm antes.
+    setConsultantSession(rawUser?.role === 'consultant');
+    return effectiveUser(rawUser, activeCustomerId);
+  }, [rawUser, activeCustomerId]);
+  const setActiveCustomer = (id) => {
+    writeActiveCustomer(id || null);
+    setActiveCustomerState(id || null);
+  };
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [isLoadingPublicSettings] = useState(false);
@@ -13,6 +25,14 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     checkUserAuth();
   }, []);
+
+  // O cliente ativo guardado só vale para consultores e só se ainda estiver entre os clientes a que chegam
+  // (acesso revogado ou expirado, ou outra pessoa no mesmo navegador): caso contrário, limpa-se.
+  useEffect(() => {
+    if (!rawUser) return;
+    const wanted = rawUser.role === 'consultant' ? (user?.customer_id || null) : null;
+    if ((readActiveCustomer() || null) !== wanted) setActiveCustomer(wanted);
+  }, [rawUser, user?.customer_id]);
 
   const checkUserAuth = async () => {
     try {
@@ -53,6 +73,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    setConsultantSession(false);
+    writeActiveCustomer(null);
     setUser(null);
     setIsAuthenticated(false);
     base44.auth.logout('/login');
@@ -65,6 +87,9 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{
       user,
+      rawUser,
+      activeCustomerId: user?.platform_role === 'consultant' ? user.customer_id : null,
+      setActiveCustomer,
       isAuthenticated,
       isLoadingAuth,
       isLoadingPublicSettings,

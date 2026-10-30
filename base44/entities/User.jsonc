@@ -7,7 +7,8 @@
       "enum": [
         "admin",
         "customer_admin",
-        "user"
+        "user",
+        "consultant"
       ],
       "default": "user",
       "rls": {
@@ -52,8 +53,49 @@
       ],
       "default": "en",
       "description": "Preferred UI language"
+    },
+    "delegated_view_customer_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Clientes a que esta pessoa chega só para ler, por acesso delegado ativo. Derivado das atribuições (UserCustomerAssignment) pelo servidor; nunca editado à mão. As regras de acesso das entidades leem este campo.",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "service_only"
+          }
+        }
+      }
+    },
+    "delegated_edit_customer_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Clientes a que esta pessoa chega para ler e escrever conteúdo, por acesso delegado ativo. Derivado das atribuições (UserCustomerAssignment) pelo servidor; nunca editado à mão. As regras de acesso das entidades leem este campo.",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "service_only"
+          }
+        }
+      }
+    },
+    "delegated_admin_customer_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Clientes que esta pessoa administra por acesso delegado ativo (inclui os acessos desse cliente). Derivado das atribuições (UserCustomerAssignment) pelo servidor; nunca editado à mão. As regras de acesso das entidades leem este campo.",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "service_only"
+          }
+        }
+      }
     }
   },
   "required": []
 }
-

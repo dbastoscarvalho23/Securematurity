@@ -14,6 +14,11 @@ const UNRESOLVED = Symbol('unresolved');
 
 /** Campos do utilizador que as regras podem referir (nunca chaves arbitrárias guardadas pelo utilizador). */
 const TRUSTED_USER_FIELDS = ['customer_id', 'customer_name', 'display_name', 'language'];
+/**
+ * Listas do utilizador que as regras podem referir, só dentro de `$in` (acesso delegado). Escritas apenas pelo papel
+ * de serviço (ver USER_SERVICE_ONLY em service.js).
+ */
+const TRUSTED_USER_LISTS = ['delegated_view_customer_ids', 'delegated_edit_customer_ids', 'delegated_admin_customer_ids'];
 
 const isScalar = (v) => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean';
 
@@ -22,22 +27,25 @@ export function userTemplateContext(user) {
   if (!user) return null;
   const data = {};
   for (const key of TRUSTED_USER_FIELDS) if (isScalar(user[key])) data[key] = user[key];
+  for (const key of TRUSTED_USER_LISTS) if (Array.isArray(user[key])) data[key] = user[key].filter(isScalar).map(String);
   return { id: user.id, email: user.email, role: user.role, full_name: user.full_name, data, ...data };
 }
 
-function resolveValue(value, ctx) {
+function resolveValue(value, ctx, inList = false) {
   if (typeof value === 'string') {
     const m = value.match(TEMPLATE_RE);
     if (m) {
       if (!ctx) return UNRESOLVED;
       const resolved = getPath({ user: ctx }, m[1]);
-      // Só valores escalares: um objeto (ex.: {"$ne": null}) nunca pode virar operador de filtro.
+      // Dentro de `$in`, uma lista de confiança não vazia (acesso delegado); fora dele, só valores escalares: um
+      // objeto (ex.: {"$ne": null}) nunca pode virar operador de filtro.
+      if (inList) return Array.isArray(resolved) && resolved.length && resolved.every(isScalar) ? resolved : UNRESOLVED;
       return isScalar(resolved) && resolved !== '' ? resolved : UNRESOLVED;
     }
     return value;
   }
   if (Array.isArray(value)) return value.map((v) => resolveValue(v, ctx));
-  if (isPlainObject(value)) return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, resolveValue(v, ctx)]));
+  if (isPlainObject(value)) return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, resolveValue(v, ctx, k === '$in')]));
   return value;
 }
 

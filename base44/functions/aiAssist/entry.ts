@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId, resolveCustomer } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, getEntitlements, checkQuota, consumeQuota, LicenseError } from '../../shared/license.ts';
 import { assertAiRateLimit } from '../../shared/rateLimit.ts';
@@ -63,9 +63,10 @@ export default async function (req) {
       }
     }
 
-    // Cliente: o admin pode indicar qualquer um (ou nenhum, em trabalho global); os outros, só o seu.
-    const own = userCustomerId(user);
-    const customerId = admin ? String(body.customer_id || '') : String(own || '');
+    // Cliente: o admin pode indicar qualquer um (ou nenhum, em trabalho global); os outros, o seu ou um cliente
+    // delegado com escrita.
+    const scope = admin ? null : resolveCustomer(user, body.customer_id, { write: true });
+    const customerId = admin ? String(body.customer_id || '') : String(scope?.customerId || '');
     if (!admin && !customerId) return json({ error: 'Sem cliente associado' }, 403);
     if (admin && customerId && !(await base44.asServiceRole.entities.Customer.get(customerId).catch(() => null))) return json({ error: 'Cliente inexistente' }, 404);
     if (customerId) await requireModule(base44, user, customerId, 'ai_assistant');

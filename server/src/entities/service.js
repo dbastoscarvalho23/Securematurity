@@ -29,6 +29,8 @@ export function rowToRecord(row) {
 const USER_UI_FIELDS = new Set(['theme']);
 
 const USER_PROTECTED = new Set(['role', 'customer_id', 'customer_name', 'email', 'is_verified', 'disabled', 'password', 'password_hash', 'token_version']);
+/** Listas de acesso delegado: só o servidor (papel de serviço) as escreve, nem o administrador (regra service_only). */
+export const USER_SERVICE_ONLY = new Set(['delegated_view_customer_ids', 'delegated_edit_customer_ids', 'delegated_admin_customer_ids']);
 
 export function rowToUser(row) {
   if (!row) return null;
@@ -299,7 +301,10 @@ export class EntityService {
     const { email, full_name, role, ...rest } = stripMeta(input);
     if (!email) throw new HttpError(422, 'O campo "email" é obrigatório');
     const id = this.preserveMeta && input.id ? String(input.id) : newId();
-    const data = Object.fromEntries(Object.entries(rest).filter(([k]) => !['password', 'password_hash', 'is_verified', 'disabled', 'token_version'].includes(k)));
+    if (role && !['admin', 'customer_admin', 'user', 'consultant'].includes(role)) throw new HttpError(422, `Papel inválido: ${role}`);
+    // As listas de acesso delegado só entram pelo servidor (sincronização) ou numa importação com o papel de serviço.
+    const data = Object.fromEntries(Object.entries(rest).filter(([k]) => !['password', 'password_hash', 'is_verified', 'disabled', 'token_version'].includes(k)
+      && !(USER_SERVICE_ONLY.has(k) && !(this.serviceRole && this.preserveMeta))));
     const { rows } = await query(
       `INSERT INTO users (id, email, full_name, role, data, is_verified, created_date, updated_date)
        VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::timestamptz, now()), COALESCE($8::timestamptz, now()))
@@ -330,10 +335,14 @@ export class EntityService {
       if (k === 'email') { if (admin) columns.email = String(v).trim().toLowerCase(); continue; }
       if (!schemaFields.has(k) && !USER_UI_FIELDS.has(k)) continue;
       if (!admin && USER_PROTECTED.has(k)) continue; // utilizadores comuns não alteram papel nem cliente
+      if (USER_SERVICE_ONLY.has(k)) {
+        if (this.serviceRole && Array.isArray(v)) dataPatch[k] = v.map(String).slice(0, 1000);
+        continue;
+      }
       if (v !== null && typeof v === 'object') continue; // só valores simples
       dataPatch[k] = v;
     }
-    if (columns.role !== undefined && !['admin', 'customer_admin', 'user'].includes(columns.role)) {
+    if (columns.role !== undefined && !['admin', 'customer_admin', 'user', 'consultant'].includes(columns.role)) {
       throw new HttpError(422, `Papel inválido: ${columns.role}`);
     }
     const sets = ['data = data || $2::jsonb', 'updated_date = now()'];

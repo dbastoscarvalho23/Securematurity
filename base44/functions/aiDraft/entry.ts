@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId, resolveCustomer, roleCanManage } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, getEntitlements, consumeQuota, checkQuota, LicenseError } from '../../shared/license.ts';
 import { assertAiRateLimit } from '../../shared/rateLimit.ts';
@@ -192,12 +192,12 @@ export default async function (req) {
     const user = await getAuthenticatedUser(base44);
     if (!user) return json({ error: 'Unauthorized' }, 401);
     const admin = isPlatformAdmin(user);
-    if (!admin && user.role !== 'customer_admin') return json({ error: 'Forbidden' }, 403);
     const body = await readJson(req);
-    const own = userCustomerId(user);
-    const customerId = admin ? String(body.customer_id || own || '') : own;
+    // Administração do cliente: própria (customer_admin), delegada (nível admin) ou da plataforma.
+    const scope = resolveCustomer(user, body.customer_id, { write: true });
+    if (!scope || !roleCanManage(scope.role)) return json({ error: 'Forbidden' }, 403);
+    const customerId = String(scope.customerId || '');
     if (!customerId) return json({ error: 'Sem cliente associado' }, 403);
-    if (!admin && body.customer_id && body.customer_id !== own) return json({ error: 'Forbidden' }, 403);
     const db = base44.asServiceRole.entities;
     const customer = await db.Customer.get(customerId).catch(() => null);
     if (!customer) return json({ error: 'Cliente inexistente' }, 404);

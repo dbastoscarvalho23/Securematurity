@@ -13,7 +13,7 @@ export const HTTP_FUNCTIONS = new Set([
   // assistente de IA
   'aiAssist', 'aiDraft', 'aiQuestionnaire',
   // outros módulos
-  'assets', 'audit', 'cveMonitor', 'licensing', 'sendEmail',
+  'access', 'assets', 'audit', 'cveMonitor', 'licensing', 'sendEmail',
   // execução manual por administradores (as próprias funções verificam o papel)
   'generateMonthlyAnnualReport', 'dataRetentionPurge',
 ]);

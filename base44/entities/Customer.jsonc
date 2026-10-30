@@ -227,6 +227,21 @@
         },
         {
           "id": "{{user.data.customer_id}}"
+        },
+        {
+          "id": {
+            "$in": "{{user.data.delegated_view_customer_ids}}"
+          }
+        },
+        {
+          "id": {
+            "$in": "{{user.data.delegated_edit_customer_ids}}"
+          }
+        },
+        {
+          "id": {
+            "$in": "{{user.data.delegated_admin_customer_ids}}"
+          }
         }
       ]
     },
@@ -242,4 +257,3 @@
     }
   }
 }
-

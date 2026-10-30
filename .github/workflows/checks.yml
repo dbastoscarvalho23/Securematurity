@@ -27,6 +27,8 @@ jobs:
         run: node scripts/check-function-names.cjs
       - name: Integridade da Biblioteca Legal
         run: node scripts/check-legal-integrity.cjs
+      - name: Regras de acesso delegado em todas as entidades
+        run: node tools/rls/delegation.mjs --check
       - name: Pacotes legais gerados iguais aos dados oficiais
         run: |
           python3 tools/legal/build_ai_pack.py

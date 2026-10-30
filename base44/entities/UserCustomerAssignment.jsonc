@@ -1,0 +1,134 @@
+{
+  "name": "UserCustomerAssignment",
+  "type": "object",
+  "description": "Acesso delegado de uma pessoa (normalmente um consultor) aos dados de um cliente: nível, prazo, justificação e decisão. Só o servidor escreve (função `access`); quem decide é o próprio cliente. As listas delegated_*_customer_ids do utilizador derivam das atribuições ativas e dentro do prazo.",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Cliente cujos dados ficam acessíveis"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Nome do cliente no momento do pedido"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Utilizador que recebe o acesso"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email do utilizador que recebe o acesso (minúsculas)"
+    },
+    "assignment_type": {
+      "type": "string",
+      "enum": [
+        "delegation",
+        "external"
+      ],
+      "default": "delegation",
+      "description": "delegation: consultor ou auditor, até 365 dias; external: só leitura, até 30 dias"
+    },
+    "access_level": {
+      "type": "string",
+      "enum": [
+        "viewer",
+        "contributor",
+        "admin"
+      ],
+      "default": "viewer",
+      "description": "viewer lê; contributor lê e escreve conteúdo; admin também gere o cliente e os seus acessos"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "requested",
+        "active",
+        "rejected",
+        "revoked",
+        "expired"
+      ],
+      "default": "requested"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Justificação do pedido"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fim do acesso"
+    },
+    "requested_by": {
+      "type": "string",
+      "description": "Quem pediu"
+    },
+    "decided_by": {
+      "type": "string",
+      "description": "Quem aprovou ou rejeitou (administração do cliente)"
+    },
+    "decided_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revoked_by": {
+      "type": "string"
+    },
+    "revoked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "decision_note": {
+      "type": "string",
+      "description": "Nota da decisão ou da revogação"
+    }
+  },
+  "required": [
+    "customer_id",
+    "user_email",
+    "access_level",
+    "status",
+    "expires_at"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "customer_admin"
+              }
+            },
+            {
+              "data.customer_id": "{{user.data.customer_id}}"
+            }
+          ]
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_admin_customer_ids}}"
+          }
+        },
+        {
+          "data.user_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "delete": false
+  }
+}

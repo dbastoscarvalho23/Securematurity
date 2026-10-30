@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId, resolveCustomer, customerRole, roleCanManage, roleCanWrite } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { FILE_SCHEME } from '../../shared/storedFile.ts';
 
@@ -64,8 +64,9 @@ Deno.serve(async (req) => {
     const body = await readJson(req);
     const action = String(body.action || '');
 
-    const canManage = (doc: any) => admin || (isCA && own && doc.customer_id === own);
-    const canEdit = (doc: any) => canManage(doc) || (own && doc.customer_id === own && doc.owner_email === user.email);
+    // Papel no cliente do documento: próprio ou delegado (ver customerRole). Gerir = administrar esse cliente.
+    const canManage = (doc: any) => admin || roleCanManage(customerRole(user, doc.customer_id));
+    const canEdit = (doc: any) => canManage(doc) || (roleCanWrite(customerRole(user, doc.customer_id)) && doc.owner_email === user.email);
 
     /** O ficheiro indicado tem de ser um ficheiro privado do mesmo cliente, ou o que o documento já tinha. */
     async function checkFileRef(url: string, customerId: string, previous?: string) {
@@ -93,12 +94,15 @@ Deno.serve(async (req) => {
       if (!fields.review_date) delete fields.review_date;
 
       if (!d.id) {
-        const customerId = admin ? str(d.customer_id, 64) : own;
+        const scope = admin ? null : resolveCustomer(user, d.customer_id, { write: true });
+        if (!admin && d.customer_id && !scope) return json({ error: 'Forbidden' }, 403);
+        const customerId = admin ? str(d.customer_id, 64) : (scope?.customerId || '');
         if (!customerId) return json({ error: admin ? 'Escolha o cliente' : 'Sem cliente associado' }, 400);
         const customer = await db.Customer.get(customerId).catch(() => null);
         if (!customer) return json({ error: 'Cliente inexistente' }, 404);
         await checkFileRef(String(fields.file_url), customerId);
-        const status = (admin || isCA) && d.status === 'under_review' ? 'under_review' : (admin || isCA ? 'draft' : 'under_review');
+        const manager = admin || roleCanManage(scope?.role);
+        const status = manager && d.status === 'under_review' ? 'under_review' : (manager ? 'draft' : 'under_review');
         const doc = await db.SecurityDocument.create({ ...fields, customer_id: customerId, customer_name: customer.name || '', owner_email: user.email, status });
         await logAudit(base44, 'document_created', { user_email: user.email, customer_id: customerId, entity_type: 'SecurityDocument', entity_id: doc.id, details: `Documento criado: ${fields.title} (${status === 'draft' ? 'rascunho' : 'em revisão'})` });
         return json({ document: doc, status_changed: true });
