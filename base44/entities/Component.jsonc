@@ -107,6 +107,11 @@
               "data.customer_id": "{{user.data.customer_id}}"
             }
           ]
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_admin_customer_ids}}"
+          }
         }
       ]
     },
@@ -122,4 +127,3 @@
     }
   }
 }
-

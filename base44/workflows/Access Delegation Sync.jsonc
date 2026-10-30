@@ -1,0 +1,43 @@
+{
+  "name": "Access Delegation Sync",
+  "description": "De hora a hora: expira os acessos delegados fora do prazo e volta a derivar as listas de acesso de cada consultor",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "23 * * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "then": "end",
+          "with": {
+            "args": {
+              "op": "sync"
+            },
+            "function_name": "access"
+          }
+        }
+      }
+    ],
+    "document": {
+      "dsl": "1.0.0",
+      "name": "access_delegation_sync",
+      "namespace": "base44",
+      "version": "1.0"
+    }
+  }
+}

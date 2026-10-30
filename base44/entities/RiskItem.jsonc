@@ -20,11 +20,11 @@
     },
     "impact": {
       "type": "number",
-      "description": "Impact score 1\u20135"
+      "description": "Impact score 1–5"
     },
     "likelihood": {
       "type": "number",
-      "description": "Likelihood score 1\u20135"
+      "description": "Likelihood score 1–5"
     },
     "status": {
       "type": "string",
@@ -81,6 +81,16 @@
         },
         {
           "data.customer_id": "{{user.data.customer_id}}"
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_edit_customer_ids}}"
+          }
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_admin_customer_ids}}"
+          }
         }
       ]
     },
@@ -93,6 +103,21 @@
         },
         {
           "data.customer_id": "{{user.data.customer_id}}"
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_view_customer_ids}}"
+          }
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_edit_customer_ids}}"
+          }
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_admin_customer_ids}}"
+          }
         }
       ]
     },
@@ -105,6 +130,16 @@
         },
         {
           "data.customer_id": "{{user.data.customer_id}}"
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_edit_customer_ids}}"
+          }
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_admin_customer_ids}}"
+          }
         }
       ]
     },
@@ -117,6 +152,16 @@
         },
         {
           "data.customer_id": "{{user.data.customer_id}}"
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_edit_customer_ids}}"
+          }
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_admin_customer_ids}}"
+          }
         }
       ]
     }

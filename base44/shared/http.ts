@@ -39,6 +39,72 @@ export function isPlatformAdmin(user) {
   return user?.role === 'admin';
 }
 
+// ─── Acesso delegado ────────────────────────────────────────────────────────────────────────────────────────────
+// Um consultor (papel `consultant`) não tem cliente próprio: chega aos clientes que lhe concederam acesso, por
+// atribuições (UserCustomerAssignment) aprovadas pelo próprio cliente e com prazo. O servidor deriva delas três
+// listas no perfil do utilizador, as mesmas que as regras de acesso das entidades leem. Ver docs/acesso-delegado.md.
+
+export const DELEGATED_FIELDS = {
+  viewer: 'delegated_view_customer_ids',
+  contributor: 'delegated_edit_customer_ids',
+  admin: 'delegated_admin_customer_ids',
+};
+
+function listOf(user, field) {
+  const value = user?.[field] ?? user?.data?.[field];
+  return Array.isArray(value) ? value.map(String) : [];
+}
+
+/** Clientes a que o utilizador chega por delegação, a partir de um nível mínimo (viewer inclui os níveis acima). */
+export function delegatedCustomerIds(user, minLevel = 'viewer') {
+  const levels = minLevel === 'admin' ? ['admin'] : minLevel === 'contributor' ? ['contributor', 'admin'] : ['viewer', 'contributor', 'admin'];
+  return Array.from(new Set(levels.flatMap((level) => listOf(user, DELEGATED_FIELDS[level]))));
+}
+
+/**
+ * Papel efetivo de um utilizador num cliente:
+ * - 'platform': administrador da plataforma (todos os clientes);
+ * - 'admin': administrador do cliente, pelo próprio papel ou por delegação de nível admin;
+ * - 'member': membro do cliente, ou delegação de nível contributor (lê e escreve conteúdo);
+ * - 'viewer': delegação de nível viewer (só lê);
+ * - null: sem acesso.
+ */
+export function customerRole(user, customerId) {
+  if (!user || !customerId) return null;
+  if (isPlatformAdmin(user)) return 'platform';
+  const id = String(customerId);
+  const own = userCustomerId(user);
+  if (own && String(own) === id) return user.role === 'customer_admin' ? 'admin' : 'member';
+  if (listOf(user, DELEGATED_FIELDS.admin).includes(id)) return 'admin';
+  if (listOf(user, DELEGATED_FIELDS.contributor).includes(id)) return 'member';
+  if (listOf(user, DELEGATED_FIELDS.viewer).includes(id)) return 'viewer';
+  return null;
+}
+
+/** O papel chega para escrever conteúdo do cliente? */
+export const roleCanWrite = (role) => role === 'platform' || role === 'admin' || role === 'member';
+/** O papel chega para gerir o cliente (o que hoje é do customer_admin)? */
+export const roleCanManage = (role) => role === 'platform' || role === 'admin';
+
+/**
+ * Cliente de um pedido. O administrador da plataforma escolhe livremente (ou fica com o seu, se tiver). Os restantes
+ * ficam com o cliente pedido só se tiverem acesso a ele (e escrita, quando `write`), ou, sem pedido, com o próprio
+ * cliente, ou com o único cliente delegado. Devolve { customerId, role } ou null (sem acesso).
+ */
+export function resolveCustomer(user, requested, { write = false } = {}) {
+  if (!user) return null;
+  const asked = requested ? String(requested) : '';
+  if (isPlatformAdmin(user)) return { customerId: asked || userCustomerId(user) || null, role: 'platform' };
+  let customerId = asked || userCustomerId(user) || null;
+  if (!customerId) {
+    const delegated = delegatedCustomerIds(user);
+    if (delegated.length === 1) customerId = delegated[0];
+  }
+  const role = customerRole(user, customerId);
+  if (!role || (write && !roleCanWrite(role))) return null;
+  return { customerId: String(customerId), role };
+}
+
 /** Admin or customer_admin — roles allowed to manage users/settings. */
 export function isStaffRole(user) {
   return user?.role === 'admin' || user?.role === 'customer_admin';
@@ -54,6 +120,8 @@ export function canAccessRecord(user, record) {
   if (isPlatformAdmin(user)) return true;
   const customerId = userCustomerId(user);
   if (customerId && record.customer_id === customerId) return true;
+  // Acesso delegado (aprovado pelo cliente, com prazo) aos registos desse cliente.
+  if (record.customer_id && customerRole(user, record.customer_id)) return true;
   return (
     record.created_by_id === user.id ||
     record.owner_email === user.email ||

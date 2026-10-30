@@ -332,6 +332,47 @@
               "data.restricted": false
             }
           ]
+        },
+        {
+          "data.customer_id": {
+            "$in": "{{user.data.delegated_admin_customer_ids}}"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.customer_id": {
+                "$in": "{{user.data.delegated_view_customer_ids}}"
+              }
+            },
+            {
+              "data.restricted": false
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.customer_id": {
+                "$in": "{{user.data.delegated_edit_customer_ids}}"
+              }
+            },
+            {
+              "data.restricted": false
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.customer_id": {
+                "$in": "{{user.data.delegated_admin_customer_ids}}"
+              }
+            },
+            {
+              "data.restricted": false
+            }
+          ]
         }
       ]
     },
@@ -347,4 +388,3 @@
     }
   }
 }
-

@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { secrets } from 'base44:runtime';
-import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId, resolveCustomer, customerRole, roleCanManage, delegatedCustomerIds } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { getEntitlements, subscriptionState } from '../../shared/license.ts';
 import { LICENSE_PUBLIC_KEYS, LICENSE_KEY_ID, SEED_MODULES, SEED_ENTITLEMENTS, SEED_TIERS, SEED_STANDARDS } from '../../shared/licenseCatalog.ts';
@@ -136,9 +136,11 @@ export default async function (req) {
 
     if (action === 'me') {
       const own = userCustomerId(user);
-      const customerId = admin ? String(body.customer_id || own || '') : own;
+      // Consultores: a licença do cliente delegado pedido (ou do único cliente delegado).
+      const scope = admin ? null : resolveCustomer(user, body.customer_id);
+      if (!admin && body.customer_id && !scope) return json({ error: 'Forbidden' }, 403);
+      const customerId = admin ? String(body.customer_id || own || '') : (scope?.customerId || '');
       if (!customerId) return json({ state: admin ? 'admin' : 'none', modules: [], effective: admin });
-      if (!admin && body.customer_id && body.customer_id !== own) return json({ error: 'Forbidden' }, 403);
       const ent = await getEntitlements(base44, customerId);
       const s = ent.subscription;
       const month = new Date().toISOString().slice(0, 7);
@@ -152,11 +154,12 @@ export default async function (req) {
     }
 
     if (action === 'verify') {
-      if (!admin && user.role !== 'customer_admin') return json({ error: 'Forbidden' }, 403);
+      if (!admin && user.role !== 'customer_admin' && !delegatedCustomerIds(user, 'admin').length) return json({ error: 'Forbidden' }, 403);
       const r = await verifyJws(body.jws);
       if (!r.valid) return json(r);
-      // Um customer_admin só verifica certificados do seu cliente; os outros são «inválidos» (sem revelar se são genuínos).
-      if (!admin && r.payload.customer?.id !== userCustomerId(user)) return json({ valid: false, reason: 'Certificado inválido para este cliente' });
+      // Quem administra um cliente (próprio ou delegado) só verifica certificados desse cliente; os outros são
+      // «inválidos» (sem revelar se são genuínos).
+      if (!admin && !roleCanManage(customerRole(user, r.payload.customer?.id))) return json({ valid: false, reason: 'Certificado inválido para este cliente' });
       const cert = (await db.LicenseCertificate.filter({ serial: r.payload.serial }))[0];
       const today = new Date().toISOString().slice(0, 10);
       return json({ ...r, status: cert?.status || 'unknown', expired: Boolean(r.payload.valid_until && today > r.payload.valid_until) });

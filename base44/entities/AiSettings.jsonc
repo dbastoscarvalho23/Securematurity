@@ -49,6 +49,11 @@
           "user_condition": {
             "role": "user"
           }
+        },
+        {
+          "user_condition": {
+            "role": "consultant"
+          }
         }
       ]
     },

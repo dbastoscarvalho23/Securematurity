@@ -27,6 +27,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import GlobalSearch from './GlobalSearch';
 import NotificationBell from './NotificationBell';
+import ActiveCustomerSelect from './ActiveCustomerSelect';
 
 const PAGE_TITLE_KEYS = {
   '/': 'page_dashboard',
@@ -138,6 +139,7 @@ export default function TopBar({ onMenuClick }) {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
+          <ActiveCustomerSelect />
           <GlobalSearch />
           <NotificationBell />
           <DropdownMenu>

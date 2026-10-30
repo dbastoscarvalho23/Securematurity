@@ -264,7 +264,7 @@ export default function UserManagementPanel() {
                   </TableCell>
                   <TableCell>
                     <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                      {u.role === 'customer_admin' ? t('settings_role_customer_admin') : u.role === 'admin' ? t('settings_role_admin') : t('settings_role_user')}
+                      {u.role === 'customer_admin' ? t('settings_role_customer_admin') : u.role === 'admin' ? t('settings_role_admin') : u.role === 'consultant' ? t('acc_role_consultant') : t('settings_role_user')}
                     </Badge>
                   </TableCell>
                   <TableCell>

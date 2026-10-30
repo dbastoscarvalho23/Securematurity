@@ -1,4 +1,4 @@
-import { userCustomerId } from './http.ts';
+import { userCustomerId, delegatedCustomerIds } from './http.ts';
 
 /**
  * Destinatários autorizados de um cliente — duas camadas, com níveis de confiança diferentes.
@@ -41,7 +41,8 @@ export async function allowedRecipients(base44, customerId, { includeExternal = 
   };
   // Colegas do mesmo cliente e administradores da plataforma (avisos internos).
   for (const u of users) {
-    if (u.role === 'admin' || (customerId && userCustomerId(u) === customerId)) add(u.email);
+    // Consultores com acesso delegado a este cliente também são da equipa (ex.: responsáveis por tarefas).
+    if (u.role === 'admin' || (customerId && (userCustomerId(u) === customerId || delegatedCustomerIds(u).includes(String(customerId))))) add(u.email);
   }
   if (customer) {
     add(customer.contact_email);
