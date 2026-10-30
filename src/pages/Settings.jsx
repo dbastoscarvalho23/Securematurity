@@ -8,8 +8,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PageHeader from '@/components/shared/PageHeader';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 const UserManagementPanel = lazy(() => import('@/components/backoffice/UserManagementPanel'));
+const AccessPanel = lazy(() => import('@/components/settings/AccessPanel'));
 const FrameworksPanel = lazy(() => import('@/components/backoffice/FrameworksPanel'));
-import { Settings as SettingsIcon, Trash2, User, Bell, FileBarChart, GraduationCap, HardDrive, Loader2, BadgeCheck } from 'lucide-react';
+import { Settings as SettingsIcon, Trash2, User, Bell, FileBarChart, GraduationCap, HardDrive, Loader2, BadgeCheck, KeyRound } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
@@ -31,7 +32,11 @@ export default function Settings() {
   const { user: currentUser, checkAppState, refreshUser } = useAuth();
   const { t } = useLanguage();
   const isAdmin = currentUser?.role === 'admin';
-  const isCustomerAdmin = currentUser?.role === 'customer_admin';
+  // Consultores (acesso delegado): o papel na interface vem do nível no cliente ativo; a gestão de utilizadores e o
+  // armazenamento continuam do próprio cliente.
+  const isConsultant = currentUser?.platform_role === 'consultant';
+  const isCustomerAdmin = currentUser?.role === 'customer_admin' && !isConsultant;
+  const canManageAccess = isAdmin || currentUser?.role === 'customer_admin' || isConsultant;
   const isReadOnly = currentUser?.role === 'user';
 
   const [userToDelete, setUserToDelete] = useState(null);
@@ -120,7 +125,7 @@ export default function Settings() {
 
       <PageHeader description={t('settings_subtitle')} />
 
-      <Tabs defaultValue="users">
+      <Tabs defaultValue={new URLSearchParams(window.location.search).get('tab') || 'users'}>
         <TabsList>
           <TabsTrigger value="users">{t('settings_tab_users')}</TabsTrigger>
           <TabsTrigger value="frameworks">{t('settings_tab_frameworks')}</TabsTrigger>
@@ -134,6 +139,9 @@ export default function Settings() {
           )}
           {isAdmin && (
             <TabsTrigger value="app" className="flex items-center gap-1.5"><SettingsIcon className="w-3.5 h-3.5" />{t('settings_tab_app')}</TabsTrigger>
+          )}
+          {canManageAccess && (
+            <TabsTrigger value="access" className="flex items-center gap-1.5"><KeyRound className="w-3.5 h-3.5" />{t('acc_tab')}</TabsTrigger>
           )}
           {(isAdmin || isCustomerAdmin) && (
             <TabsTrigger value="storage" className="flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" />{t('settings_tab_storage')}</TabsTrigger>
@@ -175,7 +183,7 @@ export default function Settings() {
                     <Label>{t('settings_role')}</Label>
                     <div className="flex items-center gap-2 h-9">
                       <Badge variant={currentUser?.role === 'admin' ? 'default' : 'secondary'}>
-                        {currentUser?.role === 'customer_admin' ? t('settings_role_customer_admin') : currentUser?.role === 'admin' ? t('settings_role_admin') : t('settings_role_user')}
+                        {isConsultant ? t('acc_role_consultant') : currentUser?.role === 'customer_admin' ? t('settings_role_customer_admin') : currentUser?.role === 'admin' ? t('settings_role_admin') : t('settings_role_user')}
                       </Badge>
                       <Badge className="bg-accent/10 text-accent border-accent/20">{t('settings_user_active')}</Badge>
                     </div>
@@ -269,6 +277,12 @@ export default function Settings() {
         )}
 
         {/* Storage Tab — external storage configuration */}
+        {canManageAccess && (
+          <TabsContent value="access" className="space-y-4 mt-4">
+            <Suspense fallback={null}><AccessPanel /></Suspense>
+          </TabsContent>
+        )}
+
         {(isAdmin || isCustomerAdmin) && (
           <TabsContent value="storage" className="space-y-4 mt-4">
             {isAdmin && <StorageProvidersPanel />}
