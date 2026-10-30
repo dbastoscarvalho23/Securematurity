@@ -53,11 +53,13 @@ function form(rows, ratios = [3.2, 6.8]) {
   const ws = widthsOf(ratios);
   return new Table({
     width: { size: W, type: WidthType.DXA }, columnWidths: ws,
-    rows: rows.map(([label, help, tall]) => new TableRow({
+    rows: rows.map(([label, help, tall, value]) => new TableRow({
       cantSplit: true, height: { value: tall ? 900 : 440, rule: 'atLeast' },
       children: [
         cell([para(label, { bold: true, size: 19, color: NAVY })], ws[0], { shading: { fill: LABEL, type: ShadingType.CLEAR, color: 'auto' } }),
-        cell(String(help || '').split('\n').map((l) => (l.startsWith('☐') ? para(l, { size: 19 }) : (l ? hint(l) : para('')))), ws[1]),
+        cell(value != null
+          ? String(value).split('\n').map((l) => para(l, { size: 19 }))
+          : String(help || '').split('\n').map((l) => (l.startsWith('☐') ? para(l, { size: 19 }) : (l ? hint(l) : para('')))), ws[1]),
       ],
     })),
   });
@@ -119,16 +121,16 @@ function titleBlock({ code, title, purpose }) {
   });
 }
 
-/** Controlo do registo: igual em todos os modelos. */
-const control = (code) => form([
+/** Controlo do registo: igual em todos os modelos. `values` preenche os campos (registos já em uso). */
+const control = (code, values = []) => form([
   ['N.º do registo', `${code}-AAAA-NNN (ano e número sequencial)`],
   ['Data', 'DD/MM/AAAA'],
   ['Preenchido por', 'Nome e função'],
   ['Local de arquivo', 'Pasta, repositório ou ligação onde o registo assinado fica guardado'],
   ['Prazo de conservação', 'Conforme a política de retenção da Neora e o contrato com o cliente'],
-]);
+].map((row, i) => (values[i] != null ? [row[0], row[1], false, values[i]] : row)));
 
-function buildDoc({ code, title, purpose, instructions, body }) {
+function buildDoc({ code, title, purpose, instructions, body, controlValues }) {
   const watermark = new Paragraph({ children: [new ImageRun({
     type: 'png', data: marca, transformation: { width: 420, height: 365 },
     floating: {
@@ -181,7 +183,7 @@ function buildDoc({ code, title, purpose, instructions, body }) {
       children: [
         titleBlock({ code, title, purpose }), gap(200),
         callout('Como preencher', instructions, TEALT, TEAL_DARK), gap(120),
-        H('Controlo do registo'), control(code),
+        H('Controlo do registo'), control(code, controlValues),
         ...body,
       ],
     }],
@@ -431,7 +433,9 @@ const MODELOS = [
   },
 ];
 
-(async () => {
+module.exports = { buildDoc, form, grid, blank, boxes, callout, signatures, H, P, gap, MODELOS };
+
+if (require.main === module) (async () => {
   for (const m of MODELOS) {
     const buf = await Packer.toBuffer(buildDoc(m));
     fs.writeFileSync(path.join(OUT, m.file), buf);
