@@ -8,7 +8,7 @@
     },
     "user_email": {
       "type": "string",
-      "description": "User who performed the action. Rows written from the browser can only be attributed to the signed-in user (see create rule): the field counts email rate limits, so it cannot be chosen by the caller."
+      "description": "Quem responde pela entrada: o utilizador da sessão resolvida no servidor, ou 'system' numa automação. Nunca indicado pelo cliente. Serve também de contador para os limites de envio de email e de IA."
     },
     "action": {
       "type": "string",
@@ -71,7 +71,40 @@
         "document_classified",
         "document_indexed",
         "document_intake_rejected",
-        "document_classification_refused"
+        "document_classification_refused",
+        "audit_chain_sealed",
+        "audit_chain_verified",
+        "audit_chain_broken",
+        "audit_chain_anchor_review",
+        "ai_assist",
+        "ai_assist_refused",
+        "ai_draft_approved",
+        "ai_draft_created",
+        "ai_questionnaire",
+        "asset_inventory_exported",
+        "asset_list_exported",
+        "customer_qualified",
+        "cve_alert_converted",
+        "cve_alerts_created",
+        "cve_watch_deleted",
+        "document_intake_scanned",
+        "evidence_accessed",
+        "evidence_created",
+        "evidence_deleted",
+        "evidence_reviewed",
+        "file_accessed",
+        "file_uploaded",
+        "invite_rejected",
+        "license_certificate_issued",
+        "license_changed",
+        "asset_created",
+        "asset_updated",
+        "asset_deleted",
+        "assets_imported",
+        "component_deleted",
+        "report_email_sent",
+        "cve_watch_created",
+        "cve_watch_updated"
       ],
       "description": "Action type"
     },
@@ -86,6 +119,33 @@
     "details": {
       "type": "string",
       "description": "Additional action details"
+    },
+    "actor_attested": {
+      "type": "boolean",
+      "description": "A autoria foi lida da sessão autenticada no servidor. Falso numa automação."
+    },
+    "origin": {
+      "type": "string",
+      "enum": [
+        "session",
+        "automation"
+      ],
+      "description": "session: ato de um utilizador; automation: workflow ou rotina do sistema."
+    },
+    "entry_hash": {
+      "type": "string",
+      "description": "SHA-256 do conteúdo desta entrada encadeado em prev_hash."
+    },
+    "prev_hash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Resumo da entrada anterior quando esta foi escrita. No selo de partida, é o resumo de partida que cobre as entradas anteriores."
+    },
+    "chain_count": {
+      "type": "number",
+      "description": "No selo de partida: entradas anteriores cobertas. Numa verificação: entradas conferidas desde o selo."
     }
   },
   "required": [
@@ -94,23 +154,9 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "$and": [
-            {
-              "data.customer_id": "{{user.data.customer_id}}"
-            },
-            {
-              "data.user_email": "{{user.email}}"
-            }
-          ]
-        }
-      ]
+      "user_condition": {
+        "role": "service_only"
+      }
     },
     "read": {
       "$or": [
@@ -126,13 +172,10 @@
     },
     "update": {
       "user_condition": {
-        "role": "admin"
+        "role": "service_only"
       }
     },
-    "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
-    }
-  }
+    "delete": false
+  },
+  "description": "Trilha de auditoria. É de acréscimo: nenhuma entrada se altera ou elimina, nem pela administração da plataforma. Só o servidor escreve, pelo escritor único base44/shared/auditChain.ts (função `audit` para os atos da interface): a autoria vem da sessão resolvida no servidor e cada entrada leva o resumo SHA-256 que a encadeia à anterior. O selo de partida cobre as entradas anteriores à cadeia; a verificação diária recalcula-a e regista o resultado aqui."
 }

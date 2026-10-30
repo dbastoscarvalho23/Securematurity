@@ -43,6 +43,7 @@ flowchart TB
 - **IA:** funções `aiDraft` (rascunhos com fontes oficiais) e `aiAssist` (pedidos da interface), com motor e pontos ativos escolhidos em Definições → Aplicação (`docs/ia.md`).
 - **Licenças:** catálogo e subscrições pela função `licensing`; certificados assinados Ed25519.
 - **Email:** `base44/shared/mail.ts` (Resend ou Base44); ver `docs/email-dominio.md`.
+- **Auditoria:** trilha de acréscimo com cadeia de integridade SHA-256 (`base44/shared/auditChain.ts`). Só o servidor escreve: a interface pede o registo à função `audit` (`src/lib/auditLog.js`) e as funções usam `logAudit`; a autoria vem sempre da sessão. A entidade `AuditLog` recusa criação e alteração a qualquer sessão de utilizador e não deixa eliminar, nem ao administrador. O selo de partida cobre as entradas anteriores à cadeia; o workflow «Audit Chain Daily Verification» recalcula a cadeia todos os dias e regista o resultado. Estado e verificação manual na página Auditoria. Desenho adaptado da app do Victor, com SHA-256 em vez de um resumo de 64 bits.
 
 ## Publicação
 
