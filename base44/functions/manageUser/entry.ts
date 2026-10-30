@@ -14,7 +14,8 @@ import { userCustomerId } from '../../shared/http.ts';
  *    and non-platform role changes; delete restricted to standard 'user' accounts.
  */
 const ALLOWED_UPDATE_FIELDS = ['customer_id', 'customer_name', 'display_name'];
-const NON_PLATFORM_ROLES = ['user', 'customer_admin'];
+// 'consultant': sem acesso global; chega aos clientes só por atribuições aprovadas por eles (acesso delegado).
+const NON_PLATFORM_ROLES = ['user', 'customer_admin', 'consultant'];
 
 Deno.serve(async (req) => {
   try {

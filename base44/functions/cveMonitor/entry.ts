@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId, resolveCustomer as sharedResolveCustomer, roleCanManage, delegatedCustomerIds } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, getEntitlements, LicenseError } from '../../shared/license.ts';
 import { sendMail } from '../../shared/mail.ts';
@@ -195,10 +195,14 @@ export default async function (req) {
       const watches = await base44.asServiceRole.entities.CveWatch.filter({ enabled: true }, 'last_checked_at', 5000);
       return json(await runWatches(base44, watches));
     }
-    if (!admin && user.role !== 'customer_admin') return json({ error: 'Forbidden' }, 403);
+    // Administração do cliente: própria, delegada (nível admin) ou da plataforma.
+    if (!admin && user.role !== 'customer_admin' && !delegatedCustomerIds(user, 'admin').length) return json({ error: 'Forbidden' }, 403);
     const action = body.action;
     const db = base44.asServiceRole.entities;
-    if (!admin) await requireModule(base44, user, userCustomerId(user), 'cve_monitoring');
+    // Licença: do cliente pedido (ou do único que a pessoa administra); cada registo volta a ser conferido abaixo.
+    const managed = admin ? null : sharedResolveCustomer(user, body.customer_id, { write: true });
+    if (!admin && (!managed || !roleCanManage(managed.role))) return json({ error: 'Forbidden' }, 403);
+    if (!admin) await requireModule(base44, user, managed.customerId, 'cve_monitoring');
 
     if (action === 'suggest') {
       const keyword = str(body.keyword, 80).trim();
@@ -225,14 +229,14 @@ export default async function (req) {
 
     const own = userCustomerId(user);
     const resolveCustomer = (requested) => {
-      const id = admin ? String(requested || own || '') : own;
+      const id = admin ? String(requested || own || '') : managed.customerId;
       if (!id) throw new Error('Sem cliente associado');
-      if (!admin && requested && requested !== own) throw new Error('Forbidden');
+      if (!admin && requested && String(requested) !== managed.customerId) throw new Error('Forbidden');
       return id;
     };
     const ownedRecord = async (ent, id) => {
       const rec = id ? await db[ent].get(String(id)).catch(() => null) : null;
-      if (!rec || (!admin && rec.customer_id !== own)) throw new Error('Registo inexistente');
+      if (!rec || (!admin && rec.customer_id !== managed.customerId)) throw new Error('Registo inexistente');
       return rec;
     };
 

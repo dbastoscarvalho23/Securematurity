@@ -1,4 +1,4 @@
-import { isPlatformAdmin, userCustomerId } from './http.ts';
+import { isPlatformAdmin, userCustomerId, customerRole } from './http.ts';
 
 /**
  * Shared ReminderSettings lookup + recipient resolution.
@@ -58,6 +58,6 @@ export function buildRecipients(primary, settings, allowAdditional = false) {
 export function canUseAdditionalRecipients(user, customerId) {
   if (!user) return false;
   if (isPlatformAdmin(user)) return true;
-  const own = userCustomerId(user);
-  return user.role === 'customer_admin' && Boolean(own) && own === customerId;
+  // Quem administra o cliente: customer_admin próprio ou consultor com delegação de nível admin.
+  return Boolean(customerId) && customerRole(user, customerId) === 'admin';
 }

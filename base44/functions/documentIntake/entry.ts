@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { unzipSync } from 'npm:fflate@0.8.2';
-import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId, resolveCustomer, roleCanManage, customerRole, delegatedCustomerIds } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { requireModule, checkQuota, consumeQuota, LicenseError } from '../../shared/license.ts';
 import { checkFile } from '../../shared/fileCheck.ts';
@@ -121,17 +121,19 @@ export default async function (req) {
     const user = await getAuthenticatedUser(base44);
     if (!user) return json({ error: 'Sessão inválida. Entre novamente.' }, 401);
     const admin = isPlatformAdmin(user);
-    if (!admin && user.role !== 'customer_admin') return json({ error: 'Só o administrador do cliente pode classificar documentos' }, 403);
+    // Administração do cliente: própria, delegada (nível admin) ou da plataforma.
+    if (!admin && user.role !== 'customer_admin' && !delegatedCustomerIds(user, 'admin').length) return json({ error: 'Só o administrador do cliente pode classificar documentos' }, 403);
     const own = String(userCustomerId(user) || '');
     const db = base44.asServiceRole.entities;
     const body = await readJson(req);
     const action = String(body.action || '');
 
-    /** Cliente pedido: o admin indica-o; os restantes usam sempre o seu. */
+    /** Cliente pedido: o admin indica-o; os restantes, um cliente que administrem (próprio ou delegado). */
     const requestedCustomer = async () => {
-      const id = admin ? str(body.customer_id, 64) : own;
+      const scope = admin ? null : resolveCustomer(user, body.customer_id, { write: true });
+      if (!admin && body.customer_id && (!scope || !roleCanManage(scope.role))) throw Object.assign(new Error('Forbidden'), { status: 403 });
+      const id = admin ? str(body.customer_id, 64) : (scope && roleCanManage(scope.role) ? scope.customerId : '');
       if (!id) throw Object.assign(new Error(admin ? 'Indique o cliente' : 'Sem cliente associado'), { status: admin ? 400 : 403 });
-      if (!admin && body.customer_id && body.customer_id !== own) throw Object.assign(new Error('Forbidden'), { status: 403 });
       const c = await db.Customer.get(id).catch(() => null);
       if (!c) throw Object.assign(new Error('Cliente inexistente'), { status: 404 });
       return c;
@@ -140,7 +142,7 @@ export default async function (req) {
     /** Registo pedido, só do cliente de quem pede (o admin vê todos). */
     const loadIntake = async () => {
       const it = await db.DocumentIntake.get(str(body.id, 64)).catch(() => null);
-      if (!it || (!admin && it.customer_id !== own)) throw Object.assign(new Error('Documento inexistente'), { status: 404 });
+      if (!it || (!admin && !roleCanManage(customerRole(user, it.customer_id)))) throw Object.assign(new Error('Documento inexistente'), { status: 404 });
       const customer = await db.Customer.get(it.customer_id).catch(() => null);
       if (!customer) throw Object.assign(new Error('Cliente inexistente'), { status: 404 });
       return { it, customer };

@@ -1,4 +1,5 @@
 import { resolveProvider, putFile, sha256Hex, CONTEXT_FOLDER } from './storage.ts';
+import { customerRole, roleCanWrite, delegatedCustomerIds } from './http.ts';
 
 /** Prefixo guardado nos campos `file_url` para ficheiros privados (abertos pela função `files`). */
 export const FILE_SCHEME = 'ankora-file://';
@@ -39,12 +40,18 @@ export class TenantError extends Error {
  *  - Sem registo: administrador → customer_id indicado (vazio = armazenamento da plataforma); restantes → o seu.
  * Devolve o registo Customer (ou null para ficheiros da plataforma).
  */
-export async function resolveFileTenant(base44: any, { admin, ownCustomerId, requestedCustomerId, context, contextId }: {
-  admin: boolean; ownCustomerId: string; requestedCustomerId?: string; context: string; contextId?: string;
+export async function resolveFileTenant(base44: any, { admin, ownCustomerId, requestedCustomerId, context, contextId, user }: {
+  admin: boolean; ownCustomerId: string; requestedCustomerId?: string; context: string; contextId?: string; user?: any;
 }) {
   const requested = String(requestedCustomerId || '');
-  if (!admin && requested && requested !== ownCustomerId) throw new TenantError('Forbidden', 403);
-  let customerId = admin ? requested : ownCustomerId;
+  // Pode escrever neste cliente? O próprio, ou um cliente delegado com nível contributor ou admin (com `user`).
+  const writable = (id: string) => (user ? roleCanWrite(customerRole(user, id)) : id === ownCustomerId);
+  if (!admin && requested && !writable(requested)) throw new TenantError('Forbidden', 403);
+  let customerId = admin ? requested : (requested || ownCustomerId);
+  if (!admin && !customerId && user) {
+    const delegated = delegatedCustomerIds(user, 'contributor');
+    if (delegated.length === 1) customerId = delegated[0];
+  }
 
   const id = String(contextId || '');
   if (id && CONTEXT_ENTITY[context]) {
@@ -54,7 +61,7 @@ export async function resolveFileTenant(base44: any, { admin, ownCustomerId, req
       if (rec) break;
     }
     if (rec?.customer_id) {
-      if (!admin && rec.customer_id !== ownCustomerId) throw new TenantError('Forbidden', 403);
+      if (!admin && !writable(rec.customer_id)) throw new TenantError('Forbidden', 403);
       if (admin && requested && requested !== rec.customer_id) {
         throw new TenantError('O cliente indicado não corresponde ao registo do ficheiro', 409);
       }

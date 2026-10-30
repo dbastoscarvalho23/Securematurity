@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId, customerRole, roleCanManage } from '../../shared/http.ts';
 import { logAudit } from '../../shared/audit.ts';
 import { checkFile } from '../../shared/fileCheck.ts';
 import { getFile, fromBase64, toBase64, MAX_EXTERNAL_BYTES } from '../../shared/storage.ts';
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
       let customer = null;
       try {
         customer = await resolveFileTenant(base44, {
-          admin, ownCustomerId: own, requestedCustomerId: str(body.customer_id, 64), context, contextId: str(body.context_id, 120),
+          admin, ownCustomerId: own, requestedCustomerId: str(body.customer_id, 64), context, contextId: str(body.context_id, 120), user,
         });
       } catch (e) {
         if (e instanceof TenantError) return json({ error: e.message }, e.status);
@@ -66,8 +66,10 @@ Deno.serve(async (req) => {
       const f = await base44.asServiceRole.entities.StoredFile.get(id).catch(() => null);
       if (!f) return json({ error: 'Ficheiro inexistente' }, 404);
       if (!admin) {
-        if (!f.customer_id || f.customer_id !== own) return json({ error: 'Forbidden' }, 403);
-        if (f.restricted && user.role !== 'customer_admin') return json({ error: 'Forbidden' }, 403);
+        // Cliente próprio ou delegado; ficheiros restritos só para quem administra esse cliente.
+        const role = f.customer_id ? customerRole(user, f.customer_id) : null;
+        if (!role) return json({ error: 'Forbidden' }, 403);
+        if (f.restricted && !roleCanManage(role)) return json({ error: 'Forbidden' }, 403);
       }
       const file = await getFile(base44, f.customer_id, f.storage_provider, f.storage_ref, f.mime_type);
       await logAudit(base44, 'file_accessed', {

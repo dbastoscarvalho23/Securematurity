@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId } from '../../shared/http.ts';
+import { json, readJson, getAuthenticatedUser, isPlatformAdmin, userCustomerId, resolveCustomer } from '../../shared/http.ts';
 import { getEntitlements, checkQuota, consumeQuota, LicenseError } from '../../shared/license.ts';
 
 // Limites: o pedido é enviado ao modelo, por isso o tamanho tem de ser previsível.
@@ -19,7 +19,9 @@ Deno.serve(async (req) => {
     // Isolamento por cliente: um utilizador de cliente pesquisa sempre e apenas o próprio cliente — sem cliente
     // associado não pesquisa nada. Só o administrador da plataforma pode indicar um cliente ou pesquisar em todos.
     const admin = isPlatformAdmin(user);
-    const customerId = admin ? (String(body.customer_id || '') || null) : String(userCustomerId(user) || '');
+    // Consultores: só nos clientes que lhes concederam acesso (resolveCustomer).
+    const scope = admin ? null : resolveCustomer(user, body.customer_id);
+    const customerId = admin ? (String(body.customer_id || '') || null) : String(scope?.customerId || '');
     if (!customerId && !admin) return json({ error: 'Sem cliente associado' }, 403);
 
     // Cada pesquisa é um pedido de IA: conta para a quota «ai» do cliente (sem limite no regime legacy).
