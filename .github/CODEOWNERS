@@ -1,0 +1,11 @@
+# Revisão obrigatória do responsável do repositório para a Biblioteca Legal, os modelos documentais
+# e as próprias proteções. Ver docs/legal/README.md (secção «Integridade»).
+/src/data/legal/                    @dbastoscarvalho23
+/docs/legal/                        @dbastoscarvalho23
+/docs/modelos/                      @dbastoscarvalho23
+/public/modelos/                    @dbastoscarvalho23
+/tools/legal/                       @dbastoscarvalho23
+/base44/shared/legalPack.ts         @dbastoscarvalho23
+/base44/shared/classifyCatalog.ts   @dbastoscarvalho23
+/scripts/check-legal-integrity.cjs  @dbastoscarvalho23
+/.github/                           @dbastoscarvalho23

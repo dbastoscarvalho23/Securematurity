@@ -63,3 +63,17 @@ Regenerar: `python3 tools/legal/build_iso27001.py`, depois `python3 tools/legal/
 ## Regenerar os dados
 
 Ver `tools/legal/README.md`.
+
+## Integridade
+
+Os ficheiros desta biblioteca estão protegidos por uma verificação automática (`scripts/check-legal-integrity.cjs`), que corre em cada PR:
+
+- **Manifesto.** `docs/legal/manifesto.sha256` guarda o SHA-256 de cada ficheiro de `src/data/legal/`, dos pacotes gerados (`base44/shared/legalPack.ts` e `classifyCatalog.ts`), destes documentos e dos modelos (`docs/modelos/`, `public/modelos/`). Qualquer ficheiro alterado, novo ou removido sem atualização do manifesto faz falhar a verificação.
+- **Pacotes gerados.** O CI volta a gerar `legalPack.ts` e `classifyCatalog.ts` e confirma que são iguais aos do repositório.
+- **Ficheiros proibidos.** Documentos do CIS, da ENX com todos os direitos reservados e textos de normas ISO não podem estar no repositório.
+- **Textos curtos.** `cis-ids.json`, `enx-nis2-isa6.json` e os guias ISO só podem ter identificadores ou textos próprios curtos.
+- **Cópias públicas.** Cada modelo em `public/modelos/` tem de ser igual ao original em `docs/modelos/`.
+- **Revisão.** `.github/CODEOWNERS` pede a revisão do responsável do repositório para estas pastas.
+- **Importação da app.** O workflow que traz o código da app Base44 assinala no topo do PR qualquer alteração a dados legais.
+
+Depois de uma regeneração revista a partir dos documentos oficiais: `node scripts/check-legal-integrity.cjs --update`, e no PR indicar a fonte e o SHA-256 do documento oficial usado.

@@ -65,6 +65,9 @@ docker compose -f docker-compose.base44.yml up -d
 - Official data only, in `src/data/legal/*.json` (DL 125/2025 + RJC, Reg. CNCS 756/2026 with QNRCS and Annexes III/IV,
   NIS2, Reg. Exec. 2024/2690, DORA + RTS/ITS, VDA ISA 6/2027, TISAX facts, CIS identifiers). Sources, hashes and licences:
   `docs/legal/README.md`. Regeneration: `tools/legal/README.md`. Never hand-edit legal texts.
+- Integrity: `docs/legal/manifesto.sha256` + `scripts/check-legal-integrity.cjs` (CI). Any change to legal data, the generated
+  legal packs, `docs/legal` or the templates fails CI until the manifest is updated with `--update` after a reviewed
+  regeneration from the official documents. Never run `--update` to silence an unexplained change.
 - Access via `src/lib/legal/index.js` (`loadLegal(key)` lazy-loads; `catalog` is eager). Mapping graph:
   `src/lib/frameworkMappings.js`. Framework names/domains: `src/lib/frameworkConstants.js`.
 - `src/lib/legal/sync.js` upserts Framework/FrameworkControl/Question by `source_ref` (admin button in Settings →
