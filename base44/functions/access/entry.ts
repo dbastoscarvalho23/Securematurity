@@ -41,7 +41,21 @@ Deno.serve(async (req) => {
       const found = await db.User.filter({ email: a.user_email }).catch(() => []);
       return found?.[0] || null;
     };
-    const resync = async (a: any) => { const u = await targetUser(a); if (u) await syncUserScope(base44, u); };
+    // Depois de uma decisão já gravada: uma falha a atualizar as listas não desfaz a decisão; a sincronização de hora
+    // a hora volta a tentar, e a resposta assinala-o.
+    const resync = async (a: any) => {
+      try { const u = await targetUser(a); if (u) await syncUserScope(base44, u); return true; } catch (e) { console.error('scope sync failed', e?.message || e); return false; }
+    };
+    /** Todos os registos de uma entidade, por páginas (sem limite silencioso). */
+    const all = async (entity: string) => {
+      const out: any[] = [];
+      for (let page = 0; page < 1000; page += 1) {
+        const items = (await db[entity].list('created_date', 500, page * 500)) || [];
+        out.push(...items);
+        if (items.length < 500) break;
+      }
+      return out;
+    };
     const load = async () => {
       const a = await db.UserCustomerAssignment.get(str(input.id, 64)).catch(() => null);
       if (!a) throw Object.assign(new Error('Acesso inexistente'), { status: 404 });
@@ -99,7 +113,9 @@ Deno.serve(async (req) => {
       });
       const what = `${payload.access_level} de ${payload.user_email} a «${customer.name}» até ${payload.expires_at.slice(0, 10)}. Justificação: ${payload.reason}`;
       await audit(op === 'grant' ? 'access_granted' : 'access_requested', row, op === 'grant' ? `Acesso concedido: ${what}` : `Acesso pedido: ${what}`);
-      if (op === 'grant') await syncUserScope(base44, user);
+      if (op === 'grant') {
+        try { await syncUserScope(base44, user); } catch (e) { console.error('scope sync failed', e?.message || e); }
+      }
       else {
         for (const ca of await customerAdmins(base44, payload.customer_id)) {
           await db.Notification.create({
@@ -123,8 +139,8 @@ Deno.serve(async (req) => {
         status: op === 'approve' ? 'active' : 'rejected', decided_by: actor.email, decided_at: new Date().toISOString(), decision_note: note,
       });
       await audit(op === 'approve' ? 'access_approved' : 'access_rejected', a, `${op === 'approve' ? 'Acesso aprovado' : 'Acesso rejeitado'}: ${a.access_level} de ${a.user_email} até ${String(a.expires_at).slice(0, 10)}.${note ? ` Nota: ${note}` : ''}`);
-      await resync(a);
-      return json({ assignment: view({ ...a, ...updated }) });
+      const synced = await resync(a);
+      return json({ assignment: view({ ...a, ...updated }), ...(synced ? {} : { scope_sync_pending: true }) });
     }
 
     if (op === 'revoke') {
@@ -135,17 +151,17 @@ Deno.serve(async (req) => {
       const note = str(input.note, 500);
       const updated = await db.UserCustomerAssignment.update(a.id, { status: 'revoked', revoked_by: actor.email, revoked_at: new Date().toISOString(), decision_note: note });
       await audit('access_revoked', a, `Acesso revogado: ${a.access_level} de ${a.user_email}.${note ? ` Nota: ${note}` : ''}`);
-      await resync(a);
-      return json({ assignment: view({ ...a, ...updated }) });
+      const synced = await resync(a);
+      return json({ assignment: view({ ...a, ...updated }), ...(synced ? {} : { scope_sync_pending: true }) });
     }
 
     if (op === 'sync') {
       if (!admin) return json({ error: 'Admin access required' }, 403);
       // Todas as pessoas com atribuições, todos os consultores e qualquer pessoa que tenha listas no perfil (seja qual
       // for o papel): listas sem atribuição viva ficam vazias. Uma falha numa pessoa não impede as restantes.
-      const rows = await db.UserCustomerAssignment.list('-created_date', 20000).catch(() => []);
-      const emails = new Set((rows || []).map((a: any) => String(a.user_email || '').toLowerCase()).filter(Boolean));
-      const users = await db.User.list().catch(() => []);
+      const rows = await all('UserCustomerAssignment');
+      const emails = new Set(rows.map((a: any) => String(a.user_email || '').toLowerCase()).filter(Boolean));
+      const users = await all('User');
       const hasLists = (u: any) => ['delegated_view_customer_ids', 'delegated_edit_customer_ids', 'delegated_admin_customer_ids']
         .some((k) => (u?.[k] ?? u?.data?.[k] ?? []).length);
       let synced = 0;

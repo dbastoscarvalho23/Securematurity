@@ -71,7 +71,7 @@ export default async function (req) {
       const provider = await resolveProvider(base44, customer);
       const meta = await buildMeta(base44, body, customerId);
       const folderKey = evidenceFolderKey(meta.links, meta.restricted, body.folder === 'framing' ? 'framing' : '');
-      if (meta.restricted && !admin && user.role !== 'customer_admin') return json({ error: 'Só os administradores do cliente podem anexar evidências a ativos e ferramentas' }, 403);
+      if (meta.restricted && !admin && !roleCanManage(scope?.role)) return json({ error: 'Só os administradores do cliente podem anexar evidências a ativos e ferramentas' }, 403);
       const fileName = str(body.file_name, 200);
       const bytes = fromBase64(body.content_base64);
       const mime = checkFile(fileName, str(body.mime_type, 120), bytes, MAX_EXTERNAL_BYTES);
