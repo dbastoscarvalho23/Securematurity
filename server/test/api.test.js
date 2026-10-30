@@ -330,6 +330,9 @@ if (!DB) {
     await api('PUT', `/entities/User/${kid}`, { delegated_admin_customer_ids: [ids.c2] }, tokens.admin);
     assert.equal(await denied('POST', '/entities/Task', { title: 'x', customer_id: ids.c2, status: 'todo', priority: 'low' }, k), true);
 
+    const made = await api('POST', '/entities/User', { email: 'forjado@neora.pt', role: 'user', delegated_admin_customer_ids: [ids.c1] }, tokens.admin);
+    assert.equal(made.delegated_admin_customer_ids, undefined, 'nem o administrador cria um utilizador com listas');
+
     // Revogação: efeito imediato. O cliente concede depois como colaborador: escreve no cliente um e não no dois.
     assert.equal((await fn('access', { op: 'revoke', id: aid }, tokens.a)).status, 200);
     assert.deepEqual(await api('GET', '/entities/Task', null, k), [], 'revogado');

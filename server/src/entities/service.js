@@ -301,7 +301,10 @@ export class EntityService {
     const { email, full_name, role, ...rest } = stripMeta(input);
     if (!email) throw new HttpError(422, 'O campo "email" é obrigatório');
     const id = this.preserveMeta && input.id ? String(input.id) : newId();
-    const data = Object.fromEntries(Object.entries(rest).filter(([k]) => !['password', 'password_hash', 'is_verified', 'disabled', 'token_version'].includes(k)));
+    if (role && !['admin', 'customer_admin', 'user', 'consultant'].includes(role)) throw new HttpError(422, `Papel inválido: ${role}`);
+    // As listas de acesso delegado só entram pelo servidor (sincronização) ou numa importação com o papel de serviço.
+    const data = Object.fromEntries(Object.entries(rest).filter(([k]) => !['password', 'password_hash', 'is_verified', 'disabled', 'token_version'].includes(k)
+      && !(USER_SERVICE_ONLY.has(k) && !(this.serviceRole && this.preserveMeta))));
     const { rows } = await query(
       `INSERT INTO users (id, email, full_name, role, data, is_verified, created_date, updated_date)
        VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::timestamptz, now()), COALESCE($8::timestamptz, now()))
