@@ -10,14 +10,12 @@ vi.mock('@/lib/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-// O âmbito destes testes é a matriz de papéis: a licença não limita (hasModule real com licença nula) e a
-// tradução devolve a própria chave, sem provedores nem chamadas de rede.
+// O RouteGuard também verifica a licença do cliente (LicensedRoute), que usa a língua e a API.
+let mockLicense = null;
+vi.mock('@/lib/LanguageContext', () => ({ useLanguage: () => ({ t: (key) => key }) }));
 vi.mock('@/lib/licensing', async (importOriginal) => ({
   ...(await importOriginal()),
-  useLicense: () => ({ data: null }),
-}));
-vi.mock('@/lib/LanguageContext', () => ({
-  useLanguage: () => ({ language: 'en', t: (key) => key }),
+  useLicense: () => ({ data: mockLicense }),
 }));
 
 const renderAt = (path, children = <div>ALLOWED_CHILD</div>) =>
@@ -53,7 +51,7 @@ describe('RouteGuard — role matrix', () => {
 
   it('customer_admin: blocked from admin-only routes', () => {
     mockUseAuth.mockReturnValue({ user: makeUser('customer_admin', 'c1') });
-    const blocked = ['/admin', '/backoffice', '/backoffice/users', '/audit-log', '/customers', '/question-bank', '/ropa', '/dsr', '/compliance-metrics', '/training'];
+    const blocked = ['/admin', '/backoffice', '/backoffice/customers', '/backoffice/users', '/backoffice/audit', '/audit-log', '/customers', '/question-bank', '/ropa', '/dsr', '/compliance-metrics', '/training'];
     for (const path of blocked) {
       const { unmount } = renderAt(path);
       expect(screen.getByText('REDIRECTED_HOME')).toBeTruthy();
@@ -61,7 +59,7 @@ describe('RouteGuard — role matrix', () => {
     }
   });
 
-  it('customer_admin: allowed on incidents and vulnerabilities', () => {
+  it('customer_admin: incidentes e vulnerabilidades dependem só da licença', () => {
     mockUseAuth.mockReturnValue({ user: makeUser('customer_admin', 'c1') });
     for (const path of ['/incidents', '/vulnerabilities']) {
       const { unmount } = renderAt(path);
@@ -110,5 +108,17 @@ describe('RouteGuard — role matrix', () => {
     const { unmount } = renderAt('/evidence');
     expect(screen.getByText('REDIRECTED_HOME')).toBeTruthy();
     unmount();
+  });
+
+  it('módulo fora da licença: mostra o bloqueio em vez da página', () => {
+    mockUseAuth.mockReturnValue({ user: makeUser('customer_admin', 'c1') });
+    mockLicense = { state: 'active', effective: true, modules: [] };
+    try {
+      renderAt('/evidence');
+      expect(screen.queryByText('ALLOWED_CHILD')).toBeNull();
+      expect(screen.getByText('lic_blocked_title')).toBeTruthy();
+    } finally {
+      mockLicense = null;
+    }
   });
 });
