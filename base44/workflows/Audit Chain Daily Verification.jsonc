@@ -1,0 +1,43 @@
+{
+  "name": "Audit Chain Daily Verification",
+  "description": "Verifica todos os dias a cadeia de integridade da trilha de auditoria e regista o resultado na própria trilha",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "17 3 * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "then": "end",
+          "with": {
+            "args": {
+              "op": "verify"
+            },
+            "function_name": "audit"
+          }
+        }
+      }
+    ],
+    "document": {
+      "dsl": "1.0.0",
+      "name": "audit_chain_daily_verification",
+      "namespace": "base44",
+      "version": "1.0"
+    }
+  }
+}
