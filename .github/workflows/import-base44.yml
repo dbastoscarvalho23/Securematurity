@@ -64,6 +64,8 @@ jobs:
             [ -e "$APP_ROOT/$f" ] || echo "$f"
           done > "$RUNNER_TEMP/so-no-github.txt"
           git status --short | tee "$RUNNER_TEMP/alteracoes.txt"
+          # Dados legais vindos da app: nunca se aceitam sem decisão explícita (docs/legal/README.md).
+          grep -E ' (src/data/legal/|docs/legal/|docs/modelos/|public/modelos/|tools/legal/|base44/shared/(legalPack|classifyCatalog)\.ts)' "$RUNNER_TEMP/alteracoes.txt" > "$RUNNER_TEMP/legais.txt" || true
 
       - name: Commit e PR
         env:
@@ -78,6 +80,12 @@ jobs:
           git commit -q -m "[app] Código da app Base44 de $(date -u +%Y-%m-%d)"
           git push -q origin "HEAD:${branch}"
           {
+            if [ -s "$RUNNER_TEMP/legais.txt" ]; then
+              echo "> [!CAUTION]"
+              echo "> **Esta importação altera a Biblioteca Legal ou os modelos documentais.** Os textos legais só mudam por regeneração a partir dos documentos oficiais (\`tools/legal/README.md\`). Reverter estes ficheiros, salvo decisão explícita do responsável. A verificação de integridade vai falhar até lá."
+              echo '> ```'; sed 's/^/> /' "$RUNNER_TEMP/legais.txt"; echo '> ```'
+              echo
+            fi
             echo "Código exportado da app Base44 (\`${BASE44_APP_ID}\`) e aplicado por cima de \`main\`."
             echo
             echo "### Ficheiros alterados ou novos"
