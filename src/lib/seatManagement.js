@@ -1,3 +1,4 @@
+import { invokeFn } from '@/lib/invokeFn';
 import { base44 } from '@/api/base44Client';
 import { sendEmail } from '@/lib/mail';
 
@@ -31,13 +32,13 @@ export async function notifySeatChange({ customer, field, oldValue, newValue, ch
 
   // 1. Audit log — the permanent report record
   try {
-    await base44.entities.AuditLog.create({
+    await invokeFn('audit', {
+      op: 'record',
       action: 'settings_changed',
       entity_type: 'Customer',
       entity_id: customer.id,
       customer_id: customer.id,
       details: `${fieldLabel} ${direction} de ${oldValue} para ${newValue} (${delta > 0 ? '+' : ''}${delta}) em «${customer.name}». Total: ${totalSeats} lugares.`,
-      user_email: changedBy || 'unknown',
     });
   } catch (e) {
     console.warn('Seat-change audit log failed:', e);

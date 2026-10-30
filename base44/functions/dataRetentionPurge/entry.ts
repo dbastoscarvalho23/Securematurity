@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { json, authorizeAutomationOrAdmin } from "../../shared/http.ts";
+import { logAudit } from "../../shared/audit.ts";
 
 /**
  * Scheduled data retention automation.
@@ -23,6 +24,8 @@ Deno.serve(async (req) => {
   // rejected before any destructive service-role operation.
   const forbidden = await authorizeAutomationOrAdmin(req, base44);
   if (forbidden) return forbidden;
+  // Entradas na trilha pelo escritor único encadeado (a entidade AuditLog recusa escritas diretas).
+  const audit = (entry) => logAudit(base44, entry.action, entry);
 
   try {
     // ── 1. DataProcessingActivity retention ──────────────────────────────
@@ -36,7 +39,7 @@ Deno.serve(async (req) => {
         if (activity.retention_action === 'delete') {
           await base44.asServiceRole.entities.DataProcessingActivity.delete(activity.id);
           results.purged++;
-          await base44.asServiceRole.entities.AuditLog.create({
+          await audit({
             action: 'data_purged',
             user_email: 'system',
             entity_type: 'DataProcessingActivity',
@@ -50,7 +53,7 @@ Deno.serve(async (req) => {
             security_measures: `[Archived ${now}] ${activity.security_measures || ''}`,
           });
           results.archived++;
-          await base44.asServiceRole.entities.AuditLog.create({
+          await audit({
             action: 'data_archived',
             user_email: 'system',
             entity_type: 'DataProcessingActivity',
@@ -74,7 +77,7 @@ Deno.serve(async (req) => {
       try {
         await base44.asServiceRole.entities.DataSubjectRequest.delete(dsr.id);
         results.purged++;
-        await base44.asServiceRole.entities.AuditLog.create({
+        await audit({
           action: 'data_purged',
           user_email: 'system',
           entity_type: 'DataSubjectRequest',
@@ -87,7 +90,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    await base44.asServiceRole.entities.AuditLog.create({
+    await audit({
       action: 'retention_purge_executed',
       user_email: 'system',
       entity_type: 'System',

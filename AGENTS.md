@@ -7,7 +7,9 @@ Base44 app (Vite + React 18 frontend) that connects to the Base44 cloud backend.
 - Backend URL is provided via `VITE_BASE44_APP_BASE_URL` (proxied by the base44 vite-plugin under `/api`).
 - Vite + React 18 SPA (`src/`), react-router-dom routes in `src/App.jsx`, auth via `src/lib/AuthContext.jsx` (Base44 cloud auth — email/password + OTP email registration; Google/Microsoft SSO redirects only work on a published URL, not in preview).
 - Backend = Base44 entities (`base44/entities/*.jsonc`, RLS inside) + functions invoked via `base44.functions.invoke(...)`.
-- i18n via `src/lib/LanguageContext` (`t(key)`); audit log via `src/lib/auditLog.js`.
+- i18n via `src/lib/LanguageContext` (`t(key)`); audit log via `src/lib/auditLog.js` → function `audit` (server-only writer,
+  SHA-256 hash chain in `base44/shared/auditChain.ts`; `AuditLog` RLS denies create/update to every user session and delete to all).
+  Never write `AuditLog` directly: functions use `logAudit` from `base44/shared/audit.ts`.
 
 ## Running the app (sandbox)
 ```

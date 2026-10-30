@@ -1,12 +1,23 @@
+import { appendAuditEntry } from './auditChain.ts';
+
 /**
- * Best-effort audit logging.
+ * Registo na trilha de auditoria, pelo escritor único encadeado (auditChain.ts).
  *
- * Audit trail writes must never break the operation they record — a failure
- * here is logged to the function console and swallowed.
+ * As escritas na trilha nunca interrompem a operação que registam: uma falha é escrita na consola da função e
+ * engolida. `fields.user_email` vem sempre do servidor (o utilizador da sessão resolvida pela função, ou 'system'
+ * numa automação), por isso a autoria fica atestada quando há um utilizador.
  */
-export async function logAudit(base44, action, fields = {}) {
+export async function logAudit(base44, action, fields: any = {}) {
+  const email = String(fields?.user_email || '');
+  const attested = Boolean(email) && email !== 'system';
   try {
-    await base44.asServiceRole.entities.AuditLog.create({ action, ...fields });
+    await appendAuditEntry(base44, {
+      ...fields,
+      action,
+      user_email: email || 'system',
+      actor_attested: attested,
+      origin: attested ? 'session' : 'automation',
+    });
   } catch (e) {
     console.error(`AuditLog write failed (${action}):`, e?.message || e);
   }
