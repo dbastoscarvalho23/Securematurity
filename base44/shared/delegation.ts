@@ -124,7 +124,8 @@ export async function syncUserScope(base44: any, user: any, now = Date.now()): P
   if (user?.id) {
     const current = await db.User.get(user.id).catch(() => null);
     const changed = Object.entries(scope).some(([k, v]) => !sameList(current?.[k] ?? current?.data?.[k], v));
-    if (current && changed) await db.User.update(user.id, scope).catch((e: any) => console.error(`Delegated scope update failed for ${user.id}:`, e?.message || e));
+    // Uma falha propaga-se: quem chama decide (a sincronização regista-a por pessoa e tenta de novo na hora seguinte).
+    if (current && changed) await db.User.update(user.id, scope);
   }
   return scope;
 }
