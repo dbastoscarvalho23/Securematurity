@@ -24,7 +24,8 @@ export default function AuditChainCard() {
       if (kind === 'seal') {
         toast[result?.sealed || result?.already ? 'success' : 'error'](result?.sealed ? t('audit_chain_sealed_toast', { count: result.covered }) : result?.already ? t('audit_chain_already_sealed') : (result?.note || t('audit_chain_error')));
       } else {
-        toast[result?.integrity_ok ? 'success' : 'error'](result?.note || t('audit_chain_error'));
+        const notify = result?.verdict === 'verified' ? toast.success : result?.verdict === 'review' ? toast.warning : toast.error;
+        notify(result?.note || t('audit_chain_error'));
       }
       queryClient.invalidateQueries({ queryKey: ['audit-chain-status'] });
       queryClient.invalidateQueries({ queryKey: ['auditLogs'] });
@@ -37,13 +38,14 @@ export default function AuditChainCard() {
 
   const last = status?.last_verification;
   const broken = last?.action === 'audit_chain_broken';
+  const review = last?.action === 'audit_chain_anchor_review';
   const Icon = broken ? ShieldAlert : ShieldCheck;
 
   return (
     <Card>
       <CardContent className="p-4 flex flex-wrap items-center gap-4 justify-between">
         <div className="flex items-start gap-3 min-w-0">
-          <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${broken ? 'text-destructive' : 'text-primary'}`} />
+          <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${broken ? 'text-destructive' : review ? 'text-chart-3' : 'text-primary'}`} />
           <div className="min-w-0 space-y-0.5">
             <p className="text-sm font-medium">{t('audit_chain_title')}</p>
             {isLoading ? <p className="text-xs text-muted-foreground">{t('common_loading')}</p> : (

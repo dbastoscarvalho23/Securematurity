@@ -75,7 +75,34 @@
         "audit_chain_sealed",
         "audit_chain_verified",
         "audit_chain_broken",
-        "audit_chain_anchor_review"
+        "audit_chain_anchor_review",
+        "ai_assist",
+        "ai_assist_refused",
+        "ai_draft_approved",
+        "ai_draft_created",
+        "ai_questionnaire",
+        "asset_inventory_exported",
+        "asset_list_exported",
+        "customer_qualified",
+        "cve_alert_converted",
+        "cve_alerts_created",
+        "cve_watch_deleted",
+        "document_intake_scanned",
+        "evidence_accessed",
+        "evidence_created",
+        "evidence_deleted",
+        "evidence_reviewed",
+        "file_accessed",
+        "file_uploaded",
+        "invite_rejected",
+        "license_certificate_issued",
+        "license_changed",
+        "asset_created",
+        "asset_updated",
+        "asset_deleted",
+        "assets_imported",
+        "component_deleted",
+        "report_email_sent"
       ],
       "description": "Action type"
     },
@@ -105,18 +132,18 @@
     },
     "entry_hash": {
       "type": "string",
-      "description": "SHA-256 do conteúdo desta entrada encadeado no resumo da anterior. Na entrada do selo, é o resumo de partida."
+      "description": "SHA-256 do conteúdo desta entrada encadeado em prev_hash."
     },
     "prev_hash": {
       "type": [
         "string",
         "null"
       ],
-      "description": "Resumo da entrada anterior quando esta foi escrita. Nulo no selo de partida."
+      "description": "Resumo da entrada anterior quando esta foi escrita. No selo de partida, é o resumo de partida que cobre as entradas anteriores."
     },
     "chain_count": {
       "type": "number",
-      "description": "Só no selo de partida: número de entradas anteriores que o resumo de partida cobre."
+      "description": "No selo de partida: entradas anteriores cobertas. Numa verificação: entradas conferidas desde o selo."
     }
   },
   "required": [

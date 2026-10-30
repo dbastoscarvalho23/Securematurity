@@ -26,11 +26,26 @@ export const SEAL_ACTION = 'audit_chain_sealed';
 export const VERIFIED_ACTION = 'audit_chain_verified';
 export const BROKEN_ACTION = 'audit_chain_broken';
 export const ANCHOR_ACTION = 'audit_chain_anchor_review';
-/** Ações que só o servidor escreve: o pedido de registo vindo da interface recusa-as. */
-export const SERVER_ONLY_ACTIONS = [SEAL_ACTION, VERIFIED_ACTION, BROKEN_ACTION, ANCHOR_ACTION, 'email_sent'];
+/**
+ * Ações que só o servidor escreve, porque registam atos que só uma função pratica (envios, IA, ficheiros,
+ * evidências, licenças, purgas, entradas na plataforma) ou servem de contador aos limites de ritmo. O pedido de
+ * registo vindo da interface recusa-as.
+ */
+export const SERVER_ONLY_ACTIONS = [
+  SEAL_ACTION, VERIFIED_ACTION, BROKEN_ACTION, ANCHOR_ACTION,
+  'email_sent', 'report_email_sent', 'user_login', 'data_purged', 'data_archived', 'retention_purge_executed',
+  'license_certificate_issued', 'license_changed', 'ai_assist', 'ai_assist_refused', 'ai_draft_created',
+  'ai_draft_approved', 'ai_questionnaire', 'document_classified', 'document_indexed', 'document_intake_scanned',
+  'document_intake_rejected', 'document_classification_refused', 'evidence_accessed', 'evidence_created',
+  'evidence_deleted', 'evidence_reviewed', 'file_accessed', 'file_uploaded', 'cve_alert_converted',
+  'cve_alerts_created', 'cve_watch_deleted',
+];
+/** Máximo de registos por minuto que um utilizador pode pedir pela interface. */
+export const RECORD_PER_MINUTE = 120;
 
 const PAGE_SIZE = 500;
-const MAX_PAGES = 40;
+// 100 000 entradas. Acima disto a verificação diz que a leitura ficou incompleta e não dá a cadeia como verificada.
+const MAX_PAGES = 200;
 const ATTEMPTS = 3;
 export const DETAILS_MAX = 1200;
 
@@ -91,74 +106,98 @@ export async function baselineOf(rows: any[]): Promise<string> {
   return sha256(digests.join('|'));
 }
 
+/** Resumo próprio do selo: o seu conteúdo encadeado no resumo de partida (guardado em `prev_hash`). */
+export const sealDigest = (seal: any): Promise<string> => sha256(`${contentOf(seal)}|${String(seal?.prev_hash || '')}`);
+
+const VERIFICATION_ACTIONS = [VERIFIED_ACTION, BROKEN_ACTION, ANCHOR_ACTION];
+
 /**
  * Verificação sobre uma trilha já lida e ordenada. Pura: não lê nem escreve.
- * `integrity_ok` diz se o conteúdo confere; `ok` exige também o encadeamento contínuo.
+ *
+ * Conta como quebra (`integrity_ok` falso): selo de partida que não confere, selo alterado, entrada com o conteúdo
+ * alterado, entrada sem resumo depois do selo (o escritor dá sempre um), lacuna no encadeamento (entrada removida) e
+ * cabeça da cadeia ancorada por uma verificação anterior que desapareceu. Uma bifurcação (escritas simultâneas) e
+ * uma leitura incompleta não são quebras, mas pedem revisão: só `verdict === 'verified'` dá a cadeia como verificada.
  */
-export async function verifyRows(list: any[]): Promise<any> {
+export async function verifyRows(list: any[], { truncated = false }: { truncated?: boolean } = {}): Promise<any> {
   const sealIndex = list.map((row) => row.action).lastIndexOf(SEAL_ACTION);
   if (sealIndex < 0) {
-    return { ok: false, integrity_ok: false, sealed: false, entries: list.length, note: 'A cadeia ainda não tem selo de partida.' };
+    return { ok: false, integrity_ok: false, sealed: false, verdict: 'unsealed', entries: list.length, note: 'A cadeia ainda não tem selo de partida.' };
   }
   const seal = list[sealIndex];
   const before = list.slice(0, sealIndex);
   const declared = seal?.chain_count === undefined || seal?.chain_count === null ? null : Number(seal.chain_count);
   const covered = declared === null ? before : before.slice(0, Math.max(0, declared));
   const uncovered = Math.max(0, before.length - covered.length);
-  const baselineOk = (await baselineOf(covered)) === String(seal.entry_hash || '');
+  const baselineOk = (await baselineOf(covered)) === String(seal.prev_hash || '');
+  const sealOk = (await sealDigest(seal)) === String(seal.entry_hash || '');
 
   const sealAt = String(seal.created_date || '');
+  const after = list.slice(sealIndex + 1);
   const known = new Set(list.map((row) => String(row.entry_hash || '')).filter(Boolean));
   let expected = String(seal.entry_hash || '');
   let firstBroken: any = null;
+  const broken = (entry: any, reason: string) => { if (!firstBroken) firstBroken = { id: entry.id, action: entry.action, at: entry.created_date, reason }; };
   let checked = 0;
-  let chained = 0;
-  let unchained = 0;
   const forks: any[] = [];
   const gaps: any[] = [];
 
-  for (const entry of list.slice(sealIndex + 1)) {
+  for (const entry of after) {
     checked += 1;
-    const computed = await digestOf(entry, sealAt);
-    if (entry.entry_hash) chained += 1; else unchained += 1;
-    if (entry.prev_hash && String(entry.prev_hash) !== expected) {
-      (known.has(String(entry.prev_hash)) ? forks : gaps).push({ id: entry.id, action: entry.action, at: entry.created_date });
+    if (!entry.entry_hash) {
+      broken(entry, 'Entrada sem resumo depois do selo: foi escrita fora do escritor único ou teve o resumo removido.');
+      expected = await digestOf(entry, sealAt);
+      continue;
     }
-    if (!firstBroken && entry.entry_hash && String(entry.entry_hash) !== computed) {
-      firstBroken = { id: entry.id, action: entry.action, at: entry.created_date, reason: 'O resumo desta entrada não bate com o conteúdo que ela guarda.' };
+    if (String(entry.entry_hash) !== (await digestOf(entry, sealAt))) broken(entry, 'O resumo desta entrada não bate com o conteúdo que ela guarda.');
+    if (String(entry.prev_hash || '') !== expected) {
+      (known.has(String(entry.prev_hash || '')) ? forks : gaps).push({ id: entry.id, action: entry.action, at: entry.created_date });
     }
-    expected = entry.entry_hash ? String(entry.entry_hash) : computed;
+    expected = String(entry.entry_hash);
+  }
+  if (gaps.length) broken(gaps[0], 'Lacuna no encadeamento: a entrada anterior a esta foi removida da trilha.');
+
+  // Cabeça ancorada: cada verificação guarda em entity_id o resumo da última entrada que viu. Se esse resumo já não
+  // existe, foram removidas entradas do fim da trilha.
+  for (const v of after.filter((row) => VERIFICATION_ACTIONS.includes(row.action) && row.entity_id && /^[a-f0-9]{64}$/.test(String(row.entity_id)))) {
+    if (!known.has(String(v.entity_id))) broken(v, 'Uma verificação anterior ancorou uma entrada que já não está na trilha.');
   }
 
-  const integrityOk = baselineOk && uncovered === 0 && !firstBroken;
-  const continuous = forks.length === 0 && gaps.length === 0;
+  const integrityOk = baselineOk && sealOk && !firstBroken;
+  const verdict = !integrityOk ? 'broken' : truncated || uncovered || forks.length ? 'review' : 'verified';
+  const head = after.length ? String(after[after.length - 1].entry_hash || '') : String(seal.entry_hash || '');
   return {
-    ok: integrityOk && continuous,
+    ok: verdict === 'verified',
     integrity_ok: integrityOk,
-    continuous,
+    verdict,
     sealed: true,
     entries: list.length,
     covered: covered.length,
     uncovered,
     checked,
-    chained,
-    unchained,
     baseline_ok: baselineOk,
+    seal_ok: sealOk,
     forks: forks.length,
     fork_first: forks[0] || null,
     gaps: gaps.length,
     gap_first: gaps[0] || null,
+    truncated,
+    head,
     seal_at: sealAt,
     first_broken: firstBroken,
-    note: firstBroken
-      ? `Cadeia quebrada em ${firstBroken.action} (${firstBroken.at}): ${firstBroken.reason}`
+    note: !sealOk
+      ? 'O selo de partida foi alterado depois de escrito.'
       : !baselineOk
-        ? `O resumo de partida não confere com as ${covered.length} entrada(s) que o selo declara cobrir.`
-        : uncovered
-          ? `Conteúdo íntegro, mas ${uncovered} entrada(s) ficaram entre o cálculo e a escrita do selo: selar de novo.`
-          : !continuous
-            ? `Conteúdo íntegro desde o selo (${checked} entrada(s)). Encadeamento com ${forks.length} bifurcação(ões) e ${gaps.length} lacuna(s).`
-            : `Cadeia verificada: selo sobre ${covered.length} entrada(s) e ${checked} entrada(s) desde o selo, sem quebras.`,
+        ? `O resumo de partida não confere com as ${covered.length} entrada(s) que o selo declara cobrir: há entradas antigas alteradas ou removidas.`
+        : firstBroken
+          ? `Cadeia quebrada em ${firstBroken.action} (${firstBroken.at}): ${firstBroken.reason}`
+          : truncated
+            ? `Leitura incompleta: a trilha excede o limite de leitura e não foi verificada por inteiro (${checked} entrada(s) conferidas).`
+            : uncovered
+              ? `Conteúdo íntegro, mas ${uncovered} entrada(s) ficaram entre o cálculo e a escrita do selo.`
+              : forks.length
+                ? `Conteúdo íntegro desde o selo (${checked} entrada(s)), com ${forks.length} bifurcação(ões) de escritas simultâneas.`
+                : `Cadeia verificada: selo sobre ${covered.length} entrada(s) e ${checked} entrada(s) desde o selo, sem quebras.`,
   };
 }
 
@@ -168,13 +207,14 @@ export async function verifyRows(list: any[]): Promise<any> {
 
 /** A trilha completa, por páginas, até ao fim ou ao limite de páginas (assinalado em `truncated`). */
 export async function readTrail(base44: any, { pageSize = PAGE_SIZE, maxPages = MAX_PAGES } = {}): Promise<any> {
-  const rows: any[] = [];
+  // Por identificador: entradas com a mesma data podem repetir-se entre páginas quando se pagina por posição.
+  const rows = new Map<string, any>();
   for (let page = 0; page < maxPages; page += 1) {
     const items = (await base44.asServiceRole.entities.AuditLog.list('created_date', pageSize, page * pageSize)) || [];
-    rows.push(...items);
-    if (items.length < pageSize) return { rows: ordered(rows), pages: page + 1, truncated: false };
+    for (const item of items) rows.set(String(item.id), item);
+    if (items.length < pageSize) return { rows: ordered([...rows.values()]), pages: page + 1, truncated: false };
   }
-  return { rows: ordered(rows), pages: maxPages, truncated: true };
+  return { rows: ordered([...rows.values()]), pages: maxPages, truncated: true };
 }
 
 export async function latestSeal(base44: any): Promise<any | null> {
@@ -228,45 +268,57 @@ export async function appendAuditEntry(base44: any, values: any): Promise<any> {
 /** Lê a trilha e verifica-a. */
 export async function verifyChain(base44: any): Promise<any> {
   const { rows, pages, truncated } = await readTrail(base44);
-  const result = await verifyRows(rows);
-  return { ...result, pages, truncated, note: `${result.note}${truncated ? ' Leitura truncada: a trilha excede o limite de páginas.' : ''}` };
+  return { ...(await verifyRows(rows, { truncated })), pages };
 }
 
 /**
- * Selo de partida: uma vez, cobre o que existe antes de a cadeia começar. Só se refaz quando o selo em vigor deixou
- * de ser reproduzível ou deixou entradas fora da cobertura. Depois de escrito, confirma-se que é reproduzível.
+ * Selo de partida: uma vez, cobre o que existe antes de a cadeia começar. O resumo de partida fica em `prev_hash` e o
+ * resumo próprio do selo em `entry_hash`, para o conteúdo do selo também ficar protegido.
+ *
+ * Um novo selo, quando o anterior deixou de conferir, apagaria a prova de uma alteração: só se faz com confirmação
+ * explícita e uma justificação, que ficam escritas no próprio selo.
  */
-export async function sealChain(base44: any, actor: string): Promise<any> {
+export async function sealChain(base44: any, actor: string, { confirm = false, reason = '' }: { confirm?: boolean; reason?: string } = {}): Promise<any> {
   const db = base44.asServiceRole.entities.AuditLog;
   const existing = await latestSeal(base44);
+  let previousNote = '';
   if (existing) {
     const current = await verifyChain(base44);
-    if (current.baseline_ok && !current.uncovered) return { sealed: false, already: true, at: existing.created_date, covered: Number(existing.chain_count || 0) };
+    if (current.baseline_ok && current.seal_ok && !current.uncovered) {
+      return { sealed: false, already: true, at: existing.created_date, covered: Number(existing.chain_count || 0) };
+    }
+    const why = String(reason || '').trim();
+    if (!confirm || why.length < 10) {
+      return {
+        sealed: false,
+        requires_confirmation: true,
+        note: `O selo de ${existing.created_date} deixou de conferir (${current.note}). Um novo selo cobriria as entradas tal como estão hoje: só com confirmação e justificação.`,
+      };
+    }
+    previousNote = ` Substitui o selo de ${existing.created_date}, que deixou de conferir: ${current.note} Justificação: ${why.slice(0, 400)}`;
   }
   for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
     const read = await readTrail(base44);
     if (read.truncated) return { sealed: false, pending: true, note: 'A trilha não pôde ser lida por inteiro; um selo sobre uma leitura parcial nunca conferiria.' };
     const covered = read.rows;
     const baseline = await baselineOf(covered);
-    const row = await db.create({
+    const seal: any = {
       action: SEAL_ACTION,
       entity_type: 'AuditLog',
       entity_id: '',
       user_email: actor,
-      details: existing
-        ? `Novo selo de partida: o anterior deixou de ser reproduzível. Ficam cobertas ${covered.length} entrada(s).`
-        : `Selo de partida da cadeia de integridade: ${covered.length} entrada(s) anteriores ficam cobertas por este resumo.`,
+      details: `Selo de partida da cadeia de integridade: ${covered.length} entrada(s) anteriores ficam cobertas por este resumo.${previousNote}`.slice(0, DETAILS_MAX),
       actor_attested: true,
       origin: 'session',
       chain_count: covered.length,
-      prev_hash: null,
-      entry_hash: baseline,
-    });
-    const confirm = await readTrail(base44);
-    const index = confirm.rows.findIndex((item) => item.id === row?.id);
-    const preceding = index >= 0 ? confirm.rows.slice(0, index) : [];
-    if (index >= 0 && !confirm.truncated && preceding.length === covered.length && (await baselineOf(preceding)) === baseline) {
-      return { sealed: true, resealed: Boolean(existing), attempts: attempt, id: row?.id, covered: covered.length, entry_hash: baseline };
+      prev_hash: baseline,
+    };
+    const row = await db.create({ ...seal, entry_hash: await sealDigest(seal) });
+    const confirmRead = await readTrail(base44);
+    const index = confirmRead.rows.findIndex((item) => item.id === row?.id);
+    const preceding = index >= 0 ? confirmRead.rows.slice(0, index) : [];
+    if (index >= 0 && !confirmRead.truncated && preceding.length === covered.length && (await baselineOf(preceding)) === baseline) {
+      return { sealed: true, resealed: Boolean(existing), attempts: attempt, id: row?.id, covered: covered.length, baseline };
     }
   }
   return { sealed: false, pending: true, note: 'Entraram escritas entre o cálculo e a escrita do selo. Repetir o selo.' };

@@ -53,9 +53,9 @@ describe('trilha de auditoria encadeada', () => {
     }
     const r = await verifyChain(b);
     expect(r.ok).toBe(true);
+    expect(r.verdict).toBe('verified');
     expect(r.covered).toBe(3);
     expect(r.checked).toBe(4);
-    expect(r.chained).toBe(4);
     // Um segundo selo não se repete enquanto o primeiro conferir.
     expect((await sealChain(b, 'admin@x.pt')).already).toBe(true);
   });
@@ -87,9 +87,9 @@ describe('trilha de auditoria encadeada', () => {
     for (let i = 0; i < 3; i += 1) await appendAuditEntry(b, { action: 'task_updated', user_email: 'ana@cliente.pt', details: `passo ${i}` });
     b.rows.splice(b.rows.findIndex((r) => r.details === 'passo 1'), 1);
     const r = await verifyChain(b);
-    expect(r.continuous).toBe(false);
     expect(r.gaps).toBe(1);
-    expect(r.ok).toBe(false);
+    expect(r.integrity_ok).toBe(false);
+    expect(r.verdict).toBe('broken');
   });
 
   it('o resumo cobre a autoria: mudar o autor quebra a cadeia', async () => {
@@ -108,6 +108,82 @@ describe('trilha de auditoria encadeada', () => {
     expect(read.truncated).toBe(false);
     const short = await readTrail(b, { pageSize: 5, maxPages: 2 });
     expect(short.truncated).toBe(true);
+  });
+
+  it('uma entrada alterada e sem resumo conta como quebra, mesmo sendo a última', async () => {
+    const b = fakeBase44();
+    await sealChain(b, 'admin@x.pt');
+    await appendAuditEntry(b, { action: 'task_updated', user_email: 'ana@cliente.pt', details: 'original' });
+    const last = b.rows.at(-1);
+    last.details = 'alterado';
+    delete last.entry_hash;
+    delete last.prev_hash;
+    const r = await verifyChain(b);
+    expect(r.verdict).toBe('broken');
+  });
+
+  it('uma entrada sem resumo no meio conta como quebra', async () => {
+    const b = fakeBase44();
+    await sealChain(b, 'admin@x.pt');
+    for (let i = 0; i < 3; i += 1) await appendAuditEntry(b, { action: 'task_updated', user_email: 'ana@cliente.pt', details: `p${i}` });
+    const middle = b.rows.find((r) => r.details === 'p1');
+    middle.details = 'alterado';
+    delete middle.entry_hash;
+    expect((await verifyChain(b)).verdict).toBe('broken');
+  });
+
+  it('o conteúdo do selo está protegido', async () => {
+    const b = fakeBase44();
+    await b.asServiceRole.entities.AuditLog.create({ action: 'user_login', user_email: 'a@x.pt' });
+    await sealChain(b, 'admin@x.pt');
+    b.rows.find((r) => r.action === SEAL_ACTION).user_email = 'outro@x.pt';
+    const r = await verifyChain(b);
+    expect(r.seal_ok).toBe(false);
+    expect(r.verdict).toBe('broken');
+  });
+
+  it('remover uma entrada já vista por uma verificação deteta-se', async () => {
+    const b = fakeBase44();
+    await sealChain(b, 'admin@x.pt');
+    for (let i = 0; i < 3; i += 1) await appendAuditEntry(b, { action: 'task_updated', user_email: 'ana@cliente.pt', details: `p${i}` });
+    const first = await verifyChain(b);
+    await appendAuditEntry(b, { action: 'audit_chain_verified', user_email: 'admin@x.pt', entity_type: 'AuditLog', entity_id: first.head, chain_count: first.checked });
+    await appendAuditEntry(b, { action: 'task_updated', user_email: 'ana@cliente.pt', details: 'depois' });
+    // remove a última entrada vista pela verificação (p2): a verificação seguinte tem de o detetar
+    b.rows.splice(b.rows.findIndex((r) => r.details === 'p2'), 1);
+    expect((await verifyChain(b)).verdict).toBe('broken');
+  });
+
+  it('um novo selo depois de uma quebra exige confirmação e justificação', async () => {
+    const b = fakeBase44();
+    await b.asServiceRole.entities.AuditLog.create({ action: 'user_login', user_email: 'a@x.pt', details: 'original' });
+    await sealChain(b, 'admin@x.pt');
+    b.rows[0].details = 'alterado';
+    const refused = await sealChain(b, 'admin@x.pt');
+    expect(refused.sealed).toBe(false);
+    expect(refused.requires_confirmation).toBe(true);
+    expect((await sealChain(b, 'admin@x.pt', { confirm: true, reason: 'curta' })).sealed).toBe(false);
+    const resealed = await sealChain(b, 'admin@x.pt', { confirm: true, reason: 'Reposição aprovada pela direção após análise' });
+    expect(resealed.sealed).toBe(true);
+    expect(b.rows.at(-1).details.includes('Justificação')).toBe(true);
+  });
+
+  it('bifurcação e leitura incompleta pedem revisão, sem dar a cadeia como verificada', async () => {
+    const b = fakeBase44();
+    await sealChain(b, 'admin@x.pt');
+    await appendAuditEntry(b, { action: 'task_updated', user_email: 'ana@cliente.pt', details: 'a' });
+    const prev = b.rows.at(-1).entry_hash;
+    await appendAuditEntry(b, { action: 'task_updated', user_email: 'ana@cliente.pt', details: 'b' });
+    // simula uma escrita simultânea que ligou à mesma anterior que a entrada «b»
+    const fork = { action: 'task_updated', entity_type: '', entity_id: '', user_email: 'rui@cliente.pt', details: 'c', actor_attested: false, origin: 'session', prev_hash: b.rows.at(-2).prev_hash };
+    const { sha256: h, contentOf } = await import('../../../base44/shared/auditChain.ts');
+    await b.asServiceRole.entities.AuditLog.create({ ...fork, entry_hash: await h(`${contentOf(fork)}|${fork.prev_hash}`) });
+    expect(prev).toBeTruthy();
+    const r = await verifyChain(b);
+    expect(r.integrity_ok).toBe(true);
+    expect(r.verdict).toBe('review');
+    const rows = (await readTrail(b)).rows;
+    expect((await verifyRows(rows.slice(0, 3), { truncated: true })).verdict).toBe('review');
   });
 
   it('verifyRows sem selo nunca dá a cadeia como íntegra', async () => {
