@@ -135,6 +135,8 @@ export default async function (req) {
 
     if (action === 'review') {
       if (!['accepted', 'rejected'].includes(body.status)) return json({ error: 'Estado inválido' }, 400);
+      // Separação de funções: quem carregou a evidência não a revê.
+      if (String(ev.uploaded_by || '').toLowerCase() === String(user.email || '').toLowerCase()) return json({ error: 'Quem carregou a evidência não a pode rever.' }, 403);
       const updated = await base44.asServiceRole.entities.Evidence.update(ev.id, {
         status: body.status, review_notes: str(body.notes, 2000), reviewer_email: user.email, reviewed_at: new Date().toISOString(),
       });

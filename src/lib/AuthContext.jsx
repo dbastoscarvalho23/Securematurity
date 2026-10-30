@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
-import { effectiveUser, readActiveCustomer, writeActiveCustomer } from '@/lib/activeCustomer';
+import { effectiveUser, readActiveCustomer, writeActiveCustomer, setConsultantSession } from '@/lib/activeCustomer';
 
 const AuthContext = createContext();
 
@@ -8,7 +8,11 @@ export const AuthProvider = ({ children }) => {
   // Registo devolvido pelo servidor; `user` é o que a interface vê (para consultores, o cliente ativo).
   const [rawUser, setUser] = useState(null);
   const [activeCustomerId, setActiveCustomerState] = useState(() => readActiveCustomer());
-  const user = useMemo(() => effectiveUser(rawUser, activeCustomerId), [rawUser, activeCustomerId]);
+  const user = useMemo(() => {
+    // Marcado aqui (e não num efeito) para valer já nos primeiros pedidos das páginas, cujos efeitos correm antes.
+    setConsultantSession(rawUser?.role === 'consultant');
+    return effectiveUser(rawUser, activeCustomerId);
+  }, [rawUser, activeCustomerId]);
   const setActiveCustomer = (id) => {
     writeActiveCustomer(id || null);
     setActiveCustomerState(id || null);
@@ -69,6 +73,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    setConsultantSession(false);
     writeActiveCustomer(null);
     setUser(null);
     setIsAuthenticated(false);

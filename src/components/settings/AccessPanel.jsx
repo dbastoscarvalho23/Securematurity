@@ -38,7 +38,8 @@ export default function AccessPanel() {
   const queryClient = useQueryClient();
   const isAdmin = user?.role === 'admin';
   const isConsultant = user?.platform_role === 'consultant';
-  const isDecider = !isAdmin && user?.role === 'customer_admin' && !!user?.customer_id;
+  // Decide só o administrador próprio do cliente (nunca um consultor, mesmo com nível admin).
+  const isDecider = !isAdmin && !isConsultant && user?.role === 'customer_admin' && !!user?.customer_id;
   const [filterCustomer, setFilterCustomer] = useState('all');
   const [busy, setBusy] = useState(null);
   const [form, setForm] = useState({ customer_id: '', user_email: '', access_level: 'viewer', assignment_type: 'delegation', expires_at: inDays(90), reason: '' });

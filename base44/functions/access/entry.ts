@@ -141,17 +141,20 @@ Deno.serve(async (req) => {
 
     if (op === 'sync') {
       if (!admin) return json({ error: 'Admin access required' }, 403);
-      const rows = await db.UserCustomerAssignment.list('-created_date', 5000).catch(() => []);
+      // Todas as pessoas com atribuições, todos os consultores e qualquer pessoa que tenha listas no perfil (seja qual
+      // for o papel): listas sem atribuição viva ficam vazias. Uma falha numa pessoa não impede as restantes.
+      const rows = await db.UserCustomerAssignment.list('-created_date', 20000).catch(() => []);
       const emails = new Set((rows || []).map((a: any) => String(a.user_email || '').toLowerCase()).filter(Boolean));
-      // Também quem tem listas no perfil sem atribuições (ex.: atribuições removidas fora da função).
-      const consultants = await db.User.filter({ role: 'consultant' }).catch(() => []);
-      for (const u of consultants || []) emails.add(String(u.email || '').toLowerCase());
+      const users = await db.User.list().catch(() => []);
+      const hasLists = (u: any) => ['delegated_view_customer_ids', 'delegated_edit_customer_ids', 'delegated_admin_customer_ids']
+        .some((k) => (u?.[k] ?? u?.data?.[k] ?? []).length);
       let synced = 0;
-      for (const email of emails) {
-        const user = (await db.User.filter({ email }).catch(() => []))?.[0];
-        if (user) { await syncUserScope(base44, user); synced += 1; }
+      const failed: string[] = [];
+      for (const u of users || []) {
+        if (!(u.role === 'consultant' || hasLists(u) || emails.has(String(u.email || '').toLowerCase()))) continue;
+        try { await syncUserScope(base44, u); synced += 1; } catch (e) { failed.push(u.email); console.error('sync failed', u.email, e?.message || e); }
       }
-      return json({ synced });
+      return json({ synced, failed });
     }
 
     return json({ error: 'Operação desconhecida' }, 400);

@@ -56,8 +56,14 @@ export function effectiveUser(raw, activeId = readActiveCustomer()) {
   };
 }
 
+// Só depois de a sessão confirmar que a pessoa é consultora (AuthContext) é que os pedidos levam o cliente ativo.
+// Até lá (ou para qualquer outro papel), um valor deixado no navegador por outra sessão nunca é enviado.
+let consultantSession = false;
+export function setConsultantSession(value) { consultantSession = Boolean(value); }
+
 /** Acrescenta o cliente ativo a um pedido a uma função, quando o pedido não indica nenhum (só consultores). */
 export function withActiveCustomer(payload) {
+  if (!consultantSession) return payload;
   const active = readActiveCustomer();
   if (!active || !payload || typeof payload !== 'object' || Array.isArray(payload)) return payload;
   if (payload.customer_id) return payload;

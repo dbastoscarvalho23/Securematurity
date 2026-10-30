@@ -8,14 +8,14 @@
  *   até 365 dias.
  * - `external`: acesso temporário, sempre de leitura, até 30 dias.
  *
- * Quem decide é o cliente: o seu administrador (ou quem lá tenha delegação de nível admin) concede, aprova e revoga.
+ * Quem decide é o cliente: o seu administrador próprio (customer_admin) concede, aprova e revoga.
  * A plataforma pede e acompanha; ninguém decide o próprio acesso. Uma atribuição fora do prazo deixa de valer quando
  * é lida, e as listas no perfil do utilizador (que as regras das entidades leem) voltam a derivar-se a cada decisão,
  * no início de sessão e de hora a hora.
  *
  * As funções puras não importam nada do SDK e testam-se diretamente (src/lib/__tests__/delegation.test.js).
  */
-import { DELEGATED_FIELDS, customerRole, isPlatformAdmin, userCustomerId } from './http.ts';
+import { DELEGATED_FIELDS, isPlatformAdmin, userCustomerId } from './http.ts';
 
 export const ACCESS_LEVELS = ['viewer', 'contributor', 'admin'];
 export const ASSIGNMENT_TYPES = ['delegation', 'external'];
@@ -62,10 +62,13 @@ export function isOwnAccess(actor: any, assignment: any): boolean {
   return email !== '' && email === String(assignment.user_email || '').trim().toLowerCase();
 }
 
-/** Quem administra este cliente, pelo papel próprio ou por delegação de nível admin (não a plataforma). */
+/**
+ * Quem decide os acessos a este cliente: o seu administrador próprio (customer_admin). Nem a plataforma nem um
+ * consultor com delegação de nível admin decidem: uma delegação nunca pode estender-se a si própria nem a colegas.
+ */
 export function isDecider(actor: any, customerId: string): boolean {
   if (!actor || !customerId || isPlatformAdmin(actor)) return false;
-  return customerRole(actor, customerId) === 'admin';
+  return actor.role === 'customer_admin' && String(userCustomerId(actor) || '') === String(customerId);
 }
 
 /**
@@ -121,7 +124,7 @@ export async function syncUserScope(base44: any, user: any, now = Date.now()): P
   if (user?.id) {
     const current = await db.User.get(user.id).catch(() => null);
     const changed = Object.entries(scope).some(([k, v]) => !sameList(current?.[k] ?? current?.data?.[k], v));
-    if (current && changed) await db.User.update(user.id, scope);
+    if (current && changed) await db.User.update(user.id, scope).catch((e: any) => console.error(`Delegated scope update failed for ${user.id}:`, e?.message || e));
   }
   return scope;
 }

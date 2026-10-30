@@ -9,7 +9,7 @@ Decidido a 30/10/2026: o cliente concede o acesso, os consultores têm o papel `
   - Tipos: `delegation` (até 365 dias) e `external` (só leitura, até 30 dias).
   - Níveis: `viewer` (lê), `contributor` (lê e escreve conteúdo) e `admin` (também administra o cliente e decide os acessos).
   - Estados: `requested`, `active`, `rejected`, `revoked` e `expired`.
-- **Quem decide**: a administração do cliente (o `customer_admin` próprio, ou um consultor com delegação de nível `admin` nesse cliente). A plataforma pede e acompanha, e não decide. Ninguém decide o próprio acesso. Revogar pode o cliente, a plataforma e a própria pessoa.
+- **Quem decide**: o administrador próprio do cliente (`customer_admin`). Nem a plataforma nem um consultor, mesmo com nível `admin`, concedem ou aprovam acessos: uma delegação nunca se estende a si própria nem a colegas. Ninguém decide o próprio acesso. Revogar pode o cliente, a plataforma e a própria pessoa.
 - **Listas no perfil**: `delegated_view_customer_ids`, `delegated_edit_customer_ids` e `delegated_admin_customer_ids`, derivadas das atribuições ativas. Só o servidor as escreve (regra de campo `service_only`). Voltam a derivar-se a cada decisão, no início de sessão e de hora a hora (workflow «Access Delegation Sync»).
 
 ## Onde é aplicado

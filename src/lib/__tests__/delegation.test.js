@@ -82,7 +82,8 @@ describe('regras da delegação', () => {
     expect(decisionRefusal({ role: 'customer_admin', customer_id: 'c2', email: 'x@c2.pt' }, a)).not.toBe(null);
     expect(decisionRefusal({ role: 'user', customer_id: 'c1', email: 'joao@c1.pt' }, a)).not.toBe(null);
     expect(decisionRefusal({ ...consultant, delegated_admin_customer_ids: ['c1'] }, a)).toMatch(/próprio/);
-    expect(decisionRefusal({ id: 'k9', email: 'eva@neora.pt', role: 'consultant', delegated_admin_customer_ids: ['c1'] }, a)).toBe(null);
+    // Um consultor com nível admin não decide acessos (nem de colegas): só o administrador próprio do cliente.
+    expect(decisionRefusal({ id: 'k9', email: 'eva@neora.pt', role: 'consultant', delegated_admin_customer_ids: ['c1'] }, a)).not.toBe(null);
     expect(isOwnAccess({ email: 'RUI@neora.pt' }, a)).toBe(true);
   });
 
@@ -132,6 +133,11 @@ describe('regras de acesso das entidades', () => {
     expect(delegateRule(admin, 'update', 'Task')).toEqual(admin);
     expect(delegateRule(false, 'delete', 'AuditLog')).toBe(false);
     expect(delegateRule({ $or: [admin, { user_condition: { role: 'user' } }] }, 'read', 'Framework').$or).toContainEqual({ user_condition: { role: 'consultant' } });
+  });
+
+  it('convites ficam só do cliente', () => {
+    const inv = { name: 'InvitedUser', rls: { update: { $or: [{ user_condition: { role: 'admin' } }, { $and: [{ user_condition: { role: 'customer_admin' } }, { 'data.customer_id': '{{user.data.customer_id}}' }] }] } } };
+    expect(delegateEntity(inv)).toEqual(inv);
   });
 
   it('todas as entidades do repositório já têm as regras delegadas (correr o gerador não muda nada)', () => {
