@@ -1,6 +1,11 @@
 // PDF rendering for the monthly/annual snapshot report.
 // Pure jsPDF drawing code — no Base44 SDK calls, so it stays easy to test.
-import jsPDF from 'npm:jspdf@4.0.0';
+import * as jspdf from 'npm:jspdf@4.0.0';
+
+// O jsPDF expõe a classe como exportação com nome. Ao importar a versão CommonJS (Node e,
+// conforme a resolução, Deno), a exportação por omissão é o objeto do módulo e não a classe,
+// e `new jsPDF()` falha com «jsPDF is not a constructor».
+const jsPDF = (jspdf as any).jsPDF ?? (jspdf as any).default?.jsPDF ?? (jspdf as any).default;
 
 const BRAND_DARK = [20, 30, 60];
 const BRAND_BLUE = [59, 130, 246];
